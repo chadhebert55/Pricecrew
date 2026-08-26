@@ -10,6 +10,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Estimating dashboard operations
+  - name: quotes
+    description: Quote and estimate operations
+  - name: price-book
+    description: Company price book operations
+  - name: settings
+    description: Company estimating settings
 paths:
   /healthz:
     get:
@@ -24,6 +32,169 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get estimating dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /quotes:
+    get:
+      operationId: listQuotes
+      tags: [quotes]
+      summary: List quotes
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Quote list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuoteSummary"
+    post:
+      operationId: createQuote
+      tags: [quotes]
+      summary: Create a quote from an estimate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteInput"
+      responses:
+        "201":
+          description: Created quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+  /quotes/{id}:
+    get:
+      operationId: getQuote
+      tags: [quotes]
+      summary: Get a quote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Quote detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "404":
+          description: Quote not found
+    patch:
+      operationId: updateQuote
+      tags: [quotes]
+      summary: Update a quote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteUpdate"
+      responses:
+        "200":
+          description: Updated quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "404":
+          description: Quote not found
+  /price-book:
+    get:
+      operationId: listPriceBookItems
+      tags: [price-book]
+      summary: List price book items
+      responses:
+        "200":
+          description: Price book items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceBookItem"
+  /price-book/{id}:
+    patch:
+      operationId: updatePriceBookItem
+      tags: [price-book]
+      summary: Update a price book item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceBookItemUpdate"
+      responses:
+        "200":
+          description: Updated price book item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceBookItem"
+        "404":
+          description: Price book item not found
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get company estimating settings
+      responses:
+        "200":
+          description: Company settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanySettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update company estimating settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanySettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanySettings"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +204,323 @@ components:
           type: string
       required:
         - status
+    DashboardSummary:
+      type: object
+      required:
+        - totalQuotes
+        - draftQuotes
+        - readyQuotes
+        - totalQuoted
+        - averageMargin
+        - recentQuotes
+      properties:
+        totalQuotes:
+          type: number
+        draftQuotes:
+          type: number
+        readyQuotes:
+          type: number
+        totalQuoted:
+          type: number
+        averageMargin:
+          type: number
+        recentQuotes:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteSummary"
+    QuoteSummary:
+      type: object
+      required:
+        - id
+        - quoteNumber
+        - customerName
+        - projectName
+        - module
+        - status
+        - total
+        - margin
+        - updatedAt
+      properties:
+        id:
+          type: number
+        quoteNumber:
+          type: string
+        customerName:
+          type: string
+        projectName:
+          type: string
+        module:
+          type: string
+        status:
+          type: string
+        total:
+          type: number
+        margin:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+    Quote:
+      allOf:
+        - $ref: "#/components/schemas/QuoteSummary"
+        - type: object
+          required:
+            - customerEmail
+            - jobInputs
+            - assembly
+            - pricing
+            - proposalDescription
+            - createdAt
+          properties:
+            customerEmail:
+              type: ["string", "null"]
+            jobInputs:
+              $ref: "#/components/schemas/EvChargerInputs"
+            assembly:
+              type: array
+              items:
+                $ref: "#/components/schemas/AssemblyLine"
+            pricing:
+              $ref: "#/components/schemas/PricingSummary"
+            proposalDescription:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+    QuoteInput:
+      type: object
+      required:
+        - customerName
+        - projectName
+        - module
+        - jobInputs
+        - proposalDescription
+      properties:
+        customerName:
+          type: string
+          minLength: 1
+        customerEmail:
+          type: ["string", "null"]
+        projectName:
+          type: string
+          minLength: 1
+        module:
+          type: string
+        jobInputs:
+          $ref: "#/components/schemas/EvChargerInputs"
+        assembly:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssemblyLine"
+        pricing:
+          $ref: "#/components/schemas/PricingInput"
+        proposalDescription:
+          type: string
+          minLength: 1
+    QuoteUpdate:
+      type: object
+      properties:
+        customerName:
+          type: string
+        customerEmail:
+          type: ["string", "null"]
+        projectName:
+          type: string
+        status:
+          type: string
+        pricing:
+          $ref: "#/components/schemas/PricingInput"
+        proposalDescription:
+          type: string
+    EvChargerInputs:
+      type: object
+      required:
+        - chargerQuantity
+        - chargerOutputAmps
+        - circuitAmps
+        - chargerSupply
+        - connection
+        - routeLength
+        - wiringMethod
+        - location
+        - panelManufacturer
+        - panelSpace
+        - breakerRequirement
+        - access
+        - permit
+        - loadManagement
+        - disconnect
+        - surgeProtection
+        - panelModifications
+        - difficulty
+        - notes
+      properties:
+        chargerQuantity:
+          type: number
+        chargerOutputAmps:
+          type: number
+        circuitAmps:
+          type: string
+        chargerSupply:
+          type: string
+        connection:
+          type: string
+        routeLength:
+          type: number
+        wiringMethod:
+          type: string
+        location:
+          type: string
+        panelManufacturer:
+          type: string
+        panelSpace:
+          type: string
+        breakerRequirement:
+          type: string
+        access:
+          type: string
+        permit:
+          type: string
+        loadManagement:
+          type: string
+        disconnect:
+          type: string
+        surgeProtection:
+          type: string
+        panelModifications:
+          type: string
+        difficulty:
+          type: string
+        notes:
+          type: string
+    AssemblyLine:
+      type: object
+      required:
+        - id
+        - category
+        - description
+        - quantity
+        - unit
+        - unitCost
+        - extendedCost
+        - source
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        unitCost:
+          type: number
+        extendedCost:
+          type: number
+        source:
+          type: string
+    PricingInput:
+      type: object
+      required:
+        - materialCost
+        - laborCost
+        - materialMarkup
+        - calculatedSellingPrice
+        - finalSellingPrice
+        - laborOverride
+        - sellingPriceOverride
+      properties:
+        materialCost:
+          type: number
+        laborCost:
+          type: number
+        materialMarkup:
+          type: number
+        calculatedSellingPrice:
+          type: number
+        finalSellingPrice:
+          type: number
+        laborOverride:
+          type: ["number", "null"]
+        sellingPriceOverride:
+          type: ["number", "null"]
+    PricingSummary:
+      allOf:
+        - $ref: "#/components/schemas/PricingInput"
+        - type: object
+          required:
+            - grossProfit
+            - grossMargin
+          properties:
+            grossProfit:
+              type: number
+            grossMargin:
+              type: number
+    PriceBookItem:
+      type: object
+      required:
+        - id
+        - category
+        - item
+        - unit
+        - unitCost
+        - isDefault
+        - updatedAt
+      properties:
+        id:
+          type: number
+        category:
+          type: string
+        item:
+          type: string
+        unit:
+          type: string
+        unitCost:
+          type: number
+        isDefault:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    PriceBookItemUpdate:
+      type: object
+      required:
+        - unitCost
+      properties:
+        unitCost:
+          type: number
+    CompanySettings:
+      type: object
+      required:
+        - companyName
+        - laborRate
+        - materialMarkup
+        - targetMargin
+        - defaultTaxRate
+      properties:
+        companyName:
+          type: string
+        laborRate:
+          type: number
+        materialMarkup:
+          type: number
+        targetMargin:
+          type: number
+        defaultTaxRate:
+          type: number
+    CompanySettingsUpdate:
+      type: object
+      properties:
+        companyName:
+          type: string
+        laborRate:
+          type: number
+        materialMarkup:
+          type: number
+        targetMargin:
+          type: number
+        defaultTaxRate:
+          type: number
 

@@ -1,0 +1,1 @@
+- [Orval Zod compatibility](orval-zod-compatibility.md) — OpenAPI integer/email formats generate helpers unavailable in the current shared Zod version.

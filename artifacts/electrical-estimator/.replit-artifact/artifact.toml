@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Electrical Estimator"
+description = "A private estimating and quote-building workspace for electrical contractors, starting with New Quote and an EV Charger Builder. Includes reusable estimating concepts, company price book settings, transparent material and labor calculations, manual overrides, and proposal-ready descriptions."
+version = "1.0.0"
+id = "artifacts/electrical-estimator"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20144
+
+[services.development]
+run = "pnpm --filter @workspace/electrical-estimator run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/electrical-estimator", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/electrical-estimator/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20144"
+BASE_PATH = "/"
