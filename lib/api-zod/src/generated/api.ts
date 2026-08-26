@@ -927,6 +927,7 @@ export const UpdatePriceBookItemResponse = zod.object({
  */
 export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
+  "laborRate": zod.number().describe('Legacy alias for residentialLaborSellRate.'),
   "residentialLaborSellRate": zod.number(),
   "commercialLaborSellRate": zod.number(),
   "loadedLaborCost": zod.number(),
@@ -941,6 +942,7 @@ export const GetSettingsResponse = zod.object({
  */
 export const UpdateSettingsBody = zod.object({
   "companyName": zod.string().optional(),
+  "laborRate": zod.number().optional().describe('Legacy alias for residentialLaborSellRate.'),
   "residentialLaborSellRate": zod.number().optional(),
   "commercialLaborSellRate": zod.number().optional(),
   "loadedLaborCost": zod.number().optional(),
@@ -951,6 +953,7 @@ export const UpdateSettingsBody = zod.object({
 
 export const UpdateSettingsResponse = zod.object({
   "companyName": zod.string(),
+  "laborRate": zod.number().describe('Legacy alias for residentialLaborSellRate.'),
   "residentialLaborSellRate": zod.number(),
   "commercialLaborSellRate": zod.number(),
   "loadedLaborCost": zod.number(),

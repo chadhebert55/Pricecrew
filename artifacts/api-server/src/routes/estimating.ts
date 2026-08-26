@@ -158,6 +158,7 @@ async function calculateEstimate(
       amperage: priceBookItemsTable.amperage,
       poleCount: priceBookItemsTable.poleCount,
       protectionType: priceBookItemsTable.protectionType,
+      isDefault: priceBookItemsTable.isDefault,
     })
     .from(priceBookItemsTable)
     .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID));
@@ -492,6 +493,7 @@ router.get("/settings", async (_req, res): Promise<void> => {
   res.json(
     GetSettingsResponse.parse({
       companyName: company?.name ?? "Starter Electrical Co.",
+      laborRate: settings.residentialLaborSellRate,
       residentialLaborSellRate: settings.residentialLaborSellRate,
       commercialLaborSellRate: settings.commercialLaborSellRate,
       loadedLaborCost: settings.loadedLaborCost,
@@ -510,6 +512,10 @@ router.patch("/settings", async (req, res): Promise<void> => {
   }
 
   const currentSettings = await companySettings();
+  const residentialLaborSellRate =
+    parsed.data.residentialLaborSellRate ??
+    parsed.data.laborRate ??
+    currentSettings.residentialLaborSellRate;
   if (parsed.data.companyName !== undefined) {
     await db
       .update(companiesTable)
@@ -520,9 +526,8 @@ router.patch("/settings", async (req, res): Promise<void> => {
   const [settings] = await db
     .update(companySettingsTable)
     .set({
-      residentialLaborSellRate:
-        parsed.data.residentialLaborSellRate ??
-        currentSettings.residentialLaborSellRate,
+      laborRate: residentialLaborSellRate,
+      residentialLaborSellRate,
       commercialLaborSellRate:
         parsed.data.commercialLaborSellRate ??
         currentSettings.commercialLaborSellRate,
@@ -547,6 +552,7 @@ router.patch("/settings", async (req, res): Promise<void> => {
   res.json(
     UpdateSettingsResponse.parse({
       companyName: company?.name ?? "Starter Electrical Co.",
+      laborRate: settings.residentialLaborSellRate,
       residentialLaborSellRate: settings.residentialLaborSellRate,
       commercialLaborSellRate: settings.commercialLaborSellRate,
       loadedLaborCost: settings.loadedLaborCost,

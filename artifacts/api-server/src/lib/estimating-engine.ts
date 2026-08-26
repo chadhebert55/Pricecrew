@@ -18,6 +18,7 @@ export type PriceBookItem = {
   amperage: number | null;
   poleCount: number | null;
   protectionType: string | null;
+  isDefault: boolean;
 };
 
 export type EstimatingSettings = {
@@ -31,22 +32,6 @@ export type EstimatingSettings = {
 type EstimateResult = {
   assembly: AssemblyLineRecord[];
   pricing: PricingRecord;
-};
-
-const starterCosts: Record<string, number> = {
-  "#8 copper THHN": 2.4,
-  "#10 copper grounding conductor": 1.1,
-  "#8/2 SER cable": 3.85,
-  "1 in. EMT with fittings": 5.25,
-  "1 in. PVC with fittings": 4.2,
-  "NEMA 14-50 receptacle": 38,
-  "NEMA 6-50 receptacle": 34,
-  "EV charger": 599,
-  "local disconnect": 80,
-  "load management device": 550,
-  "whole-home surge protection": 85,
-  "panel modification allowance": 250,
-  "permit allowance": 125,
 };
 
 function normalized(value: string) {
@@ -68,29 +53,21 @@ function unitCost(
   pricingWarnings: string[],
 ): { value: number; source: string } {
   const match = priceBook.find(
-    (item) => normalized(item.item) === normalized(key),
+    (item) =>
+      normalized(item.item) === normalized(key) &&
+      !item.isDefault &&
+      !normalized(item.item).startsWith("unverified "),
   );
   if (match && Number.isFinite(match.unitCost) && match.unitCost > 0) {
     return { value: match.unitCost, source: catalogSource(match) };
   }
 
-  const starterCost = starterCosts[key];
-  if (starterCost !== undefined) {
-    pricingWarnings.push(
-      `Pricing for "${key}" is not available in the company price book; the starter value was used. Confirm the cost before sending.`,
-    );
-    return {
-      value: starterCost,
-      source: "Default starter value — confirm before sending",
-    };
-  }
-
   pricingWarnings.push(
-    `No price is available for "${key}". This material is currently excluded from the estimate until a cost is added.`,
+    `No verified price is available for "${key}". This material is unresolved and excluded from material cost until a sourced catalog item is added.`,
   );
   return {
     value: 0,
-    source: "Missing price — add to company price book",
+    source: "Unresolved — no verified catalog price",
   };
 }
 
@@ -302,7 +279,7 @@ export function calculateEvChargerEstimate(
     addLine(assembly, {
       id: "ser",
       category: "Cable",
-      description: "#8/2 SER cable — standard 50A starter default",
+      description: "#8/2 SER cable — verify conductor sizing and route",
       quantity: routeLength * quantity,
       unit: "ft",
       unitCost: ser.value,
@@ -667,11 +644,25 @@ export function calculateKitchenEstimate(
     ["dishwasherCircuits", "Unverified allowance — dishwasher circuit materials", "Dishwasher circuit allowance — exact breaker/conductor unresolved", "Circuit"],
     ["disposalCircuits", "Unverified allowance — disposal circuit materials", "Disposal circuit allowance — exact breaker/conductor unresolved", "Circuit"],
     ["gasRangeCircuits", "Unverified allowance — gas range circuit materials", "Gas range circuit allowance — exact breaker/conductor unresolved", "Circuit"],
-    ["electricRangeCircuits", "Unverified allowance — electric range circuit materials", "Electric range circuit allowance — exact breaker/conductor unresolved", "Circuit"],
     ["additionalDedicatedCircuits", "Unverified allowance — additional dedicated circuit materials", "Additional dedicated circuit allowance — exact breaker/conductor unresolved", "Circuit"],
   ];
   for (const [field, key, description, category] of circuitItems) {
     addPricedItem(field, category, key, description, inputs[field] as number);
+  }
+  if (inputs.electricRangeCircuits > 0) {
+    addLine(assembly, {
+      id: "electricRangeCircuits",
+      category: "Circuit",
+      description:
+        "Electric range breaker and conductor — unresolved pending appliance specification",
+      quantity: inputs.electricRangeCircuits,
+      unit: "circuit",
+      unitCost: 0,
+      source: "Unresolved heavy-appliance assembly — no material substituted",
+    });
+    pricingWarnings.push(
+      "Electric-range breaker and conductor are unresolved and excluded from material cost until a verified heavy-appliance assembly is selected.",
+    );
   }
 
   addPricedItem(

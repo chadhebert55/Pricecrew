@@ -8,6 +8,11 @@
 
 export interface CompanySettingsUpdate {
   companyName?: string;
+  /**
+     * Legacy alias for residentialLaborSellRate.
+     * @deprecated
+     */
+  laborRate?: number;
   residentialLaborSellRate?: number;
   commercialLaborSellRate?: number;
   loadedLaborCost?: number;
