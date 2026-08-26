@@ -60,6 +60,37 @@ export interface EvChargerInputs {
   notes: string;
 }
 
+export type BathroomInputsCircuitOption = typeof BathroomInputsCircuitOption[keyof typeof BathroomInputsCircuitOption];
+
+
+export const BathroomInputsCircuitOption = {
+  New_dedicated_circuit: 'New dedicated circuit',
+  Reuse_existing_circuit: 'Reuse existing circuit',
+} as const;
+
+export interface BathroomInputs {
+  /** @minimum 0 */
+  gfciReceptacles: number;
+  /** @minimum 0 */
+  additionalReceptacles: number;
+  /** @minimum 0 */
+  vanityLights: number;
+  /** @minimum 0 */
+  recessedLights: number;
+  /** @minimum 0 */
+  exhaustFans: number;
+  /** @minimum 0 */
+  fanLights: number;
+  /** @minimum 0 */
+  fanLightHeatUnits: number;
+  heatedFloorCircuit: boolean;
+  /** @minimum 0 */
+  additionalSwitches: number;
+  circuitOption: BathroomInputsCircuitOption;
+  customerSuppliedFixtures: boolean;
+  notes: string;
+}
+
 export interface AssemblyLine {
   id: string;
   category: string;
@@ -92,7 +123,7 @@ export type PricingSummary = PricingInput & {
 export type Quote = QuoteSummary & ({
   /** @nullable */
   customerEmail: string | null;
-  jobInputs: EvChargerInputs;
+  jobInputs: EvChargerInputs | BathroomInputs;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;
@@ -107,14 +138,34 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: string;
-  jobInputs: EvChargerInputs;
+  jobInputs: EvChargerInputs | BathroomInputs;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  laborOverride?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sellingPriceOverride?: number | null;
   /** @minLength 1 */
   proposalDescription: string;
 }
 
 export interface QuotePreviewInput {
   module: string;
-  jobInputs: EvChargerInputs;
+  jobInputs: EvChargerInputs | BathroomInputs;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  laborOverride?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sellingPriceOverride?: number | null;
 }
 
 export interface EstimatePreview {
@@ -137,6 +188,22 @@ export interface PriceBookItem {
   item: string;
   unit: string;
   unitCost: number;
+  /** @nullable */
+  supplier?: string | null;
+  /** @nullable */
+  manufacturer?: string | null;
+  /** @nullable */
+  manufacturerPartNumber?: string | null;
+  /** @nullable */
+  supplierSku?: string | null;
+  /** @nullable */
+  sourceDate?: string | null;
+  /** @nullable */
+  amperage?: number | null;
+  /** @nullable */
+  poleCount?: number | null;
+  /** @nullable */
+  protectionType?: string | null;
   isDefault: boolean;
   updatedAt: string;
 }

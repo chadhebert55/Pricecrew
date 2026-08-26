@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AssemblyLine } from './assemblyLine';
+import type { BathroomInputs } from './bathroomInputs';
 import type { EvChargerInputs } from './evChargerInputs';
 import type { PricingSummary } from './pricingSummary';
 import type { QuoteSummary } from './quoteSummary';
@@ -13,7 +14,7 @@ import type { QuoteSummary } from './quoteSummary';
 export type Quote = QuoteSummary & ({
   /** @nullable */
   customerEmail: string | null;
-  jobInputs: EvChargerInputs;
+  jobInputs: EvChargerInputs | BathroomInputs;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;

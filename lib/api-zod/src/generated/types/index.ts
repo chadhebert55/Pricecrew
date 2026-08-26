@@ -7,6 +7,8 @@
  */
 
 export * from './assemblyLine';
+export * from './bathroomInputs';
+export * from './bathroomInputsCircuitOption';
 export * from './companySettings';
 export * from './companySettingsUpdate';
 export * from './dashboardSummary';

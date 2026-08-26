@@ -12,6 +12,22 @@ export interface PriceBookItem {
   item: string;
   unit: string;
   unitCost: number;
+  /** @nullable */
+  supplier?: string | null;
+  /** @nullable */
+  manufacturer?: string | null;
+  /** @nullable */
+  manufacturerPartNumber?: string | null;
+  /** @nullable */
+  supplierSku?: string | null;
+  /** @nullable */
+  sourceDate?: string | null;
+  /** @nullable */
+  amperage?: number | null;
+  /** @nullable */
+  poleCount?: number | null;
+  /** @nullable */
+  protectionType?: string | null;
   isDefault: boolean;
   updatedAt: Date;
 }

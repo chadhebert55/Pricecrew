@@ -52,7 +52,8 @@ export function PriceBook() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead className="w-1/2">Item Description</TableHead>
+                        <TableHead>Item Description</TableHead>
+                        <TableHead>Catalog Match</TableHead>
                         <TableHead className="w-24">Unit</TableHead>
                         <TableHead className="text-right w-48">Unit Cost ($)</TableHead>
                         <TableHead className="w-24"></TableHead>
@@ -98,11 +99,20 @@ function PriceBookRow({ item, updateItem }: { item: any, updateItem: any }) {
   return (
     <TableRow>
       <TableCell className="font-medium">{item.item}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {item.manufacturer ? (
+          <div>
+            <div className="font-medium text-foreground">{item.manufacturer} {item.manufacturerPartNumber}</div>
+            <div>{item.supplier} · SKU {item.supplierSku}</div>
+            <div>{item.amperage}A · {item.poleCount}-pole · {item.protectionType}</div>
+          </div>
+        ) : "General item"}
+      </TableCell>
       <TableCell className="text-muted-foreground text-xs font-mono">{item.unit}</TableCell>
       <TableCell className="text-right">
         <Input 
           type="number" 
-          step="0.01" 
+          step="0.001"
           className="text-right h-8 font-mono"
           value={cost}
           onChange={(e) => {

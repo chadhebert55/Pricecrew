@@ -5,9 +5,20 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BathroomInputs } from './bathroomInputs';
 import type { EvChargerInputs } from './evChargerInputs';
 
 export interface QuotePreviewInput {
   module: string;
-  jobInputs: EvChargerInputs;
+  jobInputs: EvChargerInputs | BathroomInputs;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  laborOverride?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sellingPriceOverride?: number | null;
 }

@@ -31,7 +31,10 @@ import {
   type PricingRecord,
 } from "@workspace/db";
 import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
-import { calculateEvChargerEstimate } from "../lib/estimating-engine";
+import {
+  calculateBathroomEstimate,
+  calculateEvChargerEstimate,
+} from "../lib/estimating-engine";
 
 const router: IRouter = Router();
 
@@ -133,18 +136,41 @@ async function companySettings() {
 }
 
 async function calculateEstimate(
-  jobInputs: Parameters<typeof calculateEvChargerEstimate>[0],
+  module: string,
+  jobInputs:
+    | Parameters<typeof calculateEvChargerEstimate>[0]
+    | Parameters<typeof calculateBathroomEstimate>[0],
 ) {
   const settings = await companySettings();
   const priceBook = await db
     .select({
       item: priceBookItemsTable.item,
       unitCost: priceBookItemsTable.unitCost,
+      supplier: priceBookItemsTable.supplier,
+      manufacturer: priceBookItemsTable.manufacturer,
+      manufacturerPartNumber: priceBookItemsTable.manufacturerPartNumber,
+      supplierSku: priceBookItemsTable.supplierSku,
+      sourceDate: priceBookItemsTable.sourceDate,
+      amperage: priceBookItemsTable.amperage,
+      poleCount: priceBookItemsTable.poleCount,
+      protectionType: priceBookItemsTable.protectionType,
     })
     .from(priceBookItemsTable)
     .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID));
 
-  return calculateEvChargerEstimate(jobInputs, settings, priceBook);
+  if (module === "BATHROOM") {
+    return calculateBathroomEstimate(
+      jobInputs as Parameters<typeof calculateBathroomEstimate>[0],
+      settings,
+      priceBook,
+    );
+  }
+
+  return calculateEvChargerEstimate(
+    jobInputs as Parameters<typeof calculateEvChargerEstimate>[0],
+    settings,
+    priceBook,
+  );
 }
 
 router.get("/dashboard/summary", async (req, res): Promise<void> => {
@@ -229,12 +255,18 @@ router.post("/quotes", async (req, res): Promise<void> => {
         .returning()
     )[0];
 
-  const estimate = await calculateEstimate(parsed.data.jobInputs);
+  const estimate = await calculateEstimate(
+    parsed.data.module,
+    parsed.data.jobInputs,
+  );
   const quotes = await db
     .select({ id: quotesTable.id })
     .from(quotesTable)
     .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID));
-  const pricing = withProfit(estimate.pricing);
+  const pricing = withProfit(estimate.pricing, {
+    laborOverride: parsed.data.laborOverride,
+    sellingPriceOverride: parsed.data.sellingPriceOverride,
+  });
   const [quote] = await db
     .insert(quotesTable)
     .values({
@@ -271,8 +303,19 @@ router.post("/quotes/preview", async (req, res): Promise<void> => {
     return;
   }
 
-  const estimate = await calculateEstimate(parsed.data.jobInputs);
-  res.json(PreviewQuoteResponse.parse(estimate));
+  const estimate = await calculateEstimate(
+    parsed.data.module,
+    parsed.data.jobInputs,
+  );
+  res.json(
+    PreviewQuoteResponse.parse({
+      ...estimate,
+      pricing: withProfit(estimate.pricing, {
+        laborOverride: parsed.data.laborOverride,
+        sellingPriceOverride: parsed.data.sellingPriceOverride,
+      }),
+    }),
+  );
 });
 
 router.get("/quotes/:id", async (req, res): Promise<void> => {

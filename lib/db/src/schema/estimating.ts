@@ -32,6 +32,25 @@ export type EvChargerInputRecord = {
   notes: string;
 };
 
+export type BathroomInputRecord = {
+  gfciReceptacles: number;
+  additionalReceptacles: number;
+  vanityLights: number;
+  recessedLights: number;
+  exhaustFans: number;
+  fanLights: number;
+  fanLightHeatUnits: number;
+  heatedFloorCircuit: boolean;
+  additionalSwitches: number;
+  circuitOption: string;
+  customerSuppliedFixtures: boolean;
+  notes: string;
+};
+
+export type QuoteJobInputsRecord =
+  | EvChargerInputRecord
+  | BathroomInputRecord;
+
 export type AssemblyLineRecord = {
   id: string;
   category: string;
@@ -123,8 +142,16 @@ export const priceBookItemsTable = pgTable("price_book_items", {
   category: text("category").notNull(),
   item: text("item").notNull(),
   unit: text("unit").notNull(),
-  unitCost: numeric("unit_cost", { precision: 12, scale: 2, mode: "number" })
+  unitCost: numeric("unit_cost", { precision: 12, scale: 3, mode: "number" })
     .notNull(),
+  supplier: text("supplier"),
+  manufacturer: text("manufacturer"),
+  manufacturerPartNumber: text("manufacturer_part_number"),
+  supplierSku: text("supplier_sku"),
+  sourceDate: text("source_date"),
+  amperage: integer("amperage"),
+  poleCount: integer("pole_count"),
+  protectionType: text("protection_type"),
   isDefault: boolean("is_default").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
@@ -144,7 +171,7 @@ export const quotesTable = pgTable("quotes", {
   projectName: text("project_name").notNull(),
   module: text("module").notNull(),
   status: text("status").notNull().default("draft"),
-  jobInputs: jsonb("job_inputs").$type<EvChargerInputRecord>().notNull(),
+  jobInputs: jsonb("job_inputs").$type<QuoteJobInputsRecord>().notNull(),
   assembly: jsonb("assembly").$type<AssemblyLineRecord[]>().notNull(),
   pricing: jsonb("pricing").$type<PricingRecord>().notNull(),
   proposalDescription: text("proposal_description").notNull(),

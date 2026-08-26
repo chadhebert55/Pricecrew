@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   companiesTable,
   companySettingsTable,
@@ -206,6 +206,43 @@ async function seedEstimatorData(): Promise<void> {
         isDefault: true,
       },
     ]);
+  }
+
+  const [existingSiemensBreaker] = await db
+    .select()
+    .from(priceBookItemsTable)
+    .where(
+      and(
+        eq(priceBookItemsTable.companyId, company.id),
+        eq(priceBookItemsTable.supplierSku, "1101170"),
+      ),
+    )
+    .limit(1);
+
+  const siemensBreaker = {
+    companyId: company.id,
+    category: "Protection",
+    item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
+    unit: "ea",
+    unitCost: 151.702,
+    supplier: "Northeast Electrical",
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "ITE QF250A",
+    supplierSku: "1101170",
+    sourceDate: "2026-08-25",
+    amperage: 50,
+    poleCount: 2,
+    protectionType: "GFCI",
+    isDefault: false,
+  };
+
+  if (existingSiemensBreaker) {
+    await db
+      .update(priceBookItemsTable)
+      .set(siemensBreaker)
+      .where(eq(priceBookItemsTable.id, existingSiemensBreaker.id));
+  } else {
+    await db.insert(priceBookItemsTable).values(siemensBreaker);
   }
 
   const [existingQuote] = await db

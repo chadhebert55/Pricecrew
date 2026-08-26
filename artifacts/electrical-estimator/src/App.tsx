@@ -15,6 +15,7 @@ import { Shell } from '@/components/layout/shell';
 import { Dashboard } from '@/pages/dashboard';
 import { QuotesList } from '@/pages/quotes/index';
 import { NewQuote } from '@/pages/quotes/new';
+import { NewBathroomQuote } from '@/pages/quotes/new-bathroom';
 import { QuoteDetail } from '@/pages/quotes/detail';
 import { Builders } from '@/pages/builders';
 import { PriceBook } from '@/pages/price-book';
@@ -38,6 +39,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/quotes" component={QuotesList} />
           <Route path="/quotes/new" component={NewQuote} />
+          <Route path="/quotes/new/bathroom" component={NewBathroomQuote} />
           <Route path="/quotes/:id" component={QuoteDetail} />
           <Route path="/builders" component={Builders} />
           <Route path="/price-book" component={PriceBook} />

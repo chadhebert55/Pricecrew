@@ -293,7 +293,9 @@ components:
             customerEmail:
               type: ["string", "null"]
             jobInputs:
-              $ref: "#/components/schemas/EvChargerInputs"
+              oneOf:
+                - $ref: "#/components/schemas/EvChargerInputs"
+                - $ref: "#/components/schemas/BathroomInputs"
             assembly:
               type: array
               items:
@@ -325,7 +327,15 @@ components:
         module:
           type: string
         jobInputs:
-          $ref: "#/components/schemas/EvChargerInputs"
+          oneOf:
+            - $ref: "#/components/schemas/EvChargerInputs"
+            - $ref: "#/components/schemas/BathroomInputs"
+        laborOverride:
+          type: ["number", "null"]
+          minimum: 0
+        sellingPriceOverride:
+          type: ["number", "null"]
+          minimum: 0
         proposalDescription:
           type: string
           minLength: 1
@@ -338,7 +348,15 @@ components:
         module:
           type: string
         jobInputs:
-          $ref: "#/components/schemas/EvChargerInputs"
+          oneOf:
+            - $ref: "#/components/schemas/EvChargerInputs"
+            - $ref: "#/components/schemas/BathroomInputs"
+        laborOverride:
+          type: ["number", "null"]
+          minimum: 0
+        sellingPriceOverride:
+          type: ["number", "null"]
+          minimum: 0
     EstimatePreview:
       type: object
       required:
@@ -421,6 +439,57 @@ components:
           type: string
         difficulty:
           type: string
+        notes:
+          type: string
+    BathroomInputs:
+      type: object
+      required:
+        - gfciReceptacles
+        - additionalReceptacles
+        - vanityLights
+        - recessedLights
+        - exhaustFans
+        - fanLights
+        - fanLightHeatUnits
+        - heatedFloorCircuit
+        - additionalSwitches
+        - circuitOption
+        - customerSuppliedFixtures
+        - notes
+      properties:
+        gfciReceptacles:
+          type: number
+          minimum: 0
+        additionalReceptacles:
+          type: number
+          minimum: 0
+        vanityLights:
+          type: number
+          minimum: 0
+        recessedLights:
+          type: number
+          minimum: 0
+        exhaustFans:
+          type: number
+          minimum: 0
+        fanLights:
+          type: number
+          minimum: 0
+        fanLightHeatUnits:
+          type: number
+          minimum: 0
+        heatedFloorCircuit:
+          type: boolean
+        additionalSwitches:
+          type: number
+          minimum: 0
+        circuitOption:
+          type: string
+          enum:
+            - New dedicated circuit
+            - Reuse existing circuit
+        customerSuppliedFixtures:
+          type: boolean
         notes:
           type: string
     AssemblyLine:
@@ -519,6 +588,22 @@ components:
           type: string
         unitCost:
           type: number
+        supplier:
+          type: ["string", "null"]
+        manufacturer:
+          type: ["string", "null"]
+        manufacturerPartNumber:
+          type: ["string", "null"]
+        supplierSku:
+          type: ["string", "null"]
+        sourceDate:
+          type: ["string", "null"]
+        amperage:
+          type: ["number", "null"]
+        poleCount:
+          type: ["number", "null"]
+        protectionType:
+          type: ["string", "null"]
         isDefault:
           type: boolean
         updatedAt:

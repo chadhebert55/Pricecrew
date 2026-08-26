@@ -66,6 +66,26 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
  */
 
 
+export const createQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
+
+export const createQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
+
+export const createQuoteBodyJobInputsTwoVanityLightsMin = 0;
+
+export const createQuoteBodyJobInputsTwoRecessedLightsMin = 0;
+
+export const createQuoteBodyJobInputsTwoExhaustFansMin = 0;
+
+export const createQuoteBodyJobInputsTwoFanLightsMin = 0;
+
+export const createQuoteBodyJobInputsTwoFanLightHeatUnitsMin = 0;
+
+export const createQuoteBodyJobInputsTwoAdditionalSwitchesMin = 0;
+
+export const createQuoteBodyLaborOverrideMin = 0;
+
+export const createQuoteBodySellingPriceOverrideMin = 0;
+
 
 
 
@@ -74,7 +94,7 @@ export const CreateQuoteBody = zod.object({
   "customerEmail": zod.string().nullish(),
   "projectName": zod.string().min(1),
   "module": zod.string(),
-  "jobInputs": zod.object({
+  "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
   "circuitAmps": zod.string(),
@@ -94,9 +114,42 @@ export const CreateQuoteBody = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string()
-}),
+}),zod.object({
+  "gfciReceptacles": zod.number().min(createQuoteBodyJobInputsTwoGfciReceptaclesMin),
+  "additionalReceptacles": zod.number().min(createQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
+  "vanityLights": zod.number().min(createQuoteBodyJobInputsTwoVanityLightsMin),
+  "recessedLights": zod.number().min(createQuoteBodyJobInputsTwoRecessedLightsMin),
+  "exhaustFans": zod.number().min(createQuoteBodyJobInputsTwoExhaustFansMin),
+  "fanLights": zod.number().min(createQuoteBodyJobInputsTwoFanLightsMin),
+  "fanLightHeatUnits": zod.number().min(createQuoteBodyJobInputsTwoFanLightHeatUnitsMin),
+  "heatedFloorCircuit": zod.boolean(),
+  "additionalSwitches": zod.number().min(createQuoteBodyJobInputsTwoAdditionalSwitchesMin),
+  "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+})]),
+  "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).nullish(),
+  "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).nullish(),
   "proposalDescription": zod.string().min(1)
 })
+
+export const createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoVanityLightsMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoRecessedLightsMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoExhaustFansMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoFanLightsMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
+
+
 
 export const CreateQuoteResponse = zod.object({
   "id": zod.number(),
@@ -110,7 +163,7 @@ export const CreateQuoteResponse = zod.object({
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "customerEmail": zod.string().nullable(),
-  "jobInputs": zod.object({
+  "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
   "circuitAmps": zod.string(),
@@ -130,7 +183,20 @@ export const CreateQuoteResponse = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string()
-}),
+}),zod.object({
+  "gfciReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
+  "additionalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
+  "vanityLights": zod.number().min(createQuoteResponseTwoJobInputsTwoVanityLightsMin),
+  "recessedLights": zod.number().min(createQuoteResponseTwoJobInputsTwoRecessedLightsMin),
+  "exhaustFans": zod.number().min(createQuoteResponseTwoJobInputsTwoExhaustFansMin),
+  "fanLights": zod.number().min(createQuoteResponseTwoJobInputsTwoFanLightsMin),
+  "fanLightHeatUnits": zod.number().min(createQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
+  "heatedFloorCircuit": zod.boolean(),
+  "additionalSwitches": zod.number().min(createQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+})]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
   "category": zod.string(),
@@ -162,9 +228,31 @@ export const CreateQuoteResponse = zod.object({
 /**
  * @summary Preview an authoritative estimate
  */
+export const previewQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
+
+export const previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
+
+export const previewQuoteBodyJobInputsTwoVanityLightsMin = 0;
+
+export const previewQuoteBodyJobInputsTwoRecessedLightsMin = 0;
+
+export const previewQuoteBodyJobInputsTwoExhaustFansMin = 0;
+
+export const previewQuoteBodyJobInputsTwoFanLightsMin = 0;
+
+export const previewQuoteBodyJobInputsTwoFanLightHeatUnitsMin = 0;
+
+export const previewQuoteBodyJobInputsTwoAdditionalSwitchesMin = 0;
+
+export const previewQuoteBodyLaborOverrideMin = 0;
+
+export const previewQuoteBodySellingPriceOverrideMin = 0;
+
+
+
 export const PreviewQuoteBody = zod.object({
   "module": zod.string(),
-  "jobInputs": zod.object({
+  "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
   "circuitAmps": zod.string(),
@@ -184,7 +272,22 @@ export const PreviewQuoteBody = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string()
-})
+}),zod.object({
+  "gfciReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoGfciReceptaclesMin),
+  "additionalReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
+  "vanityLights": zod.number().min(previewQuoteBodyJobInputsTwoVanityLightsMin),
+  "recessedLights": zod.number().min(previewQuoteBodyJobInputsTwoRecessedLightsMin),
+  "exhaustFans": zod.number().min(previewQuoteBodyJobInputsTwoExhaustFansMin),
+  "fanLights": zod.number().min(previewQuoteBodyJobInputsTwoFanLightsMin),
+  "fanLightHeatUnits": zod.number().min(previewQuoteBodyJobInputsTwoFanLightHeatUnitsMin),
+  "heatedFloorCircuit": zod.boolean(),
+  "additionalSwitches": zod.number().min(previewQuoteBodyJobInputsTwoAdditionalSwitchesMin),
+  "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+})]),
+  "laborOverride": zod.number().min(previewQuoteBodyLaborOverrideMin).nullish(),
+  "sellingPriceOverride": zod.number().min(previewQuoteBodySellingPriceOverrideMin).nullish()
 })
 
 export const PreviewQuoteResponse = zod.object({
@@ -221,6 +324,24 @@ export const GetQuoteParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoVanityLightsMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoRecessedLightsMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoExhaustFansMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoFanLightsMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
+
+
+
 export const GetQuoteResponse = zod.object({
   "id": zod.number(),
   "quoteNumber": zod.string(),
@@ -233,7 +354,7 @@ export const GetQuoteResponse = zod.object({
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "customerEmail": zod.string().nullable(),
-  "jobInputs": zod.object({
+  "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
   "circuitAmps": zod.string(),
@@ -253,7 +374,20 @@ export const GetQuoteResponse = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string()
-}),
+}),zod.object({
+  "gfciReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
+  "additionalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
+  "vanityLights": zod.number().min(getQuoteResponseTwoJobInputsTwoVanityLightsMin),
+  "recessedLights": zod.number().min(getQuoteResponseTwoJobInputsTwoRecessedLightsMin),
+  "exhaustFans": zod.number().min(getQuoteResponseTwoJobInputsTwoExhaustFansMin),
+  "fanLights": zod.number().min(getQuoteResponseTwoJobInputsTwoFanLightsMin),
+  "fanLightHeatUnits": zod.number().min(getQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
+  "heatedFloorCircuit": zod.boolean(),
+  "additionalSwitches": zod.number().min(getQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+})]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
   "category": zod.string(),
@@ -296,6 +430,24 @@ export const UpdateQuoteBody = zod.object({
   "proposalDescription": zod.string().optional()
 })
 
+export const updateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoVanityLightsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoRecessedLightsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoExhaustFansMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoFanLightsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
+
+
+
 export const UpdateQuoteResponse = zod.object({
   "id": zod.number(),
   "quoteNumber": zod.string(),
@@ -308,7 +460,7 @@ export const UpdateQuoteResponse = zod.object({
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "customerEmail": zod.string().nullable(),
-  "jobInputs": zod.object({
+  "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
   "circuitAmps": zod.string(),
@@ -328,7 +480,20 @@ export const UpdateQuoteResponse = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string()
-}),
+}),zod.object({
+  "gfciReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
+  "additionalReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
+  "vanityLights": zod.number().min(updateQuoteResponseTwoJobInputsTwoVanityLightsMin),
+  "recessedLights": zod.number().min(updateQuoteResponseTwoJobInputsTwoRecessedLightsMin),
+  "exhaustFans": zod.number().min(updateQuoteResponseTwoJobInputsTwoExhaustFansMin),
+  "fanLights": zod.number().min(updateQuoteResponseTwoJobInputsTwoFanLightsMin),
+  "fanLightHeatUnits": zod.number().min(updateQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
+  "heatedFloorCircuit": zod.boolean(),
+  "additionalSwitches": zod.number().min(updateQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+})]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
   "category": zod.string(),
@@ -366,6 +531,14 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "item": zod.string(),
   "unit": zod.string(),
   "unitCost": zod.number(),
+  "supplier": zod.string().nullish(),
+  "manufacturer": zod.string().nullish(),
+  "manufacturerPartNumber": zod.string().nullish(),
+  "supplierSku": zod.string().nullish(),
+  "sourceDate": zod.string().nullish(),
+  "amperage": zod.number().nullish(),
+  "poleCount": zod.number().nullish(),
+  "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
   "updatedAt": zod.coerce.date()
 })
@@ -389,6 +562,14 @@ export const UpdatePriceBookItemResponse = zod.object({
   "item": zod.string(),
   "unit": zod.string(),
   "unitCost": zod.number(),
+  "supplier": zod.string().nullish(),
+  "manufacturer": zod.string().nullish(),
+  "manufacturerPartNumber": zod.string().nullish(),
+  "supplierSku": zod.string().nullish(),
+  "sourceDate": zod.string().nullish(),
+  "amperage": zod.number().nullish(),
+  "poleCount": zod.number().nullish(),
+  "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
   "updatedAt": zod.coerce.date()
 })

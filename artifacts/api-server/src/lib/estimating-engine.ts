@@ -1,15 +1,24 @@
 import type {
   AssemblyLineRecord,
+  BathroomInputRecord,
   EvChargerInputRecord,
   PricingRecord,
 } from "@workspace/db";
 
-type PriceBookItem = {
+export type PriceBookItem = {
   item: string;
   unitCost: number;
+  supplier: string | null;
+  manufacturer: string | null;
+  manufacturerPartNumber: string | null;
+  supplierSku: string | null;
+  sourceDate: string | null;
+  amperage: number | null;
+  poleCount: number | null;
+  protectionType: string | null;
 };
 
-type EstimatingSettings = {
+export type EstimatingSettings = {
   laborRate: number;
   materialMarkup: number;
   targetMargin: number;
@@ -21,7 +30,6 @@ type EstimateResult = {
 };
 
 const starterCosts: Record<string, number> = {
-  "2-pole 50A breaker": 52,
   "#8 copper THHN": 2.4,
   "#10 copper grounding conductor": 1.1,
   "#8/2 SER cable": 3.85,
@@ -35,6 +43,16 @@ const starterCosts: Record<string, number> = {
   "whole-home surge protection": 85,
   "panel modification allowance": 250,
   "permit allowance": 125,
+  "GFCI receptacle": 24,
+  "standard receptacle": 6,
+  "vanity light allowance": 95,
+  "recessed light": 38,
+  "exhaust fan": 145,
+  "fan/light": 210,
+  "fan/light/heat": 360,
+  "heated floor circuit allowance": 195,
+  "single-pole switch": 9,
+  "bathroom circuit materials": 135,
 };
 
 function normalized(value: string) {
@@ -79,8 +97,99 @@ function addLine(
 ) {
   assembly.push({
     ...line,
-    extendedCost: Number((line.quantity * line.unitCost).toFixed(2)),
+    extendedCost: Number((line.quantity * line.unitCost).toFixed(3)),
   });
+}
+
+function resolveBreaker(
+  inputs: EvChargerInputRecord,
+  circuitAmps: number,
+  priceBook: PriceBookItem[],
+  pricingWarnings: string[],
+) {
+  const poleCount = /single|1[- ]?pole/i.test(inputs.breakerRequirement) ? 1 : 2;
+  const protectionType = /gfci/i.test(inputs.breakerRequirement)
+    ? "GFCI"
+    : "Standard";
+  const match = priceBook.find(
+    (item) =>
+      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
+      item.amperage === circuitAmps &&
+      item.poleCount === poleCount &&
+      normalized(item.protectionType ?? "") === normalized(protectionType) &&
+      Number.isFinite(item.unitCost) &&
+      item.unitCost > 0,
+  );
+
+  if (!match) {
+    pricingWarnings.push(
+      `Unresolved breaker: no exact ${inputs.panelManufacturer} ${circuitAmps}A ${poleCount}-pole ${protectionType} breaker is available in the company price book. No generic breaker cost was substituted.`,
+    );
+    return {
+      value: 0,
+      description: `${poleCount}-pole ${circuitAmps}A ${protectionType} breaker — unresolved`,
+      source: "Unresolved exact breaker — add compatible catalog item",
+    };
+  }
+
+  const part = match.manufacturerPartNumber
+    ? ` ${match.manufacturerPartNumber}`
+    : "";
+  const sourceParts = [
+    match.supplier,
+    match.supplierSku ? `SKU ${match.supplierSku}` : null,
+    match.sourceDate,
+  ].filter(Boolean);
+
+  return {
+    value: match.unitCost,
+    description: `${poleCount}-pole ${circuitAmps}A ${protectionType} breaker — ${match.manufacturer}${part}`,
+    source: sourceParts.length > 0
+      ? sourceParts.join(" • ")
+      : "Company price book",
+  };
+}
+
+function finalizeEstimate(
+  assembly: AssemblyLineRecord[],
+  laborHours: number,
+  settings: EstimatingSettings,
+  pricingWarnings: string[],
+): EstimateResult {
+  const materialCost = Number(
+    assembly.reduce((sum, line) => sum + line.extendedCost, 0).toFixed(2),
+  );
+  const laborCost = Number((laborHours * settings.laborRate).toFixed(2));
+  const costWithMarkup = materialCost * (1 + settings.materialMarkup) + laborCost;
+  const targetMarginPrice =
+    settings.targetMargin > 0 && settings.targetMargin < 1
+      ? (materialCost + laborCost) / (1 - settings.targetMargin)
+      : costWithMarkup;
+  const calculatedSellingPrice = Number(
+    Math.max(costWithMarkup, targetMarginPrice).toFixed(2),
+  );
+  const grossProfit = Number(
+    (calculatedSellingPrice - materialCost - laborCost).toFixed(2),
+  );
+
+  return {
+    assembly,
+    pricing: {
+      materialCost,
+      laborCost,
+      materialMarkup: settings.materialMarkup,
+      calculatedSellingPrice,
+      finalSellingPrice: calculatedSellingPrice,
+      laborOverride: null,
+      sellingPriceOverride: null,
+      grossProfit,
+      grossMargin:
+        calculatedSellingPrice > 0
+          ? Number((grossProfit / calculatedSellingPrice).toFixed(4))
+          : 0,
+      pricingWarnings,
+    },
+  };
 }
 
 export function calculateEvChargerEstimate(
@@ -101,15 +210,16 @@ export function calculateEvChargerEstimate(
     inputs.difficulty === "Extreme" ? 2.2 : inputs.difficulty === "Hard" ? 1.5 : 1;
   const accessHours = /limited|occupied|difficult/i.test(inputs.access) ? 0.75 : 0;
 
-  const breaker = unitCost(
-    circuitAmps === 50 ? "2-pole 50A breaker" : "2-pole 50A breaker",
+  const breaker = resolveBreaker(
+    inputs,
+    circuitAmps,
     priceBook,
     pricingWarnings,
   );
   addLine(assembly, {
     id: "breaker",
     category: "Protection",
-    description: `2-pole ${circuitAmps}A breaker`,
+    description: breaker.description,
     quantity,
     unit: "ea",
     unitCost: breaker.value,
@@ -276,41 +386,151 @@ export function calculateEvChargerEstimate(
     });
   }
 
-  const materialCost = Number(
-    assembly.reduce((sum, line) => sum + line.extendedCost, 0).toFixed(2),
-  );
   const baseHours = 2 + routeLength / 30 + quantity * 0.5 + accessHours;
-  const laborCost = Number(
-    (baseHours * difficultyMultiplier * settings.laborRate).toFixed(2),
+  return finalizeEstimate(
+    assembly,
+    baseHours * difficultyMultiplier,
+    settings,
+    pricingWarnings,
   );
-  const costWithMarkup = materialCost * (1 + settings.materialMarkup) + laborCost;
-  const targetMarginPrice =
-    settings.targetMargin > 0 && settings.targetMargin < 1
-      ? (materialCost + laborCost) / (1 - settings.targetMargin)
-      : costWithMarkup;
-  const calculatedSellingPrice = Number(
-    Math.max(costWithMarkup, targetMarginPrice).toFixed(2),
+}
+
+export function calculateBathroomEstimate(
+  inputs: BathroomInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+
+  const addPricedItem = (
+    id: string,
+    category: string,
+    key: string,
+    description: string,
+    quantity: number,
+    customerSupplied = false,
+  ) => {
+    const safeQuantity = Math.max(0, Number(quantity) || 0);
+    if (safeQuantity === 0) return;
+    const price = customerSupplied
+      ? { value: 0, source: "Customer supplied fixture" }
+      : unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit: "ea",
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  addPricedItem(
+    "gfci-receptacles",
+    "Devices",
+    "GFCI receptacle",
+    "20A GFCI receptacle",
+    inputs.gfciReceptacles,
   );
-  const grossProfit = Number(
-    (calculatedSellingPrice - materialCost - laborCost).toFixed(2),
+  addPricedItem(
+    "additional-receptacles",
+    "Devices",
+    "standard receptacle",
+    "Additional receptacle downstream of GFCI",
+    inputs.additionalReceptacles,
+  );
+  addPricedItem(
+    "vanity-lights",
+    "Lighting",
+    "vanity light allowance",
+    "Vanity light",
+    inputs.vanityLights,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "recessed-lights",
+    "Lighting",
+    "recessed light",
+    "Recessed light",
+    inputs.recessedLights,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "exhaust-fans",
+    "Ventilation",
+    "exhaust fan",
+    "Exhaust fan with new switch leg",
+    inputs.exhaustFans,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "fan-lights",
+    "Ventilation",
+    "fan/light",
+    "Combination fan/light",
+    inputs.fanLights,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "fan-light-heat",
+    "Ventilation",
+    "fan/light/heat",
+    "Combination fan/light/heat",
+    inputs.fanLightHeatUnits,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "additional-switches",
+    "Devices",
+    "single-pole switch",
+    "Additional switch",
+    inputs.additionalSwitches,
   );
 
-  return {
-    assembly,
-    pricing: {
-      materialCost,
-      laborCost,
-      materialMarkup: settings.materialMarkup,
-      calculatedSellingPrice,
-      finalSellingPrice: calculatedSellingPrice,
-      laborOverride: null,
-      sellingPriceOverride: null,
-      grossProfit,
-      grossMargin:
-        calculatedSellingPrice > 0
-          ? Number((grossProfit / calculatedSellingPrice).toFixed(4))
-          : 0,
-      pricingWarnings,
-    },
-  };
+  if (inputs.heatedFloorCircuit) {
+    addPricedItem(
+      "heated-floor",
+      "Circuit",
+      "heated floor circuit allowance",
+      "Dedicated heated-floor circuit allowance",
+      1,
+    );
+  }
+
+  if (/new/i.test(inputs.circuitOption)) {
+    addPricedItem(
+      "bathroom-circuit",
+      "Circuit",
+      "bathroom circuit materials",
+      "New dedicated bathroom circuit materials",
+      1,
+    );
+  } else {
+    pricingWarnings.push(
+      "Existing bathroom circuit reuse must be field-verified for capacity and applicable protection requirements before the quote is sent.",
+    );
+  }
+
+  if (inputs.fanLightHeatUnits > 0 || inputs.heatedFloorCircuit) {
+    pricingWarnings.push(
+      "Dedicated-circuit and control requirements for heat-producing bathroom equipment must be verified against the selected equipment and field conditions.",
+    );
+  }
+
+  const laborHours =
+    1.5 +
+    inputs.gfciReceptacles * 0.75 +
+    inputs.additionalReceptacles * 0.55 +
+    inputs.vanityLights * 0.8 +
+    inputs.recessedLights * 0.9 +
+    inputs.exhaustFans * 2.25 +
+    inputs.fanLights * 2.5 +
+    inputs.fanLightHeatUnits * 3.5 +
+    (inputs.heatedFloorCircuit ? 3 : 0) +
+    inputs.additionalSwitches * 0.5 +
+    (/new/i.test(inputs.circuitOption) ? 3 : 0);
+
+  return finalizeEstimate(assembly, laborHours, settings, pricingWarnings);
 }

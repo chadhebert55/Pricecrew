@@ -1,11 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight } from "lucide-react"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves } from "lucide-react"
 import { Link } from "wouter"
 
 export function Builders() {
   const modules = [
+    {
+      id: "bathroom",
+      title: "Bathroom Electrical",
+      description: "Build bathroom scopes with receptacles, lighting, ventilation, switching, heated floors, circuit options, and editable overrides.",
+      icon: Waves,
+      status: "live",
+      href: "/quotes/new/bathroom"
+    },
     {
       id: "ev-charger",
       title: "EV Charger Installation",
