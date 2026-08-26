@@ -157,7 +157,6 @@ export function NewKitchenQuote() {
         { key: "countertopReceptacles", label: "Countertop receptacles", help: "GFCI countertop devices" },
         { key: "usbReceptacles", label: "USB receptacles", help: "USB charging devices" },
         { key: "threeWayOptions", label: "3-way options", help: "Paired 3-way controls" },
-        { key: "fourWayLocations", label: "4-way locations", help: "Additional locations in a multi-location lighting control setup" },
         { key: "dimmers", label: "Dimmers", help: "Lighting dimmer controls" },
       ],
     },
@@ -213,86 +212,6 @@ export function NewKitchenQuote() {
                 <CardDescription>Configure appliance circuits, devices, lighting, controls, and common wiring.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8 pt-6">
-                <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Requested branch circuits</h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border bg-primary/5 p-4 md:col-span-2">
-                      <label className="flex items-start gap-3">
-                        <Checkbox checked={inputs.includeLightingCircuit === true} onCheckedChange={(checked) => setInputs((current) => ({ ...current, includeLightingCircuit: checked === true, lightingCircuitAmperage: 15 }))} />
-                        <span>
-                          <span className="block font-semibold">15A Kitchen Lighting Circuit</span>
-                          <span className="text-xs text-muted-foreground">Uses the selected panel manufacturer’s contractor-configured 15A breaker and the editable 14/2 NM-B price-book row.</span>
-                        </span>
-                      </label>
-                      {inputs.includeLightingCircuit && (
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                          <div className="space-y-2">
-                            <Label>Lighting Circuit</Label>
-                            <div className="flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium">15A / 1-pole / 14/2 NM-B</div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="kitchen-lighting-footage">14/2 Footage (FT)</Label>
-                            <Input id="kitchen-lighting-footage" type="number" min="0" value={inputs.lightingCircuitFootage ?? 0} onChange={(event) => setNumber("lightingCircuitFootage", event.target.value)} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="kitchen-lighting-labor">Lighting Circuit Labor (HR)</Label>
-                            <Input id="kitchen-lighting-labor" type="number" min="0" step="0.25" value={inputs.lightingCircuitLaborHours ?? 0} onChange={(event) => setNumber("lightingCircuitLaborHours", event.target.value)} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {([
-                      {
-                        enabledKey: "smallApplianceCircuit1",
-                        footageKey: "smallApplianceCircuit1Footage",
-                        laborKey: "smallApplianceCircuit1LaborHours",
-                        title: "Small-Appliance Circuit 1",
-                        help: "Independently include and adjust Circuit 1.",
-                      },
-                      {
-                        enabledKey: "smallApplianceCircuit2",
-                        footageKey: "smallApplianceCircuit2Footage",
-                        laborKey: "smallApplianceCircuit2LaborHours",
-                        title: "Small-Appliance Circuit 2",
-                        help: "Independently include and adjust Circuit 2.",
-                      },
-                      {
-                        enabledKey: "microwaveCircuit",
-                        footageKey: "microwaveCircuitFootage",
-                        laborKey: "microwaveCircuitLaborHours",
-                        title: "Dedicated Microwave Circuit",
-                        help: "Independent microwave branch-circuit scope.",
-                      },
-                    ] as const).map((circuit) => {
-                      const enabled = inputs[circuit.enabledKey] === true
-                      return (
-                        <div key={circuit.enabledKey} className="rounded-lg border bg-muted/15 p-4">
-                          <label className="flex items-start gap-3">
-                            <Checkbox checked={enabled} onCheckedChange={(checked) => setInputs((current) => ({ ...current, [circuit.enabledKey]: checked === true }))} />
-                            <span>
-                              <span className="block font-semibold">{circuit.title}</span>
-                              <span className="text-xs text-muted-foreground">{circuit.help}</span>
-                            </span>
-                          </label>
-                          {enabled && (
-                            <div className="mt-4 grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label htmlFor={`kitchen-${circuit.footageKey}`}>Cable Footage (FT)</Label>
-                                <Input id={`kitchen-${circuit.footageKey}`} type="number" min="0" value={inputs[circuit.footageKey] ?? 0} onChange={(event) => setNumber(circuit.footageKey, event.target.value)} />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`kitchen-${circuit.laborKey}`}>Labor (HR)</Label>
-                                <Input id={`kitchen-${circuit.laborKey}`} type="number" min="0" step="0.25" value={inputs[circuit.laborKey] ?? 0} onChange={(event) => setNumber(circuit.laborKey, event.target.value)} />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </section>
-
                 {groups.map((group) => (
                   <section key={group.title}>
                     <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">{group.title}</h3>
@@ -316,25 +235,114 @@ export function NewKitchenQuote() {
                         </div>
                       ))}
                     </div>
+                    {group.title === "Devices and controls" && (
+                      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {([
+                          {
+                            enabledKey: "smallApplianceCircuit1",
+                            footageKey: "smallApplianceCircuit1Footage",
+                            laborKey: "smallApplianceCircuit1LaborHours",
+                            title: "Small-Appliance Circuit 1",
+                            help: "Independently include and adjust Circuit 1.",
+                          },
+                          {
+                            enabledKey: "smallApplianceCircuit2",
+                            footageKey: "smallApplianceCircuit2Footage",
+                            laborKey: "smallApplianceCircuit2LaborHours",
+                            title: "Small-Appliance Circuit 2",
+                            help: "Independently include and adjust Circuit 2.",
+                          },
+                          {
+                            enabledKey: "microwaveCircuit",
+                            footageKey: "microwaveCircuitFootage",
+                            laborKey: "microwaveCircuitLaborHours",
+                            title: "Dedicated Microwave Circuit",
+                            help: "Independent microwave branch-circuit scope.",
+                          },
+                        ] as const).map((circuit) => {
+                          const enabled = inputs[circuit.enabledKey] === true
+                          return (
+                            <div key={circuit.enabledKey} className="rounded-lg border bg-muted/15 p-4">
+                              <label className="flex items-start gap-3">
+                                <Checkbox checked={enabled} onCheckedChange={(checked) => setInputs((current) => ({ ...current, [circuit.enabledKey]: checked === true }))} />
+                                <span>
+                                  <span className="block font-semibold">{circuit.title}</span>
+                                  <span className="text-xs text-muted-foreground">{circuit.help}</span>
+                                </span>
+                              </label>
+                              {enabled && (
+                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`kitchen-${circuit.footageKey}`}>Cable Footage (FT)</Label>
+                                    <Input id={`kitchen-${circuit.footageKey}`} type="number" min="0" value={inputs[circuit.footageKey] ?? 0} onChange={(event) => setNumber(circuit.footageKey, event.target.value)} />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`kitchen-${circuit.laborKey}`}>Labor (HR)</Label>
+                                    <Input id={`kitchen-${circuit.laborKey}`} type="number" min="0" step="0.25" value={inputs[circuit.laborKey] ?? 0} onChange={(event) => setNumber(circuit.laborKey, event.target.value)} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {group.title === "Lighting" && (
+                      <div className="mt-4 space-y-4">
+                        <div className="rounded-lg border bg-primary/5 p-4">
+                          <label className="flex items-start gap-3">
+                            <Checkbox checked={inputs.includeLightingCircuit === true} onCheckedChange={(checked) => setInputs((current) => ({ ...current, includeLightingCircuit: checked === true, lightingCircuitAmperage: 15 }))} />
+                            <span>
+                              <span className="block font-semibold">15A Kitchen Lighting Circuit</span>
+                              <span className="text-xs text-muted-foreground">Uses the selected panel manufacturer’s contractor-configured 15A breaker and the editable 14/2 NM-B price-book row.</span>
+                            </span>
+                          </label>
+                          {inputs.includeLightingCircuit && (
+                            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                              <div className="space-y-2">
+                                <Label>Lighting Circuit</Label>
+                                <div className="flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium">15A / 1-pole / 14/2 NM-B</div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="kitchen-lighting-footage">14/2 Footage (FT)</Label>
+                                <Input id="kitchen-lighting-footage" type="number" min="0" value={inputs.lightingCircuitFootage ?? 0} onChange={(event) => setNumber("lightingCircuitFootage", event.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="kitchen-lighting-labor">Lighting Circuit Labor (HR)</Label>
+                                <Input id="kitchen-lighting-labor" type="number" min="0" step="0.25" value={inputs.lightingCircuitLaborHours ?? 0} onChange={(event) => setNumber("lightingCircuitLaborHours", event.target.value)} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="rounded-lg border bg-muted/15 p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <Label htmlFor="kitchen-four-way-locations">4-way switch locations</Label>
+                              <p className="mt-1 text-xs text-muted-foreground">Additional locations in the multi-location lighting control setup.</p>
+                            </div>
+                            <Input id="kitchen-four-way-locations" className="w-24 text-right font-mono" type="number" min="0" value={inputs.fourWayLocations ?? 0} onChange={(event) => setQuantity("fourWayLocations", event.target.value)} />
+                          </div>
+                          {(inputs.fourWayLocations ?? 0) > 0 && (
+                            <div className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-3">
+                              <p className="font-semibold">4-Way Lighting-Control Extension</p>
+                              <p className="mt-1 text-xs text-muted-foreground">Each location adds its own editable switch, box, plate, cable allowance, and labor. It remains part of the selected lighting circuit and does not create another breaker.</p>
+                              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor="kitchen-four-way-footage">Configurable 14/3 Footage (FT)</Label>
+                                  <Input id="kitchen-four-way-footage" type="number" min="0" value={inputs.fourWayCableFootage ?? 0} onChange={(event) => setNumber("fourWayCableFootage", event.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="kitchen-four-way-labor">Labor per 4-Way Location (HR)</Label>
+                                  <Input id="kitchen-four-way-labor" type="number" min="0" step="0.25" value={inputs.fourWayLaborHoursPerLocation ?? 0} onChange={(event) => setNumber("fourWayLaborHoursPerLocation", event.target.value)} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </section>
                 ))}
-
-                {(inputs.fourWayLocations ?? 0) > 0 && (
-                  <section className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <h3 className="font-semibold">4-Way Lighting-Control Extension</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">Each location adds its own editable switch, box, plate, cable allowance, and labor. It remains part of the selected lighting circuit and does not create another breaker.</p>
-                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="kitchen-four-way-footage">Configurable 14/3 Footage (FT)</Label>
-                        <Input id="kitchen-four-way-footage" type="number" min="0" value={inputs.fourWayCableFootage ?? 0} onChange={(event) => setNumber("fourWayCableFootage", event.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="kitchen-four-way-labor">Labor per 4-Way Location (HR)</Label>
-                        <Input id="kitchen-four-way-labor" type="number" min="0" step="0.25" value={inputs.fourWayLaborHoursPerLocation ?? 0} onChange={(event) => setNumber("fourWayLaborHoursPerLocation", event.target.value)} />
-                      </div>
-                    </div>
-                  </section>
-                )}
 
                 <section>
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and catalog selections</h3>
