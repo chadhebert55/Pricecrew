@@ -106,6 +106,12 @@ export const createQuoteBodyJobInputsThreeRecessedLightsMin = 0;
 
 export const createQuoteBodyJobInputsThreeThreeWayOptionsMin = 0;
 
+export const createQuoteBodyJobInputsThreeFourWayLocationsMin = 0;
+
+export const createQuoteBodyJobInputsThreeFourWayCableFootageMin = 0;
+
+export const createQuoteBodyJobInputsThreeFourWayLaborHoursPerLocationMin = 0;
+
 export const createQuoteBodyJobInputsThreeDimmersMin = 0;
 
 export const createQuoteBodyJobInputsThreeUsbReceptaclesMin = 0;
@@ -113,6 +119,23 @@ export const createQuoteBodyJobInputsThreeUsbReceptaclesMin = 0;
 export const createQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
 
 export const createQuoteBodyJobInputsThreeRouteLengthMin = 0;
+
+export const createQuoteBodyJobInputsThreeLightingCircuitFootageMin = 0;
+
+export const createQuoteBodyJobInputsThreeLightingCircuitLaborHoursMin = 0;
+
+export const createQuoteBodyJobInputsThreeSmallApplianceCircuit1FootageMin = 0;
+
+export const createQuoteBodyJobInputsThreeSmallApplianceCircuit1LaborHoursMin = 0;
+
+export const createQuoteBodyJobInputsThreeSmallApplianceCircuit2FootageMin = 0;
+
+export const createQuoteBodyJobInputsThreeSmallApplianceCircuit2LaborHoursMin = 0;
+
+export const createQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin = 0;
+
+export const createQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
+
 
 export const createQuoteBodyJobInputsFourRoomLengthMin = 0;
 
@@ -197,10 +220,29 @@ export const CreateQuoteBody = zod.object({
   "undercabinetLighting": zod.number().min(createQuoteBodyJobInputsThreeUndercabinetLightingMin),
   "recessedLights": zod.number().min(createQuoteBodyJobInputsThreeRecessedLightsMin),
   "threeWayOptions": zod.number().min(createQuoteBodyJobInputsThreeThreeWayOptionsMin),
+  "fourWayLocations": zod.number().min(createQuoteBodyJobInputsThreeFourWayLocationsMin).optional(),
+  "fourWayCableFootage": zod.number().min(createQuoteBodyJobInputsThreeFourWayCableFootageMin).optional(),
+  "fourWayLaborHoursPerLocation": zod.number().min(createQuoteBodyJobInputsThreeFourWayLaborHoursPerLocationMin).optional(),
   "dimmers": zod.number().min(createQuoteBodyJobInputsThreeDimmersMin),
   "usbReceptacles": zod.number().min(createQuoteBodyJobInputsThreeUsbReceptaclesMin),
   "additionalDedicatedCircuits": zod.number().min(createQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(createQuoteBodyJobInputsThreeRouteLengthMin),
+  "includeLightingCircuit": zod.boolean().optional(),
+  "lightingCircuitAmperage": zod.literal(15).optional(),
+  "lightingCircuitFootage": zod.number().min(createQuoteBodyJobInputsThreeLightingCircuitFootageMin).optional(),
+  "lightingCircuitLaborHours": zod.number().min(createQuoteBodyJobInputsThreeLightingCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuit1": zod.boolean().optional(),
+  "smallApplianceCircuit1Footage": zod.number().min(createQuoteBodyJobInputsThreeSmallApplianceCircuit1FootageMin).optional(),
+  "smallApplianceCircuit1LaborHours": zod.number().min(createQuoteBodyJobInputsThreeSmallApplianceCircuit1LaborHoursMin).optional(),
+  "smallApplianceCircuit2": zod.boolean().optional(),
+  "smallApplianceCircuit2Footage": zod.number().min(createQuoteBodyJobInputsThreeSmallApplianceCircuit2FootageMin).optional(),
+  "smallApplianceCircuit2LaborHours": zod.number().min(createQuoteBodyJobInputsThreeSmallApplianceCircuit2LaborHoursMin).optional(),
+  "microwaveCircuit": zod.boolean().optional(),
+  "microwaveCircuitFootage": zod.number().min(createQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin).optional(),
+  "microwaveCircuitLaborHours": zod.number().min(createQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceCircuitAmperage": zod.number().min(1).optional(),
+  "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
+  "applianceCircuitProtectionType": zod.string().optional(),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -282,6 +324,12 @@ export const createQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
 
+export const createQuoteResponseTwoJobInputsThreeFourWayLocationsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeFourWayCableFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin = 0;
+
 export const createQuoteResponseTwoJobInputsThreeDimmersMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
@@ -289,6 +337,23 @@ export const createQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
 export const createQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
+
 
 export const createQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
@@ -375,10 +440,29 @@ export const CreateQuoteResponse = zod.object({
   "undercabinetLighting": zod.number().min(createQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
   "recessedLights": zod.number().min(createQuoteResponseTwoJobInputsThreeRecessedLightsMin),
   "threeWayOptions": zod.number().min(createQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "fourWayLocations": zod.number().min(createQuoteResponseTwoJobInputsThreeFourWayLocationsMin).optional(),
+  "fourWayCableFootage": zod.number().min(createQuoteResponseTwoJobInputsThreeFourWayCableFootageMin).optional(),
+  "fourWayLaborHoursPerLocation": zod.number().min(createQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin).optional(),
   "dimmers": zod.number().min(createQuoteResponseTwoJobInputsThreeDimmersMin),
   "usbReceptacles": zod.number().min(createQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
   "additionalDedicatedCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(createQuoteResponseTwoJobInputsThreeRouteLengthMin),
+  "includeLightingCircuit": zod.boolean().optional(),
+  "lightingCircuitAmperage": zod.literal(15).optional(),
+  "lightingCircuitFootage": zod.number().min(createQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin).optional(),
+  "lightingCircuitLaborHours": zod.number().min(createQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuit1": zod.boolean().optional(),
+  "smallApplianceCircuit1Footage": zod.number().min(createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin).optional(),
+  "smallApplianceCircuit1LaborHours": zod.number().min(createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin).optional(),
+  "smallApplianceCircuit2": zod.boolean().optional(),
+  "smallApplianceCircuit2Footage": zod.number().min(createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin).optional(),
+  "smallApplianceCircuit2LaborHours": zod.number().min(createQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin).optional(),
+  "microwaveCircuit": zod.boolean().optional(),
+  "microwaveCircuitFootage": zod.number().min(createQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
+  "microwaveCircuitLaborHours": zod.number().min(createQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceCircuitAmperage": zod.number().min(1).optional(),
+  "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
+  "applianceCircuitProtectionType": zod.string().optional(),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -489,6 +573,12 @@ export const previewQuoteBodyJobInputsThreeRecessedLightsMin = 0;
 
 export const previewQuoteBodyJobInputsThreeThreeWayOptionsMin = 0;
 
+export const previewQuoteBodyJobInputsThreeFourWayLocationsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeFourWayCableFootageMin = 0;
+
+export const previewQuoteBodyJobInputsThreeFourWayLaborHoursPerLocationMin = 0;
+
 export const previewQuoteBodyJobInputsThreeDimmersMin = 0;
 
 export const previewQuoteBodyJobInputsThreeUsbReceptaclesMin = 0;
@@ -496,6 +586,23 @@ export const previewQuoteBodyJobInputsThreeUsbReceptaclesMin = 0;
 export const previewQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
 
 export const previewQuoteBodyJobInputsThreeRouteLengthMin = 0;
+
+export const previewQuoteBodyJobInputsThreeLightingCircuitFootageMin = 0;
+
+export const previewQuoteBodyJobInputsThreeLightingCircuitLaborHoursMin = 0;
+
+export const previewQuoteBodyJobInputsThreeSmallApplianceCircuit1FootageMin = 0;
+
+export const previewQuoteBodyJobInputsThreeSmallApplianceCircuit1LaborHoursMin = 0;
+
+export const previewQuoteBodyJobInputsThreeSmallApplianceCircuit2FootageMin = 0;
+
+export const previewQuoteBodyJobInputsThreeSmallApplianceCircuit2LaborHoursMin = 0;
+
+export const previewQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin = 0;
+
+export const previewQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
+
 
 export const previewQuoteBodyJobInputsFourRoomLengthMin = 0;
 
@@ -576,10 +683,29 @@ export const PreviewQuoteBody = zod.object({
   "undercabinetLighting": zod.number().min(previewQuoteBodyJobInputsThreeUndercabinetLightingMin),
   "recessedLights": zod.number().min(previewQuoteBodyJobInputsThreeRecessedLightsMin),
   "threeWayOptions": zod.number().min(previewQuoteBodyJobInputsThreeThreeWayOptionsMin),
+  "fourWayLocations": zod.number().min(previewQuoteBodyJobInputsThreeFourWayLocationsMin).optional(),
+  "fourWayCableFootage": zod.number().min(previewQuoteBodyJobInputsThreeFourWayCableFootageMin).optional(),
+  "fourWayLaborHoursPerLocation": zod.number().min(previewQuoteBodyJobInputsThreeFourWayLaborHoursPerLocationMin).optional(),
   "dimmers": zod.number().min(previewQuoteBodyJobInputsThreeDimmersMin),
   "usbReceptacles": zod.number().min(previewQuoteBodyJobInputsThreeUsbReceptaclesMin),
   "additionalDedicatedCircuits": zod.number().min(previewQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(previewQuoteBodyJobInputsThreeRouteLengthMin),
+  "includeLightingCircuit": zod.boolean().optional(),
+  "lightingCircuitAmperage": zod.literal(15).optional(),
+  "lightingCircuitFootage": zod.number().min(previewQuoteBodyJobInputsThreeLightingCircuitFootageMin).optional(),
+  "lightingCircuitLaborHours": zod.number().min(previewQuoteBodyJobInputsThreeLightingCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuit1": zod.boolean().optional(),
+  "smallApplianceCircuit1Footage": zod.number().min(previewQuoteBodyJobInputsThreeSmallApplianceCircuit1FootageMin).optional(),
+  "smallApplianceCircuit1LaborHours": zod.number().min(previewQuoteBodyJobInputsThreeSmallApplianceCircuit1LaborHoursMin).optional(),
+  "smallApplianceCircuit2": zod.boolean().optional(),
+  "smallApplianceCircuit2Footage": zod.number().min(previewQuoteBodyJobInputsThreeSmallApplianceCircuit2FootageMin).optional(),
+  "smallApplianceCircuit2LaborHours": zod.number().min(previewQuoteBodyJobInputsThreeSmallApplianceCircuit2LaborHoursMin).optional(),
+  "microwaveCircuit": zod.boolean().optional(),
+  "microwaveCircuitFootage": zod.number().min(previewQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin).optional(),
+  "microwaveCircuitLaborHours": zod.number().min(previewQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceCircuitAmperage": zod.number().min(1).optional(),
+  "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
+  "applianceCircuitProtectionType": zod.string().optional(),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -704,6 +830,12 @@ export const getQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
 
+export const getQuoteResponseTwoJobInputsThreeFourWayLocationsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeFourWayCableFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin = 0;
+
 export const getQuoteResponseTwoJobInputsThreeDimmersMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
@@ -711,6 +843,23 @@ export const getQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
 export const getQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
+
 
 export const getQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
@@ -797,10 +946,29 @@ export const GetQuoteResponse = zod.object({
   "undercabinetLighting": zod.number().min(getQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
   "recessedLights": zod.number().min(getQuoteResponseTwoJobInputsThreeRecessedLightsMin),
   "threeWayOptions": zod.number().min(getQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "fourWayLocations": zod.number().min(getQuoteResponseTwoJobInputsThreeFourWayLocationsMin).optional(),
+  "fourWayCableFootage": zod.number().min(getQuoteResponseTwoJobInputsThreeFourWayCableFootageMin).optional(),
+  "fourWayLaborHoursPerLocation": zod.number().min(getQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin).optional(),
   "dimmers": zod.number().min(getQuoteResponseTwoJobInputsThreeDimmersMin),
   "usbReceptacles": zod.number().min(getQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
   "additionalDedicatedCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(getQuoteResponseTwoJobInputsThreeRouteLengthMin),
+  "includeLightingCircuit": zod.boolean().optional(),
+  "lightingCircuitAmperage": zod.literal(15).optional(),
+  "lightingCircuitFootage": zod.number().min(getQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin).optional(),
+  "lightingCircuitLaborHours": zod.number().min(getQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuit1": zod.boolean().optional(),
+  "smallApplianceCircuit1Footage": zod.number().min(getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin).optional(),
+  "smallApplianceCircuit1LaborHours": zod.number().min(getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin).optional(),
+  "smallApplianceCircuit2": zod.boolean().optional(),
+  "smallApplianceCircuit2Footage": zod.number().min(getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin).optional(),
+  "smallApplianceCircuit2LaborHours": zod.number().min(getQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin).optional(),
+  "microwaveCircuit": zod.boolean().optional(),
+  "microwaveCircuitFootage": zod.number().min(getQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
+  "microwaveCircuitLaborHours": zod.number().min(getQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceCircuitAmperage": zod.number().min(1).optional(),
+  "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
+  "applianceCircuitProtectionType": zod.string().optional(),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -922,6 +1090,12 @@ export const updateQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
 
 export const updateQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
 
+export const updateQuoteResponseTwoJobInputsThreeFourWayLocationsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeFourWayCableFootageMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin = 0;
+
 export const updateQuoteResponseTwoJobInputsThreeDimmersMin = 0;
 
 export const updateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
@@ -929,6 +1103,23 @@ export const updateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
 export const updateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
 
 export const updateQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
+
 
 export const updateQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
@@ -1015,10 +1206,29 @@ export const UpdateQuoteResponse = zod.object({
   "undercabinetLighting": zod.number().min(updateQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
   "recessedLights": zod.number().min(updateQuoteResponseTwoJobInputsThreeRecessedLightsMin),
   "threeWayOptions": zod.number().min(updateQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "fourWayLocations": zod.number().min(updateQuoteResponseTwoJobInputsThreeFourWayLocationsMin).optional(),
+  "fourWayCableFootage": zod.number().min(updateQuoteResponseTwoJobInputsThreeFourWayCableFootageMin).optional(),
+  "fourWayLaborHoursPerLocation": zod.number().min(updateQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin).optional(),
   "dimmers": zod.number().min(updateQuoteResponseTwoJobInputsThreeDimmersMin),
   "usbReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
   "additionalDedicatedCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(updateQuoteResponseTwoJobInputsThreeRouteLengthMin),
+  "includeLightingCircuit": zod.boolean().optional(),
+  "lightingCircuitAmperage": zod.literal(15).optional(),
+  "lightingCircuitFootage": zod.number().min(updateQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin).optional(),
+  "lightingCircuitLaborHours": zod.number().min(updateQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuit1": zod.boolean().optional(),
+  "smallApplianceCircuit1Footage": zod.number().min(updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin).optional(),
+  "smallApplianceCircuit1LaborHours": zod.number().min(updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin).optional(),
+  "smallApplianceCircuit2": zod.boolean().optional(),
+  "smallApplianceCircuit2Footage": zod.number().min(updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin).optional(),
+  "smallApplianceCircuit2LaborHours": zod.number().min(updateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin).optional(),
+  "microwaveCircuit": zod.boolean().optional(),
+  "microwaveCircuitFootage": zod.number().min(updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
+  "microwaveCircuitLaborHours": zod.number().min(updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceCircuitAmperage": zod.number().min(1).optional(),
+  "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
+  "applianceCircuitProtectionType": zod.string().optional(),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),

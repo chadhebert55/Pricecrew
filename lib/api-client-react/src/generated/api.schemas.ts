@@ -127,6 +127,21 @@ export interface BathroomInputs {
   cableType?: BathroomInputsCableType;
 }
 
+export type KitchenInputsLightingCircuitAmperage = typeof KitchenInputsLightingCircuitAmperage[keyof typeof KitchenInputsLightingCircuitAmperage];
+
+
+export const KitchenInputsLightingCircuitAmperage = {
+  NUMBER_15: 15,
+} as const;
+
+export type KitchenInputsApplianceCircuitCableType = typeof KitchenInputsApplianceCircuitCableType[keyof typeof KitchenInputsApplianceCircuitCableType];
+
+
+export const KitchenInputsApplianceCircuitCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+} as const;
+
 export type KitchenInputsRecessedLightSize = typeof KitchenInputsRecessedLightSize[keyof typeof KitchenInputsRecessedLightSize];
 
 
@@ -168,6 +183,12 @@ export interface KitchenInputs {
   /** @minimum 0 */
   threeWayOptions: number;
   /** @minimum 0 */
+  fourWayLocations?: number;
+  /** @minimum 0 */
+  fourWayCableFootage?: number;
+  /** @minimum 0 */
+  fourWayLaborHoursPerLocation?: number;
+  /** @minimum 0 */
   dimmers: number;
   /** @minimum 0 */
   usbReceptacles: number;
@@ -175,6 +196,31 @@ export interface KitchenInputs {
   additionalDedicatedCircuits: number;
   /** @minimum 0 */
   routeLength: number;
+  includeLightingCircuit?: boolean;
+  lightingCircuitAmperage?: KitchenInputsLightingCircuitAmperage;
+  /** @minimum 0 */
+  lightingCircuitFootage?: number;
+  /** @minimum 0 */
+  lightingCircuitLaborHours?: number;
+  smallApplianceCircuit1?: boolean;
+  /** @minimum 0 */
+  smallApplianceCircuit1Footage?: number;
+  /** @minimum 0 */
+  smallApplianceCircuit1LaborHours?: number;
+  smallApplianceCircuit2?: boolean;
+  /** @minimum 0 */
+  smallApplianceCircuit2Footage?: number;
+  /** @minimum 0 */
+  smallApplianceCircuit2LaborHours?: number;
+  microwaveCircuit?: boolean;
+  /** @minimum 0 */
+  microwaveCircuitFootage?: number;
+  /** @minimum 0 */
+  microwaveCircuitLaborHours?: number;
+  /** @minimum 1 */
+  applianceCircuitAmperage?: number;
+  applianceCircuitCableType?: KitchenInputsApplianceCircuitCableType;
+  applianceCircuitProtectionType?: string;
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;

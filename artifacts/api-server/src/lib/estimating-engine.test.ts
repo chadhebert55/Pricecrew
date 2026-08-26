@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
   type EstimatingSettings,
   type PriceBookItem,
 } from "./estimating-engine";
-import type { RecessedLightingInputRecord } from "@workspace/db";
+import type {
+  KitchenInputRecord,
+  RecessedLightingInputRecord,
+} from "@workspace/db";
 
 const settings: EstimatingSettings = {
   residentialLaborSellRate: 150,
@@ -58,6 +62,25 @@ const priceBook: PriceBookItem[] = [
     poleCount: 1,
     protectionType: "Standard",
   }),
+  catalogRow("Siemens Q120 20A 1-pole standard breaker", 10.5, {
+    manufacturer: "Siemens",
+    amperage: 20,
+    poleCount: 1,
+    protectionType: "Standard",
+  }),
+  catalogRow("Legrand radiant TM874WCC10 15A 4-way switch", 12, {
+    manufacturer: "Legrand",
+  }),
+  catalogRow(
+    "Carlon B114R-UPC 14 cu. in. single-gang old-work box",
+    3.25,
+  ),
+  catalogRow(
+    "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
+    4.6,
+  ),
+  catalogRow("Kitchen small-appliance circuit device assumption", 6),
+  catalogRow("Kitchen microwave circuit device assumption", 8),
 ];
 
 const baseInputs: RecessedLightingInputRecord = {
@@ -228,5 +251,178 @@ test("contractor-edited traveler and combo-kit costs flow into estimates", () =>
   assert.equal(
     smart.assembly.find((line) => line.id === "switch-controls")?.unitCost,
     99,
+  );
+});
+
+const baseKitchenInputs: KitchenInputRecord = {
+  refrigeratorCircuits: 0,
+  dishwasherCircuits: 0,
+  disposalCircuits: 0,
+  gasRangeCircuits: 0,
+  electricRangeCircuits: 0,
+  countertopReceptacles: 0,
+  sinkLights: 1,
+  islandPendants: 0,
+  undercabinetLighting: 0,
+  recessedLights: 4,
+  threeWayOptions: 0,
+  dimmers: 0,
+  usbReceptacles: 0,
+  additionalDedicatedCircuits: 0,
+  routeLength: 0,
+  customerSuppliedFixtures: true,
+  notes: "",
+  laborRateType: "residential",
+  panelManufacturer: "Siemens",
+  breakerAmperage: 20,
+  breakerPoleCount: 1,
+  breakerProtectionType: "Standard",
+  recessedLightSize: "4-inch",
+  cableType: "12/2 NM-B",
+};
+
+test("kitchen lighting uses one configured 15A breaker and 14/2 cable", () => {
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      includeLightingCircuit: true,
+      lightingCircuitAmperage: 15,
+      lightingCircuitFootage: 42,
+      lightingCircuitLaborHours: 3,
+    },
+    settings,
+    priceBook,
+  );
+  const breaker = result.assembly.find(
+    (line) => line.id === "kitchen-lighting-circuit-breaker",
+  );
+  const cable = result.assembly.find(
+    (line) => line.id === "kitchen-lighting-circuit-cable",
+  );
+  assert.equal(breaker?.description.includes("15A"), true);
+  assert.equal(breaker?.unitCost, 9.5);
+  assert.equal(cable?.description.includes("14/2 NM-B"), true);
+  assert.equal(cable?.quantity, 42);
+  assert.equal(cable?.unitCost, 0.37);
+});
+
+test("four-way locations add controls, box, plate, cable, and labor without a breaker", () => {
+  const baseline = calculateKitchenEstimate(
+    { ...baseKitchenInputs, includeLightingCircuit: false },
+    settings,
+    priceBook,
+  );
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      includeLightingCircuit: false,
+      fourWayLocations: 2,
+      fourWayCableFootage: 60,
+      fourWayLaborHoursPerLocation: 1,
+    },
+    settings,
+    priceBook,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-four-way-switches")
+      ?.quantity,
+    2,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-four-way-boxes")
+      ?.quantity,
+    2,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-four-way-plates")
+      ?.quantity,
+    2,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-four-way-cable")
+      ?.quantity,
+    60,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id.includes("circuit-protection")),
+    false,
+  );
+  assert.ok(result.pricing.laborCost > baseline.pricing.laborCost);
+});
+
+test("small-appliance circuits and microwave circuit remain independently selectable", () => {
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      includeLightingCircuit: false,
+      smallApplianceCircuit1: true,
+      smallApplianceCircuit1Footage: 35,
+      smallApplianceCircuit1LaborHours: 2.5,
+      smallApplianceCircuit2: false,
+      smallApplianceCircuit2Footage: 55,
+      smallApplianceCircuit2LaborHours: 4,
+      microwaveCircuit: true,
+      microwaveCircuitFootage: 25,
+      microwaveCircuitLaborHours: 2,
+      applianceCircuitAmperage: 20,
+      applianceCircuitCableType: "12/2 NM-B",
+      applianceCircuitProtectionType: "Standard",
+    },
+    settings,
+    priceBook,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "kitchen-small-appliance-circuit-1-cable",
+    )?.quantity,
+    35,
+  );
+  assert.equal(
+    result.assembly.some((line) =>
+      line.id.startsWith("kitchen-small-appliance-circuit-2"),
+    ),
+    false,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "kitchen-microwave-circuit-cable",
+    )?.quantity,
+    25,
+  );
+  assert.equal(
+    result.assembly.filter((line) => line.id.endsWith("-breaker")).length,
+    2,
+  );
+});
+
+test("contractor-edited kitchen circuit and four-way prices flow into estimates", () => {
+  const editedPriceBook = priceBook.map((row) =>
+    row.item === "14/2 NM-B cable"
+      ? { ...row, unitCost: 0.49 }
+      : row.item === "Legrand radiant TM874WCC10 15A 4-way switch"
+        ? { ...row, unitCost: 18 }
+        : row,
+  );
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      includeLightingCircuit: true,
+      lightingCircuitFootage: 20,
+      fourWayLocations: 1,
+      fourWayCableFootage: 10,
+    },
+    settings,
+    editedPriceBook,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "kitchen-lighting-circuit-cable",
+    )?.unitCost,
+    0.49,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-four-way-switches")
+      ?.unitCost,
+    18,
   );
 });

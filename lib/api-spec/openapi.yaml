@@ -606,6 +606,15 @@ components:
         threeWayOptions:
           type: number
           minimum: 0
+        fourWayLocations:
+          type: number
+          minimum: 0
+        fourWayCableFootage:
+          type: number
+          minimum: 0
+        fourWayLaborHoursPerLocation:
+          type: number
+          minimum: 0
         dimmers:
           type: number
           minimum: 0
@@ -618,6 +627,49 @@ components:
         routeLength:
           type: number
           minimum: 0
+        includeLightingCircuit:
+          type: boolean
+        lightingCircuitAmperage:
+          type: number
+          enum: [15]
+        lightingCircuitFootage:
+          type: number
+          minimum: 0
+        lightingCircuitLaborHours:
+          type: number
+          minimum: 0
+        smallApplianceCircuit1:
+          type: boolean
+        smallApplianceCircuit1Footage:
+          type: number
+          minimum: 0
+        smallApplianceCircuit1LaborHours:
+          type: number
+          minimum: 0
+        smallApplianceCircuit2:
+          type: boolean
+        smallApplianceCircuit2Footage:
+          type: number
+          minimum: 0
+        smallApplianceCircuit2LaborHours:
+          type: number
+          minimum: 0
+        microwaveCircuit:
+          type: boolean
+        microwaveCircuitFootage:
+          type: number
+          minimum: 0
+        microwaveCircuitLaborHours:
+          type: number
+          minimum: 0
+        applianceCircuitAmperage:
+          type: number
+          minimum: 1
+        applianceCircuitCableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B]
+        applianceCircuitProtectionType:
+          type: string
         customerSuppliedFixtures:
           type: boolean
         notes:

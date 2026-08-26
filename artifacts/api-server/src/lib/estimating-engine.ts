@@ -614,6 +614,8 @@ export function calculateKitchenEstimate(
 ): EstimateResult {
   const assembly: AssemblyLineRecord[] = [];
   const pricingWarnings: string[] = [];
+  const safeNumber = (value: number | undefined) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
 
   const addPricedItem = (
     id: string,
@@ -638,6 +640,74 @@ export function calculateKitchenEstimate(
       unitCost: price.value,
       source: price.source,
     });
+  };
+
+  const addConfiguredCircuit = ({
+    id,
+    label,
+    footage,
+    amperage,
+    cableType,
+    protection,
+    deviceKey,
+    deviceDescription,
+  }: {
+    id: string;
+    label: string;
+    footage: number;
+    amperage: number;
+    cableType: "12/2 NM-B" | "14/2 NM-B";
+    protection: string;
+    deviceKey?: string;
+    deviceDescription?: string;
+  }) => {
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer ?? "",
+        amperage,
+        poleCount: 1,
+        protectionType: protection,
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: `${id}-breaker`,
+      category: "Protection",
+      description: `${label}: ${breaker.description}`,
+      quantity: 1,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
+
+    const safeFootage = safeNumber(footage);
+    if (safeFootage > 0) {
+      const cable = unitCost(`${cableType} cable`, priceBook, pricingWarnings);
+      addLine(assembly, {
+        id: `${id}-cable`,
+        category: "Conductor",
+        description: `${label}: ${cableType} cable`,
+        quantity: safeFootage,
+        unit: "ft",
+        unitCost: cable.value,
+        source: cable.source,
+      });
+    } else {
+      pricingWarnings.push(
+        `${label} is selected, but its configurable cable footage is zero.`,
+      );
+    }
+
+    if (deviceKey && deviceDescription) {
+      addPricedItem(
+        `${id}-device`,
+        "Devices",
+        deviceKey,
+        deviceDescription,
+        1,
+      );
+    }
   };
 
   const circuitItems: Array<[keyof KitchenInputRecord, string, string, string]> = [
@@ -721,6 +791,52 @@ export function calculateKitchenEstimate(
     "3-way switching allowance",
     inputs.threeWayOptions,
   );
+  const fourWayLocations = safeNumber(inputs.fourWayLocations);
+  addPricedItem(
+    "kitchen-four-way-switches",
+    "Controls",
+    "Legrand radiant TM874WCC10 15A 4-way switch",
+    "Kitchen multi-location lighting control — 4-way switch location",
+    fourWayLocations,
+  );
+  addPricedItem(
+    "kitchen-four-way-boxes",
+    "Rough-in",
+    "Carlon B114R-UPC 14 cu. in. single-gang old-work box",
+    "Kitchen 4-way switch-location box",
+    fourWayLocations,
+  );
+  addPricedItem(
+    "kitchen-four-way-plates",
+    "Trim",
+    "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
+    "Kitchen 4-way switch-location wall plate",
+    fourWayLocations,
+  );
+  if (fourWayLocations > 0) {
+    const fourWayCableFootage = safeNumber(inputs.fourWayCableFootage);
+    if (fourWayCableFootage > 0) {
+      const fourWayCable = unitCost(
+        "14/3 NM-B cable",
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: "kitchen-four-way-cable",
+        category: "Conductor",
+        description:
+          "14/3 NM-B cable — configurable multi-location lighting-control run",
+        quantity: fourWayCableFootage,
+        unit: "ft",
+        unitCost: fourWayCable.value,
+        source: fourWayCable.source,
+      });
+    } else {
+      pricingWarnings.push(
+        "One or more 4-way switch locations are selected, but the configurable 14/3 cable footage is zero.",
+      );
+    }
+  }
   addPricedItem(
     "dimmers",
     "Controls",
@@ -760,6 +876,72 @@ export function calculateKitchenEstimate(
     );
   }
 
+  const lightingCount =
+    inputs.sinkLights +
+    inputs.islandPendants +
+    inputs.undercabinetLighting +
+    inputs.recessedLights;
+  if (inputs.includeLightingCircuit && lightingCount > 0) {
+    addConfiguredCircuit({
+      id: "kitchen-lighting-circuit",
+      label: "Kitchen lighting circuit",
+      footage: safeNumber(inputs.lightingCircuitFootage),
+      amperage: 15,
+      cableType: "14/2 NM-B",
+      protection: "Standard",
+    });
+  }
+
+  const applianceAmperage = Math.max(
+    1,
+    safeNumber(inputs.applianceCircuitAmperage ?? 20),
+  );
+  const applianceCable =
+    inputs.applianceCircuitCableType === "14/2 NM-B"
+      ? "14/2 NM-B"
+      : "12/2 NM-B";
+  const applianceProtection =
+    inputs.applianceCircuitProtectionType ?? "Standard";
+  if (inputs.smallApplianceCircuit1) {
+    addConfiguredCircuit({
+      id: "kitchen-small-appliance-circuit-1",
+      label: "Small-appliance Circuit 1",
+      footage: safeNumber(inputs.smallApplianceCircuit1Footage),
+      amperage: applianceAmperage,
+      cableType: applianceCable,
+      protection: applianceProtection,
+      deviceKey: "Kitchen small-appliance circuit device assumption",
+      deviceDescription:
+        "Small-appliance Circuit 1 company-configured device assumption",
+    });
+  }
+  if (inputs.smallApplianceCircuit2) {
+    addConfiguredCircuit({
+      id: "kitchen-small-appliance-circuit-2",
+      label: "Small-appliance Circuit 2",
+      footage: safeNumber(inputs.smallApplianceCircuit2Footage),
+      amperage: applianceAmperage,
+      cableType: applianceCable,
+      protection: applianceProtection,
+      deviceKey: "Kitchen small-appliance circuit device assumption",
+      deviceDescription:
+        "Small-appliance Circuit 2 company-configured device assumption",
+    });
+  }
+  if (inputs.microwaveCircuit) {
+    addConfiguredCircuit({
+      id: "kitchen-microwave-circuit",
+      label: "Dedicated microwave circuit",
+      footage: safeNumber(inputs.microwaveCircuitFootage),
+      amperage: applianceAmperage,
+      cableType: applianceCable,
+      protection: applianceProtection,
+      deviceKey: "Kitchen microwave circuit device assumption",
+      deviceDescription:
+        "Dedicated microwave circuit company-configured device assumption",
+    });
+  }
+
   if (inputs.routeLength <= 0) {
     pricingWarnings.push(
       "Kitchen route length is unresolved. Add a route length so common wiring material can be priced.",
@@ -796,6 +978,9 @@ export function calculateKitchenEstimate(
       inputs.disposalCircuits +
       inputs.gasRangeCircuits +
       inputs.electricRangeCircuits +
+      (inputs.smallApplianceCircuit1 ? 1 : 0) +
+      (inputs.smallApplianceCircuit2 ? 1 : 0) +
+      (inputs.microwaveCircuit ? 1 : 0) +
       inputs.additionalDedicatedCircuits >
     0
   ) {
@@ -818,9 +1003,28 @@ export function calculateKitchenEstimate(
     inputs.undercabinetLighting * 1.2 +
     inputs.recessedLights * 0.9 +
     inputs.threeWayOptions * 0.75 +
+    fourWayLocations *
+      safeNumber(inputs.fourWayLaborHoursPerLocation ?? 0.75) +
+    (fourWayLocations > 0 ? safeNumber(inputs.fourWayCableFootage) / 40 : 0) +
     inputs.dimmers * 0.35 +
     inputs.usbReceptacles * 0.45 +
-    inputs.additionalDedicatedCircuits * 1.5;
+    inputs.additionalDedicatedCircuits * 1.5 +
+    (inputs.includeLightingCircuit
+      ? safeNumber(inputs.lightingCircuitLaborHours ?? 3) +
+        safeNumber(inputs.lightingCircuitFootage) / 30
+      : 0) +
+    (inputs.smallApplianceCircuit1
+      ? safeNumber(inputs.smallApplianceCircuit1LaborHours ?? 3) +
+        safeNumber(inputs.smallApplianceCircuit1Footage) / 30
+      : 0) +
+    (inputs.smallApplianceCircuit2
+      ? safeNumber(inputs.smallApplianceCircuit2LaborHours ?? 3) +
+        safeNumber(inputs.smallApplianceCircuit2Footage) / 30
+      : 0) +
+    (inputs.microwaveCircuit
+      ? safeNumber(inputs.microwaveCircuitLaborHours ?? 3) +
+        safeNumber(inputs.microwaveCircuitFootage) / 30
+      : 0);
 
   return finalizeEstimate(
     assembly,

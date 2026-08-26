@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { KitchenInputsApplianceCircuitCableType } from './kitchenInputsApplianceCircuitCableType';
 import type { KitchenInputsCableType } from './kitchenInputsCableType';
+import type { KitchenInputsLightingCircuitAmperage } from './kitchenInputsLightingCircuitAmperage';
 import type { KitchenInputsRecessedLightSize } from './kitchenInputsRecessedLightSize';
 import type { LaborRateType } from './laborRateType';
 
@@ -33,6 +35,12 @@ export interface KitchenInputs {
   /** @minimum 0 */
   threeWayOptions: number;
   /** @minimum 0 */
+  fourWayLocations?: number;
+  /** @minimum 0 */
+  fourWayCableFootage?: number;
+  /** @minimum 0 */
+  fourWayLaborHoursPerLocation?: number;
+  /** @minimum 0 */
   dimmers: number;
   /** @minimum 0 */
   usbReceptacles: number;
@@ -40,6 +48,31 @@ export interface KitchenInputs {
   additionalDedicatedCircuits: number;
   /** @minimum 0 */
   routeLength: number;
+  includeLightingCircuit?: boolean;
+  lightingCircuitAmperage?: KitchenInputsLightingCircuitAmperage;
+  /** @minimum 0 */
+  lightingCircuitFootage?: number;
+  /** @minimum 0 */
+  lightingCircuitLaborHours?: number;
+  smallApplianceCircuit1?: boolean;
+  /** @minimum 0 */
+  smallApplianceCircuit1Footage?: number;
+  /** @minimum 0 */
+  smallApplianceCircuit1LaborHours?: number;
+  smallApplianceCircuit2?: boolean;
+  /** @minimum 0 */
+  smallApplianceCircuit2Footage?: number;
+  /** @minimum 0 */
+  smallApplianceCircuit2LaborHours?: number;
+  microwaveCircuit?: boolean;
+  /** @minimum 0 */
+  microwaveCircuitFootage?: number;
+  /** @minimum 0 */
+  microwaveCircuitLaborHours?: number;
+  /** @minimum 1 */
+  applianceCircuitAmperage?: number;
+  applianceCircuitCableType?: KitchenInputsApplianceCircuitCableType;
+  applianceCircuitProtectionType?: string;
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;

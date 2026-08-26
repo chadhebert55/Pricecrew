@@ -25,10 +25,29 @@ const initialInputs: KitchenInputs = {
   undercabinetLighting: 1,
   recessedLights: 4,
   threeWayOptions: 1,
+  fourWayLocations: 0,
+  fourWayCableFootage: 0,
+  fourWayLaborHoursPerLocation: 0.75,
   dimmers: 2,
   usbReceptacles: 1,
   additionalDedicatedCircuits: 0,
   routeLength: 80,
+  includeLightingCircuit: true,
+  lightingCircuitAmperage: 15,
+  lightingCircuitFootage: 40,
+  lightingCircuitLaborHours: 3,
+  smallApplianceCircuit1: true,
+  smallApplianceCircuit1Footage: 40,
+  smallApplianceCircuit1LaborHours: 3,
+  smallApplianceCircuit2: true,
+  smallApplianceCircuit2Footage: 40,
+  smallApplianceCircuit2LaborHours: 3,
+  microwaveCircuit: true,
+  microwaveCircuitFootage: 30,
+  microwaveCircuitLaborHours: 3,
+  applianceCircuitAmperage: 20,
+  applianceCircuitCableType: "12/2 NM-B",
+  applianceCircuitProtectionType: "Standard",
   customerSuppliedFixtures: true,
   notes: "",
   laborRateType: "residential",
@@ -55,7 +74,7 @@ export function NewKitchenQuote() {
   const [customerEmail, setCustomerEmail] = useState("")
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
-    "Provide labor and listed materials for the kitchen electrical scope, including appliance circuits, countertop receptacles, lighting, controls, device trim, testing, and final connections. Final appliance specifications, layout, and field conditions will be verified before work begins.",
+    "Provide labor and listed materials for the selected kitchen electrical scope, including the selected appliance branch circuits, a 15A lighting circuit, multi-location lighting controls, device trim, testing, and final connections. Final appliance specifications, circuit assumptions, layout, and field conditions will be verified before work begins.",
   )
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
@@ -88,6 +107,13 @@ export function NewKitchenQuote() {
     }))
   }
 
+  const setNumber = (key: keyof KitchenInputs, value: string) => {
+    setInputs((current) => ({
+      ...current,
+      [key]: Math.max(0, Number(value) || 0),
+    }))
+  }
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
     if (!previewIsCurrent) return
@@ -109,6 +135,7 @@ export function NewKitchenQuote() {
   }
 
   const pricing = previewQuote.data?.pricing
+  const assembly = previewQuote.data?.assembly
   const groups: Array<{
     title: string
     fields: Array<{ key: keyof KitchenInputs; label: string; help: string }>
@@ -130,6 +157,7 @@ export function NewKitchenQuote() {
         { key: "countertopReceptacles", label: "Countertop receptacles", help: "GFCI countertop devices" },
         { key: "usbReceptacles", label: "USB receptacles", help: "USB charging devices" },
         { key: "threeWayOptions", label: "3-way options", help: "Paired 3-way controls" },
+        { key: "fourWayLocations", label: "4-way locations", help: "Additional locations in a multi-location lighting control setup" },
         { key: "dimmers", label: "Dimmers", help: "Lighting dimmer controls" },
       ],
     },
@@ -185,6 +213,86 @@ export function NewKitchenQuote() {
                 <CardDescription>Configure appliance circuits, devices, lighting, controls, and common wiring.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8 pt-6">
+                <section>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Requested branch circuits</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="rounded-lg border bg-primary/5 p-4 md:col-span-2">
+                      <label className="flex items-start gap-3">
+                        <Checkbox checked={inputs.includeLightingCircuit === true} onCheckedChange={(checked) => setInputs((current) => ({ ...current, includeLightingCircuit: checked === true, lightingCircuitAmperage: 15 }))} />
+                        <span>
+                          <span className="block font-semibold">15A Kitchen Lighting Circuit</span>
+                          <span className="text-xs text-muted-foreground">Uses the selected panel manufacturer’s contractor-configured 15A breaker and the editable 14/2 NM-B price-book row.</span>
+                        </span>
+                      </label>
+                      {inputs.includeLightingCircuit && (
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label>Lighting Circuit</Label>
+                            <div className="flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium">15A / 1-pole / 14/2 NM-B</div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="kitchen-lighting-footage">14/2 Footage (FT)</Label>
+                            <Input id="kitchen-lighting-footage" type="number" min="0" value={inputs.lightingCircuitFootage ?? 0} onChange={(event) => setNumber("lightingCircuitFootage", event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="kitchen-lighting-labor">Lighting Circuit Labor (HR)</Label>
+                            <Input id="kitchen-lighting-labor" type="number" min="0" step="0.25" value={inputs.lightingCircuitLaborHours ?? 0} onChange={(event) => setNumber("lightingCircuitLaborHours", event.target.value)} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {([
+                      {
+                        enabledKey: "smallApplianceCircuit1",
+                        footageKey: "smallApplianceCircuit1Footage",
+                        laborKey: "smallApplianceCircuit1LaborHours",
+                        title: "Small-Appliance Circuit 1",
+                        help: "Independently include and adjust Circuit 1.",
+                      },
+                      {
+                        enabledKey: "smallApplianceCircuit2",
+                        footageKey: "smallApplianceCircuit2Footage",
+                        laborKey: "smallApplianceCircuit2LaborHours",
+                        title: "Small-Appliance Circuit 2",
+                        help: "Independently include and adjust Circuit 2.",
+                      },
+                      {
+                        enabledKey: "microwaveCircuit",
+                        footageKey: "microwaveCircuitFootage",
+                        laborKey: "microwaveCircuitLaborHours",
+                        title: "Dedicated Microwave Circuit",
+                        help: "Independent microwave branch-circuit scope.",
+                      },
+                    ] as const).map((circuit) => {
+                      const enabled = inputs[circuit.enabledKey] === true
+                      return (
+                        <div key={circuit.enabledKey} className="rounded-lg border bg-muted/15 p-4">
+                          <label className="flex items-start gap-3">
+                            <Checkbox checked={enabled} onCheckedChange={(checked) => setInputs((current) => ({ ...current, [circuit.enabledKey]: checked === true }))} />
+                            <span>
+                              <span className="block font-semibold">{circuit.title}</span>
+                              <span className="text-xs text-muted-foreground">{circuit.help}</span>
+                            </span>
+                          </label>
+                          {enabled && (
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor={`kitchen-${circuit.footageKey}`}>Cable Footage (FT)</Label>
+                                <Input id={`kitchen-${circuit.footageKey}`} type="number" min="0" value={inputs[circuit.footageKey] ?? 0} onChange={(event) => setNumber(circuit.footageKey, event.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`kitchen-${circuit.laborKey}`}>Labor (HR)</Label>
+                                <Input id={`kitchen-${circuit.laborKey}`} type="number" min="0" step="0.25" value={inputs[circuit.laborKey] ?? 0} onChange={(event) => setNumber(circuit.laborKey, event.target.value)} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+
                 {groups.map((group) => (
                   <section key={group.title}>
                     <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">{group.title}</h3>
@@ -210,6 +318,23 @@ export function NewKitchenQuote() {
                     </div>
                   </section>
                 ))}
+
+                {(inputs.fourWayLocations ?? 0) > 0 && (
+                  <section className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <h3 className="font-semibold">4-Way Lighting-Control Extension</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Each location adds its own editable switch, box, plate, cable allowance, and labor. It remains part of the selected lighting circuit and does not create another breaker.</p>
+                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="kitchen-four-way-footage">Configurable 14/3 Footage (FT)</Label>
+                        <Input id="kitchen-four-way-footage" type="number" min="0" value={inputs.fourWayCableFootage ?? 0} onChange={(event) => setNumber("fourWayCableFootage", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="kitchen-four-way-labor">Labor per 4-Way Location (HR)</Label>
+                        <Input id="kitchen-four-way-labor" type="number" min="0" step="0.25" value={inputs.fourWayLaborHoursPerLocation ?? 0} onChange={(event) => setNumber("fourWayLaborHoursPerLocation", event.target.value)} />
+                      </div>
+                    </div>
+                  </section>
+                )}
 
                 <section>
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and catalog selections</h3>
@@ -264,6 +389,26 @@ export function NewKitchenQuote() {
                         <option value="2">2-pole</option>
                       </select>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="kitchen-appliance-amps">Selected Branch-Circuit Amperage</Label>
+                      <Input id="kitchen-appliance-amps" type="number" min="1" value={inputs.applianceCircuitAmperage ?? 20} onChange={(event) => setNumber("applianceCircuitAmperage", event.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="kitchen-appliance-cable">Selected Branch-Circuit Cable</Label>
+                      <select id="kitchen-appliance-cable" value={inputs.applianceCircuitCableType ?? "12/2 NM-B"} onChange={(event) => setInputs((current) => ({ ...current, applianceCircuitCableType: event.target.value as KitchenInputs["applianceCircuitCableType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="12/2 NM-B">12/2 NM-B</option>
+                        <option value="14/2 NM-B">14/2 NM-B</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="kitchen-appliance-protection">Selected Branch-Circuit Protection</Label>
+                      <select id="kitchen-appliance-protection" value={inputs.applianceCircuitProtectionType ?? "Standard"} onChange={(event) => setInputs((current) => ({ ...current, applianceCircuitProtectionType: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="Standard">Standard</option>
+                        <option value="GFCI">GFCI</option>
+                        <option value="AFCI">AFCI</option>
+                        <option value="Dual Function">Dual Function</option>
+                      </select>
+                    </div>
                   </div>
                 </section>
 
@@ -310,7 +455,7 @@ export function NewKitchenQuote() {
                             <TriangleAlert size={16} /> Estimate needs confirmation
                           </div>
                           <ul className="space-y-1 pl-5 text-xs text-secondary-foreground/80 list-disc">
-                            {pricing.pricingWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+                            {pricing.pricingWarnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}
                           </ul>
                         </div>
                       )}
@@ -320,6 +465,19 @@ export function NewKitchenQuote() {
                         {pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}
                         <div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div>
                       </div>
+                      {assembly && assembly.length > 0 && (
+                        <div className="border-t border-secondary-border pt-4">
+                          <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-secondary-foreground/60">Priced Assembly</h4>
+                          <div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-xs">
+                            {assembly.map((line, index) => (
+                              <div key={`${line.id}-${index}`} className="flex justify-between gap-3">
+                                <span className="text-secondary-foreground/80">{line.description} × {line.quantity} {line.unit}</span>
+                                <span className="shrink-0 font-mono">${line.extendedCost.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="py-6 text-center text-sm text-secondary-foreground/70">Updating authoritative estimate...</div>
