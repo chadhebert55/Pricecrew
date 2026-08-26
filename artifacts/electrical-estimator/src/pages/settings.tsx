@@ -11,7 +11,9 @@ export function Settings() {
   
   const [form, setForm] = useState({
     companyName: "",
-    laborRate: "0",
+    residentialLaborSellRate: "0",
+    commercialLaborSellRate: "0",
+    loadedLaborCost: "0",
     materialMarkup: "0",
     targetMargin: "0",
     defaultTaxRate: "0"
@@ -21,7 +23,9 @@ export function Settings() {
     if (settings) {
       setForm({
         companyName: settings.companyName,
-        laborRate: settings.laborRate.toString(),
+        residentialLaborSellRate: settings.residentialLaborSellRate.toString(),
+        commercialLaborSellRate: settings.commercialLaborSellRate.toString(),
+        loadedLaborCost: settings.loadedLaborCost.toString(),
         materialMarkup: (settings.materialMarkup * 100).toString(),
         targetMargin: (settings.targetMargin * 100).toString(),
         defaultTaxRate: (settings.defaultTaxRate * 100).toString(),
@@ -33,7 +37,9 @@ export function Settings() {
     updateSettings.mutate({
       data: {
         companyName: form.companyName,
-        laborRate: parseFloat(form.laborRate),
+        residentialLaborSellRate: parseFloat(form.residentialLaborSellRate),
+        commercialLaborSellRate: parseFloat(form.commercialLaborSellRate),
+        loadedLaborCost: parseFloat(form.loadedLaborCost),
         materialMarkup: parseFloat(form.materialMarkup) / 100,
         targetMargin: parseFloat(form.targetMargin) / 100,
         defaultTaxRate: parseFloat(form.defaultTaxRate) / 100
@@ -69,19 +75,51 @@ export function Settings() {
       <Card>
         <CardHeader>
           <CardTitle>Estimating Defaults</CardTitle>
-          <CardDescription>These rates apply to all new quotes automatically.</CardDescription>
+          <CardDescription>Sell rates price customer labor. Loaded labor cost is used only for internal job cost, profit, and margin on new estimates.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label>Base Labor Rate ($/hr)</Label>
+              <Label>Residential Labor Sell Rate ($/hr)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-muted-foreground">$</span>
                 <Input 
                   type="number"
+                  min="0"
+                  step="0.01"
                   className="pl-7 font-mono"
-                  value={form.laborRate}
-                  onChange={(e) => setForm(f => ({ ...f, laborRate: e.target.value }))}
+                  value={form.residentialLaborSellRate}
+                  onChange={(e) => setForm(f => ({ ...f, residentialLaborSellRate: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Commercial Labor Sell Rate ($/hr)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="pl-7 font-mono"
+                  value={form.commercialLaborSellRate}
+                  onChange={(e) => setForm(f => ({ ...f, commercialLaborSellRate: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Loaded Internal Labor Cost ($/hr)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="pl-7 font-mono"
+                  value={form.loadedLaborCost}
+                  onChange={(e) => setForm(f => ({ ...f, loadedLaborCost: e.target.value }))}
                 />
               </div>
             </div>

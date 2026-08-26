@@ -28,6 +28,14 @@ const initialInputs: BathroomInputs = {
   circuitOption: BathroomInputsCircuitOption.New_dedicated_circuit,
   customerSuppliedFixtures: true,
   notes: "",
+  laborRateType: "residential",
+  panelManufacturer: "Siemens",
+  breakerAmperage: 20,
+  breakerPoleCount: 1,
+  breakerProtectionType: "GFCI",
+  gfciAmperage: 20,
+  recessedLightSize: "4-inch",
+  cableType: "12/2 NM-B",
 }
 
 function optionalAmount(value: string) {
@@ -178,6 +186,69 @@ export function NewBathroomQuote() {
                   ))}
                 </div>
 
+                <section>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and catalog selections</h3>
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-labor-rate">Labor Sell Rate</Label>
+                      <select id="bath-labor-rate" value={inputs.laborRateType ?? "residential"} onChange={(event) => setInputs((current) => ({ ...current, laborRateType: event.target.value as BathroomInputs["laborRateType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="residential">Residential</option>
+                        <option value="commercial">Commercial</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-gfci-rating">GFCI Device Rating</Label>
+                      <select id="bath-gfci-rating" value={inputs.gfciAmperage ?? 20} onChange={(event) => setInputs((current) => ({ ...current, gfciAmperage: Number(event.target.value) }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="15">15A P&amp;S 1597-TRWRW</option>
+                        <option value="20">20A P&amp;S 2097-TRWRW</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-recessed-size">Recessed Light Product</Label>
+                      <select id="bath-recessed-size" value={inputs.recessedLightSize ?? "4-inch"} onChange={(event) => setInputs((current) => ({ ...current, recessedLightSize: event.target.value as BathroomInputs["recessedLightSize"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="4-inch">Juno 4-inch regressed wafer</option>
+                        <option value="6-inch">Juno 6-inch regressed wafer</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-cable">Common-Route Cable</Label>
+                      <select id="bath-cable" value={inputs.cableType ?? "12/2 NM-B"} onChange={(event) => setInputs((current) => ({ ...current, cableType: event.target.value as BathroomInputs["cableType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="12/2 NM-B">12/2 NM-B</option>
+                        <option value="14/2 NM-B">14/2 NM-B</option>
+                        <option value="14/3 NM-B">14/3 NM-B</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-panel">Panel Manufacturer</Label>
+                      <select id="bath-panel" value={inputs.panelManufacturer ?? "Siemens"} onChange={(event) => setInputs((current) => ({ ...current, panelManufacturer: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="Siemens">Siemens / ITE</option>
+                        <option value="Eaton">Eaton BR</option>
+                        <option value="Square D">Square D Homeline</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-breaker-protection">Breaker Protection</Label>
+                      <select id="bath-breaker-protection" value={inputs.breakerProtectionType ?? "GFCI"} onChange={(event) => setInputs((current) => ({ ...current, breakerProtectionType: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="Standard">Standard</option>
+                        <option value="GFCI">GFCI</option>
+                        <option value="AFCI">AFCI</option>
+                        <option value="Dual Function">Dual Function</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-breaker-amps">Breaker Amperage</Label>
+                      <Input id="bath-breaker-amps" type="number" min="1" value={inputs.breakerAmperage ?? 20} onChange={(event) => setInputs((current) => ({ ...current, breakerAmperage: Number(event.target.value) }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bath-breaker-poles">Breaker Pole Count</Label>
+                      <select id="bath-breaker-poles" value={inputs.breakerPoleCount ?? 1} onChange={(event) => setInputs((current) => ({ ...current, breakerPoleCount: Number(event.target.value) }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="1">1-pole</option>
+                        <option value="2">2-pole</option>
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="bath-circuit">Circuit Scope</Label>
@@ -260,7 +331,8 @@ export function NewBathroomQuote() {
                       )}
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Calculated Labor</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>
+                        {pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}
                         <div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div>
                       </div>
                     </>
@@ -270,7 +342,7 @@ export function NewBathroomQuote() {
 
                   <div className="space-y-3 border-t border-secondary-border pt-4">
                     <div className="space-y-2">
-                      <Label htmlFor="bath-labor-override">Labor Cost Override ($)</Label>
+                       <Label htmlFor="bath-labor-override">Internal Labor Cost Override ($)</Label>
                       <Input id="bath-labor-override" min="0" step="0.01" type="number" value={laborOverride} onChange={(event) => setLaborOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.laborCost.toFixed(2)}` : "Optional"} />
                     </div>
                     <div className="space-y-2">

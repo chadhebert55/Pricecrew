@@ -1,4 +1,4 @@
-import { useCreateQuote, usePreviewQuote } from "@workspace/api-client-react"
+import { type EvChargerInputs, useCreateQuote, usePreviewQuote } from "@workspace/api-client-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -35,7 +35,7 @@ export function NewQuote() {
   const [proposalDescription, setProposalDescription] = useState("Provide and install dedicated 240V circuit for Level 2 EV charging equipment. Includes proper wire sizing, conduit/routing, and required overcurrent protection to meet NEC standards and manufacturer specifications.")
   
   // EV Charger Inputs - completely covering schema
-  const [inputs, setInputs] = useState({
+  const [inputs, setInputs] = useState<EvChargerInputs>({
     chargerQuantity: 1,
     chargerOutputAmps: 40,
     circuitAmps: "Auto", 
@@ -54,7 +54,8 @@ export function NewQuote() {
     surgeProtection: "None",
     panelModifications: "None",
     difficulty: "Standard",
-    notes: "Trade default: 50A circuit, #8 wire. Future service upgrade ref: 3 x 4/0 XHHW for mast work."
+    notes: "Trade default: 50A circuit, #8 wire. Future service upgrade ref: 3 x 4/0 XHHW for mast work.",
+    laborRateType: "residential",
   })
 
   const currentInputKey = JSON.stringify(inputs)
@@ -178,6 +179,17 @@ export function NewQuote() {
                 <div>
                   <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 border-b pb-2">Equipment & Electrical</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label>Labor Sell Rate</Label>
+                      <BasicSelect
+                        value={inputs.laborRateType ?? "residential"}
+                        onChange={v => setInputs({...inputs, laborRateType: v as EvChargerInputs["laborRateType"]})}
+                        options={[
+                          {value: "residential", label: "Residential"},
+                          {value: "commercial", label: "Commercial"},
+                        ]}
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label>Charger Quantity</Label>
                       <Input 
@@ -315,6 +327,8 @@ export function NewQuote() {
                         options={[
                           {value: "Standard 2-Pole", label: "Standard 2-Pole"},
                           {value: "GFCI 2-Pole", label: "GFCI 2-Pole"},
+                          {value: "AFCI 2-Pole", label: "AFCI 2-Pole"},
+                          {value: "Dual Function 2-Pole", label: "Dual Function 2-Pole"},
                         ]}
                       />
                     </div>
@@ -474,9 +488,15 @@ export function NewQuote() {
                           <span className="font-mono">${previewPricing.materialCost.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
-                          <span>Labor Cost</span>
+                          <span>Loaded Internal Labor Cost</span>
                           <span className="font-mono">${previewPricing.laborCost.toFixed(2)}</span>
                         </div>
+                        {previewPricing.laborSellAmount !== undefined && (
+                          <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
+                            <span>Customer Labor ({previewPricing.laborRateType} @ ${previewPricing.laborSellRate?.toFixed(2)}/hr)</span>
+                            <span className="font-mono">${previewPricing.laborSellAmount.toFixed(2)}</span>
+                          </div>
+                        )}
                         <div className="border-t border-secondary-border pt-3 flex justify-between items-center font-bold">
                           <span>Total Cost</span>
                           <span className="font-mono">${totalCost.toFixed(2)}</span>

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LaborRateType } from './laborRateType';
 
 export interface PricingInput {
   materialCost: number;
@@ -16,4 +17,7 @@ export interface PricingInput {
   laborOverride: number | null;
   /** @nullable */
   sellingPriceOverride: number | null;
+  laborSellRate?: number;
+  laborSellAmount?: number;
+  laborRateType?: LaborRateType;
 }

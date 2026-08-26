@@ -145,7 +145,8 @@ export const CreateQuoteBody = zod.object({
   "surgeProtection": zod.string(),
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }),zod.object({
   "gfciReceptacles": zod.number().min(createQuoteBodyJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(createQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
@@ -159,7 +160,15 @@ export const CreateQuoteBody = zod.object({
   "routeLength": zod.number().min(createQuoteBodyJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "gfciAmperage": zod.number().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
   "refrigeratorCircuits": zod.number().min(createQuoteBodyJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(createQuoteBodyJobInputsThreeDishwasherCircuitsMin),
@@ -177,7 +186,14 @@ export const CreateQuoteBody = zod.object({
   "additionalDedicatedCircuits": zod.number().min(createQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(createQuoteBodyJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 })]),
   "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).nullish(),
   "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).nullish(),
@@ -265,7 +281,8 @@ export const CreateQuoteResponse = zod.object({
   "surgeProtection": zod.string(),
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }),zod.object({
   "gfciReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
@@ -279,7 +296,15 @@ export const CreateQuoteResponse = zod.object({
   "routeLength": zod.number().min(createQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "gfciAmperage": zod.number().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
   "refrigeratorCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
@@ -297,7 +322,14 @@ export const CreateQuoteResponse = zod.object({
   "additionalDedicatedCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(createQuoteResponseTwoJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 })]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -316,7 +348,10 @@ export const CreateQuoteResponse = zod.object({
   "calculatedSellingPrice": zod.number(),
   "finalSellingPrice": zod.number(),
   "laborOverride": zod.number().nullable(),
-  "sellingPriceOverride": zod.number().nullable()
+  "sellingPriceOverride": zod.number().nullable(),
+  "laborSellRate": zod.number().optional(),
+  "laborSellAmount": zod.number().optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -405,7 +440,8 @@ export const PreviewQuoteBody = zod.object({
   "surgeProtection": zod.string(),
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }),zod.object({
   "gfciReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
@@ -419,7 +455,15 @@ export const PreviewQuoteBody = zod.object({
   "routeLength": zod.number().min(previewQuoteBodyJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "gfciAmperage": zod.number().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
   "refrigeratorCircuits": zod.number().min(previewQuoteBodyJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(previewQuoteBodyJobInputsThreeDishwasherCircuitsMin),
@@ -437,7 +481,14 @@ export const PreviewQuoteBody = zod.object({
   "additionalDedicatedCircuits": zod.number().min(previewQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(previewQuoteBodyJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 })]),
   "laborOverride": zod.number().min(previewQuoteBodyLaborOverrideMin).nullish(),
   "sellingPriceOverride": zod.number().min(previewQuoteBodySellingPriceOverrideMin).nullish()
@@ -461,7 +512,10 @@ export const PreviewQuoteResponse = zod.object({
   "calculatedSellingPrice": zod.number(),
   "finalSellingPrice": zod.number(),
   "laborOverride": zod.number().nullable(),
-  "sellingPriceOverride": zod.number().nullable()
+  "sellingPriceOverride": zod.number().nullable(),
+  "laborSellRate": zod.number().optional(),
+  "laborSellAmount": zod.number().optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -558,7 +612,8 @@ export const GetQuoteResponse = zod.object({
   "surgeProtection": zod.string(),
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }),zod.object({
   "gfciReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
@@ -572,7 +627,15 @@ export const GetQuoteResponse = zod.object({
   "routeLength": zod.number().min(getQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "gfciAmperage": zod.number().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
   "refrigeratorCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
@@ -590,7 +653,14 @@ export const GetQuoteResponse = zod.object({
   "additionalDedicatedCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(getQuoteResponseTwoJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 })]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -609,7 +679,10 @@ export const GetQuoteResponse = zod.object({
   "calculatedSellingPrice": zod.number(),
   "finalSellingPrice": zod.number(),
   "laborOverride": zod.number().nullable(),
-  "sellingPriceOverride": zod.number().nullable()
+  "sellingPriceOverride": zod.number().nullable(),
+  "laborSellRate": zod.number().optional(),
+  "laborSellAmount": zod.number().optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -715,7 +788,8 @@ export const UpdateQuoteResponse = zod.object({
   "surgeProtection": zod.string(),
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }),zod.object({
   "gfciReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
@@ -729,7 +803,15 @@ export const UpdateQuoteResponse = zod.object({
   "routeLength": zod.number().min(updateQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "gfciAmperage": zod.number().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
   "refrigeratorCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
@@ -747,7 +829,14 @@ export const UpdateQuoteResponse = zod.object({
   "additionalDedicatedCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
   "routeLength": zod.number().min(updateQuoteResponseTwoJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
-  "notes": zod.string()
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 })]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -766,7 +855,10 @@ export const UpdateQuoteResponse = zod.object({
   "calculatedSellingPrice": zod.number(),
   "finalSellingPrice": zod.number(),
   "laborOverride": zod.number().nullable(),
-  "sellingPriceOverride": zod.number().nullable()
+  "sellingPriceOverride": zod.number().nullable(),
+  "laborSellRate": zod.number().optional(),
+  "laborSellAmount": zod.number().optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -835,7 +927,9 @@ export const UpdatePriceBookItemResponse = zod.object({
  */
 export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
-  "laborRate": zod.number(),
+  "residentialLaborSellRate": zod.number(),
+  "commercialLaborSellRate": zod.number(),
+  "loadedLaborCost": zod.number(),
   "materialMarkup": zod.number(),
   "targetMargin": zod.number(),
   "defaultTaxRate": zod.number()
@@ -847,7 +941,9 @@ export const GetSettingsResponse = zod.object({
  */
 export const UpdateSettingsBody = zod.object({
   "companyName": zod.string().optional(),
-  "laborRate": zod.number().optional(),
+  "residentialLaborSellRate": zod.number().optional(),
+  "commercialLaborSellRate": zod.number().optional(),
+  "loadedLaborCost": zod.number().optional(),
   "materialMarkup": zod.number().optional(),
   "targetMargin": zod.number().optional(),
   "defaultTaxRate": zod.number().optional()
@@ -855,7 +951,9 @@ export const UpdateSettingsBody = zod.object({
 
 export const UpdateSettingsResponse = zod.object({
   "companyName": zod.string(),
-  "laborRate": zod.number(),
+  "residentialLaborSellRate": zod.number(),
+  "commercialLaborSellRate": zod.number(),
+  "loadedLaborCost": zod.number(),
   "materialMarkup": zod.number(),
   "targetMargin": zod.number(),
   "defaultTaxRate": zod.number()

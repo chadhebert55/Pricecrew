@@ -8,7 +8,9 @@
 
 export interface CompanySettingsUpdate {
   companyName?: string;
-  laborRate?: number;
+  residentialLaborSellRate?: number;
+  commercialLaborSellRate?: number;
+  loadedLaborCost?: number;
   materialMarkup?: number;
   targetMargin?: number;
   defaultTaxRate?: number;

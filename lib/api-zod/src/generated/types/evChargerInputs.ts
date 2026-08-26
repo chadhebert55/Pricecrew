@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LaborRateType } from './laborRateType';
 
 export interface EvChargerInputs {
   chargerQuantity: number;
@@ -26,4 +27,5 @@ export interface EvChargerInputs {
   panelModifications: string;
   difficulty: string;
   notes: string;
+  laborRateType?: LaborRateType;
 }

@@ -5,6 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { KitchenInputsCableType } from './kitchenInputsCableType';
+import type { KitchenInputsRecessedLightSize } from './kitchenInputsRecessedLightSize';
+import type { LaborRateType } from './laborRateType';
 
 export interface KitchenInputs {
   /** @minimum 0 */
@@ -39,4 +42,11 @@ export interface KitchenInputs {
   routeLength: number;
   customerSuppliedFixtures: boolean;
   notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  recessedLightSize?: KitchenInputsRecessedLightSize;
+  cableType?: KitchenInputsCableType;
 }

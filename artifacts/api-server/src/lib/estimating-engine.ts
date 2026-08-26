@@ -3,6 +3,7 @@ import type {
   BathroomInputRecord,
   EvChargerInputRecord,
   KitchenInputRecord,
+  LaborRateType,
   PricingRecord,
 } from "@workspace/db";
 
@@ -20,7 +21,9 @@ export type PriceBookItem = {
 };
 
 export type EstimatingSettings = {
-  laborRate: number;
+  residentialLaborSellRate: number;
+  commercialLaborSellRate: number;
+  loadedLaborCost: number;
   materialMarkup: number;
   targetMargin: number;
 };
@@ -50,6 +53,15 @@ function normalized(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function catalogSource(item: PriceBookItem) {
+  const parts = [
+    item.supplier,
+    item.supplierSku ? `SKU ${item.supplierSku}` : null,
+    item.sourceDate,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" • ") : "Company price book";
+}
+
 function unitCost(
   key: string,
   priceBook: PriceBookItem[],
@@ -59,7 +71,7 @@ function unitCost(
     (item) => normalized(item.item) === normalized(key),
   );
   if (match && Number.isFinite(match.unitCost) && match.unitCost > 0) {
-    return { value: match.unitCost, source: "Company price book" };
+    return { value: match.unitCost, source: catalogSource(match) };
   }
 
   const starterCost = starterCosts[key];
@@ -92,33 +104,43 @@ function addLine(
   });
 }
 
+function protectionType(value: string) {
+  if (/dual|afci.*gfci|gfci.*afci/i.test(value)) return "Dual Function";
+  if (/afci/i.test(value)) return "AFCI";
+  if (/gfci/i.test(value)) return "GFCI";
+  return "Standard";
+}
+
+type BreakerSelection = {
+  manufacturer: string;
+  amperage: number;
+  poleCount: number;
+  protectionType: string;
+};
+
 function resolveBreaker(
-  inputs: EvChargerInputRecord,
-  circuitAmps: number,
+  selection: BreakerSelection,
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
 ) {
-  const poleCount = /single|1[- ]?pole/i.test(inputs.breakerRequirement) ? 1 : 2;
-  const protectionType = /gfci/i.test(inputs.breakerRequirement)
-    ? "GFCI"
-    : "Standard";
+  const exactProtectionType = protectionType(selection.protectionType);
   const match = priceBook.find(
     (item) =>
-      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
-      item.amperage === circuitAmps &&
-      item.poleCount === poleCount &&
-      normalized(item.protectionType ?? "") === normalized(protectionType) &&
+      normalized(item.manufacturer ?? "") === normalized(selection.manufacturer) &&
+      item.amperage === selection.amperage &&
+      item.poleCount === selection.poleCount &&
+      normalized(item.protectionType ?? "") === normalized(exactProtectionType) &&
       Number.isFinite(item.unitCost) &&
       item.unitCost > 0,
   );
 
   if (!match) {
     pricingWarnings.push(
-      `Unresolved breaker: no exact ${inputs.panelManufacturer} ${circuitAmps}A ${poleCount}-pole ${protectionType} breaker is available in the company price book. No generic breaker cost was substituted.`,
+      `Unresolved breaker: no exact ${selection.manufacturer || "selected manufacturer"} ${selection.amperage || "selected amperage"}A ${selection.poleCount || "selected pole count"}-pole ${exactProtectionType} breaker is available in the company price book. No generic breaker cost was substituted.`,
     );
     return {
       value: 0,
-      description: `${poleCount}-pole ${circuitAmps}A ${protectionType} breaker — unresolved`,
+      description: `${selection.poleCount || "?"}-pole ${selection.amperage || "?"}A ${exactProtectionType} breaker — unresolved`,
       source: "Unresolved exact breaker — add compatible catalog item",
     };
   }
@@ -126,19 +148,15 @@ function resolveBreaker(
   const part = match.manufacturerPartNumber
     ? ` ${match.manufacturerPartNumber}`
     : "";
-  const sourceParts = [
-    match.supplier,
-    match.supplierSku ? `SKU ${match.supplierSku}` : null,
-    match.sourceDate,
-  ].filter(Boolean);
-
   return {
     value: match.unitCost,
-    description: `${poleCount}-pole ${circuitAmps}A ${protectionType} breaker — ${match.manufacturer}${part}`,
-    source: sourceParts.length > 0
-      ? sourceParts.join(" • ")
-      : "Company price book",
+    description: `${selection.poleCount}-pole ${selection.amperage}A ${exactProtectionType} breaker — ${match.manufacturer}${part}`,
+    source: catalogSource(match),
   };
+}
+
+function selectedLaborRateType(value?: string): LaborRateType {
+  return value === "commercial" ? "commercial" : "residential";
 }
 
 function finalizeEstimate(
@@ -146,18 +164,26 @@ function finalizeEstimate(
   laborHours: number,
   settings: EstimatingSettings,
   pricingWarnings: string[],
+  requestedLaborRateType?: string,
 ): EstimateResult {
+  const laborRateType = selectedLaborRateType(requestedLaborRateType);
+  const laborSellRate =
+    laborRateType === "commercial"
+      ? settings.commercialLaborSellRate
+      : settings.residentialLaborSellRate;
   const materialCost = Number(
     assembly.reduce((sum, line) => sum + line.extendedCost, 0).toFixed(2),
   );
-  const laborCost = Number((laborHours * settings.laborRate).toFixed(2));
-  const costWithMarkup = materialCost * (1 + settings.materialMarkup) + laborCost;
+  const laborCost = Number((laborHours * settings.loadedLaborCost).toFixed(2));
+  const laborSellAmount = Number((laborHours * laborSellRate).toFixed(2));
+  const rateBasedSellingPrice =
+    materialCost * (1 + settings.materialMarkup) + laborSellAmount;
   const targetMarginPrice =
     settings.targetMargin > 0 && settings.targetMargin < 1
       ? (materialCost + laborCost) / (1 - settings.targetMargin)
-      : costWithMarkup;
+      : rateBasedSellingPrice;
   const calculatedSellingPrice = Number(
-    Math.max(costWithMarkup, targetMarginPrice).toFixed(2),
+    Math.max(rateBasedSellingPrice, targetMarginPrice).toFixed(2),
   );
   const grossProfit = Number(
     (calculatedSellingPrice - materialCost - laborCost).toFixed(2),
@@ -179,6 +205,9 @@ function finalizeEstimate(
           ? Number((grossProfit / calculatedSellingPrice).toFixed(4))
           : 0,
       pricingWarnings,
+      laborSellRate,
+      laborSellAmount,
+      laborRateType,
     },
   };
 }
@@ -201,12 +230,12 @@ export function calculateEvChargerEstimate(
     inputs.difficulty === "Extreme" ? 2.2 : inputs.difficulty === "Hard" ? 1.5 : 1;
   const accessHours = /limited|occupied|difficult/i.test(inputs.access) ? 0.75 : 0;
 
-  const breaker = resolveBreaker(
-    inputs,
-    circuitAmps,
-    priceBook,
-    pricingWarnings,
-  );
+  const breaker = resolveBreaker({
+    manufacturer: inputs.panelManufacturer,
+    amperage: circuitAmps,
+    poleCount: /single|1[- ]?pole/i.test(inputs.breakerRequirement) ? 1 : 2,
+    protectionType: inputs.breakerRequirement,
+  }, priceBook, pricingWarnings);
   addLine(assembly, {
     id: "breaker",
     category: "Protection",
@@ -383,6 +412,7 @@ export function calculateEvChargerEstimate(
     baseHours * difficultyMultiplier,
     settings,
     pricingWarnings,
+    inputs.laborRateType,
   );
 }
 
@@ -419,65 +449,70 @@ export function calculateBathroomEstimate(
     });
   };
 
+  const gfciAmperage = inputs.gfciAmperage === 15 ? 15 : 20;
   addPricedItem(
     "gfci-receptacles",
     "Devices",
-    "GFCI receptacle",
-    "20A GFCI receptacle",
+    gfciAmperage === 15
+      ? "Pass & Seymour 1597-TRWRW 15A TR self-test GFCI"
+      : "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
+    `${gfciAmperage}A tamper-resistant self-test GFCI receptacle`,
     inputs.gfciReceptacles,
   );
   addPricedItem(
     "additional-receptacles",
     "Devices",
-    "standard receptacle",
-    "Additional receptacle downstream of GFCI",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    "15A tamper-resistant duplex receptacle downstream of GFCI",
     inputs.additionalReceptacles,
   );
   addPricedItem(
     "vanity-lights",
     "Lighting",
-    "vanity light allowance",
-    "Vanity light",
+    "Unverified allowance — vanity light",
+    "Vanity light allowance — fixture not verified",
     inputs.vanityLights,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "recessed-lights",
     "Lighting",
-    "recessed light",
-    "Recessed light",
+    inputs.recessedLightSize === "6-inch"
+      ? "Juno 6-inch regressed wafer light"
+      : "Juno 4-inch regressed wafer light",
+    `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "exhaust-fans",
     "Ventilation",
-    "exhaust fan",
-    "Exhaust fan with new switch leg",
+    "Panasonic FV-0511VF1 exhaust fan",
+    "Panasonic FV-0511VF1 exhaust fan with new switch leg",
     inputs.exhaustFans,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "fan-lights",
     "Ventilation",
-    "fan/light",
-    "Combination fan/light",
+    "Unverified allowance — fan/light",
+    "Combination fan/light allowance — equipment not verified",
     inputs.fanLights,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "fan-light-heat",
     "Ventilation",
-    "fan/light/heat",
-    "Combination fan/light/heat",
+    "Unverified allowance — fan/light/heat",
+    "Combination fan/light/heat allowance — equipment not verified",
     inputs.fanLightHeatUnits,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "additional-switches",
     "Devices",
-    "single-pole switch",
-    "Additional switch",
+    "Unverified allowance — single-pole switch",
+    "Additional switch allowance",
     inputs.additionalSwitches,
   );
 
@@ -485,8 +520,8 @@ export function calculateBathroomEstimate(
     addPricedItem(
       "heated-floor",
       "Circuit",
-      "heated floor circuit allowance",
-      "Dedicated heated-floor circuit allowance",
+      "Unverified allowance — heated-floor circuit",
+      "Dedicated heated-floor circuit allowance — assembly not verified",
       1,
     );
   }
@@ -495,17 +530,25 @@ export function calculateBathroomEstimate(
     addPricedItem(
       "bathroom-circuit",
       "Circuit",
-      "bathroom circuit materials",
-      "New dedicated bathroom circuit materials",
+      "Unverified allowance — bathroom circuit materials",
+      "New dedicated bathroom circuit materials allowance",
       1,
     );
-    addPricedItem(
-      "bathroom-circuit-protection",
-      "Protection",
-      "bathroom circuit protection allowance",
-      "Bathroom circuit protection allowance",
-      1,
-    );
+    const breaker = resolveBreaker({
+      manufacturer: inputs.panelManufacturer ?? "",
+      amperage: inputs.breakerAmperage ?? 0,
+      poleCount: inputs.breakerPoleCount ?? 0,
+      protectionType: inputs.breakerProtectionType ?? "GFCI",
+    }, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id: "bathroom-circuit-protection",
+      category: "Protection",
+      description: breaker.description,
+      quantity: 1,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
   } else {
     pricingWarnings.push(
       "Existing bathroom circuit reuse must be field-verified for capacity and applicable protection requirements before the quote is sent.",
@@ -530,14 +573,14 @@ export function calculateBathroomEstimate(
   addPricedItem(
     "bathroom-boxes",
     "Rough-in",
-    "single-gang box",
+    "Unverified allowance — single-gang box",
     "Bathroom device and fixture box allowance",
     deviceCount,
   );
   addPricedItem(
     "bathroom-plates",
     "Trim",
-    "device plate",
+    "Unverified allowance — device plate",
     "Bathroom device plate allowance",
     inputs.gfciReceptacles +
       inputs.additionalReceptacles +
@@ -548,8 +591,8 @@ export function calculateBathroomEstimate(
     addPricedItem(
       "bathroom-wiring",
       "Conductor",
-      "#12 NM-B cable",
-      "Bathroom wiring allowance",
+      `${inputs.cableType ?? "12/2 NM-B"} cable`,
+      `Bathroom common-route cable — ${inputs.cableType ?? "12/2 NM-B"}`,
       routeLength,
       false,
       "ft",
@@ -577,7 +620,13 @@ export function calculateBathroomEstimate(
     routeLength / 30 +
     (/new/i.test(inputs.circuitOption) ? 3 : 0);
 
-  return finalizeEstimate(assembly, laborHours, settings, pricingWarnings);
+  return finalizeEstimate(
+    assembly,
+    laborHours,
+    settings,
+    pricingWarnings,
+    inputs.laborRateType,
+  );
 }
 
 export function calculateKitchenEstimate(
@@ -614,12 +663,12 @@ export function calculateKitchenEstimate(
   };
 
   const circuitItems: Array<[keyof KitchenInputRecord, string, string, string]> = [
-    ["refrigeratorCircuits", "refrigerator circuit materials", "Refrigerator dedicated circuit", "Circuit"],
-    ["dishwasherCircuits", "dishwasher circuit materials", "Dishwasher dedicated circuit", "Circuit"],
-    ["disposalCircuits", "disposal circuit materials", "Disposal circuit", "Circuit"],
-    ["gasRangeCircuits", "gas range circuit materials", "Gas range circuit", "Circuit"],
-    ["electricRangeCircuits", "electric range circuit materials", "Electric range circuit", "Circuit"],
-    ["additionalDedicatedCircuits", "additional dedicated circuit materials", "Additional dedicated kitchen circuit", "Circuit"],
+    ["refrigeratorCircuits", "Unverified allowance — refrigerator circuit materials", "Refrigerator circuit allowance — exact breaker/conductor unresolved", "Circuit"],
+    ["dishwasherCircuits", "Unverified allowance — dishwasher circuit materials", "Dishwasher circuit allowance — exact breaker/conductor unresolved", "Circuit"],
+    ["disposalCircuits", "Unverified allowance — disposal circuit materials", "Disposal circuit allowance — exact breaker/conductor unresolved", "Circuit"],
+    ["gasRangeCircuits", "Unverified allowance — gas range circuit materials", "Gas range circuit allowance — exact breaker/conductor unresolved", "Circuit"],
+    ["electricRangeCircuits", "Unverified allowance — electric range circuit materials", "Electric range circuit allowance — exact breaker/conductor unresolved", "Circuit"],
+    ["additionalDedicatedCircuits", "Unverified allowance — additional dedicated circuit materials", "Additional dedicated circuit allowance — exact breaker/conductor unresolved", "Circuit"],
   ];
   for (const [field, key, description, category] of circuitItems) {
     addPricedItem(field, category, key, description, inputs[field] as number);
@@ -628,37 +677,37 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "countertop-receptacles",
     "Devices",
-    "countertop GFCI receptacle",
-    "Countertop GFCI receptacle",
+    "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
+    "20A tamper-resistant self-test countertop GFCI receptacle",
     inputs.countertopReceptacles,
   );
   addPricedItem(
     "usb-receptacles",
     "Devices",
-    "USB receptacle",
-    "USB receptacle",
+    "Unverified allowance — USB receptacle",
+    "USB receptacle allowance",
     inputs.usbReceptacles,
   );
   addPricedItem(
     "sink-lights",
     "Lighting",
-    "sink light",
-    "Sink light",
+    "Unverified allowance — sink light",
+    "Sink light allowance",
     inputs.sinkLights,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "island-pendants",
     "Lighting",
-    "island pendant",
-    "Island pendant",
+    "Unverified allowance — island pendant",
+    "Island pendant allowance",
     inputs.islandPendants,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "undercabinet-lighting",
     "Lighting",
-    "undercabinet lighting",
+    "Unverified allowance — undercabinet lighting",
     "Undercabinet lighting allowance",
     inputs.undercabinetLighting,
     inputs.customerSuppliedFixtures,
@@ -666,23 +715,25 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "recessed-lights",
     "Lighting",
-    "kitchen recessed light",
-    "Kitchen recessed light",
+    inputs.recessedLightSize === "6-inch"
+      ? "Juno 6-inch regressed wafer light"
+      : "Juno 4-inch regressed wafer light",
+    `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
     inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "three-way-options",
     "Controls",
-    "3-way switch pair",
-    "3-way switching option",
+    "Unverified allowance — 3-way switch pair",
+    "3-way switching allowance",
     inputs.threeWayOptions,
   );
   addPricedItem(
     "dimmers",
     "Controls",
-    "dimmer switch",
-    "Dimmer switch",
+    "Unverified allowance — dimmer switch",
+    "Dimmer switch allowance",
     inputs.dimmers,
   );
 
@@ -694,14 +745,14 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "kitchen-boxes",
     "Rough-in",
-    "single-gang box",
+    "Unverified allowance — single-gang box",
     "Kitchen device box allowance",
     deviceCount,
   );
   addPricedItem(
     "kitchen-plates",
     "Trim",
-    "device plate",
+    "Unverified allowance — device plate",
     "Kitchen device plate allowance",
     deviceCount,
   );
@@ -709,8 +760,8 @@ export function calculateKitchenEstimate(
     addPricedItem(
       "kitchen-wiring",
       "Conductor",
-      "#12 NM-B cable",
-      "Kitchen wiring allowance",
+      `${inputs.cableType ?? "12/2 NM-B"} cable`,
+      `Kitchen common-route cable — ${inputs.cableType ?? "12/2 NM-B"}`,
       inputs.routeLength,
       false,
       "ft",
@@ -728,8 +779,36 @@ export function calculateKitchenEstimate(
     );
   }
   if (inputs.countertopReceptacles > 0) {
+    const breaker = resolveBreaker({
+      manufacturer: inputs.panelManufacturer ?? "",
+      amperage: inputs.breakerAmperage ?? 0,
+      poleCount: inputs.breakerPoleCount ?? 0,
+      protectionType: inputs.breakerProtectionType ?? "GFCI",
+    }, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id: "kitchen-countertop-circuit-protection",
+      category: "Protection",
+      description: breaker.description,
+      quantity: 1,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
     pricingWarnings.push(
       "Countertop receptacle spacing, GFCI protection, and box locations must be field-verified.",
+    );
+  }
+  if (
+    inputs.refrigeratorCircuits +
+      inputs.dishwasherCircuits +
+      inputs.disposalCircuits +
+      inputs.gasRangeCircuits +
+      inputs.electricRangeCircuits +
+      inputs.additionalDedicatedCircuits >
+    0
+  ) {
+    pricingWarnings.push(
+      "Appliance circuit prices are unverified planning allowances. Exact breaker, conductor, and equipment requirements remain unresolved until appliance specifications and field conditions are confirmed.",
     );
   }
 
@@ -751,5 +830,11 @@ export function calculateKitchenEstimate(
     inputs.usbReceptacles * 0.45 +
     inputs.additionalDedicatedCircuits * 1.5;
 
-  return finalizeEstimate(assembly, laborHours, settings, pricingWarnings);
+  return finalizeEstimate(
+    assembly,
+    laborHours,
+    settings,
+    pricingWarnings,
+    inputs.laborRateType,
+  );
 }

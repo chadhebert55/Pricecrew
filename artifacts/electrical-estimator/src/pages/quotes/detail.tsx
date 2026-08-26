@@ -166,7 +166,10 @@ export function QuoteDetail() {
                   {quote.assembly.map(line => (
                     <TableRow key={line.id}>
                       <TableCell className="font-medium text-xs uppercase tracking-wider text-muted-foreground">{line.category}</TableCell>
-                      <TableCell>{line.description}</TableCell>
+                      <TableCell>
+                        <div>{line.description}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">{line.source}</div>
+                      </TableCell>
                       <TableCell className="text-right font-mono">{line.quantity}</TableCell>
                       <TableCell className="text-right text-xs font-mono text-muted-foreground">{line.unit}</TableCell>
                       <TableCell className="text-right font-mono">
@@ -246,13 +249,19 @@ export function QuoteDetail() {
                   <span className="font-mono">${quote.pricing.materialCost.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
-                  <span>Calculated Labor Cost</span>
+                  <span>Loaded Internal Labor Cost</span>
                   <span className="font-mono">${quote.pricing.laborCost.toFixed(2)}</span>
                 </div>
+                {quote.pricing.laborSellAmount !== undefined && (
+                  <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
+                    <span>Customer Labor ({quote.pricing.laborRateType} @ ${quote.pricing.laborSellRate?.toFixed(2)}/hr)</span>
+                    <span className="font-mono">${quote.pricing.laborSellAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 
                 {quote.pricing.laborOverride !== null && (
                    <div className="flex justify-between items-center text-sm text-primary font-medium bg-primary/10 p-1.5 -mx-1.5 rounded">
-                     <span>Labor Override Active</span>
+                     <span>Internal Labor Override Active</span>
                      <span className="font-mono">${quote.pricing.laborOverride.toFixed(2)}</span>
                    </div>
                 )}
@@ -305,7 +314,7 @@ export function QuoteDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Labor Cost Override ($)</Label>
+                <Label className="text-muted-foreground">Internal Labor Cost Override ($)</Label>
                 <Input 
                   type="number" 
                   placeholder={`Calc: $${quote.pricing.laborCost.toFixed(2)}`}

@@ -492,7 +492,9 @@ router.get("/settings", async (_req, res): Promise<void> => {
   res.json(
     GetSettingsResponse.parse({
       companyName: company?.name ?? "Starter Electrical Co.",
-      laborRate: settings.laborRate,
+      residentialLaborSellRate: settings.residentialLaborSellRate,
+      commercialLaborSellRate: settings.commercialLaborSellRate,
+      loadedLaborCost: settings.loadedLaborCost,
       materialMarkup: settings.materialMarkup,
       targetMargin: settings.targetMargin,
       defaultTaxRate: settings.defaultTaxRate,
@@ -518,7 +520,14 @@ router.patch("/settings", async (req, res): Promise<void> => {
   const [settings] = await db
     .update(companySettingsTable)
     .set({
-      laborRate: parsed.data.laborRate ?? currentSettings.laborRate,
+      residentialLaborSellRate:
+        parsed.data.residentialLaborSellRate ??
+        currentSettings.residentialLaborSellRate,
+      commercialLaborSellRate:
+        parsed.data.commercialLaborSellRate ??
+        currentSettings.commercialLaborSellRate,
+      loadedLaborCost:
+        parsed.data.loadedLaborCost ?? currentSettings.loadedLaborCost,
       materialMarkup: parsed.data.materialMarkup ?? currentSettings.materialMarkup,
       targetMargin: parsed.data.targetMargin ?? currentSettings.targetMargin,
       defaultTaxRate: parsed.data.defaultTaxRate ?? currentSettings.defaultTaxRate,
@@ -538,7 +547,9 @@ router.patch("/settings", async (req, res): Promise<void> => {
   res.json(
     UpdateSettingsResponse.parse({
       companyName: company?.name ?? "Starter Electrical Co.",
-      laborRate: settings.laborRate,
+      residentialLaborSellRate: settings.residentialLaborSellRate,
+      commercialLaborSellRate: settings.commercialLaborSellRate,
+      loadedLaborCost: settings.loadedLaborCost,
       materialMarkup: settings.materialMarkup,
       targetMargin: settings.targetMargin,
       defaultTaxRate: settings.defaultTaxRate,

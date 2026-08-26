@@ -10,6 +10,10 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+export type LaborRateType = "residential" | "commercial";
+export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
+export type RecessedLightSize = "4-inch" | "6-inch";
+
 export type EvChargerInputRecord = {
   chargerQuantity: number;
   chargerOutputAmps: number;
@@ -30,6 +34,7 @@ export type EvChargerInputRecord = {
   panelModifications: string;
   difficulty: string;
   notes: string;
+  laborRateType?: LaborRateType;
 };
 
 export type BathroomInputRecord = {
@@ -46,6 +51,14 @@ export type BathroomInputRecord = {
   circuitOption: string;
   customerSuppliedFixtures: boolean;
   notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  gfciAmperage?: number;
+  recessedLightSize?: RecessedLightSize;
+  cableType?: CableType;
 };
 
 export type KitchenInputRecord = {
@@ -66,6 +79,13 @@ export type KitchenInputRecord = {
   routeLength: number;
   customerSuppliedFixtures: boolean;
   notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  recessedLightSize?: RecessedLightSize;
+  cableType?: CableType;
 };
 
 export type QuoteJobInputsRecord =
@@ -95,6 +115,9 @@ export type PricingRecord = {
   grossProfit: number;
   grossMargin: number;
   pricingWarnings: string[];
+  laborSellRate?: number;
+  laborSellAmount?: number;
+  laborRateType?: LaborRateType;
 };
 
 export const companiesTable = pgTable("companies", {
@@ -115,6 +138,27 @@ export const companySettingsTable = pgTable(
     laborRate: numeric("labor_rate", { precision: 10, scale: 2, mode: "number" })
       .notNull()
       .default(95),
+    residentialLaborSellRate: numeric("residential_labor_sell_rate", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(150),
+    commercialLaborSellRate: numeric("commercial_labor_sell_rate", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(165),
+    loadedLaborCost: numeric("loaded_labor_cost", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(65),
     materialMarkup: numeric("material_markup", {
       precision: 6,
       scale: 4,

@@ -38,6 +38,14 @@ export interface DashboardSummary {
   recentQuotes: QuoteSummary[];
 }
 
+export type LaborRateType = typeof LaborRateType[keyof typeof LaborRateType];
+
+
+export const LaborRateType = {
+  residential: 'residential',
+  commercial: 'commercial',
+} as const;
+
 export interface EvChargerInputs {
   chargerQuantity: number;
   chargerOutputAmps: number;
@@ -58,6 +66,7 @@ export interface EvChargerInputs {
   panelModifications: string;
   difficulty: string;
   notes: string;
+  laborRateType?: LaborRateType;
 }
 
 export type BathroomInputsCircuitOption = typeof BathroomInputsCircuitOption[keyof typeof BathroomInputsCircuitOption];
@@ -66,6 +75,23 @@ export type BathroomInputsCircuitOption = typeof BathroomInputsCircuitOption[key
 export const BathroomInputsCircuitOption = {
   New_dedicated_circuit: 'New dedicated circuit',
   Reuse_existing_circuit: 'Reuse existing circuit',
+} as const;
+
+export type BathroomInputsRecessedLightSize = typeof BathroomInputsRecessedLightSize[keyof typeof BathroomInputsRecessedLightSize];
+
+
+export const BathroomInputsRecessedLightSize = {
+  '4-inch': '4-inch',
+  '6-inch': '6-inch',
+} as const;
+
+export type BathroomInputsCableType = typeof BathroomInputsCableType[keyof typeof BathroomInputsCableType];
+
+
+export const BathroomInputsCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
 } as const;
 
 export interface BathroomInputs {
@@ -91,7 +117,32 @@ export interface BathroomInputs {
   circuitOption: BathroomInputsCircuitOption;
   customerSuppliedFixtures: boolean;
   notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  gfciAmperage?: number;
+  recessedLightSize?: BathroomInputsRecessedLightSize;
+  cableType?: BathroomInputsCableType;
 }
+
+export type KitchenInputsRecessedLightSize = typeof KitchenInputsRecessedLightSize[keyof typeof KitchenInputsRecessedLightSize];
+
+
+export const KitchenInputsRecessedLightSize = {
+  '4-inch': '4-inch',
+  '6-inch': '6-inch',
+} as const;
+
+export type KitchenInputsCableType = typeof KitchenInputsCableType[keyof typeof KitchenInputsCableType];
+
+
+export const KitchenInputsCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
 
 export interface KitchenInputs {
   /** @minimum 0 */
@@ -126,6 +177,13 @@ export interface KitchenInputs {
   routeLength: number;
   customerSuppliedFixtures: boolean;
   notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  recessedLightSize?: KitchenInputsRecessedLightSize;
+  cableType?: KitchenInputsCableType;
 }
 
 export interface AssemblyLine {
@@ -149,6 +207,9 @@ export interface PricingInput {
   laborOverride: number | null;
   /** @nullable */
   sellingPriceOverride: number | null;
+  laborSellRate?: number;
+  laborSellAmount?: number;
+  laborRateType?: LaborRateType;
 }
 
 export type PricingSummary = PricingInput & {
@@ -269,7 +330,9 @@ export interface PriceBookItemUpdate {
 
 export interface CompanySettings {
   companyName: string;
-  laborRate: number;
+  residentialLaborSellRate: number;
+  commercialLaborSellRate: number;
+  loadedLaborCost: number;
   materialMarkup: number;
   targetMargin: number;
   defaultTaxRate: number;
@@ -277,7 +340,9 @@ export interface CompanySettings {
 
 export interface CompanySettingsUpdate {
   companyName?: string;
-  laborRate?: number;
+  residentialLaborSellRate?: number;
+  commercialLaborSellRate?: number;
+  loadedLaborCost?: number;
   materialMarkup?: number;
   targetMargin?: number;
   defaultTaxRate?: number;

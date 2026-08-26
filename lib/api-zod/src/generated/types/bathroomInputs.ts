@@ -5,7 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BathroomInputsCableType } from './bathroomInputsCableType';
 import type { BathroomInputsCircuitOption } from './bathroomInputsCircuitOption';
+import type { BathroomInputsRecessedLightSize } from './bathroomInputsRecessedLightSize';
+import type { LaborRateType } from './laborRateType';
 
 export interface BathroomInputs {
   /** @minimum 0 */
@@ -30,4 +33,12 @@ export interface BathroomInputs {
   circuitOption: BathroomInputsCircuitOption;
   customerSuppliedFixtures: boolean;
   notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  gfciAmperage?: number;
+  recessedLightSize?: BathroomInputsRecessedLightSize;
+  cableType?: BathroomInputsCableType;
 }

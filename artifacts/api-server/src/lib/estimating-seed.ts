@@ -132,6 +132,9 @@ async function seedEstimatorData(): Promise<void> {
     await db.insert(companySettingsTable).values({
       companyId: company.id,
       laborRate: 95,
+      residentialLaborSellRate: 150,
+      commercialLaborSellRate: 165,
+      loadedLaborCost: 65,
       materialMarkup: 0.25,
       targetMargin: 0.4,
       defaultTaxRate: 0,
@@ -168,7 +171,7 @@ async function seedEstimatorData(): Promise<void> {
       {
         companyId: company.id,
         category: "Protection",
-        item: "2-pole 50A breaker",
+        item: "Unverified allowance — generic 2-pole 50A breaker",
         unit: "ea",
         unitCost: 52,
         isDefault: true,
@@ -176,7 +179,7 @@ async function seedEstimatorData(): Promise<void> {
       {
         companyId: company.id,
         category: "Conductor",
-        item: "#8 copper THHN",
+        item: "Unverified starter allowance — #8 copper THHN",
         unit: "ft",
         unitCost: 2.4,
         isDefault: true,
@@ -184,7 +187,7 @@ async function seedEstimatorData(): Promise<void> {
       {
         companyId: company.id,
         category: "Conductor",
-        item: "#10 copper grounding conductor",
+        item: "Unverified starter allowance — #10 copper grounding conductor",
         unit: "ft",
         unitCost: 1.1,
         isDefault: true,
@@ -192,7 +195,7 @@ async function seedEstimatorData(): Promise<void> {
       {
         companyId: company.id,
         category: "Raceway",
-        item: "1 in. EMT with fittings",
+        item: "Unverified starter allowance — 1 in. EMT with fittings",
         unit: "ft",
         unitCost: 5.25,
         isDefault: true,
@@ -208,72 +211,385 @@ async function seedEstimatorData(): Promise<void> {
     ]);
   }
 
-  const [existingSiemensBreaker] = await db
-    .select()
-    .from(priceBookItemsTable)
-    .where(
-      and(
-        eq(priceBookItemsTable.companyId, company.id),
-        eq(priceBookItemsTable.supplierSku, "1101170"),
-      ),
-    )
-    .limit(1);
+  type SeedPriceBookItem = Omit<
+    typeof priceBookItemsTable.$inferInsert,
+    "id" | "companyId" | "updatedAt"
+  >;
+  const sourceDate = "2026-08-25";
+  const verifiedItems: SeedPriceBookItem[] = [
+    {
+      category: "Protection",
+      item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
+      unit: "ea",
+      unitCost: 151.702,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QF250A",
+      supplierSku: "1101170",
+      sourceDate,
+      amperage: 50,
+      poleCount: 2,
+      protectionType: "GFCI",
+      isDefault: false,
+    },
+    {
+      category: "Devices",
+      item: "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+      unit: "ea",
+      unitCost: 1,
+      supplier: "Northeast Electrical",
+      manufacturer: "Pass & Seymour",
+      manufacturerPartNumber: "3232-TRW",
+      supplierSku: "243085",
+      sourceDate,
+      amperage: 15,
+      isDefault: false,
+    },
+    {
+      category: "Devices",
+      item: "Pass & Seymour 1597-TRWRW 15A TR self-test GFCI",
+      unit: "ea",
+      unitCost: 17.25,
+      supplier: "Northeast Electrical",
+      manufacturer: "Pass & Seymour",
+      manufacturerPartNumber: "1597-TRWRW",
+      supplierSku: "1003404",
+      sourceDate,
+      amperage: 15,
+      protectionType: "GFCI",
+      isDefault: false,
+    },
+    {
+      category: "Devices",
+      item: "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
+      unit: "ea",
+      unitCost: 27.753,
+      supplier: "Northeast Electrical",
+      manufacturer: "Pass & Seymour",
+      manufacturerPartNumber: "2097-TRWRW",
+      supplierSku: "1020717",
+      sourceDate,
+      amperage: 20,
+      protectionType: "GFCI",
+      isDefault: false,
+    },
+    {
+      category: "Ventilation",
+      item: "Panasonic FV-0511VF1 exhaust fan",
+      unit: "ea",
+      unitCost: 119.291,
+      supplier: "Northeast Electrical",
+      manufacturer: "Panasonic",
+      manufacturerPartNumber: "FV-0511VF1",
+      supplierSku: "1697956",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens Q120 20A 1-pole standard breaker",
+      unit: "ea",
+      unitCost: 8.673,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q120",
+      supplierSku: "2149",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens Q120DF 20A 1-pole dual-function breaker",
+      unit: "ea",
+      unitCost: 69.239,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q120DF",
+      supplierSku: "942105",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "Dual Function",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens QF120A 20A 1-pole GFCI breaker",
+      unit: "ea",
+      unitCost: 71.027,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "QF120A",
+      supplierSku: "1098885",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "GFCI",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Eaton BR120 20A 1-pole standard breaker",
+      unit: "ea",
+      unitCost: 23.137,
+      supplier: "Northeast Electrical",
+      manufacturer: "Eaton",
+      manufacturerPartNumber: "BR120",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Eaton BRN120AF 20A 1-pole AFCI breaker",
+      unit: "ea",
+      unitCost: 121.398,
+      supplier: "Northeast Electrical",
+      manufacturer: "Eaton",
+      manufacturerPartNumber: "BRN120AF",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "AFCI",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Eaton BRN120DF 20A 1-pole dual-function breaker",
+      unit: "ea",
+      unitCost: 158.137,
+      supplier: "Northeast Electrical",
+      manufacturer: "Eaton",
+      manufacturerPartNumber: "BRN120DF",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "Dual Function",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Square D Homeline HOM120 20A 1-pole standard breaker",
+      unit: "ea",
+      unitCost: 13.321,
+      supplier: "Northeast Electrical",
+      manufacturer: "Square D",
+      manufacturerPartNumber: "HOM120",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Square D Homeline HOM120GFI 20A 1-pole GFCI breaker",
+      unit: "ea",
+      unitCost: 133.651,
+      supplier: "Northeast Electrical",
+      manufacturer: "Square D",
+      manufacturerPartNumber: "HOM120GFI",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "GFCI",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Square D Homeline HOM120PAFGF 20A 1-pole dual-function breaker",
+      unit: "ea",
+      unitCost: 152.012,
+      supplier: "Northeast Electrical",
+      manufacturer: "Square D",
+      manufacturerPartNumber: "HOM120PAFGF",
+      sourceDate,
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "Dual Function",
+      isDefault: false,
+    },
+    {
+      category: "Lighting",
+      item: "Juno 4-inch regressed wafer light",
+      unit: "ea",
+      unitCost: 29,
+      supplier: "Northeast Electrical",
+      manufacturer: "Juno",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Lighting",
+      item: "Juno 6-inch regressed wafer light",
+      unit: "ea",
+      unitCost: 32,
+      supplier: "Northeast Electrical",
+      manufacturer: "Juno",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "12/2 NM-B cable",
+      unit: "ft",
+      unitCost: 0.56,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "14/2 NM-B cable",
+      unit: "ft",
+      unitCost: 0.37,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "14/3 NM-B cable",
+      unit: "ft",
+      unitCost: 0.53,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Whole-home surge protection",
+      unit: "ea",
+      unitCost: 143,
+      supplier: "Company verified cost",
+      sourceDate,
+      isDefault: false,
+    },
+  ];
 
-  const siemensBreaker = {
-    companyId: company.id,
-    category: "Protection",
-    item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
-    unit: "ea",
-    unitCost: 151.702,
-    supplier: "Northeast Electrical",
-    manufacturer: "Siemens",
-    manufacturerPartNumber: "ITE QF250A",
-    supplierSku: "1101170",
-    sourceDate: "2026-08-25",
-    amperage: 50,
-    poleCount: 2,
-    protectionType: "GFCI",
-    isDefault: false,
-  };
+  for (const item of verifiedItems) {
+    const [existing] = item.supplierSku
+      ? await db
+          .select()
+          .from(priceBookItemsTable)
+          .where(
+            and(
+              eq(priceBookItemsTable.companyId, company.id),
+              eq(priceBookItemsTable.supplierSku, item.supplierSku),
+            ),
+          )
+          .limit(1)
+      : await db
+          .select()
+          .from(priceBookItemsTable)
+          .where(
+            and(
+              eq(priceBookItemsTable.companyId, company.id),
+              eq(priceBookItemsTable.item, item.item),
+            ),
+          )
+          .limit(1);
+    if (!existing) {
+      await db.insert(priceBookItemsTable).values({
+        companyId: company.id,
+        ...item,
+      });
+    } else if (existing.isDefault) {
+      await db
+        .update(priceBookItemsTable)
+        .set(item)
+        .where(eq(priceBookItemsTable.id, existing.id));
+    }
+  }
 
-  if (existingSiemensBreaker) {
-    await db
-      .update(priceBookItemsTable)
-      .set(siemensBreaker)
-      .where(eq(priceBookItemsTable.id, existingSiemensBreaker.id));
-  } else {
-    await db.insert(priceBookItemsTable).values(siemensBreaker);
+  const allowanceRenames = [
+    ["2-pole 50A breaker", "Unverified allowance — generic 2-pole 50A breaker"],
+    ["#8 copper THHN", "Unverified starter allowance — #8 copper THHN"],
+    ["#10 copper grounding conductor", "Unverified starter allowance — #10 copper grounding conductor"],
+    ["1 in. EMT with fittings", "Unverified starter allowance — 1 in. EMT with fittings"],
+    ["GFCI receptacle", "Unverified allowance — generic GFCI receptacle"],
+    ["standard receptacle", "Unverified allowance — generic standard receptacle"],
+    ["vanity light allowance", "Unverified allowance — vanity light"],
+    ["recessed light", "Unverified allowance — generic recessed light"],
+    ["exhaust fan", "Unverified allowance — generic exhaust fan"],
+    ["fan/light", "Unverified allowance — fan/light"],
+    ["fan/light/heat", "Unverified allowance — fan/light/heat"],
+    ["heated floor circuit allowance", "Unverified allowance — heated-floor circuit"],
+    ["single-pole switch", "Unverified allowance — single-pole switch"],
+    ["bathroom circuit materials", "Unverified allowance — bathroom circuit materials"],
+    ["bathroom circuit protection allowance", "Unverified allowance — bathroom circuit protection"],
+    ["single-gang box", "Unverified allowance — single-gang box"],
+    ["device plate", "Unverified allowance — device plate"],
+    ["#12 NM-B cable", "Unverified allowance — generic #12 NM-B cable"],
+    ["refrigerator circuit materials", "Unverified allowance — refrigerator circuit materials"],
+    ["dishwasher circuit materials", "Unverified allowance — dishwasher circuit materials"],
+    ["disposal circuit materials", "Unverified allowance — disposal circuit materials"],
+    ["gas range circuit materials", "Unverified allowance — gas range circuit materials"],
+    ["electric range circuit materials", "Unverified allowance — electric range circuit materials"],
+    ["additional dedicated circuit materials", "Unverified allowance — additional dedicated circuit materials"],
+    ["countertop GFCI receptacle", "Unverified allowance — generic countertop GFCI receptacle"],
+    ["USB receptacle", "Unverified allowance — USB receptacle"],
+    ["sink light", "Unverified allowance — sink light"],
+    ["island pendant", "Unverified allowance — island pendant"],
+    ["undercabinet lighting", "Unverified allowance — undercabinet lighting"],
+    ["kitchen recessed light", "Unverified allowance — generic kitchen recessed light"],
+    ["3-way switch pair", "Unverified allowance — 3-way switch pair"],
+    ["dimmer switch", "Unverified allowance — dimmer switch"],
+  ] as const;
+
+  for (const [oldName, newName] of allowanceRenames) {
+    const [existing] = await db
+      .select()
+      .from(priceBookItemsTable)
+      .where(
+        and(
+          eq(priceBookItemsTable.companyId, company.id),
+          eq(priceBookItemsTable.item, oldName),
+        ),
+      )
+      .limit(1);
+    if (existing?.isDefault) {
+      await db
+        .update(priceBookItemsTable)
+        .set({ item: newName })
+        .where(eq(priceBookItemsTable.id, existing.id));
+    }
   }
 
   const maintainableItems = [
-    { category: "Devices", item: "GFCI receptacle", unit: "ea", unitCost: 24 },
-    { category: "Devices", item: "standard receptacle", unit: "ea", unitCost: 6 },
-    { category: "Lighting", item: "vanity light allowance", unit: "ea", unitCost: 95 },
-    { category: "Lighting", item: "recessed light", unit: "ea", unitCost: 38 },
-    { category: "Ventilation", item: "exhaust fan", unit: "ea", unitCost: 145 },
-    { category: "Ventilation", item: "fan/light", unit: "ea", unitCost: 210 },
-    { category: "Ventilation", item: "fan/light/heat", unit: "ea", unitCost: 360 },
-    { category: "Circuit", item: "heated floor circuit allowance", unit: "ea", unitCost: 195 },
-    { category: "Devices", item: "single-pole switch", unit: "ea", unitCost: 9 },
-    { category: "Circuit", item: "bathroom circuit materials", unit: "ea", unitCost: 135 },
-    { category: "Protection", item: "bathroom circuit protection allowance", unit: "ea", unitCost: 52 },
-    { category: "Rough-in", item: "single-gang box", unit: "ea", unitCost: 3.5 },
-    { category: "Trim", item: "device plate", unit: "ea", unitCost: 1.25 },
-    { category: "Conductor", item: "#12 NM-B cable", unit: "ft", unitCost: 0.95 },
-    { category: "Circuit", item: "refrigerator circuit materials", unit: "ea", unitCost: 85 },
-    { category: "Circuit", item: "dishwasher circuit materials", unit: "ea", unitCost: 85 },
-    { category: "Circuit", item: "disposal circuit materials", unit: "ea", unitCost: 75 },
-    { category: "Circuit", item: "gas range circuit materials", unit: "ea", unitCost: 65 },
-    { category: "Circuit", item: "electric range circuit materials", unit: "ea", unitCost: 260 },
-    { category: "Circuit", item: "additional dedicated circuit materials", unit: "ea", unitCost: 85 },
-    { category: "Devices", item: "countertop GFCI receptacle", unit: "ea", unitCost: 24 },
-    { category: "Devices", item: "USB receptacle", unit: "ea", unitCost: 22 },
-    { category: "Lighting", item: "sink light", unit: "ea", unitCost: 38 },
-    { category: "Lighting", item: "island pendant", unit: "ea", unitCost: 95 },
-    { category: "Lighting", item: "undercabinet lighting", unit: "ea", unitCost: 120 },
-    { category: "Lighting", item: "kitchen recessed light", unit: "ea", unitCost: 38 },
-    { category: "Controls", item: "3-way switch pair", unit: "ea", unitCost: 26 },
-    { category: "Controls", item: "dimmer switch", unit: "ea", unitCost: 28 },
+    { category: "Devices", item: "Unverified allowance — generic GFCI receptacle", unit: "ea", unitCost: 24 },
+    { category: "Devices", item: "Unverified allowance — generic standard receptacle", unit: "ea", unitCost: 6 },
+    { category: "Lighting", item: "Unverified allowance — vanity light", unit: "ea", unitCost: 95 },
+    { category: "Lighting", item: "Unverified allowance — generic recessed light", unit: "ea", unitCost: 38 },
+    { category: "Ventilation", item: "Unverified allowance — generic exhaust fan", unit: "ea", unitCost: 145 },
+    { category: "Ventilation", item: "Unverified allowance — fan/light", unit: "ea", unitCost: 210 },
+    { category: "Ventilation", item: "Unverified allowance — fan/light/heat", unit: "ea", unitCost: 360 },
+    { category: "Circuit", item: "Unverified allowance — heated-floor circuit", unit: "ea", unitCost: 195 },
+    { category: "Devices", item: "Unverified allowance — single-pole switch", unit: "ea", unitCost: 9 },
+    { category: "Circuit", item: "Unverified allowance — bathroom circuit materials", unit: "ea", unitCost: 135 },
+    { category: "Protection", item: "Unverified allowance — bathroom circuit protection", unit: "ea", unitCost: 52 },
+    { category: "Rough-in", item: "Unverified allowance — single-gang box", unit: "ea", unitCost: 3.5 },
+    { category: "Trim", item: "Unverified allowance — device plate", unit: "ea", unitCost: 1.25 },
+    { category: "Conductor", item: "Unverified allowance — generic #12 NM-B cable", unit: "ft", unitCost: 0.95 },
+    { category: "Circuit", item: "Unverified allowance — refrigerator circuit materials", unit: "ea", unitCost: 85 },
+    { category: "Circuit", item: "Unverified allowance — dishwasher circuit materials", unit: "ea", unitCost: 85 },
+    { category: "Circuit", item: "Unverified allowance — disposal circuit materials", unit: "ea", unitCost: 75 },
+    { category: "Circuit", item: "Unverified allowance — gas range circuit materials", unit: "ea", unitCost: 65 },
+    { category: "Circuit", item: "Unverified allowance — electric range circuit materials", unit: "ea", unitCost: 260 },
+    { category: "Circuit", item: "Unverified allowance — additional dedicated circuit materials", unit: "ea", unitCost: 85 },
+    { category: "Devices", item: "Unverified allowance — generic countertop GFCI receptacle", unit: "ea", unitCost: 24 },
+    { category: "Devices", item: "Unverified allowance — USB receptacle", unit: "ea", unitCost: 22 },
+    { category: "Lighting", item: "Unverified allowance — sink light", unit: "ea", unitCost: 38 },
+    { category: "Lighting", item: "Unverified allowance — island pendant", unit: "ea", unitCost: 95 },
+    { category: "Lighting", item: "Unverified allowance — undercabinet lighting", unit: "ea", unitCost: 120 },
+    { category: "Lighting", item: "Unverified allowance — generic kitchen recessed light", unit: "ea", unitCost: 38 },
+    { category: "Controls", item: "Unverified allowance — 3-way switch pair", unit: "ea", unitCost: 26 },
+    { category: "Controls", item: "Unverified allowance — dimmer switch", unit: "ea", unitCost: 28 },
   ];
   const companyPriceBook = await db
     .select({ item: priceBookItemsTable.item })

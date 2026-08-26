@@ -452,6 +452,8 @@ components:
           type: string
         notes:
           type: string
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
     BathroomInputs:
       type: object
       required:
@@ -506,6 +508,24 @@ components:
           type: boolean
         notes:
           type: string
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        panelManufacturer:
+          type: string
+        breakerAmperage:
+          type: number
+        breakerPoleCount:
+          type: number
+        breakerProtectionType:
+          type: string
+        gfciAmperage:
+          type: number
+        recessedLightSize:
+          type: string
+          enum: [4-inch, 6-inch]
+        cableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
     KitchenInputs:
       type: object
       required:
@@ -576,6 +596,22 @@ components:
           type: boolean
         notes:
           type: string
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        panelManufacturer:
+          type: string
+        breakerAmperage:
+          type: number
+        breakerPoleCount:
+          type: number
+        breakerProtectionType:
+          type: string
+        recessedLightSize:
+          type: string
+          enum: [4-inch, 6-inch]
+        cableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
     AssemblyLine:
       type: object
       required:
@@ -629,6 +665,12 @@ components:
           type: ["number", "null"]
         sellingPriceOverride:
           type: ["number", "null"]
+        laborSellRate:
+          type: number
+        laborSellAmount:
+          type: number
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
     PricingSummary:
       allOf:
         - $ref: "#/components/schemas/PricingInput"
@@ -651,6 +693,11 @@ components:
       enum:
         - draft
         - ready
+    LaborRateType:
+      type: string
+      enum:
+        - residential
+        - commercial
     PriceBookItem:
       type: object
       required:
@@ -704,14 +751,20 @@ components:
       type: object
       required:
         - companyName
-        - laborRate
+        - residentialLaborSellRate
+        - commercialLaborSellRate
+        - loadedLaborCost
         - materialMarkup
         - targetMargin
         - defaultTaxRate
       properties:
         companyName:
           type: string
-        laborRate:
+        residentialLaborSellRate:
+          type: number
+        commercialLaborSellRate:
+          type: number
+        loadedLaborCost:
           type: number
         materialMarkup:
           type: number
@@ -724,7 +777,11 @@ components:
       properties:
         companyName:
           type: string
-        laborRate:
+        residentialLaborSellRate:
+          type: number
+        commercialLaborSellRate:
+          type: number
+        loadedLaborCost:
           type: number
         materialMarkup:
           type: number

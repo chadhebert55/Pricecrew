@@ -8,7 +8,9 @@
 
 export * from './assemblyLine';
 export * from './bathroomInputs';
+export * from './bathroomInputsCableType';
 export * from './bathroomInputsCircuitOption';
+export * from './bathroomInputsRecessedLightSize';
 export * from './companySettings';
 export * from './companySettingsUpdate';
 export * from './dashboardSummary';
@@ -16,6 +18,9 @@ export * from './estimatePreview';
 export * from './evChargerInputs';
 export * from './healthStatus';
 export * from './kitchenInputs';
+export * from './kitchenInputsCableType';
+export * from './kitchenInputsRecessedLightSize';
+export * from './laborRateType';
 export * from './listQuotesParams';
 export * from './priceBookItem';
 export * from './priceBookItemUpdate';
