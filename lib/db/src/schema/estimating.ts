@@ -91,24 +91,27 @@ export type KitchenInputRecord = {
 export type RecessedLightingInputRecord = {
   roomLength: number;
   roomWidth: number;
-  ceilingHeight: number;
-  fixtureSize: RecessedLightSize;
   fixtureQuantity: number;
-  spacingFeet: number;
+  fixtureSize: RecessedLightSize;
+  wiringOption: string;
+  circuitOption: string;
+  switchType: string;
+  dimmerSelection: string;
   customerSuppliedFixtures: boolean;
-  circuitOption: "Reuse existing lighting box/circuit" | "New dedicated circuit";
-  wiringDistance: number;
-  wiringAllowance: number;
-  switchType: "Single-pole" | "3-way";
-  dimmerOption: "No dimmer" | "Include dimmer";
-  threeWaySwitchingOption: "Not included" | "Include 3-way switching";
+  ceilingHeight: string;
+  accessDifficulty: string;
+  laborAdjustmentHours: number;
+  wireRunLength: number;
+  wiringAllowanceFeet: number;
+  additionalSwitches: number;
+  additionalLights: number;
   notes: string;
   laborRateType?: LaborRateType;
-  panelManufacturer?: string;
-  breakerAmperage?: number;
-  breakerPoleCount?: number;
-  breakerProtectionType?: string;
-  cableType?: "14/2 NM-B" | "14/3 NM-B";
+  panelManufacturer: string;
+  breakerAmperage: number;
+  breakerPoleCount: number;
+  breakerProtectionType: string;
+  cableType: CableType;
 };
 
 export type QuoteJobInputsRecord =

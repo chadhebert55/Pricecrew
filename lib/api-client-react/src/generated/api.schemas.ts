@@ -194,11 +194,19 @@ export const RecessedLightingInputsFixtureSize = {
   '6-inch': '6-inch',
 } as const;
 
+export type RecessedLightingInputsWiringOption = typeof RecessedLightingInputsWiringOption[keyof typeof RecessedLightingInputsWiringOption];
+
+
+export const RecessedLightingInputsWiringOption = {
+  'Existing_switch_leg_/_lighting_box': 'Existing switch leg / lighting box',
+  New_wiring_from_source: 'New wiring from source',
+} as const;
+
 export type RecessedLightingInputsCircuitOption = typeof RecessedLightingInputsCircuitOption[keyof typeof RecessedLightingInputsCircuitOption];
 
 
 export const RecessedLightingInputsCircuitOption = {
-  'Reuse_existing_lighting_box/circuit': 'Reuse existing lighting box/circuit',
+  Reuse_existing_circuit: 'Reuse existing circuit',
   New_dedicated_circuit: 'New dedicated circuit',
 } as const;
 
@@ -210,26 +218,46 @@ export const RecessedLightingInputsSwitchType = {
   '3-way': '3-way',
 } as const;
 
-export type RecessedLightingInputsDimmerOption = typeof RecessedLightingInputsDimmerOption[keyof typeof RecessedLightingInputsDimmerOption];
+export type RecessedLightingInputsDimmerSelection = typeof RecessedLightingInputsDimmerSelection[keyof typeof RecessedLightingInputsDimmerSelection];
 
 
-export const RecessedLightingInputsDimmerOption = {
+export const RecessedLightingInputsDimmerSelection = {
   No_dimmer: 'No dimmer',
   Include_dimmer: 'Include dimmer',
 } as const;
 
-export type RecessedLightingInputsThreeWaySwitchingOption = typeof RecessedLightingInputsThreeWaySwitchingOption[keyof typeof RecessedLightingInputsThreeWaySwitchingOption];
+export type RecessedLightingInputsCeilingHeight = typeof RecessedLightingInputsCeilingHeight[keyof typeof RecessedLightingInputsCeilingHeight];
 
 
-export const RecessedLightingInputsThreeWaySwitchingOption = {
-  Not_included: 'Not included',
-  'Include_3-way_switching': 'Include 3-way switching',
+export const RecessedLightingInputsCeilingHeight = {
+  'Standard_8-10_ft': 'Standard 8-10 ft',
+  'High_11-14_ft': 'High 11-14 ft',
+  'Vaulted_15+_ft': 'Vaulted 15+ ft',
+} as const;
+
+export type RecessedLightingInputsAccessDifficulty = typeof RecessedLightingInputsAccessDifficulty[keyof typeof RecessedLightingInputsAccessDifficulty];
+
+
+export const RecessedLightingInputsAccessDifficulty = {
+  Attic_access: 'Attic access',
+  'Limited_/_blind_access': 'Limited / blind access',
+  Open_ceiling: 'Open ceiling',
+  Difficult_access: 'Difficult access',
+} as const;
+
+export type RecessedLightingInputsBreakerAmperage = typeof RecessedLightingInputsBreakerAmperage[keyof typeof RecessedLightingInputsBreakerAmperage];
+
+
+export const RecessedLightingInputsBreakerAmperage = {
+  NUMBER_15: 15,
+  NUMBER_20: 20,
 } as const;
 
 export type RecessedLightingInputsCableType = typeof RecessedLightingInputsCableType[keyof typeof RecessedLightingInputsCableType];
 
 
 export const RecessedLightingInputsCableType = {
+  '12/2_NM-B': '12/2 NM-B',
   '14/2_NM-B': '14/2 NM-B',
   '14/3_NM-B': '14/3 NM-B',
 } as const;
@@ -239,34 +267,33 @@ export interface RecessedLightingInputs {
   roomLength: number;
   /** @minimum 0 */
   roomWidth: number;
-  /** @minimum 0 */
-  ceilingHeight: number;
-  fixtureSize: RecessedLightingInputsFixtureSize;
-  /** @minimum 0 */
+  /** @minimum 1 */
   fixtureQuantity: number;
-  /**
-     * @minimum 4
-     * @maximum 12
-     */
-  spacingFeet: number;
-  customerSuppliedFixtures: boolean;
+  fixtureSize: RecessedLightingInputsFixtureSize;
+  wiringOption: RecessedLightingInputsWiringOption;
   circuitOption: RecessedLightingInputsCircuitOption;
-  /** @minimum 0 */
-  wiringDistance: number;
-  /** @minimum 0 */
-  wiringAllowance: number;
   switchType: RecessedLightingInputsSwitchType;
-  dimmerOption: RecessedLightingInputsDimmerOption;
-  threeWaySwitchingOption: RecessedLightingInputsThreeWaySwitchingOption;
+  dimmerSelection: RecessedLightingInputsDimmerSelection;
+  customerSuppliedFixtures: boolean;
+  ceilingHeight: RecessedLightingInputsCeilingHeight;
+  accessDifficulty: RecessedLightingInputsAccessDifficulty;
+  laborAdjustmentHours: number;
+  /** @minimum 0 */
+  wireRunLength: number;
+  /** @minimum 0 */
+  wiringAllowanceFeet: number;
+  /** @minimum 0 */
+  additionalSwitches: number;
+  /** @minimum 0 */
+  additionalLights: number;
   notes: string;
   laborRateType?: LaborRateType;
-  panelManufacturer?: string;
-  /** @minimum 0 */
-  breakerAmperage?: number;
-  /** @minimum 0 */
-  breakerPoleCount?: number;
-  breakerProtectionType?: string;
-  cableType?: RecessedLightingInputsCableType;
+  panelManufacturer: string;
+  breakerAmperage: RecessedLightingInputsBreakerAmperage;
+  /** @minimum 1 */
+  breakerPoleCount: number;
+  breakerProtectionType: string;
+  cableType: RecessedLightingInputsCableType;
 }
 
 export interface AssemblyLine {

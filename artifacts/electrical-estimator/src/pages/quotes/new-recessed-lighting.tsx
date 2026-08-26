@@ -9,31 +9,37 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calculator, Info, Lightbulb, TriangleAlert } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Calculator, Info, Lightbulb, Ruler, TriangleAlert } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "wouter"
+
+const selectClassName =
+  "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
 
 const initialInputs: RecessedLightingInputs = {
   roomLength: 16,
   roomWidth: 12,
-  ceilingHeight: 8,
+  fixtureQuantity: 4,
   fixtureSize: "4-inch",
-  fixtureQuantity: 0,
-  spacingFeet: 6,
-  customerSuppliedFixtures: false,
-  circuitOption: "Reuse existing lighting box/circuit",
-  wiringDistance: 45,
-  wiringAllowance: 15,
+  wiringOption: "New wiring from source",
+  circuitOption: "Reuse existing circuit",
   switchType: "Single-pole",
-  dimmerOption: "No dimmer",
-  threeWaySwitchingOption: "Not included",
+  dimmerSelection: "Include dimmer",
+  customerSuppliedFixtures: false,
+  ceilingHeight: "Standard 8-10 ft",
+  accessDifficulty: "Attic access",
+  laborAdjustmentHours: 0,
+  wireRunLength: 40,
+  wiringAllowanceFeet: 10,
+  additionalSwitches: 0,
+  additionalLights: 0,
   notes: "",
   laborRateType: "residential",
   panelManufacturer: "Siemens",
   breakerAmperage: 20,
   breakerPoleCount: 1,
   breakerProtectionType: "Standard",
-  cableType: "14/2 NM-B",
+  cableType: "12/2 NM-B",
 }
 
 function optionalAmount(value: string) {
@@ -42,9 +48,9 @@ function optionalAmount(value: string) {
   return Number.isFinite(amount) && amount >= 0 ? amount : null
 }
 
-function numericValue(value: string) {
+function numberValue(value: string, minimum = 0) {
   const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+  return Number.isFinite(parsed) ? Math.max(minimum, parsed) : minimum
 }
 
 export function NewRecessedLightingQuote() {
@@ -56,11 +62,24 @@ export function NewRecessedLightingQuote() {
   const [customerEmail, setCustomerEmail] = useState("")
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
-    "Provide labor and listed materials for the recessed lighting scope, including fixture installation, switching, wiring, testing, and final trim. Fixture layout, access, circuit capacity, and applicable requirements will be verified before work begins.",
+    "Provide labor and listed materials to install recessed lighting at the agreed locations, including fixture installation, wiring and controls selected in this quote, testing, and final trim. Final fixture spacing, ceiling conditions, circuit capacity, protection requirements, and concealed obstructions will be verified before work begins.",
   )
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<RecessedLightingInputs>(initialInputs)
+
+  const planning = useMemo(() => {
+    if (inputs.roomLength <= 0 || inputs.roomWidth <= 0) {
+      return { count: 0, spacingLength: 0, spacingWidth: 0 }
+    }
+    const columns = Math.max(1, Math.ceil(inputs.roomLength / 8))
+    const rows = Math.max(1, Math.ceil(inputs.roomWidth / 8))
+    return {
+      count: columns * rows,
+      spacingLength: inputs.roomLength / columns,
+      spacingWidth: inputs.roomWidth / rows,
+    }
+  }, [inputs.roomLength, inputs.roomWidth])
 
   const previewPayload = {
     module: "RECESSED_LIGHTING" as const,
@@ -70,7 +89,6 @@ export function NewRecessedLightingQuote() {
   }
   const currentInputKey = JSON.stringify(previewPayload)
   const previewIsCurrent = currentInputKey === previewedInputKey
-  const isNewCircuit = inputs.circuitOption === "New dedicated circuit"
 
   useEffect(() => {
     const inputKey = JSON.stringify(previewPayload)
@@ -86,10 +104,36 @@ export function NewRecessedLightingQuote() {
   const setNumber = (
     key: keyof RecessedLightingInputs,
     value: string,
+    minimum = 0,
   ) => {
+    setInputs((current) => ({ ...current, [key]: numberValue(value, minimum) }))
+  }
+
+  const handleSwitchType = (switchType: RecessedLightingInputs["switchType"]) => {
     setInputs((current) => ({
       ...current,
-      [key]: numericValue(value),
+      switchType,
+      cableType:
+        switchType === "3-way"
+          ? "14/3 NM-B"
+          : current.breakerAmperage <= 15
+            ? "14/2 NM-B"
+            : "12/2 NM-B",
+    }))
+  }
+
+  const handleBreakerAmperage = (value: string) => {
+    const breakerAmperage: RecessedLightingInputs["breakerAmperage"] =
+      value === "15" ? 15 : 20
+    setInputs((current) => ({
+      ...current,
+      breakerAmperage,
+      cableType:
+        current.switchType === "3-way"
+          ? "14/3 NM-B"
+          : breakerAmperage <= 15
+            ? "14/2 NM-B"
+            : "12/2 NM-B",
     }))
   }
 
@@ -114,24 +158,25 @@ export function NewRecessedLightingQuote() {
   }
 
   const pricing = previewQuote.data?.pricing
-  const planning = previewQuote.data?.planning
   const assembly = previewQuote.data?.assembly ?? []
+  const fixtureCountIsSuggested = inputs.fixtureQuantity === planning.count
+  const isNewWiring = inputs.wiringOption === "New wiring from source"
+  const isNewCircuit = inputs.circuitOption === "New dedicated circuit"
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-24">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">New Recessed Lighting Quote</h1>
-        <p className="mt-1 text-muted-foreground">Recessed Lighting Builder</p>
+        <p className="mt-1 text-muted-foreground">
+          Room planning, verified fixture pricing, field risk, and exact circuit protection.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="space-y-6 xl:col-span-2">
             <Card className="border-t-4 border-t-secondary">
-              <CardHeader>
-                <CardTitle>Project Details</CardTitle>
-                <CardDescription>Keep the customer proposal separate from internal estimate notes.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="recessed-customer">Customer Name *</Label>
@@ -158,148 +203,212 @@ export function NewRecessedLightingQuote() {
                   <Lightbulb className="text-primary" size={20} />
                   <CardTitle>Parametric Builder: Recessed Lighting</CardTitle>
                 </div>
-                <CardDescription>Use room dimensions for planning guidance, then confirm the final layout in the field.</CardDescription>
+                <CardDescription>
+                  Configure the room plan, fixture product, wiring, controls, circuit, and labor conditions.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8 pt-6">
                 <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Room and fixture plan</h3>
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Room planning guidance</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="recessed-length">Room Length (FT)</Label>
-                      <Input id="recessed-length" type="number" min="0" step="0.1" value={inputs.roomLength} onChange={(event) => setNumber("roomLength", event.target.value)} />
+                      <Input id="recessed-length" type="number" min="0" step="0.5" value={inputs.roomLength} onChange={(event) => setNumber("roomLength", event.target.value)} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="recessed-width">Room Width (FT)</Label>
-                      <Input id="recessed-width" type="number" min="0" step="0.1" value={inputs.roomWidth} onChange={(event) => setNumber("roomWidth", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-height">Ceiling Height (FT)</Label>
-                      <Input id="recessed-height" type="number" min="0" step="0.1" value={inputs.ceilingHeight} onChange={(event) => setNumber("ceilingHeight", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-size">Fixture Size</Label>
-                      <select id="recessed-size" value={inputs.fixtureSize} onChange={(event) => setInputs((current) => ({ ...current, fixtureSize: event.target.value as RecessedLightingInputs["fixtureSize"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="4-inch">Juno 4-inch regressed wafer — $29 default</option>
-                        <option value="6-inch">Juno 6-inch regressed wafer — $32 default</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-quantity">Fixture Quantity</Label>
-                      <Input id="recessed-quantity" type="number" min="0" step="1" value={inputs.fixtureQuantity} onChange={(event) => setNumber("fixtureQuantity", event.target.value)} />
-                      <p className="text-xs text-muted-foreground">Use 0 to use the room-dimension suggestion.</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-spacing">Planning Spacing Assumption (FT)</Label>
-                      <Input id="recessed-spacing" type="number" min="4" max="12" step="0.5" value={inputs.spacingFeet} onChange={(event) => setNumber("spacingFeet", event.target.value)} />
+                      <Input id="recessed-width" type="number" min="0" step="0.5" value={inputs.roomWidth} onChange={(event) => setNumber("roomWidth", event.target.value)} />
                     </div>
                   </div>
-                  <label className="mt-5 flex items-center gap-3 rounded-lg border p-4 text-sm font-medium">
-                    <Checkbox checked={inputs.customerSuppliedFixtures} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFixtures: checked === true }))} />
-                    Customer supplies recessed fixtures
-                  </label>
+                  <div className="mt-4 rounded-lg border border-primary/25 bg-primary/5 p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <Ruler className="mt-0.5 shrink-0 text-primary" size={20} />
+                        <div>
+                          <p className="font-semibold">Planning-only suggestion</p>
+                          {planning.count > 0 ? (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {planning.count} fixtures on an approximately {planning.spacingLength.toFixed(1)} ft × {planning.spacingWidth.toFixed(1)} ft grid. This is not a photometric or code-compliance design.
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm text-muted-foreground">Enter both room dimensions to calculate guidance.</p>
+                          )}
+                        </div>
+                      </div>
+                      <Button type="button" variant="outline" disabled={planning.count === 0 || fixtureCountIsSuggested} onClick={() => setInputs((current) => ({ ...current, fixtureQuantity: planning.count }))}>
+                        {fixtureCountIsSuggested ? "Suggestion applied" : "Use suggestion"}
+                      </Button>
+                    </div>
+                  </div>
                 </section>
 
                 <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Circuit and wiring</h3>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Fixtures and quantity</h3>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-circuit">Lighting Feed</Label>
-                      <select id="recessed-circuit" value={inputs.circuitOption} onChange={(event) => setInputs((current) => ({ ...current, circuitOption: event.target.value as RecessedLightingInputs["circuitOption"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="Reuse existing lighting box/circuit">Reuse existing lighting box / circuit</option>
+                      <Label htmlFor="recessed-quantity">Quoted Fixture Quantity</Label>
+                      <Input id="recessed-quantity" type="number" min="1" step="1" value={inputs.fixtureQuantity} onChange={(event) => setNumber("fixtureQuantity", event.target.value, 1)} />
+                      <p className="text-xs text-muted-foreground">{fixtureCountIsSuggested ? "Matches planning guidance." : "Manual quantity override is active."}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-size">Verified Juno Fixture</Label>
+                      <select id="recessed-size" className={selectClassName} value={inputs.fixtureSize} onChange={(event) => setInputs((current) => ({ ...current, fixtureSize: event.target.value as RecessedLightingInputs["fixtureSize"] }))}>
+                        <option value="4-inch">4-inch regressed wafer — verified $29 cost</option>
+                        <option value="6-inch">6-inch regressed wafer — verified $32 cost</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-additional-lights">Additional Light Locations</Label>
+                      <Input id="recessed-additional-lights" type="number" min="0" step="1" value={inputs.additionalLights} onChange={(event) => setNumber("additionalLights", event.target.value)} />
+                    </div>
+                    <label className="flex items-center gap-3 rounded-lg border p-4 text-sm font-medium">
+                      <Checkbox checked={inputs.customerSuppliedFixtures} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFixtures: checked === true }))} />
+                      Customer supplies recessed fixtures
+                    </label>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Wiring and controls</h3>
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-wiring-option">Wiring Scope</Label>
+                      <select id="recessed-wiring-option" className={selectClassName} value={inputs.wiringOption} onChange={(event) => setInputs((current) => ({ ...current, wiringOption: event.target.value as RecessedLightingInputs["wiringOption"] }))}>
+                        <option value="Existing switch leg / lighting box">Existing switch leg / lighting box</option>
+                        <option value="New wiring from source">New wiring from source</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-switch-type">Switching</Label>
+                      <select id="recessed-switch-type" className={selectClassName} value={inputs.switchType} onChange={(event) => handleSwitchType(event.target.value as RecessedLightingInputs["switchType"])}>
+                        <option value="Single-pole">Single-pole</option>
+                        <option value="3-way">3-way</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-dimmer">Dimmer</Label>
+                      <select id="recessed-dimmer" className={selectClassName} value={inputs.dimmerSelection} onChange={(event) => setInputs((current) => ({ ...current, dimmerSelection: event.target.value as RecessedLightingInputs["dimmerSelection"] }))}>
+                        <option value="No dimmer">No dimmer</option>
+                        <option value="Include dimmer">Include dimmer</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-additional-switches">Additional Switches</Label>
+                      <Input id="recessed-additional-switches" type="number" min="0" step="1" value={inputs.additionalSwitches} onChange={(event) => setNumber("additionalSwitches", event.target.value)} />
+                    </div>
+                    {isNewWiring && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="recessed-cable">Selected Cable</Label>
+                          <select id="recessed-cable" className={selectClassName} value={inputs.cableType} onChange={(event) => setInputs((current) => ({ ...current, cableType: event.target.value as RecessedLightingInputs["cableType"] }))}>
+                            {inputs.switchType === "3-way" ? (
+                              <option value="14/3 NM-B">14/3 NM-B — 15A 3-way circuits only</option>
+                            ) : inputs.breakerAmperage > 15 ? (
+                              <option value="12/2 NM-B">12/2 NM-B — selected 20A circuit</option>
+                            ) : (
+                              <>
+                                <option value="14/2 NM-B">14/2 NM-B</option>
+                                <option value="12/2 NM-B">12/2 NM-B</option>
+                              </>
+                            )}
+                          </select>
+                          {inputs.switchType === "3-way" && inputs.breakerAmperage > 15 && (
+                            <p className="text-xs text-amber-700">No verified 12/3 row is available. This cable remains unresolved until the circuit is 15A or a sourced 12/3 item is added.</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="recessed-wire-run">Approximate Wire Run (FT)</Label>
+                          <Input id="recessed-wire-run" type="number" min="0" step="1" value={inputs.wireRunLength} onChange={(event) => setNumber("wireRunLength", event.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="recessed-wire-allowance">Additional Wiring Allowance (FT)</Label>
+                          <Input id="recessed-wire-allowance" type="number" min="0" step="1" value={inputs.wiringAllowanceFeet} onChange={(event) => setNumber("wiringAllowanceFeet", event.target.value)} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Circuit and field conditions</h3>
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="recessed-circuit">Circuit Scope</Label>
+                      <select id="recessed-circuit" className={selectClassName} value={inputs.circuitOption} onChange={(event) => setInputs((current) => ({ ...current, circuitOption: event.target.value as RecessedLightingInputs["circuitOption"] }))}>
+                        <option value="Reuse existing circuit">Reuse existing circuit</option>
                         <option value="New dedicated circuit">New dedicated circuit</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-cable">Cable Selection</Label>
-                      <select id="recessed-cable" value={inputs.cableType} onChange={(event) => setInputs((current) => ({ ...current, cableType: event.target.value as RecessedLightingInputs["cableType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="14/2 NM-B">14/2 NM-B — $0.37/FT verified default</option>
-                        <option value="14/3 NM-B">14/3 NM-B — $0.53/FT verified default</option>
+                      <Label htmlFor="recessed-labor-rate">Labor Sell Rate</Label>
+                      <select id="recessed-labor-rate" className={selectClassName} value={inputs.laborRateType ?? "residential"} onChange={(event) => setInputs((current) => ({ ...current, laborRateType: event.target.value as RecessedLightingInputs["laborRateType"] }))}>
+                        <option value="residential">Residential</option>
+                        <option value="commercial">Commercial</option>
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-distance">Approximate Wiring Distance (FT)</Label>
-                      <Input id="recessed-distance" type="number" min="0" step="1" value={inputs.wiringDistance} onChange={(event) => setNumber("wiringDistance", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-allowance">Wiring Allowance (%)</Label>
-                      <Input id="recessed-allowance" type="number" min="0" step="1" value={inputs.wiringAllowance} onChange={(event) => setNumber("wiringAllowance", event.target.value)} />
-                    </div>
-                  </div>
-                  {isNewCircuit && (
-                    <div className="mt-5 rounded-lg border bg-muted/15 p-4">
-                      <p className="mb-4 text-sm font-semibold">New-circuit protection selection</p>
-                      <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+                    {isNewCircuit && (
+                      <>
                         <div className="space-y-2">
                           <Label htmlFor="recessed-panel">Panel Manufacturer</Label>
-                          <select id="recessed-panel" value={inputs.panelManufacturer ?? ""} onChange={(event) => setInputs((current) => ({ ...current, panelManufacturer: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                          <select id="recessed-panel" className={selectClassName} value={inputs.panelManufacturer} onChange={(event) => setInputs((current) => ({ ...current, panelManufacturer: event.target.value }))}>
                             <option value="Siemens">Siemens / ITE</option>
                             <option value="Eaton">Eaton BR</option>
                             <option value="Square D">Square D Homeline</option>
                           </select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="recessed-amps">Breaker Amperage</Label>
-                          <Input id="recessed-amps" type="number" min="0" value={inputs.breakerAmperage ?? 0} onChange={(event) => setNumber("breakerAmperage", event.target.value)} />
+                          <Label htmlFor="recessed-breaker-protection">Breaker Protection</Label>
+                          <select id="recessed-breaker-protection" className={selectClassName} value={inputs.breakerProtectionType} onChange={(event) => setInputs((current) => ({ ...current, breakerProtectionType: event.target.value }))}>
+                            <option value="Standard">Standard</option>
+                            <option value="AFCI">AFCI</option>
+                            <option value="GFCI">GFCI</option>
+                            <option value="Dual Function">Dual Function</option>
+                          </select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="recessed-poles">Pole Count</Label>
-                          <select id="recessed-poles" value={inputs.breakerPoleCount ?? 0} onChange={(event) => setInputs((current) => ({ ...current, breakerPoleCount: Number(event.target.value) }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                          <Label htmlFor="recessed-breaker-amps">Breaker Amperage</Label>
+                          <select id="recessed-breaker-amps" className={selectClassName} value={inputs.breakerAmperage} onChange={(event) => handleBreakerAmperage(event.target.value)}>
+                            <option value="15">15A</option>
+                            <option value="20">20A</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="recessed-breaker-poles">Breaker Pole Count</Label>
+                          <select id="recessed-breaker-poles" className={selectClassName} value={inputs.breakerPoleCount} onChange={(event) => setNumber("breakerPoleCount", event.target.value, 1)}>
                             <option value="1">1-pole</option>
                             <option value="2">2-pole</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="recessed-protection">Protection Type</Label>
-                          <select id="recessed-protection" value={inputs.breakerProtectionType ?? "Standard"} onChange={(event) => setInputs((current) => ({ ...current, breakerProtectionType: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                            <option value="Standard">Standard</option>
-                            <option value="GFCI">GFCI</option>
-                            <option value="AFCI">AFCI</option>
-                            <option value="Dual Function">Dual Function</option>
-                          </select>
-                        </div>
-                      </div>
-                      <p className="mt-3 text-xs text-muted-foreground">The estimate matches the company price book exactly. Missing combinations remain unresolved instead of being substituted.</p>
-                    </div>
-                  )}
-                </section>
-
-                <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Switching and labor</h3>
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      </>
+                    )}
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-switch">Switch Type</Label>
-                      <select id="recessed-switch" value={inputs.switchType} onChange={(event) => setInputs((current) => ({ ...current, switchType: event.target.value as RecessedLightingInputs["switchType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="Single-pole">Single-pole</option>
-                        <option value="3-way">3-way</option>
+                      <Label htmlFor="recessed-ceiling">Ceiling Height</Label>
+                      <select id="recessed-ceiling" className={selectClassName} value={inputs.ceilingHeight} onChange={(event) => setInputs((current) => ({ ...current, ceilingHeight: event.target.value as RecessedLightingInputs["ceilingHeight"] }))}>
+                        <option value="Standard 8-10 ft">Standard 8-10 ft</option>
+                        <option value="High 11-14 ft">High 11-14 ft</option>
+                        <option value="Vaulted 15+ ft">Vaulted 15+ ft</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-three-way">3-way Switching Option</Label>
-                      <select id="recessed-three-way" value={inputs.threeWaySwitchingOption} onChange={(event) => setInputs((current) => ({ ...current, threeWaySwitchingOption: event.target.value as RecessedLightingInputs["threeWaySwitchingOption"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="Not included">Not included</option>
-                        <option value="Include 3-way switching">Include 3-way switching</option>
+                      <Label htmlFor="recessed-access">Ceiling Access</Label>
+                      <select id="recessed-access" className={selectClassName} value={inputs.accessDifficulty} onChange={(event) => setInputs((current) => ({ ...current, accessDifficulty: event.target.value as RecessedLightingInputs["accessDifficulty"] }))}>
+                        <option value="Attic access">Attic access</option>
+                        <option value="Limited / blind access">Limited / blind access</option>
+                        <option value="Open ceiling">Open ceiling</option>
+                        <option value="Difficult access">Difficult access</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-dimmer">Dimmer Option</Label>
-                      <select id="recessed-dimmer" value={inputs.dimmerOption} onChange={(event) => setInputs((current) => ({ ...current, dimmerOption: event.target.value as RecessedLightingInputs["dimmerOption"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="No dimmer">No dimmer</option>
-                        <option value="Include dimmer">Include dimmer</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recessed-labor-rate">Labor Sell Rate</Label>
-                      <select id="recessed-labor-rate" value={inputs.laborRateType ?? "residential"} onChange={(event) => setInputs((current) => ({ ...current, laborRateType: event.target.value as RecessedLightingInputs["laborRateType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="residential">Residential</option>
-                        <option value="commercial">Commercial</option>
-                      </select>
+                      <Label htmlFor="recessed-labor-adjustment">Labor Adjustment (Hours)</Label>
+                      <Input id="recessed-labor-adjustment" type="number" min="-10" step="0.25" value={inputs.laborAdjustmentHours} onChange={(event) => setInputs((current) => ({ ...current, laborAdjustmentHours: Number(event.target.value) || 0 }))} />
+                      <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing.</p>
                     </div>
                   </div>
                 </section>
 
                 <div className="space-y-2">
                   <Label htmlFor="recessed-notes">Estimator Notes (Internal)</Label>
-                  <Textarea id="recessed-notes" value={inputs.notes} onChange={(event) => setInputs((current) => ({ ...current, notes: event.target.value }))} placeholder="Access, existing conditions, fixture layout notes..." />
+                  <Textarea id="recessed-notes" value={inputs.notes} onChange={(event) => setInputs((current) => ({ ...current, notes: event.target.value }))} />
                 </div>
               </CardContent>
             </Card>
@@ -313,30 +422,22 @@ export function NewRecessedLightingQuote() {
                     <Calculator className="text-primary" size={20} />
                     <CardTitle className="text-secondary-foreground">Calculation Preview</CardTitle>
                   </div>
-                  <CardDescription className="text-secondary-foreground/70">Server-calculated from current company settings and price-book rows.</CardDescription>
+                  <CardDescription className="text-secondary-foreground/70">Uses the same server calculation path as the saved immutable quote snapshot.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-6">
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
-                    <p className="text-secondary-foreground/80">Room dimensions and spacing are planning guidance only. Verify layout, access, conductors, circuit capacity, and applicable requirements in the field.</p>
+                    <p className="text-secondary-foreground/80">Room spacing is planning guidance. Catalog materials, internal labor, customer labor, selling price, and overrides remain separate.</p>
                   </div>
-
-                  {planning && previewIsCurrent && (
-                    <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm">
-                      <p className="font-semibold text-primary">Planning guidance</p>
-                      <p className="mt-1 text-secondary-foreground/80">Suggested: <strong>{planning.suggestedFixtureQuantity || "—"}</strong> fixtures at approximately <strong>{planning.spacingFeet} FT</strong> spacing.</p>
-                      <p className="mt-1 text-xs text-secondary-foreground/70">Estimate quantity: {planning.actualFixtureQuantity || "—"} ({planning.quantitySource}).</p>
-                    </div>
-                  )}
 
                   {pricing && previewIsCurrent ? (
                     <>
                       {pricing.pricingWarnings.length > 0 && (
-                        <div className="rounded-md border border-amber-400/40 bg-amber-400/10 p-3">
+                        <div className="max-h-64 overflow-auto rounded-md border border-amber-400/40 bg-amber-400/10 p-3">
                           <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-300">
                             <TriangleAlert size={16} /> Estimate needs confirmation
                           </div>
-                          <ul className="space-y-1 pl-5 text-xs text-secondary-foreground/80 list-disc">
+                          <ul className="list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">
                             {pricing.pricingWarnings.map((warning) => <li key={warning}>{warning}</li>)}
                           </ul>
                         </div>
@@ -344,26 +445,20 @@ export function NewRecessedLightingQuote() {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div>
                         <div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>
-                        {pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}
-                        <div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Calculated Sell Price</span><span className="font-mono text-primary">${pricing.calculatedSellingPrice.toFixed(2)}</span></div>
-                        <div className="flex justify-between font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div>
+                        {pricing.laborSellAmount !== undefined && <div className="flex justify-between gap-4"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}
+                        <div className="flex justify-between"><span>Calculated Sell Price</span><span className="font-mono">${pricing.calculatedSellingPrice.toFixed(2)}</span></div>
+                        <div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-secondary-foreground/70"><span>Internal Margin</span><span className="font-mono">{(pricing.grossMargin * 100).toFixed(1)}%</span></div>
                       </div>
-                      {assembly.length > 0 && (
-                        <div className="border-t border-secondary-border pt-4">
-                          <p className="mb-2 text-sm font-semibold">Calculated Assembly</p>
-                          <div className="space-y-2 text-xs">
-                            {assembly.map((line) => (
-                              <div key={line.id} className="border-b border-secondary-border/60 pb-2">
-                                <div className="flex justify-between gap-2">
-                                  <span>{line.description}</span>
-                                  <span className="shrink-0 font-mono">${line.extendedCost.toFixed(2)}</span>
-                                </div>
-                                <p className="mt-0.5 text-secondary-foreground/60">{line.quantity} {line.unit} · {line.source}</p>
-                              </div>
-                            ))}
+                      <div className="space-y-2 border-t border-secondary-border pt-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-secondary-foreground/60">Priced assembly</p>
+                        {assembly.slice(0, 5).map((line) => (
+                          <div key={line.id} className="flex justify-between gap-3 text-xs">
+                            <span className="text-secondary-foreground/75">{line.description}</span>
+                            <span className="shrink-0 font-mono">${line.extendedCost.toFixed(2)}</span>
                           </div>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </>
                   ) : (
                     <div className="py-6 text-center text-sm text-secondary-foreground/70">Updating authoritative estimate...</div>

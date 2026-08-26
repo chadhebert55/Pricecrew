@@ -6,44 +6,46 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { LaborRateType } from './laborRateType';
+import type { RecessedLightingInputsAccessDifficulty } from './recessedLightingInputsAccessDifficulty';
+import type { RecessedLightingInputsBreakerAmperage } from './recessedLightingInputsBreakerAmperage';
 import type { RecessedLightingInputsCableType } from './recessedLightingInputsCableType';
+import type { RecessedLightingInputsCeilingHeight } from './recessedLightingInputsCeilingHeight';
 import type { RecessedLightingInputsCircuitOption } from './recessedLightingInputsCircuitOption';
-import type { RecessedLightingInputsDimmerOption } from './recessedLightingInputsDimmerOption';
+import type { RecessedLightingInputsDimmerSelection } from './recessedLightingInputsDimmerSelection';
 import type { RecessedLightingInputsFixtureSize } from './recessedLightingInputsFixtureSize';
 import type { RecessedLightingInputsSwitchType } from './recessedLightingInputsSwitchType';
-import type { RecessedLightingInputsThreeWaySwitchingOption } from './recessedLightingInputsThreeWaySwitchingOption';
+import type { RecessedLightingInputsWiringOption } from './recessedLightingInputsWiringOption';
 
 export interface RecessedLightingInputs {
   /** @minimum 0 */
   roomLength: number;
   /** @minimum 0 */
   roomWidth: number;
-  /** @minimum 0 */
-  ceilingHeight: number;
-  fixtureSize: RecessedLightingInputsFixtureSize;
-  /** @minimum 0 */
+  /** @minimum 1 */
   fixtureQuantity: number;
-  /**
-     * @minimum 4
-     * @maximum 12
-     */
-  spacingFeet: number;
-  customerSuppliedFixtures: boolean;
+  fixtureSize: RecessedLightingInputsFixtureSize;
+  wiringOption: RecessedLightingInputsWiringOption;
   circuitOption: RecessedLightingInputsCircuitOption;
-  /** @minimum 0 */
-  wiringDistance: number;
-  /** @minimum 0 */
-  wiringAllowance: number;
   switchType: RecessedLightingInputsSwitchType;
-  dimmerOption: RecessedLightingInputsDimmerOption;
-  threeWaySwitchingOption: RecessedLightingInputsThreeWaySwitchingOption;
+  dimmerSelection: RecessedLightingInputsDimmerSelection;
+  customerSuppliedFixtures: boolean;
+  ceilingHeight: RecessedLightingInputsCeilingHeight;
+  accessDifficulty: RecessedLightingInputsAccessDifficulty;
+  laborAdjustmentHours: number;
+  /** @minimum 0 */
+  wireRunLength: number;
+  /** @minimum 0 */
+  wiringAllowanceFeet: number;
+  /** @minimum 0 */
+  additionalSwitches: number;
+  /** @minimum 0 */
+  additionalLights: number;
   notes: string;
   laborRateType?: LaborRateType;
-  panelManufacturer?: string;
-  /** @minimum 0 */
-  breakerAmperage?: number;
-  /** @minimum 0 */
-  breakerPoleCount?: number;
-  breakerProtectionType?: string;
-  cableType?: RecessedLightingInputsCableType;
+  panelManufacturer: string;
+  breakerAmperage: RecessedLightingInputsBreakerAmperage;
+  /** @minimum 1 */
+  breakerPoleCount: number;
+  breakerProtectionType: string;
+  cableType: RecessedLightingInputsCableType;
 }

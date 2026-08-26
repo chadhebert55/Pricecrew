@@ -150,7 +150,7 @@ export function QuoteDetail() {
                     ? "Kitchen Builder"
                     : quote.module === "RECESSED_LIGHTING"
                       ? "Recessed Lighting Builder"
-                      : "EV Charger Builder"}.
+                    : "EV Charger Builder"}.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">

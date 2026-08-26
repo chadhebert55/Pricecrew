@@ -1,2 +1,3 @@
 - [Orval Zod compatibility](orval-zod-compatibility.md) — OpenAPI integer/email formats generate helpers unavailable in the current shared Zod version.
 - [Estimate snapshot compatibility](estimate-snapshot-compatibility.md) — pricing fields evolve additively; saved quote JSON must never be backfilled or recalculated.
+- [Conductor ampacity validation](conductor-ampacity-validation.md) — cable pricing must validate breaker amperage and switching together; unsupported combinations stay unresolved.

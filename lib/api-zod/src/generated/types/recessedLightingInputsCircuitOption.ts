@@ -10,6 +10,6 @@ export type RecessedLightingInputsCircuitOption = typeof RecessedLightingInputsC
 
 
 export const RecessedLightingInputsCircuitOption = {
-  'Reuse_existing_lighting_box/circuit': 'Reuse existing lighting box/circuit',
+  Reuse_existing_circuit: 'Reuse existing circuit',
   New_dedicated_circuit: 'New dedicated circuit',
 } as const;

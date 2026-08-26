@@ -33,7 +33,7 @@ export function Builders() {
     {
       id: "recessed-lighting",
       title: "Recessed Lighting",
-      description: "Plan room-based recessed lighting with fixture guidance, switching, wiring, circuit options, and verified catalog pricing.",
+      description: "Plan room spacing, fixture quantities, switching, wiring, circuit protection, access, and labor with verified Juno fixture pricing.",
       icon: Lightbulb,
       status: "live",
       href: "/quotes/new/recessed-lighting"

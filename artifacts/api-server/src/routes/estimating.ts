@@ -46,11 +46,7 @@ import {
 const router: IRouter = Router();
 
 type QuoteStatus = "draft" | "ready";
-type EstimateModule =
-  | "EV_CHARGER"
-  | "BATHROOM"
-  | "KITCHEN"
-  | "RECESSED_LIGHTING";
+type EstimateModule = "EV_CHARGER" | "BATHROOM" | "KITCHEN" | "RECESSED_LIGHTING";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -178,10 +174,7 @@ async function calculateEstimate(
   if (module === "EV_CHARGER" && isEvInput(jobInputs)) {
     return calculateEvChargerEstimate(jobInputs, settings, priceBook);
   }
-  if (
-    module === "RECESSED_LIGHTING" &&
-    isRecessedLightingInput(jobInputs)
-  ) {
+  if (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs)) {
     return calculateRecessedLightingEstimate(jobInputs, settings, priceBook);
   }
   throw new Error(`Job inputs do not match module ${module}`);

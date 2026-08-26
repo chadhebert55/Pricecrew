@@ -33,13 +33,6 @@ export type EstimatingSettings = {
 type EstimateResult = {
   assembly: AssemblyLineRecord[];
   pricing: PricingRecord;
-  planning?: {
-    suggestedFixtureQuantity: number;
-    actualFixtureQuantity: number;
-    spacingFeet: number;
-    quantitySource: string;
-    guidance: string;
-  };
 };
 
 function normalized(value: string) {
@@ -845,180 +838,157 @@ export function calculateRecessedLightingEstimate(
 ): EstimateResult {
   const assembly: AssemblyLineRecord[] = [];
   const pricingWarnings: string[] = [];
-  const roomLength = Math.max(0, Number(inputs.roomLength) || 0);
-  const roomWidth = Math.max(0, Number(inputs.roomWidth) || 0);
-  const ceilingHeight = Math.max(0, Number(inputs.ceilingHeight) || 0);
-  const spacingFeet = Math.min(
-    12,
-    Math.max(4, Number(inputs.spacingFeet) || 6),
-  );
-  const suggestedFixtureQuantity =
-    roomLength > 0 && roomWidth > 0
-      ? Math.max(
-          1,
-          Math.ceil(roomLength / spacingFeet) *
-            Math.ceil(roomWidth / spacingFeet),
-        )
-      : 0;
-  const manualQuantity = Math.max(0, Number(inputs.fixtureQuantity) || 0);
-  const actualFixtureQuantity =
-    manualQuantity > 0 ? manualQuantity : suggestedFixtureQuantity;
-  const quantitySource =
-    manualQuantity > 0 ? "Manual fixture quantity" : "Room-dimension suggestion";
-  const fixtureSize = inputs.fixtureSize === "6-inch" ? "6-inch" : "4-inch";
-  const fixtureKey = `Juno ${fixtureSize} regressed wafer light`;
-  const fixturePrice = inputs.customerSuppliedFixtures
-    ? { value: 0, source: "Customer supplied fixture" }
-    : unitCost(fixtureKey, priceBook, pricingWarnings);
+  const safeNumber = (value: number) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+  const roomLength = safeNumber(inputs.roomLength);
+  const roomWidth = safeNumber(inputs.roomWidth);
+  const fixtureQuantity = Math.max(1, Math.round(safeNumber(inputs.fixtureQuantity)));
+  const additionalLights = Math.round(safeNumber(inputs.additionalLights));
+  const additionalSwitches = Math.round(safeNumber(inputs.additionalSwitches));
+  const wireRunLength = safeNumber(inputs.wireRunLength);
+  const wiringAllowanceFeet = safeNumber(inputs.wiringAllowanceFeet);
+  const laborAdjustmentHours = Number.isFinite(Number(inputs.laborAdjustmentHours))
+    ? Number(inputs.laborAdjustmentHours)
+    : 0;
+  const isNewWiring = /new/i.test(inputs.wiringOption);
+  const isNewCircuit = /new/i.test(inputs.circuitOption);
+  const isThreeWay = /3[- ]?way/i.test(inputs.switchType);
+  const fixtureKey =
+    inputs.fixtureSize === "6-inch"
+      ? "Juno 6-inch regressed wafer light"
+      : "Juno 4-inch regressed wafer light";
+  const fixtureLabel = inputs.fixtureSize === "6-inch" ? "6-inch" : "4-inch";
 
-  if (suggestedFixtureQuantity === 0) {
-    pricingWarnings.push(
-      "Room dimensions are incomplete, so no planning fixture quantity could be suggested. Confirm the layout before sending.",
+  const addPricedItem = (
+    id: string,
+    category: string,
+    key: string,
+    description: string,
+    quantity: number,
+    customerSupplied = false,
+    unit = "ea",
+  ) => {
+    const safeQuantity = Math.max(0, Number(quantity) || 0);
+    if (safeQuantity === 0) return;
+    const price = customerSupplied
+      ? { value: 0, source: "Customer supplied fixture" }
+      : unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit,
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  addPricedItem(
+    "recessed-fixtures",
+    "Lighting",
+    fixtureKey,
+    `${fixtureLabel} Juno regressed wafer fixtures`,
+    fixtureQuantity,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "additional-lights",
+    "Lighting",
+    fixtureKey,
+    `Additional ${fixtureLabel} Juno light locations`,
+    additionalLights,
+    inputs.customerSuppliedFixtures,
+  );
+
+  const controlKey = isThreeWay
+    ? "Unverified allowance — 3-way switch pair"
+    : "Unverified allowance — single-pole switch";
+  const controlDescription = isThreeWay
+    ? "3-way switch pair allowance"
+    : "Single-pole switch allowance";
+  addPricedItem(
+    "switch-controls",
+    "Controls",
+    controlKey,
+    controlDescription,
+    isThreeWay ? 2 : 1,
+  );
+  addPricedItem(
+    "additional-switches",
+    "Controls",
+    "Unverified allowance — single-pole switch",
+    "Additional single-pole switch allowances",
+    additionalSwitches,
+  );
+  if (/include|yes|selected/i.test(inputs.dimmerSelection)) {
+    addPricedItem(
+      "dimmer",
+      "Controls",
+      "Unverified allowance — dimmer switch",
+      "Dimming control allowance — final load compatibility to be verified",
+      1,
     );
   }
-  pricingWarnings.push(
-    `Planning guidance only: ${suggestedFixtureQuantity || "No"} fixture(s) at approximately ${spacingFeet} ft spacing. Verify layout, fixture ratings, access, and applicable requirements in the field; this estimate does not determine code compliance.`,
-  );
 
-  if (actualFixtureQuantity > 0) {
-    addLine(assembly, {
-      id: "recessed-fixtures",
-      category: "Lighting",
-      description: `${fixtureSize} Juno regressed wafer light${inputs.customerSuppliedFixtures ? " — customer supplied" : ""}`,
-      quantity: actualFixtureQuantity,
-      unit: "ea",
-      unitCost: fixturePrice.value,
-      source: fixturePrice.source,
-    });
-  }
-
-  const isNewCircuit =
-    inputs.circuitOption === "New dedicated circuit";
-  const selectedCable =
-    inputs.cableType === "14/3 NM-B" ? "14/3 NM-B cable" : "14/2 NM-B cable";
-  const cableDistance = Math.max(
-    0,
-    Number(inputs.wiringDistance) || 0,
-  );
-  const allowancePercent = Math.max(
-    0,
-    Number(inputs.wiringAllowance) || 0,
-  );
-  const cableQuantity = cableDistance * (1 + allowancePercent / 100);
-  if (cableQuantity > 0) {
-    const cable = unitCost(selectedCable, priceBook, pricingWarnings);
-    addLine(assembly, {
-      id: "recessed-wiring",
-      category: "Conductor",
-      description: `${selectedCable} — lighting route plus ${allowancePercent}% allowance`,
-      quantity: cableQuantity,
-      unit: "ft",
-      unitCost: cable.value,
-      source: cable.source,
-    });
+  if (isNewWiring) {
+    const selectedCable = inputs.cableType;
+    const isFifteenAmpCircuit = inputs.breakerAmperage === 15;
+    const isTwentyAmpCircuit = inputs.breakerAmperage === 20;
+    const isSupportedLightingCircuit =
+      isFifteenAmpCircuit || isTwentyAmpCircuit;
+    const cableIsAppropriate = isThreeWay
+      ? selectedCable === "14/3 NM-B" && isFifteenAmpCircuit
+      : (selectedCable === "12/2 NM-B" && isSupportedLightingCircuit) ||
+        (selectedCable === "14/2 NM-B" && isFifteenAmpCircuit);
+    if (!cableIsAppropriate) {
+      const requiredCable = !isSupportedLightingCircuit
+        ? "a supported 15A or 20A lighting circuit with compatible verified cable"
+        : isThreeWay
+          ? isFifteenAmpCircuit
+            ? "14/3 NM-B"
+            : "a verified 12/3 cable row"
+          : isFifteenAmpCircuit
+            ? "12/2 NM-B or 14/2 NM-B"
+            : "12/2 NM-B";
+      pricingWarnings.push(
+        `Selected ${selectedCable} cable is not appropriate for the ${inputs.breakerAmperage}A ${isThreeWay ? "3-way" : "single-pole"} configuration. Select ${requiredCable}; no cable cost was substituted.`,
+      );
+    } else if (wireRunLength + wiringAllowanceFeet > 0) {
+      const cable = unitCost(`${selectedCable} cable`, priceBook, pricingWarnings);
+      addLine(assembly, {
+        id: "recessed-wiring",
+        category: "Conductor",
+        description: `${selectedCable} cable — approximate run plus wiring allowance`,
+        quantity: Number((wireRunLength + wiringAllowanceFeet).toFixed(2)),
+        unit: "ft",
+        unitCost: cable.value,
+        source: cable.source,
+      });
+    } else {
+      pricingWarnings.push(
+        "New wiring is selected but the approximate wire run is zero. Add a run length and/or wiring allowance so cable can be priced.",
+      );
+    }
   } else {
     pricingWarnings.push(
-      "Lighting wiring distance is unresolved. Add an approximate route so conductor material can be priced.",
+      "Existing switch leg / lighting box conditions must be opened and field-verified for capacity, grounding, box support, and accessible wiring before installation.",
     );
-  }
-
-  const includesThreeWay =
-    inputs.switchType === "3-way" ||
-    inputs.threeWaySwitchingOption === "Include 3-way switching";
-  if (
-    includesThreeWay &&
-    inputs.cableType === "14/2 NM-B"
-  ) {
-    pricingWarnings.push(
-      "3-way switching is selected with 14/2 NM-B. Verify conductor selection for the final switching arrangement; no cable type was substituted.",
-    );
-  }
-
-  const includesDimmer = inputs.dimmerOption === "Include dimmer";
-  const mechanicalSwitchQuantity = includesThreeWay
-    ? includesDimmer ? 1 : 2
-    : includesDimmer ? 0 : 1;
-  if (mechanicalSwitchQuantity > 0) {
-    const switchKey = includesThreeWay
-      ? "Legrand radiant TM873WCC10 15A 3-way switch"
-      : "Legrand radiant TM870WCC10 15A single-pole switch";
-    const switchItem = unitCost(switchKey, priceBook, pricingWarnings);
-    addLine(assembly, {
-      id: "switches",
-      category: "Controls",
-      description: includesThreeWay
-        ? "Legrand radiant 15A 3-way switch"
-        : "Legrand radiant 15A single-pole switch",
-      quantity: mechanicalSwitchQuantity,
-      unit: "ea",
-      unitCost: switchItem.value,
-      source: switchItem.source,
-    });
-  }
-
-  if (includesDimmer) {
-    const dimmer = unitCost(
-      "Legrand radiant RHL153PWPW LED dimmer with wall plate",
-      priceBook,
-      pricingWarnings,
-    );
-    addLine(assembly, {
-      id: "dimmer",
-      category: "Controls",
-      description: "Legrand radiant LED dimmer with wall plate",
-      quantity: 1,
-      unit: "ea",
-      unitCost: dimmer.value,
-      source: dimmer.source,
-    });
-  }
-
-  const controlDeviceCount = includesThreeWay ? 2 : 1;
-  const boxes = unitCost(
-    "Carlon B114R-UPC 14 cu. in. single-gang old-work box",
-    priceBook,
-    pricingWarnings,
-  );
-  addLine(assembly, {
-    id: "control-boxes",
-    category: "Rough-in",
-    description: "Carlon 14 cu. in. single-gang old-work box",
-    quantity: controlDeviceCount,
-    unit: "ea",
-    unitCost: boxes.value,
-    source: boxes.source,
-  });
-  const wallPlateQuantity = controlDeviceCount - (includesDimmer ? 1 : 0);
-  if (wallPlateQuantity > 0) {
-    const plates = unitCost(
-      "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
-      priceBook,
-      pricingWarnings,
-    );
-    addLine(assembly, {
-      id: "control-plates",
-      category: "Trim",
-      description: "Legrand radiant 1-gang screwless wall plate",
-      quantity: wallPlateQuantity,
-      unit: "ea",
-      unitCost: plates.value,
-      source: plates.source,
-    });
   }
 
   if (isNewCircuit) {
     const breaker = resolveBreaker(
       {
-        manufacturer: inputs.panelManufacturer ?? "",
-        amperage: inputs.breakerAmperage ?? 0,
-        poleCount: inputs.breakerPoleCount ?? 0,
-        protectionType: inputs.breakerProtectionType ?? "Standard",
+        manufacturer: inputs.panelManufacturer,
+        amperage: inputs.breakerAmperage,
+        poleCount: inputs.breakerPoleCount,
+        protectionType: inputs.breakerProtectionType,
       },
       priceBook,
       pricingWarnings,
     );
     addLine(assembly, {
-      id: "lighting-circuit-breaker",
+      id: "recessed-circuit-protection",
       category: "Protection",
       description: breaker.description,
       quantity: 1,
@@ -1028,37 +998,57 @@ export function calculateRecessedLightingEstimate(
     });
   } else {
     pricingWarnings.push(
-      "Existing lighting box/circuit reuse must be field-verified for capacity, grounding, protection, and available wiring before the quote is sent.",
+      "Existing circuit capacity, load, overcurrent protection, and required AFCI/GFCI protection must be field-verified before the quote is sent.",
     );
   }
 
-  const heightAdjustment = ceilingHeight > 8
-    ? (ceilingHeight - 8) * 0.15
-    : 0;
+  const suggestedFixtureCount =
+    roomLength > 0 && roomWidth > 0
+      ? Math.max(1, Math.ceil(roomLength / 8) * Math.ceil(roomWidth / 8))
+      : 0;
+  if (suggestedFixtureCount > 0) {
+    pricingWarnings.push(
+      `Planning guidance only: ${suggestedFixtureCount} fixtures at approximately 8 ft grid spacing are suggested for the entered room dimensions. Final spacing, layout, obstructions, and code requirements must be field-verified.`,
+    );
+  } else {
+    pricingWarnings.push(
+      "Room dimensions are incomplete. Fixture count and spacing guidance cannot be calculated until both length and width are entered.",
+    );
+  }
+  pricingWarnings.push(
+    "Fixture quantity and spacing are planning guidance, not a code-compliance determination. Confirm ceiling layout, joists, ductwork, insulation, fire rating, and switching requirements in the field.",
+  );
+
+  const ceilingMultiplier = /vault/i.test(inputs.ceilingHeight)
+    ? 1.35
+    : /high/i.test(inputs.ceilingHeight)
+      ? 1.15
+      : 1;
+  const accessHours = /limited|blind|between|difficult/i.test(
+    inputs.accessDifficulty,
+  )
+    ? 1.25
+    : /attic|open/i.test(inputs.accessDifficulty)
+      ? 0
+      : 0.5;
   const laborHours =
-    1.5 +
-    actualFixtureQuantity * 0.65 +
-    cableDistance / 40 +
-    (includesThreeWay ? 0.9 : 0.35) +
-    (inputs.dimmerOption === "Include dimmer" ? 0.35 : 0) +
-    heightAdjustment +
-    (isNewCircuit ? 2.5 : 0);
-  const estimate = finalizeEstimate(
+    (1.25 +
+      fixtureQuantity * 0.85 +
+      additionalLights * 0.65 +
+      (isThreeWay ? 1.25 : 0.5) +
+      additionalSwitches * 0.45 +
+      (/include|yes|selected/i.test(inputs.dimmerSelection) ? 0.5 : 0) +
+      (isNewWiring ? (wireRunLength + wiringAllowanceFeet) / 40 : 0) +
+      (isNewCircuit ? 2.5 : 0) +
+      accessHours +
+      laborAdjustmentHours) *
+    ceilingMultiplier;
+
+  return finalizeEstimate(
     assembly,
-    laborHours,
+    Math.max(0, laborHours),
     settings,
     pricingWarnings,
     inputs.laborRateType,
   );
-  return {
-    ...estimate,
-    planning: {
-      suggestedFixtureQuantity,
-      actualFixtureQuantity,
-      spacingFeet,
-      quantitySource,
-      guidance:
-        "Use this as layout planning guidance only. Confirm fixture placement, switching, access, wiring, and applicable requirements in the field.",
-    },
-  };
 }

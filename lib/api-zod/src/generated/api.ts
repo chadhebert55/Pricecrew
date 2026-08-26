@@ -118,20 +118,15 @@ export const createQuoteBodyJobInputsFourRoomLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourRoomWidthMin = 0;
 
-export const createQuoteBodyJobInputsFourCeilingHeightMin = 0;
 
-export const createQuoteBodyJobInputsFourFixtureQuantityMin = 0;
+export const createQuoteBodyJobInputsFourWireRunLengthMin = 0;
 
-export const createQuoteBodyJobInputsFourSpacingFeetMin = 4;
-export const createQuoteBodyJobInputsFourSpacingFeetMax = 12;
+export const createQuoteBodyJobInputsFourWiringAllowanceFeetMin = 0;
 
-export const createQuoteBodyJobInputsFourWiringDistanceMin = 0;
+export const createQuoteBodyJobInputsFourAdditionalSwitchesMin = 0;
 
-export const createQuoteBodyJobInputsFourWiringAllowanceMin = 0;
+export const createQuoteBodyJobInputsFourAdditionalLightsMin = 0;
 
-export const createQuoteBodyJobInputsFourBreakerAmperageMin = 0;
-
-export const createQuoteBodyJobInputsFourBreakerPoleCountMin = 0;
 
 export const createQuoteBodyLaborOverrideMin = 0;
 
@@ -216,24 +211,27 @@ export const CreateQuoteBody = zod.object({
 }),zod.object({
   "roomLength": zod.number().min(createQuoteBodyJobInputsFourRoomLengthMin),
   "roomWidth": zod.number().min(createQuoteBodyJobInputsFourRoomWidthMin),
-  "ceilingHeight": zod.number().min(createQuoteBodyJobInputsFourCeilingHeightMin),
+  "fixtureQuantity": zod.number().min(1),
   "fixtureSize": zod.enum(['4-inch', '6-inch']),
-  "fixtureQuantity": zod.number().min(createQuoteBodyJobInputsFourFixtureQuantityMin),
-  "spacingFeet": zod.number().min(createQuoteBodyJobInputsFourSpacingFeetMin).max(createQuoteBodyJobInputsFourSpacingFeetMax),
-  "customerSuppliedFixtures": zod.boolean(),
-  "circuitOption": zod.enum(['Reuse existing lighting box/circuit', 'New dedicated circuit']),
-  "wiringDistance": zod.number().min(createQuoteBodyJobInputsFourWiringDistanceMin),
-  "wiringAllowance": zod.number().min(createQuoteBodyJobInputsFourWiringAllowanceMin),
+  "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
+  "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
-  "dimmerOption": zod.enum(['No dimmer', 'Include dimmer']),
-  "threeWaySwitchingOption": zod.enum(['Not included', 'Include 3-way switching']),
+  "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
+  "accessDifficulty": zod.enum(['Attic access', 'Limited / blind access', 'Open ceiling', 'Difficult access']),
+  "laborAdjustmentHours": zod.number(),
+  "wireRunLength": zod.number().min(createQuoteBodyJobInputsFourWireRunLengthMin),
+  "wiringAllowanceFeet": zod.number().min(createQuoteBodyJobInputsFourWiringAllowanceFeetMin),
+  "additionalSwitches": zod.number().min(createQuoteBodyJobInputsFourAdditionalSwitchesMin),
+  "additionalLights": zod.number().min(createQuoteBodyJobInputsFourAdditionalLightsMin),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
-  "panelManufacturer": zod.string().optional(),
-  "breakerAmperage": zod.number().min(createQuoteBodyJobInputsFourBreakerAmperageMin).optional(),
-  "breakerPoleCount": zod.number().min(createQuoteBodyJobInputsFourBreakerPoleCountMin).optional(),
-  "breakerProtectionType": zod.string().optional(),
-  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B']).optional()
+  "panelManufacturer": zod.string(),
+  "breakerAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.string(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
   "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).nullish(),
   "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).nullish(),
@@ -292,20 +290,15 @@ export const createQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
 
-export const createQuoteResponseTwoJobInputsFourCeilingHeightMin = 0;
 
-export const createQuoteResponseTwoJobInputsFourFixtureQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
 
-export const createQuoteResponseTwoJobInputsFourSpacingFeetMin = 4;
-export const createQuoteResponseTwoJobInputsFourSpacingFeetMax = 12;
+export const createQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
 
-export const createQuoteResponseTwoJobInputsFourWiringDistanceMin = 0;
+export const createQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
 
-export const createQuoteResponseTwoJobInputsFourWiringAllowanceMin = 0;
+export const createQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
 
-export const createQuoteResponseTwoJobInputsFourBreakerAmperageMin = 0;
-
-export const createQuoteResponseTwoJobInputsFourBreakerPoleCountMin = 0;
 
 
 
@@ -392,24 +385,27 @@ export const CreateQuoteResponse = zod.object({
 }),zod.object({
   "roomLength": zod.number().min(createQuoteResponseTwoJobInputsFourRoomLengthMin),
   "roomWidth": zod.number().min(createQuoteResponseTwoJobInputsFourRoomWidthMin),
-  "ceilingHeight": zod.number().min(createQuoteResponseTwoJobInputsFourCeilingHeightMin),
+  "fixtureQuantity": zod.number().min(1),
   "fixtureSize": zod.enum(['4-inch', '6-inch']),
-  "fixtureQuantity": zod.number().min(createQuoteResponseTwoJobInputsFourFixtureQuantityMin),
-  "spacingFeet": zod.number().min(createQuoteResponseTwoJobInputsFourSpacingFeetMin).max(createQuoteResponseTwoJobInputsFourSpacingFeetMax),
-  "customerSuppliedFixtures": zod.boolean(),
-  "circuitOption": zod.enum(['Reuse existing lighting box/circuit', 'New dedicated circuit']),
-  "wiringDistance": zod.number().min(createQuoteResponseTwoJobInputsFourWiringDistanceMin),
-  "wiringAllowance": zod.number().min(createQuoteResponseTwoJobInputsFourWiringAllowanceMin),
+  "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
+  "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
-  "dimmerOption": zod.enum(['No dimmer', 'Include dimmer']),
-  "threeWaySwitchingOption": zod.enum(['Not included', 'Include 3-way switching']),
+  "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
+  "accessDifficulty": zod.enum(['Attic access', 'Limited / blind access', 'Open ceiling', 'Difficult access']),
+  "laborAdjustmentHours": zod.number(),
+  "wireRunLength": zod.number().min(createQuoteResponseTwoJobInputsFourWireRunLengthMin),
+  "wiringAllowanceFeet": zod.number().min(createQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin),
+  "additionalSwitches": zod.number().min(createQuoteResponseTwoJobInputsFourAdditionalSwitchesMin),
+  "additionalLights": zod.number().min(createQuoteResponseTwoJobInputsFourAdditionalLightsMin),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
-  "panelManufacturer": zod.string().optional(),
-  "breakerAmperage": zod.number().min(createQuoteResponseTwoJobInputsFourBreakerAmperageMin).optional(),
-  "breakerPoleCount": zod.number().min(createQuoteResponseTwoJobInputsFourBreakerPoleCountMin).optional(),
-  "breakerProtectionType": zod.string().optional(),
-  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B']).optional()
+  "panelManufacturer": zod.string(),
+  "breakerAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.string(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -497,20 +493,15 @@ export const previewQuoteBodyJobInputsFourRoomLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourRoomWidthMin = 0;
 
-export const previewQuoteBodyJobInputsFourCeilingHeightMin = 0;
 
-export const previewQuoteBodyJobInputsFourFixtureQuantityMin = 0;
+export const previewQuoteBodyJobInputsFourWireRunLengthMin = 0;
 
-export const previewQuoteBodyJobInputsFourSpacingFeetMin = 4;
-export const previewQuoteBodyJobInputsFourSpacingFeetMax = 12;
+export const previewQuoteBodyJobInputsFourWiringAllowanceFeetMin = 0;
 
-export const previewQuoteBodyJobInputsFourWiringDistanceMin = 0;
+export const previewQuoteBodyJobInputsFourAdditionalSwitchesMin = 0;
 
-export const previewQuoteBodyJobInputsFourWiringAllowanceMin = 0;
+export const previewQuoteBodyJobInputsFourAdditionalLightsMin = 0;
 
-export const previewQuoteBodyJobInputsFourBreakerAmperageMin = 0;
-
-export const previewQuoteBodyJobInputsFourBreakerPoleCountMin = 0;
 
 export const previewQuoteBodyLaborOverrideMin = 0;
 
@@ -591,24 +582,27 @@ export const PreviewQuoteBody = zod.object({
 }),zod.object({
   "roomLength": zod.number().min(previewQuoteBodyJobInputsFourRoomLengthMin),
   "roomWidth": zod.number().min(previewQuoteBodyJobInputsFourRoomWidthMin),
-  "ceilingHeight": zod.number().min(previewQuoteBodyJobInputsFourCeilingHeightMin),
+  "fixtureQuantity": zod.number().min(1),
   "fixtureSize": zod.enum(['4-inch', '6-inch']),
-  "fixtureQuantity": zod.number().min(previewQuoteBodyJobInputsFourFixtureQuantityMin),
-  "spacingFeet": zod.number().min(previewQuoteBodyJobInputsFourSpacingFeetMin).max(previewQuoteBodyJobInputsFourSpacingFeetMax),
-  "customerSuppliedFixtures": zod.boolean(),
-  "circuitOption": zod.enum(['Reuse existing lighting box/circuit', 'New dedicated circuit']),
-  "wiringDistance": zod.number().min(previewQuoteBodyJobInputsFourWiringDistanceMin),
-  "wiringAllowance": zod.number().min(previewQuoteBodyJobInputsFourWiringAllowanceMin),
+  "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
+  "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
-  "dimmerOption": zod.enum(['No dimmer', 'Include dimmer']),
-  "threeWaySwitchingOption": zod.enum(['Not included', 'Include 3-way switching']),
+  "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
+  "accessDifficulty": zod.enum(['Attic access', 'Limited / blind access', 'Open ceiling', 'Difficult access']),
+  "laborAdjustmentHours": zod.number(),
+  "wireRunLength": zod.number().min(previewQuoteBodyJobInputsFourWireRunLengthMin),
+  "wiringAllowanceFeet": zod.number().min(previewQuoteBodyJobInputsFourWiringAllowanceFeetMin),
+  "additionalSwitches": zod.number().min(previewQuoteBodyJobInputsFourAdditionalSwitchesMin),
+  "additionalLights": zod.number().min(previewQuoteBodyJobInputsFourAdditionalLightsMin),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
-  "panelManufacturer": zod.string().optional(),
-  "breakerAmperage": zod.number().min(previewQuoteBodyJobInputsFourBreakerAmperageMin).optional(),
-  "breakerPoleCount": zod.number().min(previewQuoteBodyJobInputsFourBreakerPoleCountMin).optional(),
-  "breakerProtectionType": zod.string().optional(),
-  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B']).optional()
+  "panelManufacturer": zod.string(),
+  "breakerAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.string(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
   "laborOverride": zod.number().min(previewQuoteBodyLaborOverrideMin).nullish(),
   "sellingPriceOverride": zod.number().min(previewQuoteBodySellingPriceOverrideMin).nullish()
@@ -710,20 +704,15 @@ export const getQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
 
-export const getQuoteResponseTwoJobInputsFourCeilingHeightMin = 0;
 
-export const getQuoteResponseTwoJobInputsFourFixtureQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
 
-export const getQuoteResponseTwoJobInputsFourSpacingFeetMin = 4;
-export const getQuoteResponseTwoJobInputsFourSpacingFeetMax = 12;
+export const getQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
 
-export const getQuoteResponseTwoJobInputsFourWiringDistanceMin = 0;
+export const getQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
 
-export const getQuoteResponseTwoJobInputsFourWiringAllowanceMin = 0;
+export const getQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
 
-export const getQuoteResponseTwoJobInputsFourBreakerAmperageMin = 0;
-
-export const getQuoteResponseTwoJobInputsFourBreakerPoleCountMin = 0;
 
 
 
@@ -810,24 +799,27 @@ export const GetQuoteResponse = zod.object({
 }),zod.object({
   "roomLength": zod.number().min(getQuoteResponseTwoJobInputsFourRoomLengthMin),
   "roomWidth": zod.number().min(getQuoteResponseTwoJobInputsFourRoomWidthMin),
-  "ceilingHeight": zod.number().min(getQuoteResponseTwoJobInputsFourCeilingHeightMin),
+  "fixtureQuantity": zod.number().min(1),
   "fixtureSize": zod.enum(['4-inch', '6-inch']),
-  "fixtureQuantity": zod.number().min(getQuoteResponseTwoJobInputsFourFixtureQuantityMin),
-  "spacingFeet": zod.number().min(getQuoteResponseTwoJobInputsFourSpacingFeetMin).max(getQuoteResponseTwoJobInputsFourSpacingFeetMax),
-  "customerSuppliedFixtures": zod.boolean(),
-  "circuitOption": zod.enum(['Reuse existing lighting box/circuit', 'New dedicated circuit']),
-  "wiringDistance": zod.number().min(getQuoteResponseTwoJobInputsFourWiringDistanceMin),
-  "wiringAllowance": zod.number().min(getQuoteResponseTwoJobInputsFourWiringAllowanceMin),
+  "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
+  "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
-  "dimmerOption": zod.enum(['No dimmer', 'Include dimmer']),
-  "threeWaySwitchingOption": zod.enum(['Not included', 'Include 3-way switching']),
+  "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
+  "accessDifficulty": zod.enum(['Attic access', 'Limited / blind access', 'Open ceiling', 'Difficult access']),
+  "laborAdjustmentHours": zod.number(),
+  "wireRunLength": zod.number().min(getQuoteResponseTwoJobInputsFourWireRunLengthMin),
+  "wiringAllowanceFeet": zod.number().min(getQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin),
+  "additionalSwitches": zod.number().min(getQuoteResponseTwoJobInputsFourAdditionalSwitchesMin),
+  "additionalLights": zod.number().min(getQuoteResponseTwoJobInputsFourAdditionalLightsMin),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
-  "panelManufacturer": zod.string().optional(),
-  "breakerAmperage": zod.number().min(getQuoteResponseTwoJobInputsFourBreakerAmperageMin).optional(),
-  "breakerPoleCount": zod.number().min(getQuoteResponseTwoJobInputsFourBreakerPoleCountMin).optional(),
-  "breakerProtectionType": zod.string().optional(),
-  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B']).optional()
+  "panelManufacturer": zod.string(),
+  "breakerAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.string(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -926,20 +918,15 @@ export const updateQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
 
-export const updateQuoteResponseTwoJobInputsFourCeilingHeightMin = 0;
 
-export const updateQuoteResponseTwoJobInputsFourFixtureQuantityMin = 0;
+export const updateQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
 
-export const updateQuoteResponseTwoJobInputsFourSpacingFeetMin = 4;
-export const updateQuoteResponseTwoJobInputsFourSpacingFeetMax = 12;
+export const updateQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
 
-export const updateQuoteResponseTwoJobInputsFourWiringDistanceMin = 0;
+export const updateQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
 
-export const updateQuoteResponseTwoJobInputsFourWiringAllowanceMin = 0;
+export const updateQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
 
-export const updateQuoteResponseTwoJobInputsFourBreakerAmperageMin = 0;
-
-export const updateQuoteResponseTwoJobInputsFourBreakerPoleCountMin = 0;
 
 
 
@@ -1026,24 +1013,27 @@ export const UpdateQuoteResponse = zod.object({
 }),zod.object({
   "roomLength": zod.number().min(updateQuoteResponseTwoJobInputsFourRoomLengthMin),
   "roomWidth": zod.number().min(updateQuoteResponseTwoJobInputsFourRoomWidthMin),
-  "ceilingHeight": zod.number().min(updateQuoteResponseTwoJobInputsFourCeilingHeightMin),
+  "fixtureQuantity": zod.number().min(1),
   "fixtureSize": zod.enum(['4-inch', '6-inch']),
-  "fixtureQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFourFixtureQuantityMin),
-  "spacingFeet": zod.number().min(updateQuoteResponseTwoJobInputsFourSpacingFeetMin).max(updateQuoteResponseTwoJobInputsFourSpacingFeetMax),
-  "customerSuppliedFixtures": zod.boolean(),
-  "circuitOption": zod.enum(['Reuse existing lighting box/circuit', 'New dedicated circuit']),
-  "wiringDistance": zod.number().min(updateQuoteResponseTwoJobInputsFourWiringDistanceMin),
-  "wiringAllowance": zod.number().min(updateQuoteResponseTwoJobInputsFourWiringAllowanceMin),
+  "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
+  "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
-  "dimmerOption": zod.enum(['No dimmer', 'Include dimmer']),
-  "threeWaySwitchingOption": zod.enum(['Not included', 'Include 3-way switching']),
+  "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
+  "accessDifficulty": zod.enum(['Attic access', 'Limited / blind access', 'Open ceiling', 'Difficult access']),
+  "laborAdjustmentHours": zod.number(),
+  "wireRunLength": zod.number().min(updateQuoteResponseTwoJobInputsFourWireRunLengthMin),
+  "wiringAllowanceFeet": zod.number().min(updateQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin),
+  "additionalSwitches": zod.number().min(updateQuoteResponseTwoJobInputsFourAdditionalSwitchesMin),
+  "additionalLights": zod.number().min(updateQuoteResponseTwoJobInputsFourAdditionalLightsMin),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
-  "panelManufacturer": zod.string().optional(),
-  "breakerAmperage": zod.number().min(updateQuoteResponseTwoJobInputsFourBreakerAmperageMin).optional(),
-  "breakerPoleCount": zod.number().min(updateQuoteResponseTwoJobInputsFourBreakerPoleCountMin).optional(),
-  "breakerProtectionType": zod.string().optional(),
-  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B']).optional()
+  "panelManufacturer": zod.string(),
+  "breakerAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.string(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
   "assembly": zod.array(zod.object({
   "id": zod.string(),

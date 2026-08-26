@@ -533,80 +533,6 @@ components:
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
-    RecessedLightingInputs:
-      type: object
-      required:
-        - roomLength
-        - roomWidth
-        - ceilingHeight
-        - fixtureSize
-        - fixtureQuantity
-        - spacingFeet
-        - customerSuppliedFixtures
-        - circuitOption
-        - wiringDistance
-        - wiringAllowance
-        - switchType
-        - dimmerOption
-        - threeWaySwitchingOption
-        - notes
-      properties:
-        roomLength:
-          type: number
-          minimum: 0
-        roomWidth:
-          type: number
-          minimum: 0
-        ceilingHeight:
-          type: number
-          minimum: 0
-        fixtureSize:
-          type: string
-          enum: [4-inch, 6-inch]
-        fixtureQuantity:
-          type: number
-          minimum: 0
-        spacingFeet:
-          type: number
-          minimum: 4
-          maximum: 12
-        customerSuppliedFixtures:
-          type: boolean
-        circuitOption:
-          type: string
-          enum: [Reuse existing lighting box/circuit, New dedicated circuit]
-        wiringDistance:
-          type: number
-          minimum: 0
-        wiringAllowance:
-          type: number
-          minimum: 0
-        switchType:
-          type: string
-          enum: [Single-pole, 3-way]
-        dimmerOption:
-          type: string
-          enum: [No dimmer, Include dimmer]
-        threeWaySwitchingOption:
-          type: string
-          enum: [Not included, Include 3-way switching]
-        notes:
-          type: string
-        laborRateType:
-          $ref: "#/components/schemas/LaborRateType"
-        panelManufacturer:
-          type: string
-        breakerAmperage:
-          type: number
-          minimum: 0
-        breakerPoleCount:
-          type: number
-          minimum: 0
-        breakerProtectionType:
-          type: string
-        cableType:
-          type: string
-          enum: [14/2 NM-B, 14/3 NM-B]
     RecessedLightingPlanning:
       type: object
       required:
@@ -709,6 +635,97 @@ components:
         recessedLightSize:
           type: string
           enum: [4-inch, 6-inch]
+        cableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+    RecessedLightingInputs:
+      type: object
+      required:
+        - roomLength
+        - roomWidth
+        - fixtureQuantity
+        - fixtureSize
+        - wiringOption
+        - circuitOption
+        - switchType
+        - dimmerSelection
+        - customerSuppliedFixtures
+        - ceilingHeight
+        - accessDifficulty
+        - laborAdjustmentHours
+        - wireRunLength
+        - wiringAllowanceFeet
+        - additionalSwitches
+        - additionalLights
+        - notes
+        - panelManufacturer
+        - breakerAmperage
+        - breakerPoleCount
+        - breakerProtectionType
+        - cableType
+      properties:
+        roomLength:
+          type: number
+          minimum: 0
+        roomWidth:
+          type: number
+          minimum: 0
+        fixtureQuantity:
+          type: number
+          minimum: 1
+        fixtureSize:
+          type: string
+          enum: [4-inch, 6-inch]
+        wiringOption:
+          type: string
+          enum: [Existing switch leg / lighting box, New wiring from source]
+        circuitOption:
+          type: string
+          enum: [Reuse existing circuit, New dedicated circuit]
+        switchType:
+          type: string
+          enum: [Single-pole, 3-way]
+        dimmerSelection:
+          type: string
+          enum: [No dimmer, Include dimmer]
+        customerSuppliedFixtures:
+          type: boolean
+        ceilingHeight:
+          type: string
+          enum: [Standard 8-10 ft, High 11-14 ft, Vaulted 15+ ft]
+        accessDifficulty:
+          type: string
+          enum: [Attic access, Limited / blind access, Open ceiling, Difficult access]
+        laborAdjustmentHours:
+          type: number
+        wireRunLength:
+          type: number
+          minimum: 0
+        wiringAllowanceFeet:
+          type: number
+          minimum: 0
+        additionalSwitches:
+          type: number
+          minimum: 0
+        additionalLights:
+          type: number
+          minimum: 0
+        notes:
+          type: string
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        panelManufacturer:
+          type: string
+        breakerAmperage:
+          type: integer
+          enum:
+            - 15
+            - 20
+        breakerPoleCount:
+          type: number
+          minimum: 1
+        breakerProtectionType:
+          type: string
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
@@ -898,4 +915,3 @@ components:
           type: number
         defaultTaxRate:
           type: number
-

@@ -10,6 +10,7 @@ export type RecessedLightingInputsCableType = typeof RecessedLightingInputsCable
 
 
 export const RecessedLightingInputsCableType = {
+  '12/2_NM-B': '12/2 NM-B',
   '14/2_NM-B': '14/2 NM-B',
   '14/3_NM-B': '14/3 NM-B',
 } as const;
