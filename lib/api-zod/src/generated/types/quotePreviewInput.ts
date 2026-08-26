@@ -7,15 +7,7 @@
  */
 import type { EvChargerInputs } from './evChargerInputs';
 
-export interface QuoteInput {
-  /** @minLength 1 */
-  customerName: string;
-  /** @nullable */
-  customerEmail?: string | null;
-  /** @minLength 1 */
-  projectName: string;
+export interface QuotePreviewInput {
   module: string;
   jobInputs: EvChargerInputs;
-  /** @minLength 1 */
-  proposalDescription: string;
 }

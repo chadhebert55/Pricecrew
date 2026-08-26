@@ -9,13 +9,21 @@ export interface HealthStatus {
   status: string;
 }
 
+export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
+
+
+export const QuoteStatus = {
+  draft: 'draft',
+  ready: 'ready',
+} as const;
+
 export interface QuoteSummary {
   id: number;
   quoteNumber: string;
   customerName: string;
   projectName: string;
   module: string;
-  status: string;
+  status: QuoteStatus;
   total: number;
   margin: number;
   updatedAt: string;
@@ -78,6 +86,7 @@ export interface PricingInput {
 export type PricingSummary = PricingInput & {
   grossProfit: number;
   grossMargin: number;
+  pricingWarnings: string[];
 };
 
 export type Quote = QuoteSummary & ({
@@ -99,19 +108,26 @@ export interface QuoteInput {
   projectName: string;
   module: string;
   jobInputs: EvChargerInputs;
-  assembly?: AssemblyLine[];
-  pricing?: PricingInput;
   /** @minLength 1 */
   proposalDescription: string;
 }
 
+export interface QuotePreviewInput {
+  module: string;
+  jobInputs: EvChargerInputs;
+}
+
+export interface EstimatePreview {
+  assembly: AssemblyLine[];
+  pricing: PricingSummary;
+}
+
 export interface QuoteUpdate {
-  customerName?: string;
+  status?: QuoteStatus;
   /** @nullable */
-  customerEmail?: string | null;
-  projectName?: string;
-  status?: string;
-  pricing?: PricingInput;
+  laborOverride?: number | null;
+  /** @nullable */
+  sellingPriceOverride?: number | null;
   proposalDescription?: string;
 }
 
@@ -146,6 +162,6 @@ export interface CompanySettingsUpdate {
 }
 
 export type ListQuotesParams = {
-status?: string;
+status?: QuoteStatus;
 };
 

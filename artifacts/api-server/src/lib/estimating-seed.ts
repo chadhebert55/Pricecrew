@@ -100,6 +100,7 @@ const starterPricing: PricingRecord = {
   sellingPriceOverride: null,
   grossProfit: 473.5,
   grossMargin: 0.3335,
+  pricingWarnings: [],
 };
 
 export function ensureEstimatorSeed(): Promise<void> {

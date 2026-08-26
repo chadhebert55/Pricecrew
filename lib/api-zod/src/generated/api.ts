@@ -32,7 +32,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "customerName": zod.string(),
   "projectName": zod.string(),
   "module": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
   "total": zod.number(),
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
@@ -44,7 +44,7 @@ export const GetDashboardSummaryResponse = zod.object({
  * @summary List quotes
  */
 export const ListQuotesQueryParams = zod.object({
-  "status": zod.coerce.string().optional()
+  "status": zod.enum(['draft', 'ready']).optional()
 })
 
 export const ListQuotesResponseItem = zod.object({
@@ -53,7 +53,7 @@ export const ListQuotesResponseItem = zod.object({
   "customerName": zod.string(),
   "projectName": zod.string(),
   "module": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
   "total": zod.number(),
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
@@ -95,25 +95,6 @@ export const CreateQuoteBody = zod.object({
   "difficulty": zod.string(),
   "notes": zod.string()
 }),
-  "assembly": zod.array(zod.object({
-  "id": zod.string(),
-  "category": zod.string(),
-  "description": zod.string(),
-  "quantity": zod.number(),
-  "unit": zod.string(),
-  "unitCost": zod.number(),
-  "extendedCost": zod.number(),
-  "source": zod.string()
-})).optional(),
-  "pricing": zod.object({
-  "materialCost": zod.number(),
-  "laborCost": zod.number(),
-  "materialMarkup": zod.number(),
-  "calculatedSellingPrice": zod.number(),
-  "finalSellingPrice": zod.number(),
-  "laborOverride": zod.number().nullable(),
-  "sellingPriceOverride": zod.number().nullable()
-}).optional(),
   "proposalDescription": zod.string().min(1)
 })
 
@@ -123,7 +104,7 @@ export const CreateQuoteResponse = zod.object({
   "customerName": zod.string(),
   "projectName": zod.string(),
   "module": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
   "total": zod.number(),
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
@@ -170,11 +151,67 @@ export const CreateQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable()
 }).and(zod.object({
   "grossProfit": zod.number(),
-  "grossMargin": zod.number()
+  "grossMargin": zod.number(),
+  "pricingWarnings": zod.array(zod.string())
 })),
   "proposalDescription": zod.string(),
   "createdAt": zod.coerce.date()
 }))
+
+
+/**
+ * @summary Preview an authoritative estimate
+ */
+export const PreviewQuoteBody = zod.object({
+  "module": zod.string(),
+  "jobInputs": zod.object({
+  "chargerQuantity": zod.number(),
+  "chargerOutputAmps": zod.number(),
+  "circuitAmps": zod.string(),
+  "chargerSupply": zod.string(),
+  "connection": zod.string(),
+  "routeLength": zod.number(),
+  "wiringMethod": zod.string(),
+  "location": zod.string(),
+  "panelManufacturer": zod.string(),
+  "panelSpace": zod.string(),
+  "breakerRequirement": zod.string(),
+  "access": zod.string(),
+  "permit": zod.string(),
+  "loadManagement": zod.string(),
+  "disconnect": zod.string(),
+  "surgeProtection": zod.string(),
+  "panelModifications": zod.string(),
+  "difficulty": zod.string(),
+  "notes": zod.string()
+})
+})
+
+export const PreviewQuoteResponse = zod.object({
+  "assembly": zod.array(zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "extendedCost": zod.number(),
+  "source": zod.string()
+})),
+  "pricing": zod.object({
+  "materialCost": zod.number(),
+  "laborCost": zod.number(),
+  "materialMarkup": zod.number(),
+  "calculatedSellingPrice": zod.number(),
+  "finalSellingPrice": zod.number(),
+  "laborOverride": zod.number().nullable(),
+  "sellingPriceOverride": zod.number().nullable()
+}).and(zod.object({
+  "grossProfit": zod.number(),
+  "grossMargin": zod.number(),
+  "pricingWarnings": zod.array(zod.string())
+}))
+})
 
 
 /**
@@ -190,7 +227,7 @@ export const GetQuoteResponse = zod.object({
   "customerName": zod.string(),
   "projectName": zod.string(),
   "module": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
   "total": zod.number(),
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
@@ -237,7 +274,8 @@ export const GetQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable()
 }).and(zod.object({
   "grossProfit": zod.number(),
-  "grossMargin": zod.number()
+  "grossMargin": zod.number(),
+  "pricingWarnings": zod.array(zod.string())
 })),
   "proposalDescription": zod.string(),
   "createdAt": zod.coerce.date()
@@ -252,19 +290,9 @@ export const UpdateQuoteParams = zod.object({
 })
 
 export const UpdateQuoteBody = zod.object({
-  "customerName": zod.string().optional(),
-  "customerEmail": zod.string().nullish(),
-  "projectName": zod.string().optional(),
-  "status": zod.string().optional(),
-  "pricing": zod.object({
-  "materialCost": zod.number(),
-  "laborCost": zod.number(),
-  "materialMarkup": zod.number(),
-  "calculatedSellingPrice": zod.number(),
-  "finalSellingPrice": zod.number(),
-  "laborOverride": zod.number().nullable(),
-  "sellingPriceOverride": zod.number().nullable()
-}).optional(),
+  "status": zod.enum(['draft', 'ready']).optional(),
+  "laborOverride": zod.number().nullish(),
+  "sellingPriceOverride": zod.number().nullish(),
   "proposalDescription": zod.string().optional()
 })
 
@@ -274,7 +302,7 @@ export const UpdateQuoteResponse = zod.object({
   "customerName": zod.string(),
   "projectName": zod.string(),
   "module": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
   "total": zod.number(),
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
@@ -321,7 +349,8 @@ export const UpdateQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable()
 }).and(zod.object({
   "grossProfit": zod.number(),
-  "grossMargin": zod.number()
+  "grossMargin": zod.number(),
+  "pricingWarnings": zod.array(zod.string())
 })),
   "proposalDescription": zod.string(),
   "createdAt": zod.coerce.date()

@@ -44,16 +44,32 @@ function normalized(value: string) {
 function unitCost(
   key: string,
   priceBook: PriceBookItem[],
+  pricingWarnings: string[],
 ): { value: number; source: string } {
   const match = priceBook.find(
     (item) => normalized(item.item) === normalized(key),
   );
-  if (match) {
+  if (match && Number.isFinite(match.unitCost) && match.unitCost > 0) {
     return { value: match.unitCost, source: "Company price book" };
   }
+
+  const starterCost = starterCosts[key];
+  if (starterCost !== undefined) {
+    pricingWarnings.push(
+      `Pricing for "${key}" is not available in the company price book; the starter value was used. Confirm the cost before sending.`,
+    );
+    return {
+      value: starterCost,
+      source: "Default starter value — confirm before sending",
+    };
+  }
+
+  pricingWarnings.push(
+    `No price is available for "${key}". This material is currently excluded from the estimate until a cost is added.`,
+  );
   return {
-    value: starterCosts[key] ?? 0,
-    source: "Default starter value — confirm before sending",
+    value: 0,
+    source: "Missing price — add to company price book",
   };
 }
 
@@ -73,6 +89,7 @@ export function calculateEvChargerEstimate(
   priceBook: PriceBookItem[],
 ): EstimateResult {
   const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
   const quantity = Math.max(1, Number(inputs.chargerQuantity) || 1);
   const routeLength = Math.max(0, Number(inputs.routeLength) || 0);
   const isConduit = /conduit|emt|pvc/i.test(inputs.wiringMethod);
@@ -87,6 +104,7 @@ export function calculateEvChargerEstimate(
   const breaker = unitCost(
     circuitAmps === 50 ? "2-pole 50A breaker" : "2-pole 50A breaker",
     priceBook,
+    pricingWarnings,
   );
   addLine(assembly, {
     id: "breaker",
@@ -99,7 +117,7 @@ export function calculateEvChargerEstimate(
   });
 
   if (inputs.chargerSupply === "Contractor Provided") {
-    const charger = unitCost("EV charger", priceBook);
+    const charger = unitCost("EV charger", priceBook, pricingWarnings);
     addLine(assembly, {
       id: "charger",
       category: "Equipment",
@@ -112,12 +130,16 @@ export function calculateEvChargerEstimate(
   }
 
   if (isConduit) {
-    const hot = unitCost("#8 copper THHN", priceBook);
-    const ground = unitCost("#10 copper grounding conductor", priceBook);
+    const hot = unitCost("#8 copper THHN", priceBook, pricingWarnings);
+    const ground = unitCost(
+      "#10 copper grounding conductor",
+      priceBook,
+      pricingWarnings,
+    );
     const conduitKey = /pvc/i.test(inputs.wiringMethod)
       ? "1 in. PVC with fittings"
       : "1 in. EMT with fittings";
-    const conduit = unitCost(conduitKey, priceBook);
+    const conduit = unitCost(conduitKey, priceBook, pricingWarnings);
     addLine(assembly, {
       id: "hots",
       category: "Conductor",
@@ -146,7 +168,7 @@ export function calculateEvChargerEstimate(
       source: conduit.source,
     });
   } else {
-    const ser = unitCost("#8/2 SER cable", priceBook);
+    const ser = unitCost("#8/2 SER cable", priceBook, pricingWarnings);
     addLine(assembly, {
       id: "ser",
       category: "Cable",
@@ -164,6 +186,7 @@ export function calculateEvChargerEstimate(
         ? "NEMA 14-50 receptacle"
         : "NEMA 6-50 receptacle",
       priceBook,
+      pricingWarnings,
     );
     addLine(assembly, {
       id: "receptacle",
@@ -177,7 +200,11 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.loadManagement !== "None") {
-    const item = unitCost("load management device", priceBook);
+    const item = unitCost(
+      "load management device",
+      priceBook,
+      pricingWarnings,
+    );
     addLine(assembly, {
       id: "load-management",
       category: "Controls",
@@ -190,7 +217,7 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.disconnect !== "Not Required") {
-    const item = unitCost("local disconnect", priceBook);
+    const item = unitCost("local disconnect", priceBook, pricingWarnings);
     addLine(assembly, {
       id: "disconnect",
       category: "Protection",
@@ -203,7 +230,11 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.surgeProtection === "Include") {
-    const item = unitCost("whole-home surge protection", priceBook);
+    const item = unitCost(
+      "whole-home surge protection",
+      priceBook,
+      pricingWarnings,
+    );
     addLine(assembly, {
       id: "surge",
       category: "Protection",
@@ -216,7 +247,11 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.panelModifications !== "None") {
-    const item = unitCost("panel modification allowance", priceBook);
+    const item = unitCost(
+      "panel modification allowance",
+      priceBook,
+      pricingWarnings,
+    );
     addLine(assembly, {
       id: "panel-modification",
       category: "Panel",
@@ -229,7 +264,7 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.permit === "Required") {
-    const item = unitCost("permit allowance", priceBook);
+    const item = unitCost("permit allowance", priceBook, pricingWarnings);
     addLine(assembly, {
       id: "permit",
       category: "Permit",
@@ -272,7 +307,10 @@ export function calculateEvChargerEstimate(
       sellingPriceOverride: null,
       grossProfit,
       grossMargin:
-        calculatedSellingPrice > 0 ? grossProfit / calculatedSellingPrice : 0,
+        calculatedSellingPrice > 0
+          ? Number((grossProfit / calculatedSellingPrice).toFixed(4))
+          : 0,
+      pricingWarnings,
     },
   };
 }

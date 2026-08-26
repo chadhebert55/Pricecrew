@@ -53,6 +53,7 @@ export type PricingRecord = {
   sellingPriceOverride: number | null;
   grossProfit: number;
   grossMargin: number;
+  pricingWarnings: string[];
 };
 
 export const companiesTable = pgTable("companies", {

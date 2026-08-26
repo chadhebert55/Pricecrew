@@ -10,6 +10,8 @@ import {
   ListPriceBookItemsResponse,
   ListQuotesQueryParams,
   ListQuotesResponse,
+  PreviewQuoteBody,
+  PreviewQuoteResponse,
   UpdatePriceBookItemBody,
   UpdatePriceBookItemParams,
   UpdatePriceBookItemResponse,
@@ -33,6 +35,19 @@ import { calculateEvChargerEstimate } from "../lib/estimating-engine";
 
 const router: IRouter = Router();
 
+type QuoteStatus = "draft" | "ready";
+
+function normalizeQuoteStatus(status: string): QuoteStatus {
+  return status.toLowerCase() === "ready" ? "ready" : "draft";
+}
+
+function serializePricing(pricing: PricingRecord): PricingRecord {
+  return {
+    ...pricing,
+    pricingWarnings: pricing.pricingWarnings ?? [],
+  };
+}
+
 function serializeQuote(quote: typeof quotesTable.$inferSelect) {
   return {
     id: quote.id,
@@ -41,14 +56,14 @@ function serializeQuote(quote: typeof quotesTable.$inferSelect) {
     customerEmail: quote.customerEmail,
     projectName: quote.projectName,
     module: quote.module,
-    status: quote.status,
+    status: normalizeQuoteStatus(quote.status),
     total: quote.total,
     margin: quote.margin,
     updatedAt: quote.updatedAt.toISOString(),
     createdAt: quote.createdAt.toISOString(),
     jobInputs: quote.jobInputs,
     assembly: quote.assembly,
-    pricing: quote.pricing,
+    pricing: serializePricing(quote.pricing),
     proposalDescription: quote.proposalDescription,
   };
 }
@@ -60,32 +75,46 @@ function serializeQuoteSummary(quote: typeof quotesTable.$inferSelect) {
     customerName: quote.customerName,
     projectName: quote.projectName,
     module: quote.module,
-    status: quote.status,
+    status: normalizeQuoteStatus(quote.status),
     total: quote.total,
     margin: quote.margin,
     updatedAt: quote.updatedAt.toISOString(),
   };
 }
 
-function withProfit(pricing: {
-  materialCost: number;
-  laborCost: number;
-  materialMarkup: number;
-  calculatedSellingPrice: number;
-  finalSellingPrice: number;
-  laborOverride: number | null;
-  sellingPriceOverride: number | null;
-}): PricingRecord {
-  const effectiveLabor = pricing.laborOverride ?? pricing.laborCost;
+function withProfit(
+  pricing: PricingRecord,
+  overrides: {
+    laborOverride?: number | null;
+    sellingPriceOverride?: number | null;
+  } = {},
+): PricingRecord {
+  const laborOverride =
+    overrides.laborOverride !== undefined
+      ? overrides.laborOverride
+      : pricing.laborOverride;
+  const sellingPriceOverride =
+    overrides.sellingPriceOverride !== undefined
+      ? overrides.sellingPriceOverride
+      : pricing.sellingPriceOverride;
+  const effectiveLabor = laborOverride ?? pricing.laborCost;
   const finalSellingPrice =
-    pricing.sellingPriceOverride ?? pricing.finalSellingPrice;
-  const grossProfit = finalSellingPrice - pricing.materialCost - effectiveLabor;
+    sellingPriceOverride ?? pricing.calculatedSellingPrice;
+  const grossProfit = Number(
+    (finalSellingPrice - pricing.materialCost - effectiveLabor).toFixed(2),
+  );
 
   return {
     ...pricing,
     finalSellingPrice,
+    laborOverride,
+    sellingPriceOverride,
     grossProfit,
-    grossMargin: finalSellingPrice > 0 ? grossProfit / finalSellingPrice : 0,
+    grossMargin:
+      finalSellingPrice > 0
+        ? Number((grossProfit / finalSellingPrice).toFixed(4))
+        : 0,
+    pricingWarnings: pricing.pricingWarnings ?? [],
   };
 }
 
@@ -103,6 +132,21 @@ async function companySettings() {
   return settings;
 }
 
+async function calculateEstimate(
+  jobInputs: Parameters<typeof calculateEvChargerEstimate>[0],
+) {
+  const settings = await companySettings();
+  const priceBook = await db
+    .select({
+      item: priceBookItemsTable.item,
+      unitCost: priceBookItemsTable.unitCost,
+    })
+    .from(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID));
+
+  return calculateEvChargerEstimate(jobInputs, settings, priceBook);
+}
+
 router.get("/dashboard/summary", async (req, res): Promise<void> => {
   await ensureEstimatorSeed();
   const quotes = await db
@@ -118,8 +162,12 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
       : 0;
   const data = GetDashboardSummaryResponse.parse({
     totalQuotes: quotes.length,
-    draftQuotes: quotes.filter((quote) => quote.status === "draft").length,
-    readyQuotes: quotes.filter((quote) => quote.status === "ready").length,
+    draftQuotes: quotes.filter(
+      (quote) => normalizeQuoteStatus(quote.status) === "draft",
+    ).length,
+    readyQuotes: quotes.filter(
+      (quote) => normalizeQuoteStatus(quote.status) === "ready",
+    ).length,
     totalQuoted,
     averageMargin,
     recentQuotes: quotes.slice(0, 5).map(serializeQuoteSummary),
@@ -143,7 +191,10 @@ router.get("/quotes", async (req, res): Promise<void> => {
     .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID))
     .orderBy(desc(quotesTable.updatedAt));
   const filteredQuotes = parsedQuery.data.status
-    ? allQuotes.filter((quote) => quote.status === parsedQuery.data.status)
+    ? allQuotes.filter(
+        (quote) =>
+          normalizeQuoteStatus(quote.status) === parsedQuery.data.status,
+      )
     : allQuotes;
 
   res.json(ListQuotesResponse.parse(filteredQuotes.map(serializeQuoteSummary)));
@@ -178,23 +229,7 @@ router.post("/quotes", async (req, res): Promise<void> => {
         .returning()
     )[0];
 
-  const [settings] = await db
-    .select()
-    .from(companySettingsTable)
-    .where(eq(companySettingsTable.companyId, DEFAULT_COMPANY_ID));
-  const priceBook = await db
-    .select({ item: priceBookItemsTable.item, unitCost: priceBookItemsTable.unitCost })
-    .from(priceBookItemsTable)
-    .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID));
-  if (!settings) {
-    throw new Error("Starter company settings were not initialized");
-  }
-
-  const estimate = calculateEvChargerEstimate(
-    parsed.data.jobInputs,
-    settings,
-    priceBook,
-  );
+  const estimate = await calculateEstimate(parsed.data.jobInputs);
   const quotes = await db
     .select({ id: quotesTable.id })
     .from(quotesTable)
@@ -226,6 +261,18 @@ router.post("/quotes", async (req, res): Promise<void> => {
 
   req.log.info({ quoteId: quote.id }, "Created quote");
   res.status(201).json(CreateQuoteResponse.parse(serializeQuote(quote)));
+});
+
+router.post("/quotes/preview", async (req, res): Promise<void> => {
+  const parsed = PreviewQuoteBody.safeParse(req.body);
+  if (!parsed.success) {
+    req.log.warn({ errors: parsed.error.message }, "Invalid quote preview");
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const estimate = await calculateEstimate(parsed.data.jobInputs);
+  res.json(PreviewQuoteResponse.parse(estimate));
 });
 
 router.get("/quotes/:id", async (req, res): Promise<void> => {
@@ -271,16 +318,18 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const pricing = parsed.data.pricing
-    ? withProfit(parsed.data.pricing)
-    : existingQuote.pricing;
+  const pricing = withProfit(serializePricing(existingQuote.pricing), {
+    ...("laborOverride" in parsed.data
+      ? { laborOverride: parsed.data.laborOverride }
+      : {}),
+    ...("sellingPriceOverride" in parsed.data
+      ? { sellingPriceOverride: parsed.data.sellingPriceOverride }
+      : {}),
+  });
   const [quote] = await db
     .update(quotesTable)
     .set({
-      customerName: parsed.data.customerName,
-      customerEmail: parsed.data.customerEmail,
-      projectName: parsed.data.projectName,
-      status: parsed.data.status,
+      status: parsed.data.status ?? normalizeQuoteStatus(existingQuote.status),
       pricing,
       proposalDescription: parsed.data.proposalDescription,
       total: pricing.finalSellingPrice,

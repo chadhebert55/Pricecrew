@@ -1,4 +1,12 @@
-import { useGetQuote, useUpdateQuote } from "@workspace/api-client-react"
+import {
+  getGetDashboardSummaryQueryKey,
+  getGetQuoteQueryKey,
+  getListQuotesQueryKey,
+  type QuoteStatus,
+  useGetQuote,
+  useUpdateQuote,
+} from "@workspace/api-client-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useParams } from "wouter"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -7,24 +15,33 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator } from "lucide-react"
+import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 
 export function QuoteDetail() {
   const params = useParams<{ id: string }>()
   const quoteId = parseInt(params.id || "0")
   const [_, setLocation] = useLocation()
+  const queryClient = useQueryClient()
   
   const { data: quote, isLoading } = useGetQuote(quoteId, {
-    query: { enabled: !!quoteId, queryKey: ['quote', quoteId] }
+    query: { enabled: !!quoteId, queryKey: getGetQuoteQueryKey(quoteId) }
   })
-  const updateQuote = useUpdateQuote()
+  const updateQuote = useUpdateQuote({
+    mutation: {
+      onSuccess: (updatedQuote) => {
+        queryClient.setQueryData(getGetQuoteQueryKey(updatedQuote.id), updatedQuote)
+        void queryClient.invalidateQueries({ queryKey: getListQuotesQueryKey() })
+        void queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() })
+      },
+    },
+  })
 
   // Local state for overrides and descriptive edits
   const initializedForId = useRef<number | null>(null)
   const [laborOverride, setLaborOverride] = useState<string>("")
   const [priceOverride, setPriceOverride] = useState<string>("")
-  const [status, setStatus] = useState<string>("")
+  const [status, setStatus] = useState<QuoteStatus>("draft")
   const [proposalDesc, setProposalDesc] = useState<string>("")
 
   useEffect(() => {
@@ -46,30 +63,27 @@ export function QuoteDetail() {
       data: {
         status,
         proposalDescription: proposalDesc,
-        pricing: {
-          ...quote.pricing,
-          laborOverride: laborOverride ? parseFloat(laborOverride) : null,
-          sellingPriceOverride: priceOverride ? parseFloat(priceOverride) : null,
-        }
+        laborOverride: laborOverride ? parseFloat(laborOverride) : null,
+        sellingPriceOverride: priceOverride ? parseFloat(priceOverride) : null,
       }
     })
   }
 
   const handleMarkReady = () => {
-    setStatus("READY")
+    setStatus("ready")
     updateQuote.mutate({
       id: quote.id,
-      data: { status: "READY" }
+      data: { status: "ready" }
     })
   }
 
   // Derived effective pricing
   const effectiveLabor = quote.pricing.laborOverride ?? quote.pricing.laborCost
-  const effectiveSellingPrice = quote.pricing.sellingPriceOverride ?? quote.pricing.calculatedSellingPrice
+  const effectiveSellingPrice = quote.pricing.finalSellingPrice
   
   const totalCost = quote.pricing.materialCost + effectiveLabor
-  const gp = effectiveSellingPrice - totalCost
-  const margin = effectiveSellingPrice > 0 ? (gp / effectiveSellingPrice) * 100 : 0
+  const gp = quote.pricing.grossProfit
+  const margin = quote.pricing.grossMargin * 100
 
   return (
     <div className="space-y-6 pb-24">
@@ -81,7 +95,7 @@ export function QuoteDetail() {
           </Button>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{quote.projectName}</h1>
-            <Badge variant={status === 'READY' ? 'success' : 'secondary'} className="text-sm">
+            <Badge variant={status === 'ready' ? 'success' : 'secondary'} className="text-sm capitalize">
               {status}
             </Badge>
           </div>
@@ -92,7 +106,7 @@ export function QuoteDetail() {
         </div>
         
         <div className="flex items-center gap-2">
-          {status !== 'READY' && (
+          {status !== 'ready' && (
             <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={handleMarkReady} disabled={updateQuote.isPending}>
               <Check size={16} className="mr-2" /> Mark Ready
             </Button>
@@ -193,6 +207,24 @@ export function QuoteDetail() {
 
         {/* Right Col - Pricing & Overrides */}
         <div className="space-y-6">
+          {quote.pricing.pricingWarnings.length > 0 && (
+            <Card className="border-amber-300 bg-amber-50 text-amber-950">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <TriangleAlert size={20} />
+                  <CardTitle className="text-lg">Pricing needs confirmation</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1 pl-5 text-sm list-disc">
+                  {quote.pricing.pricingWarnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-t-4 border-t-primary bg-secondary text-secondary-foreground shadow-lg">
             <CardHeader className="pb-2 border-b border-secondary-border">
               <div className="flex items-center gap-2">

@@ -5,14 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { PricingInput } from './pricingInput';
+import type { QuoteStatus } from './quoteStatus';
 
 export interface QuoteUpdate {
-  customerName?: string;
+  status?: QuoteStatus;
   /** @nullable */
-  customerEmail?: string | null;
-  projectName?: string;
-  status?: string;
-  pricing?: PricingInput;
+  laborOverride?: number | null;
+  /** @nullable */
+  sellingPriceOverride?: number | null;
   proposalDescription?: string;
 }

@@ -54,7 +54,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            $ref: "#/components/schemas/QuoteStatus"
       responses:
         "200":
           description: Quote list
@@ -81,6 +81,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Quote"
+  /quotes/preview:
+    post:
+      operationId: previewQuote
+      tags: [quotes]
+      summary: Preview an authoritative estimate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuotePreviewInput"
+      responses:
+        "200":
+          description: Authoritative estimate preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EstimatePreview"
   /quotes/{id}:
     get:
       operationId: getQuote
@@ -252,7 +270,7 @@ components:
         module:
           type: string
         status:
-          type: string
+          $ref: "#/components/schemas/QuoteStatus"
         total:
           type: number
         margin:
@@ -308,28 +326,40 @@ components:
           type: string
         jobInputs:
           $ref: "#/components/schemas/EvChargerInputs"
+        proposalDescription:
+          type: string
+          minLength: 1
+    QuotePreviewInput:
+      type: object
+      required:
+        - module
+        - jobInputs
+      properties:
+        module:
+          type: string
+        jobInputs:
+          $ref: "#/components/schemas/EvChargerInputs"
+    EstimatePreview:
+      type: object
+      required:
+        - assembly
+        - pricing
+      properties:
         assembly:
           type: array
           items:
             $ref: "#/components/schemas/AssemblyLine"
         pricing:
-          $ref: "#/components/schemas/PricingInput"
-        proposalDescription:
-          type: string
-          minLength: 1
+          $ref: "#/components/schemas/PricingSummary"
     QuoteUpdate:
       type: object
       properties:
-        customerName:
-          type: string
-        customerEmail:
-          type: ["string", "null"]
-        projectName:
-          type: string
         status:
-          type: string
-        pricing:
-          $ref: "#/components/schemas/PricingInput"
+          $ref: "#/components/schemas/QuoteStatus"
+        laborOverride:
+          type: ["number", "null"]
+        sellingPriceOverride:
+          type: ["number", "null"]
         proposalDescription:
           type: string
     EvChargerInputs:
@@ -453,11 +483,21 @@ components:
           required:
             - grossProfit
             - grossMargin
+            - pricingWarnings
           properties:
             grossProfit:
               type: number
             grossMargin:
               type: number
+            pricingWarnings:
+              type: array
+              items:
+                type: string
+    QuoteStatus:
+      type: string
+      enum:
+        - draft
+        - ready
     PriceBookItem:
       type: object
       required:

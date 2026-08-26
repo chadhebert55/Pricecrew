@@ -10,4 +10,5 @@ import type { PricingInput } from './pricingInput';
 export type PricingSummary = PricingInput & {
   grossProfit: number;
   grossMargin: number;
+  pricingWarnings: string[];
 };

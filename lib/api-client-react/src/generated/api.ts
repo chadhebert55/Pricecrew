@@ -23,12 +23,14 @@ import type {
   CompanySettings,
   CompanySettingsUpdate,
   DashboardSummary,
+  EstimatePreview,
   HealthStatus,
   ListQuotesParams,
   PriceBookItem,
   PriceBookItemUpdate,
   Quote,
   QuoteInput,
+  QuotePreviewInput,
   QuoteSummary,
   QuoteUpdate
 } from './api.schemas';
@@ -368,6 +370,77 @@ export const useCreateQuote = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateQuoteMutationOptions(options));
+    }
+
+export const getPreviewQuoteUrl = () => {
+
+
+
+
+  return `/api/quotes/preview`
+}
+
+/**
+ * @summary Preview an authoritative estimate
+ */
+export const previewQuote = async (quotePreviewInput: QuotePreviewInput, options?: Parameters<typeof customFetch>[1]): Promise<EstimatePreview> => {
+
+  return customFetch<EstimatePreview>(getPreviewQuoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quotePreviewInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewQuoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewQuote>>, TError,{data: BodyType<QuotePreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewQuote>>, TError,{data: BodyType<QuotePreviewInput>}, TContext> => {
+
+const mutationKey = ['previewQuote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewQuote>>, {data: BodyType<QuotePreviewInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewQuote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof previewQuote>>>
+    export type PreviewQuoteMutationBody = BodyType<QuotePreviewInput>
+    export type PreviewQuoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Preview an authoritative estimate
+ */
+export const usePreviewQuote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewQuote>>, TError,{data: BodyType<QuotePreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewQuote>>,
+        TError,
+        {data: BodyType<QuotePreviewInput>},
+        TContext
+      > => {
+      return useMutation(getPreviewQuoteMutationOptions(options));
     }
 
 export const getGetQuoteUrl = (id: number,) => {

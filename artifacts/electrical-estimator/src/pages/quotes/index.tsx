@@ -82,10 +82,10 @@ export function QuotesList() {
                       ${quote.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right font-mono text-muted-foreground">
-                      {quote.margin.toFixed(1)}%
+                      {(quote.margin * 100).toFixed(1)}%
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={quote.status === 'READY' ? 'success' : 'secondary'}>
+                      <Badge variant={quote.status === 'ready' ? 'success' : 'secondary'} className="capitalize">
                         {quote.status}
                       </Badge>
                     </TableCell>

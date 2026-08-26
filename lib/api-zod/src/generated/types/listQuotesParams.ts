@@ -5,7 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { QuoteStatus } from './quoteStatus';
 
 export type ListQuotesParams = {
-status?: string;
+status?: QuoteStatus;
 };

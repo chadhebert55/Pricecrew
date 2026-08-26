@@ -1,12 +1,12 @@
-import { useCreateQuote } from "@workspace/api-client-react"
+import { useCreateQuote, usePreviewQuote } from "@workspace/api-client-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
-import { Zap, Calculator, Info } from "lucide-react"
+import { Zap, Calculator, Info, TriangleAlert } from "lucide-react"
 
 function BasicSelect({ value, onChange, options, id }: { value: string, onChange: (v: string) => void, options: {label: string, value: string}[], id?: string }) {
   return (
@@ -25,6 +25,8 @@ function BasicSelect({ value, onChange, options, id }: { value: string, onChange
 export function NewQuote() {
   const [_, setLocation] = useLocation()
   const createQuote = useCreateQuote()
+  const previewQuote = usePreviewQuote()
+  const [previewedInputKey, setPreviewedInputKey] = useState("")
   
   // Base details
   const [customerName, setCustomerName] = useState("")
@@ -55,10 +57,29 @@ export function NewQuote() {
     notes: "Trade default: 50A circuit, #8 wire. Future service upgrade ref: 3 x 4/0 XHHW for mast work."
   })
 
+  const currentInputKey = JSON.stringify(inputs)
+  const previewIsCurrent = previewedInputKey === currentInputKey
+
+  useEffect(() => {
+    const inputKey = JSON.stringify(inputs)
+    const timeout = window.setTimeout(() => {
+      previewQuote.mutate({
+        data: {
+          module: "EV_CHARGER",
+          jobInputs: inputs,
+        },
+      }, {
+        onSuccess: () => setPreviewedInputKey(inputKey),
+      })
+    }, 250)
+
+    return () => window.clearTimeout(timeout)
+  }, [inputs])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Server now handles authoritative assembly & pricing.
+    if (!previewIsCurrent) return
+
     createQuote.mutate({
       data: {
         customerName,
@@ -67,9 +88,7 @@ export function NewQuote() {
         module: "EV_CHARGER",
         proposalDescription,
         jobInputs: inputs,
-        // We explicitly omit assembly and pricing here as the server calculates them.
-        // We use `as any` to bypass local TS requirement if the API schemas still enforce them on the client payload.
-      } as any 
+      }
     }, {
       onSuccess: (quote) => {
         setLocation(`/quotes/${quote.id}`)
@@ -77,11 +96,10 @@ export function NewQuote() {
     })
   }
 
-  // Derive preview approximations based on inputs (LOCAL ONLY for preview UI)
-  const baseLabor = 250 + (inputs.difficulty === 'Hard' ? 100 : inputs.difficulty === 'Extreme' ? 250 : 0) + (inputs.routeLength * 2.5);
-  const baseMaterial = 120 + (inputs.routeLength * 3.5) + (inputs.chargerSupply === 'Contractor Provided' ? 450 : 0) + (inputs.surgeProtection !== 'None' ? 150 : 0);
-  const totalCost = baseLabor + baseMaterial;
-  const estimatedSellingPrice = totalCost * 1.4;
+  const previewPricing = previewQuote.data?.pricing
+  const totalCost = previewPricing
+    ? previewPricing.materialCost + previewPricing.laborCost
+    : 0
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-24">
@@ -415,7 +433,7 @@ export function NewQuote() {
                     <CardTitle className="text-secondary-foreground">Calculation Preview</CardTitle>
                   </div>
                   <CardDescription className="text-secondary-foreground/70">
-                    Approximate values based on current inputs.
+                    Server-calculated using current company settings and price book.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
@@ -430,34 +448,64 @@ export function NewQuote() {
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
-                      <span>Est. Material Cost</span>
-                      <span className="font-mono">${baseMaterial.toFixed(2)}</span>
+                  {!previewPricing || !previewIsCurrent ? (
+                    <div className="py-8 text-center text-sm text-secondary-foreground/70 animate-pulse">
+                      Updating authoritative estimate...
                     </div>
-                    <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
-                      <span>Est. Labor Cost</span>
-                      <span className="font-mono">${baseLabor.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t border-secondary-border pt-3 flex justify-between items-center font-bold">
-                      <span>Est. Total Cost</span>
-                      <span className="font-mono">${totalCost.toFixed(2)}</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      {previewPricing.pricingWarnings.length > 0 && (
+                        <div className="space-y-2 rounded-md border border-amber-400/40 bg-amber-400/10 p-3">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+                            <TriangleAlert size={16} />
+                            Pricing needs confirmation
+                          </div>
+                          <ul className="space-y-1 pl-6 text-xs text-secondary-foreground/80 list-disc">
+                            {previewPricing.pricingWarnings.map((warning) => (
+                              <li key={warning}>{warning}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
+                          <span>Material Cost</span>
+                          <span className="font-mono">${previewPricing.materialCost.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
+                          <span>Labor Cost</span>
+                          <span className="font-mono">${previewPricing.laborCost.toFixed(2)}</span>
+                        </div>
+                        <div className="border-t border-secondary-border pt-3 flex justify-between items-center font-bold">
+                          <span>Total Cost</span>
+                          <span className="font-mono">${totalCost.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   
                   <div className="pt-4 border-t border-secondary-border flex flex-col gap-1">
-                    <span className="text-xs text-secondary-foreground/60 uppercase tracking-wider">Est. Selling Price</span>
+                    <span className="text-xs text-secondary-foreground/60 uppercase tracking-wider">Calculated Selling Price</span>
                     <span className="text-4xl font-bold font-mono text-primary tracking-tight">
-                      ${estimatedSellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {previewPricing && previewIsCurrent
+                        ? `$${previewPricing.finalSellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : "—"}
                     </span>
                   </div>
 
                   <p className="text-xs text-secondary-foreground/50 leading-relaxed pt-2 border-t border-secondary-border mt-4">
-                    <strong>Note:</strong> Job inputs, calculated assemblies, and pricing are kept conceptually separate. The final authoritative assembly and pricing are calculated by the server upon submission and can be manually overridden on the Quote Detail view.
+                    This preview uses the same server estimator as quote creation. Saved assemblies and calculated pricing remain fixed unless an explicit override is entered later.
                   </p>
 
-                  <Button type="submit" size="lg" disabled={createQuote.isPending} className="w-full font-bold text-lg mt-4">
-                    {createQuote.isPending ? "Submitting..." : "Generate Quote"}
+                  {previewQuote.isError && (
+                    <p className="text-sm text-destructive">
+                      The estimate preview could not be calculated. Check the inputs and try again.
+                    </p>
+                  )}
+
+                  <Button type="submit" size="lg" disabled={createQuote.isPending || !previewIsCurrent || previewQuote.isError} className="w-full font-bold text-lg mt-4">
+                    {createQuote.isPending ? "Submitting..." : !previewIsCurrent ? "Calculating..." : "Generate Quote"}
                   </Button>
                 </CardContent>
               </Card>

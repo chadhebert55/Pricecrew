@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { QuoteStatus } from './quoteStatus';
 
 export interface QuoteSummary {
   id: number;
@@ -12,7 +13,7 @@ export interface QuoteSummary {
   customerName: string;
   projectName: string;
   module: string;
-  status: string;
+  status: QuoteStatus;
   total: number;
   margin: number;
   updatedAt: Date;
