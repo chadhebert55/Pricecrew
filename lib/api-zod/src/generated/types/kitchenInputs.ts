@@ -69,6 +69,11 @@ export interface KitchenInputs {
   microwaveCircuitFootage?: number;
   /** @minimum 0 */
   microwaveCircuitLaborHours?: number;
+  /**
+     * Shared 12/2 home-run distance from the appliance area back to the panel.
+     * @minimum 0
+     */
+  applianceHomeRun12_2Length?: number;
   /** @minimum 1 */
   applianceCircuitAmperage?: number;
   applianceCircuitCableType?: KitchenInputsApplianceCircuitCableType;

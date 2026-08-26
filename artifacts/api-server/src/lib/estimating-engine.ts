@@ -654,7 +654,7 @@ export function calculateKitchenEstimate(
   }: {
     id: string;
     label: string;
-    footage: number;
+    footage?: number;
     amperage: number;
     cableType: "12/2 NM-B" | "14/2 NM-B";
     protection: string;
@@ -681,22 +681,24 @@ export function calculateKitchenEstimate(
       source: breaker.source,
     });
 
-    const safeFootage = safeNumber(footage);
-    if (safeFootage > 0) {
-      const cable = unitCost(`${cableType} cable`, priceBook, pricingWarnings);
-      addLine(assembly, {
-        id: `${id}-cable`,
-        category: "Conductor",
-        description: `${label}: ${cableType} cable`,
-        quantity: safeFootage,
-        unit: "ft",
-        unitCost: cable.value,
-        source: cable.source,
-      });
-    } else {
-      pricingWarnings.push(
-        `${label} is selected, but its configurable cable footage is zero.`,
-      );
+    if (footage !== undefined) {
+      const safeFootage = safeNumber(footage);
+      if (safeFootage > 0) {
+        const cable = unitCost(`${cableType} cable`, priceBook, pricingWarnings);
+        addLine(assembly, {
+          id: `${id}-cable`,
+          category: "Conductor",
+          description: `${label}: ${cableType} cable`,
+          quantity: safeFootage,
+          unit: "ft",
+          unitCost: cable.value,
+          source: cable.source,
+        });
+      } else {
+        pricingWarnings.push(
+          `${label} is selected, but its configurable cable footage is zero.`,
+        );
+      }
     }
 
     if (deviceKey && deviceDescription) {
@@ -902,11 +904,24 @@ export function calculateKitchenEstimate(
       : "12/2 NM-B";
   const applianceProtection =
     inputs.applianceCircuitProtectionType ?? "Standard";
+  const selectedApplianceCircuitCount =
+    (inputs.smallApplianceCircuit1 ? 1 : 0) +
+    (inputs.smallApplianceCircuit2 ? 1 : 0) +
+    (inputs.microwaveCircuit ? 1 : 0);
+  const usesSharedApplianceHomeRun =
+    inputs.applianceHomeRun12_2Length !== undefined;
+  const applianceHomeRunLength = safeNumber(
+    inputs.applianceHomeRun12_2Length,
+  );
+  const applianceHomeRunFootage =
+    applianceHomeRunLength * selectedApplianceCircuitCount;
   if (inputs.smallApplianceCircuit1) {
     addConfiguredCircuit({
       id: "kitchen-small-appliance-circuit-1",
       label: "Small-appliance Circuit 1",
-      footage: safeNumber(inputs.smallApplianceCircuit1Footage),
+      footage: usesSharedApplianceHomeRun
+        ? undefined
+        : safeNumber(inputs.smallApplianceCircuit1Footage),
       amperage: applianceAmperage,
       cableType: applianceCable,
       protection: applianceProtection,
@@ -919,7 +934,9 @@ export function calculateKitchenEstimate(
     addConfiguredCircuit({
       id: "kitchen-small-appliance-circuit-2",
       label: "Small-appliance Circuit 2",
-      footage: safeNumber(inputs.smallApplianceCircuit2Footage),
+      footage: usesSharedApplianceHomeRun
+        ? undefined
+        : safeNumber(inputs.smallApplianceCircuit2Footage),
       amperage: applianceAmperage,
       cableType: applianceCable,
       protection: applianceProtection,
@@ -932,7 +949,9 @@ export function calculateKitchenEstimate(
     addConfiguredCircuit({
       id: "kitchen-microwave-circuit",
       label: "Dedicated microwave circuit",
-      footage: safeNumber(inputs.microwaveCircuitFootage),
+      footage: usesSharedApplianceHomeRun
+        ? undefined
+        : safeNumber(inputs.microwaveCircuitFootage),
       amperage: applianceAmperage,
       cableType: applianceCable,
       protection: applianceProtection,
@@ -940,6 +959,28 @@ export function calculateKitchenEstimate(
       deviceDescription:
         "Dedicated microwave circuit company-configured device assumption",
     });
+  }
+  if (usesSharedApplianceHomeRun && selectedApplianceCircuitCount > 0) {
+    if (applianceHomeRunFootage > 0) {
+      const cable = unitCost(
+        "12/2 NM-B cable",
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: "kitchen-appliance-home-run-cable",
+        category: "Conductor",
+        description: `Kitchen appliance-circuit home runs — 12/2 NM-B (${applianceHomeRunLength} ft × ${selectedApplianceCircuitCount} selected circuits = ${applianceHomeRunFootage} ft)`,
+        quantity: applianceHomeRunFootage,
+        unit: "ft",
+        unitCost: cable.value,
+        source: cable.source,
+      });
+    } else {
+      pricingWarnings.push(
+        "One or more appliance circuits are selected, but Home Run 12/2 Length is zero.",
+      );
+    }
   }
 
   if (inputs.routeLength <= 0) {
@@ -1014,17 +1055,25 @@ export function calculateKitchenEstimate(
         safeNumber(inputs.lightingCircuitFootage) / 30
       : 0) +
     (inputs.smallApplianceCircuit1
-      ? safeNumber(inputs.smallApplianceCircuit1LaborHours ?? 3) +
-        safeNumber(inputs.smallApplianceCircuit1Footage) / 30
+      ? safeNumber(inputs.smallApplianceCircuit1LaborHours ?? 3)
       : 0) +
     (inputs.smallApplianceCircuit2
-      ? safeNumber(inputs.smallApplianceCircuit2LaborHours ?? 3) +
-        safeNumber(inputs.smallApplianceCircuit2Footage) / 30
+      ? safeNumber(inputs.smallApplianceCircuit2LaborHours ?? 3)
       : 0) +
     (inputs.microwaveCircuit
-      ? safeNumber(inputs.microwaveCircuitLaborHours ?? 3) +
-        safeNumber(inputs.microwaveCircuitFootage) / 30
-      : 0);
+      ? safeNumber(inputs.microwaveCircuitLaborHours ?? 3)
+      : 0) +
+    (usesSharedApplianceHomeRun
+      ? applianceHomeRunFootage / 30
+      : (inputs.smallApplianceCircuit1
+          ? safeNumber(inputs.smallApplianceCircuit1Footage) / 30
+          : 0) +
+        (inputs.smallApplianceCircuit2
+          ? safeNumber(inputs.smallApplianceCircuit2Footage) / 30
+          : 0) +
+        (inputs.microwaveCircuit
+          ? safeNumber(inputs.microwaveCircuitFootage) / 30
+          : 0));
 
   return finalizeEstimate(
     assembly,

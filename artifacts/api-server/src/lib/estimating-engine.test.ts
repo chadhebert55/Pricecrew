@@ -395,6 +395,49 @@ test("small-appliance circuits and microwave circuit remain independently select
   );
 });
 
+test("shared appliance home-run length multiplies by selected circuits into one visible 12/2 line", () => {
+  const editedPriceBook = priceBook.map((row) =>
+    row.item === "12/2 NM-B cable" ? { ...row, unitCost: 0.72 } : row,
+  );
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      includeLightingCircuit: false,
+      smallApplianceCircuit1: true,
+      smallApplianceCircuit1LaborHours: 2.5,
+      smallApplianceCircuit2: true,
+      smallApplianceCircuit2LaborHours: 2.5,
+      microwaveCircuit: true,
+      microwaveCircuitLaborHours: 2,
+      applianceHomeRun12_2Length: 60,
+      applianceCircuitAmperage: 20,
+      applianceCircuitProtectionType: "Standard",
+    },
+    settings,
+    editedPriceBook,
+  );
+  const homeRun = result.assembly.find(
+    (line) => line.id === "kitchen-appliance-home-run-cable",
+  );
+  assert.equal(homeRun?.quantity, 180);
+  assert.equal(homeRun?.unit, "ft");
+  assert.equal(homeRun?.unitCost, 0.72);
+  assert.equal(homeRun?.description.includes("60 ft × 3 selected circuits = 180 ft"), true);
+  assert.equal(
+    result.assembly.some(
+      (line) =>
+        line.id === "kitchen-small-appliance-circuit-1-cable" ||
+        line.id === "kitchen-small-appliance-circuit-2-cable" ||
+        line.id === "kitchen-microwave-circuit-cable",
+    ),
+    false,
+  );
+  assert.equal(
+    result.assembly.filter((line) => line.id.endsWith("-breaker")).length,
+    3,
+  );
+});
+
 test("contractor-edited kitchen circuit and four-way prices flow into estimates", () => {
   const editedPriceBook = priceBook.map((row) =>
     row.item === "14/2 NM-B cable"

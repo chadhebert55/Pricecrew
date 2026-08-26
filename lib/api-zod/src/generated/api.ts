@@ -136,6 +136,8 @@ export const createQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin = 0;
 
 export const createQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
 
+export const createQuoteBodyJobInputsThreeApplianceHomeRun122LengthMin = 0;
+
 
 export const createQuoteBodyJobInputsFourRoomLengthMin = 0;
 
@@ -240,6 +242,7 @@ export const CreateQuoteBody = zod.object({
   "microwaveCircuit": zod.boolean().optional(),
   "microwaveCircuitFootage": zod.number().min(createQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin).optional(),
   "microwaveCircuitLaborHours": zod.number().min(createQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceHomeRun12_2Length": zod.number().min(createQuoteBodyJobInputsThreeApplianceHomeRun122LengthMin).optional().describe('Shared 12\/2 home-run distance from the appliance area back to the panel.'),
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
@@ -354,6 +357,8 @@ export const createQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
 
+export const createQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
+
 
 export const createQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
@@ -460,6 +465,7 @@ export const CreateQuoteResponse = zod.object({
   "microwaveCircuit": zod.boolean().optional(),
   "microwaveCircuitFootage": zod.number().min(createQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
   "microwaveCircuitLaborHours": zod.number().min(createQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceHomeRun12_2Length": zod.number().min(createQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin).optional().describe('Shared 12\/2 home-run distance from the appliance area back to the panel.'),
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
@@ -603,6 +609,8 @@ export const previewQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin = 0;
 
 export const previewQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
 
+export const previewQuoteBodyJobInputsThreeApplianceHomeRun122LengthMin = 0;
+
 
 export const previewQuoteBodyJobInputsFourRoomLengthMin = 0;
 
@@ -703,6 +711,7 @@ export const PreviewQuoteBody = zod.object({
   "microwaveCircuit": zod.boolean().optional(),
   "microwaveCircuitFootage": zod.number().min(previewQuoteBodyJobInputsThreeMicrowaveCircuitFootageMin).optional(),
   "microwaveCircuitLaborHours": zod.number().min(previewQuoteBodyJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceHomeRun12_2Length": zod.number().min(previewQuoteBodyJobInputsThreeApplianceHomeRun122LengthMin).optional().describe('Shared 12\/2 home-run distance from the appliance area back to the panel.'),
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
@@ -860,6 +869,8 @@ export const getQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
 
+export const getQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
+
 
 export const getQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
@@ -966,6 +977,7 @@ export const GetQuoteResponse = zod.object({
   "microwaveCircuit": zod.boolean().optional(),
   "microwaveCircuitFootage": zod.number().min(getQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
   "microwaveCircuitLaborHours": zod.number().min(getQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceHomeRun12_2Length": zod.number().min(getQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin).optional().describe('Shared 12\/2 home-run distance from the appliance area back to the panel.'),
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
@@ -1120,6 +1132,8 @@ export const updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
 
 export const updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
 
+export const updateQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
+
 
 export const updateQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
@@ -1226,6 +1240,7 @@ export const UpdateQuoteResponse = zod.object({
   "microwaveCircuit": zod.boolean().optional(),
   "microwaveCircuitFootage": zod.number().min(updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
   "microwaveCircuitLaborHours": zod.number().min(updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "applianceHomeRun12_2Length": zod.number().min(updateQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin).optional().describe('Shared 12\/2 home-run distance from the appliance area back to the panel.'),
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),

@@ -662,6 +662,10 @@ components:
         microwaveCircuitLaborHours:
           type: number
           minimum: 0
+        applianceHomeRun12_2Length:
+          type: number
+          minimum: 0
+          description: Shared 12/2 home-run distance from the appliance area back to the panel.
         applianceCircuitAmperage:
           type: number
           minimum: 1

@@ -37,16 +37,13 @@ const initialInputs: KitchenInputs = {
   lightingCircuitFootage: 40,
   lightingCircuitLaborHours: 3,
   smallApplianceCircuit1: true,
-  smallApplianceCircuit1Footage: 40,
   smallApplianceCircuit1LaborHours: 3,
   smallApplianceCircuit2: true,
-  smallApplianceCircuit2Footage: 40,
   smallApplianceCircuit2LaborHours: 3,
   microwaveCircuit: true,
-  microwaveCircuitFootage: 30,
   microwaveCircuitLaborHours: 3,
+  applianceHomeRun12_2Length: 60,
   applianceCircuitAmperage: 20,
-  applianceCircuitCableType: "12/2 NM-B",
   applianceCircuitProtectionType: "Standard",
   customerSuppliedFixtures: true,
   notes: "",
@@ -136,6 +133,12 @@ export function NewKitchenQuote() {
 
   const pricing = previewQuote.data?.pricing
   const assembly = previewQuote.data?.assembly
+  const selectedApplianceCircuitCount =
+    (inputs.smallApplianceCircuit1 ? 1 : 0) +
+    (inputs.smallApplianceCircuit2 ? 1 : 0) +
+    (inputs.microwaveCircuit ? 1 : 0)
+  const applianceHomeRunLength = Math.max(0, inputs.applianceHomeRun12_2Length ?? 0)
+  const applianceHomeRunFootage = applianceHomeRunLength * selectedApplianceCircuitCount
   const groups: Array<{
     title: string
     fields: Array<{ key: keyof KitchenInputs; label: string; help: string }>
@@ -235,29 +238,26 @@ export function NewKitchenQuote() {
                         </div>
                       ))}
                     </div>
-                    {group.title === "Devices and controls" && (
+                    {group.title === "Appliance circuits" && (
                       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                         {([
                           {
                             enabledKey: "smallApplianceCircuit1",
-                            footageKey: "smallApplianceCircuit1Footage",
                             laborKey: "smallApplianceCircuit1LaborHours",
                             title: "Small-Appliance Circuit 1",
-                            help: "Independently include and adjust Circuit 1.",
+                            help: "Independent configured breaker, device, material, and labor assembly.",
                           },
                           {
                             enabledKey: "smallApplianceCircuit2",
-                            footageKey: "smallApplianceCircuit2Footage",
                             laborKey: "smallApplianceCircuit2LaborHours",
                             title: "Small-Appliance Circuit 2",
-                            help: "Independently include and adjust Circuit 2.",
+                            help: "Independent configured breaker, device, material, and labor assembly.",
                           },
                           {
                             enabledKey: "microwaveCircuit",
-                            footageKey: "microwaveCircuitFootage",
                             laborKey: "microwaveCircuitLaborHours",
-                            title: "Dedicated Microwave Circuit",
-                            help: "Independent microwave branch-circuit scope.",
+                            title: "Microwave Circuit",
+                            help: "Independent configured microwave circuit assembly.",
                           },
                         ] as const).map((circuit) => {
                           const enabled = inputs[circuit.enabledKey] === true
@@ -271,11 +271,7 @@ export function NewKitchenQuote() {
                                 </span>
                               </label>
                               {enabled && (
-                                <div className="mt-4 grid grid-cols-2 gap-3">
-                                  <div className="space-y-2">
-                                    <Label htmlFor={`kitchen-${circuit.footageKey}`}>Cable Footage (FT)</Label>
-                                    <Input id={`kitchen-${circuit.footageKey}`} type="number" min="0" value={inputs[circuit.footageKey] ?? 0} onChange={(event) => setNumber(circuit.footageKey, event.target.value)} />
-                                  </div>
+                                <div className="mt-4">
                                   <div className="space-y-2">
                                     <Label htmlFor={`kitchen-${circuit.laborKey}`}>Labor (HR)</Label>
                                     <Input id={`kitchen-${circuit.laborKey}`} type="number" min="0" step="0.25" value={inputs[circuit.laborKey] ?? 0} onChange={(event) => setNumber(circuit.laborKey, event.target.value)} />
@@ -285,6 +281,19 @@ export function NewKitchenQuote() {
                             </div>
                           )
                         })}
+                        <div className="rounded-lg border bg-primary/5 p-4 md:col-span-2">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <Label htmlFor="kitchen-appliance-home-run">Home Run 12/2 Length (FT)</Label>
+                              <p className="mt-1 max-w-2xl text-xs text-muted-foreground">Approximate distance from the kitchen appliance-circuit area back to the panel. This length is multiplied by each selected circuit above.</p>
+                            </div>
+                            <Input id="kitchen-appliance-home-run" className="w-full text-right font-mono sm:w-32" type="number" min="0" value={inputs.applianceHomeRun12_2Length ?? 0} onChange={(event) => setNumber("applianceHomeRun12_2Length", event.target.value)} />
+                          </div>
+                          <div className="mt-4 rounded-md border bg-background p-3 text-sm">
+                            <span className="font-semibold">Estimated 12/2 home-run material: </span>
+                            <span className="font-mono">{applianceHomeRunLength} FT × {selectedApplianceCircuitCount} selected circuits = {applianceHomeRunFootage} FT</span>
+                          </div>
+                        </div>
                       </div>
                     )}
                     {group.title === "Lighting" && (
@@ -400,13 +409,6 @@ export function NewKitchenQuote() {
                     <div className="space-y-2">
                       <Label htmlFor="kitchen-appliance-amps">Selected Branch-Circuit Amperage</Label>
                       <Input id="kitchen-appliance-amps" type="number" min="1" value={inputs.applianceCircuitAmperage ?? 20} onChange={(event) => setNumber("applianceCircuitAmperage", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="kitchen-appliance-cable">Selected Branch-Circuit Cable</Label>
-                      <select id="kitchen-appliance-cable" value={inputs.applianceCircuitCableType ?? "12/2 NM-B"} onChange={(event) => setInputs((current) => ({ ...current, applianceCircuitCableType: event.target.value as KitchenInputs["applianceCircuitCableType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="12/2 NM-B">12/2 NM-B</option>
-                        <option value="14/2 NM-B">14/2 NM-B</option>
-                      </select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="kitchen-appliance-protection">Selected Branch-Circuit Protection</Label>
