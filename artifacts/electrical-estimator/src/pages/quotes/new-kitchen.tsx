@@ -36,12 +36,8 @@ const initialInputs: KitchenInputs = {
   lightingCircuitAmperage: 15,
   lightingCircuitFootage: 40,
   lightingCircuitLaborHours: 3,
-  smallApplianceCircuit1: true,
-  smallApplianceCircuit1LaborHours: 3,
-  smallApplianceCircuit2: true,
-  smallApplianceCircuit2LaborHours: 3,
-  microwaveCircuit: true,
-  microwaveCircuitLaborHours: 3,
+  smallApplianceCircuits: 2,
+  microwaveCircuits: 1,
   applianceHomeRun12_2Length: 60,
   applianceCircuitAmperage: 20,
   applianceCircuitProtectionType: "Standard",
@@ -134,9 +130,8 @@ export function NewKitchenQuote() {
   const pricing = previewQuote.data?.pricing
   const assembly = previewQuote.data?.assembly
   const selectedApplianceCircuitCount =
-    (inputs.smallApplianceCircuit1 ? 1 : 0) +
-    (inputs.smallApplianceCircuit2 ? 1 : 0) +
-    (inputs.microwaveCircuit ? 1 : 0)
+    Math.max(0, inputs.smallApplianceCircuits ?? 0) +
+    Math.max(0, inputs.microwaveCircuits ?? 0)
   const applianceHomeRunLength = Math.max(0, inputs.applianceHomeRun12_2Length ?? 0)
   const applianceHomeRunFootage = applianceHomeRunLength * selectedApplianceCircuitCount
   const groups: Array<{
@@ -240,52 +235,29 @@ export function NewKitchenQuote() {
                     </div>
                     {group.title === "Appliance circuits" && (
                       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                        {([
-                          {
-                            enabledKey: "smallApplianceCircuit1",
-                            laborKey: "smallApplianceCircuit1LaborHours",
-                            title: "Small-Appliance Circuit 1",
-                            help: "Independent configured breaker, device, material, and labor assembly.",
-                          },
-                          {
-                            enabledKey: "smallApplianceCircuit2",
-                            laborKey: "smallApplianceCircuit2LaborHours",
-                            title: "Small-Appliance Circuit 2",
-                            help: "Independent configured breaker, device, material, and labor assembly.",
-                          },
-                          {
-                            enabledKey: "microwaveCircuit",
-                            laborKey: "microwaveCircuitLaborHours",
-                            title: "Microwave Circuit",
-                            help: "Independent configured microwave circuit assembly.",
-                          },
-                        ] as const).map((circuit) => {
-                          const enabled = inputs[circuit.enabledKey] === true
-                          return (
-                            <div key={circuit.enabledKey} className="rounded-lg border bg-muted/15 p-4">
-                              <label className="flex items-start gap-3">
-                                <Checkbox checked={enabled} onCheckedChange={(checked) => setInputs((current) => ({ ...current, [circuit.enabledKey]: checked === true }))} />
-                                <span>
-                                  <span className="block font-semibold">{circuit.title}</span>
-                                  <span className="text-xs text-muted-foreground">{circuit.help}</span>
-                                </span>
-                              </label>
-                              {enabled && (
-                                <div className="mt-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor={`kitchen-${circuit.laborKey}`}>Labor (HR)</Label>
-                                    <Input id={`kitchen-${circuit.laborKey}`} type="number" min="0" step="0.25" value={inputs[circuit.laborKey] ?? 0} onChange={(event) => setNumber(circuit.laborKey, event.target.value)} />
-                                  </div>
-                                </div>
-                              )}
+                        <div className="rounded-lg border bg-muted/15 p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <Label htmlFor="kitchen-small-appliance-circuits">Small Appliance Circuits</Label>
+                              <p className="mt-1 text-xs text-muted-foreground">Quantity of configured small-appliance circuit assemblies.</p>
                             </div>
-                          )
-                        })}
+                            <Input id="kitchen-small-appliance-circuits" className="w-24 text-right font-mono" type="number" min="0" value={inputs.smallApplianceCircuits ?? 0} onChange={(event) => setQuantity("smallApplianceCircuits", event.target.value)} />
+                          </div>
+                        </div>
+                        <div className="rounded-lg border bg-muted/15 p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <Label htmlFor="kitchen-microwave-circuits">Microwave Circuit</Label>
+                              <p className="mt-1 text-xs text-muted-foreground">Quantity of configured microwave circuit assemblies.</p>
+                            </div>
+                            <Input id="kitchen-microwave-circuits" className="w-24 text-right font-mono" type="number" min="0" value={inputs.microwaveCircuits ?? 0} onChange={(event) => setQuantity("microwaveCircuits", event.target.value)} />
+                          </div>
+                        </div>
                         <div className="rounded-lg border bg-primary/5 p-4 md:col-span-2">
                           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <Label htmlFor="kitchen-appliance-home-run">Home Run 12/2 Length (FT)</Label>
-                              <p className="mt-1 max-w-2xl text-xs text-muted-foreground">Approximate distance from the kitchen appliance-circuit area back to the panel. This length is multiplied by each selected circuit above.</p>
+                              <p className="mt-1 max-w-2xl text-xs text-muted-foreground">Approximate distance from the kitchen appliance-circuit area back to the panel. This length is multiplied by the Small Appliance Circuits and Microwave Circuit quantities above.</p>
                             </div>
                             <Input id="kitchen-appliance-home-run" className="w-full text-right font-mono sm:w-32" type="number" min="0" value={inputs.applianceHomeRun12_2Length ?? 0} onChange={(event) => setNumber("applianceHomeRun12_2Length", event.target.value)} />
                           </div>

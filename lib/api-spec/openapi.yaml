@@ -662,6 +662,14 @@ components:
         microwaveCircuitLaborHours:
           type: number
           minimum: 0
+        smallApplianceCircuits:
+          type: number
+          minimum: 0
+          description: Quantity of small-appliance circuits using the shared home run.
+        microwaveCircuits:
+          type: number
+          minimum: 0
+          description: Quantity of microwave circuits using the shared home run.
         applianceHomeRun12_2Length:
           type: number
           minimum: 0

@@ -93,6 +93,8 @@ export type KitchenInputRecord = {
   microwaveCircuit?: boolean;
   microwaveCircuitFootage?: number;
   microwaveCircuitLaborHours?: number;
+  smallApplianceCircuits?: number;
+  microwaveCircuits?: number;
   applianceHomeRun12_2Length?: number;
   applianceCircuitAmperage?: number;
   applianceCircuitCableType?: CableType;

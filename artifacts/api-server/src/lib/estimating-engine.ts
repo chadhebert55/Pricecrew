@@ -646,6 +646,7 @@ export function calculateKitchenEstimate(
     id,
     label,
     footage,
+    quantity = 1,
     amperage,
     cableType,
     protection,
@@ -655,12 +656,15 @@ export function calculateKitchenEstimate(
     id: string;
     label: string;
     footage?: number;
+    quantity?: number;
     amperage: number;
     cableType: "12/2 NM-B" | "14/2 NM-B";
     protection: string;
     deviceKey?: string;
     deviceDescription?: string;
   }) => {
+    const safeQuantity = safeNumber(quantity);
+    if (safeQuantity === 0) return;
     const breaker = resolveBreaker(
       {
         manufacturer: inputs.panelManufacturer ?? "",
@@ -675,7 +679,7 @@ export function calculateKitchenEstimate(
       id: `${id}-breaker`,
       category: "Protection",
       description: `${label}: ${breaker.description}`,
-      quantity: 1,
+      quantity: safeQuantity,
       unit: "ea",
       unitCost: breaker.value,
       source: breaker.source,
@@ -707,7 +711,7 @@ export function calculateKitchenEstimate(
         "Devices",
         deviceKey,
         deviceDescription,
-        1,
+        safeQuantity,
       );
     }
   };
@@ -904,10 +908,19 @@ export function calculateKitchenEstimate(
       : "12/2 NM-B";
   const applianceProtection =
     inputs.applianceCircuitProtectionType ?? "Standard";
+  const smallApplianceQuantity =
+    inputs.smallApplianceCircuits !== undefined
+      ? safeNumber(inputs.smallApplianceCircuits)
+      : (inputs.smallApplianceCircuit1 ? 1 : 0) +
+        (inputs.smallApplianceCircuit2 ? 1 : 0);
+  const microwaveQuantity =
+    inputs.microwaveCircuits !== undefined
+      ? safeNumber(inputs.microwaveCircuits)
+      : inputs.microwaveCircuit
+        ? 1
+        : 0;
   const selectedApplianceCircuitCount =
-    (inputs.smallApplianceCircuit1 ? 1 : 0) +
-    (inputs.smallApplianceCircuit2 ? 1 : 0) +
-    (inputs.microwaveCircuit ? 1 : 0);
+    smallApplianceQuantity + microwaveQuantity;
   const usesSharedApplianceHomeRun =
     inputs.applianceHomeRun12_2Length !== undefined;
   const applianceHomeRunLength = safeNumber(
@@ -915,7 +928,20 @@ export function calculateKitchenEstimate(
   );
   const applianceHomeRunFootage =
     applianceHomeRunLength * selectedApplianceCircuitCount;
-  if (inputs.smallApplianceCircuit1) {
+  if (inputs.smallApplianceCircuits !== undefined) {
+    addConfiguredCircuit({
+      id: "kitchen-small-appliance-circuits",
+      label: "Small Appliance Circuits",
+      quantity: smallApplianceQuantity,
+      footage: undefined,
+      amperage: applianceAmperage,
+      cableType: "12/2 NM-B",
+      protection: applianceProtection,
+      deviceKey: "Kitchen small-appliance circuit device assumption",
+      deviceDescription:
+        "Small Appliance Circuits company-configured device assumption",
+    });
+  } else if (inputs.smallApplianceCircuit1) {
     addConfiguredCircuit({
       id: "kitchen-small-appliance-circuit-1",
       label: "Small-appliance Circuit 1",
@@ -930,7 +956,7 @@ export function calculateKitchenEstimate(
         "Small-appliance Circuit 1 company-configured device assumption",
     });
   }
-  if (inputs.smallApplianceCircuit2) {
+  if (inputs.smallApplianceCircuits === undefined && inputs.smallApplianceCircuit2) {
     addConfiguredCircuit({
       id: "kitchen-small-appliance-circuit-2",
       label: "Small-appliance Circuit 2",
@@ -945,7 +971,20 @@ export function calculateKitchenEstimate(
         "Small-appliance Circuit 2 company-configured device assumption",
     });
   }
-  if (inputs.microwaveCircuit) {
+  if (inputs.microwaveCircuits !== undefined) {
+    addConfiguredCircuit({
+      id: "kitchen-microwave-circuits",
+      label: "Microwave Circuit",
+      quantity: microwaveQuantity,
+      footage: undefined,
+      amperage: applianceAmperage,
+      cableType: "12/2 NM-B",
+      protection: applianceProtection,
+      deviceKey: "Kitchen microwave circuit device assumption",
+      deviceDescription:
+        "Microwave Circuit company-configured device assumption",
+    });
+  } else if (inputs.microwaveCircuit) {
     addConfiguredCircuit({
       id: "kitchen-microwave-circuit",
       label: "Dedicated microwave circuit",
@@ -1019,9 +1058,8 @@ export function calculateKitchenEstimate(
       inputs.disposalCircuits +
       inputs.gasRangeCircuits +
       inputs.electricRangeCircuits +
-      (inputs.smallApplianceCircuit1 ? 1 : 0) +
-      (inputs.smallApplianceCircuit2 ? 1 : 0) +
-      (inputs.microwaveCircuit ? 1 : 0) +
+      smallApplianceQuantity +
+      microwaveQuantity +
       inputs.additionalDedicatedCircuits >
     0
   ) {
@@ -1030,6 +1068,34 @@ export function calculateKitchenEstimate(
     );
   }
 
+  const smallApplianceBaseLaborHours =
+    inputs.smallApplianceCircuits !== undefined
+      ? smallApplianceQuantity * 3
+      : (inputs.smallApplianceCircuit1
+          ? safeNumber(inputs.smallApplianceCircuit1LaborHours ?? 3)
+          : 0) +
+        (inputs.smallApplianceCircuit2
+          ? safeNumber(inputs.smallApplianceCircuit2LaborHours ?? 3)
+          : 0);
+  const microwaveBaseLaborHours =
+    inputs.microwaveCircuits !== undefined
+      ? microwaveQuantity * 3
+      : inputs.microwaveCircuit
+        ? safeNumber(inputs.microwaveCircuitLaborHours ?? 3)
+        : 0;
+  const legacyApplianceCableLaborHours =
+    inputs.smallApplianceCircuits === undefined &&
+    inputs.microwaveCircuits === undefined
+      ? (inputs.smallApplianceCircuit1
+          ? safeNumber(inputs.smallApplianceCircuit1Footage) / 30
+          : 0) +
+        (inputs.smallApplianceCircuit2
+          ? safeNumber(inputs.smallApplianceCircuit2Footage) / 30
+          : 0) +
+        (inputs.microwaveCircuit
+          ? safeNumber(inputs.microwaveCircuitFootage) / 30
+          : 0)
+      : 0;
   const laborHours =
     2 +
     inputs.routeLength / 30 +
@@ -1054,26 +1120,11 @@ export function calculateKitchenEstimate(
       ? safeNumber(inputs.lightingCircuitLaborHours ?? 3) +
         safeNumber(inputs.lightingCircuitFootage) / 30
       : 0) +
-    (inputs.smallApplianceCircuit1
-      ? safeNumber(inputs.smallApplianceCircuit1LaborHours ?? 3)
-      : 0) +
-    (inputs.smallApplianceCircuit2
-      ? safeNumber(inputs.smallApplianceCircuit2LaborHours ?? 3)
-      : 0) +
-    (inputs.microwaveCircuit
-      ? safeNumber(inputs.microwaveCircuitLaborHours ?? 3)
-      : 0) +
+    smallApplianceBaseLaborHours +
+    microwaveBaseLaborHours +
     (usesSharedApplianceHomeRun
       ? applianceHomeRunFootage / 30
-      : (inputs.smallApplianceCircuit1
-          ? safeNumber(inputs.smallApplianceCircuit1Footage) / 30
-          : 0) +
-        (inputs.smallApplianceCircuit2
-          ? safeNumber(inputs.smallApplianceCircuit2Footage) / 30
-          : 0) +
-        (inputs.microwaveCircuit
-          ? safeNumber(inputs.microwaveCircuitFootage) / 30
-          : 0));
+      : legacyApplianceCableLaborHours);
 
   return finalizeEstimate(
     assembly,

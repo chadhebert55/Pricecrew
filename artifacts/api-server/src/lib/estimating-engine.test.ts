@@ -403,12 +403,8 @@ test("shared appliance home-run length multiplies by selected circuits into one 
     {
       ...baseKitchenInputs,
       includeLightingCircuit: false,
-      smallApplianceCircuit1: true,
-      smallApplianceCircuit1LaborHours: 2.5,
-      smallApplianceCircuit2: true,
-      smallApplianceCircuit2LaborHours: 2.5,
-      microwaveCircuit: true,
-      microwaveCircuitLaborHours: 2,
+      smallApplianceCircuits: 2,
+      microwaveCircuits: 1,
       applianceHomeRun12_2Length: 60,
       applianceCircuitAmperage: 20,
       applianceCircuitProtectionType: "Standard",
@@ -433,8 +429,22 @@ test("shared appliance home-run length multiplies by selected circuits into one 
     false,
   );
   assert.equal(
-    result.assembly.filter((line) => line.id.endsWith("-breaker")).length,
-    3,
+    result.assembly.find(
+      (line) => line.id === "kitchen-small-appliance-circuits-breaker",
+    )?.quantity,
+    2,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "kitchen-microwave-circuits-breaker",
+    )?.quantity,
+    1,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "kitchen-small-appliance-circuits-device",
+    )?.quantity,
+    2,
   );
 });
 

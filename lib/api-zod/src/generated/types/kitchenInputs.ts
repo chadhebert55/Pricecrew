@@ -70,6 +70,16 @@ export interface KitchenInputs {
   /** @minimum 0 */
   microwaveCircuitLaborHours?: number;
   /**
+     * Quantity of small-appliance circuits using the shared home run.
+     * @minimum 0
+     */
+  smallApplianceCircuits?: number;
+  /**
+     * Quantity of microwave circuits using the shared home run.
+     * @minimum 0
+     */
+  microwaveCircuits?: number;
+  /**
      * Shared 12/2 home-run distance from the appliance area back to the panel.
      * @minimum 0
      */
