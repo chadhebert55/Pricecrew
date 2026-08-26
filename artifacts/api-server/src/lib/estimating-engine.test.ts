@@ -62,11 +62,65 @@ const priceBook: PriceBookItem[] = [
     poleCount: 1,
     protectionType: "Standard",
   }),
+  catalogRow("Siemens Q115AFC 15A 1-pole AFCI breaker", 44, {
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q115AFC",
+    supplierSku: "SIEMENS-15-AFCI",
+    amperage: 15,
+    poleCount: 1,
+    protectionType: "AFCI",
+  }),
+  catalogRow("Siemens QF115A 15A 1-pole GFCI breaker", 52, {
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "QF115A",
+    supplierSku: "SIEMENS-15-GFCI",
+    amperage: 15,
+    poleCount: 1,
+    protectionType: "GFCI",
+  }),
+  catalogRow("Siemens Q115DF 15A 1-pole dual-function breaker", 64, {
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q115DF",
+    supplierSku: "SIEMENS-15-DUAL",
+    amperage: 15,
+    poleCount: 1,
+    protectionType: "Dual Function",
+  }),
   catalogRow("Siemens Q120 20A 1-pole standard breaker", 10.5, {
     manufacturer: "Siemens",
     amperage: 20,
     poleCount: 1,
     protectionType: "Standard",
+  }),
+  catalogRow("Siemens Q120AFC 20A 1-pole AFCI breaker", 58, {
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q120AFC",
+    supplierSku: "SIEMENS-20-AFCI",
+    amperage: 20,
+    poleCount: 1,
+    protectionType: "AFCI",
+  }),
+  catalogRow("Siemens QF120A 20A 1-pole GFCI breaker", 71, {
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "QF120A",
+    supplierSku: "SIEMENS-20-GFCI",
+    amperage: 20,
+    poleCount: 1,
+    protectionType: "GFCI",
+  }),
+  catalogRow("Siemens Q120DF 20A 1-pole dual-function breaker", 69, {
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q120DF",
+    supplierSku: "SIEMENS-20-DUAL",
+    amperage: 20,
+    poleCount: 1,
+    protectionType: "Dual Function",
+  }),
+  catalogRow("Pass & Seymour 3232-TRW 15A TR duplex receptacle", 1.25, {
+    manufacturer: "Pass & Seymour",
+    manufacturerPartNumber: "3232-TRW",
+    supplierSku: "243085",
+    amperage: 15,
   }),
   catalogRow("Legrand radiant TM874WCC10 15A 4-way switch", 12, {
     manufacturer: "Legrand",
@@ -445,6 +499,111 @@ test("shared appliance home-run length multiplies by selected circuits into one 
       (line) => line.id === "kitchen-small-appliance-circuits-device",
     )?.quantity,
     2,
+  );
+});
+
+test("Kitchen breaker section derives 15A and 20A quantities without double-counting circuit breakers", () => {
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      countertopReceptacles: 4,
+      includeLightingCircuit: true,
+      lightingCircuitFootage: 40,
+      lightingCircuitLaborHours: 3,
+      smallApplianceCircuits: 2,
+      microwaveCircuits: 1,
+      applianceHomeRun12_2Length: 60,
+      applianceCircuitAmperage: 20,
+      breaker15AProtectionType: "Dual Function",
+      breaker20AProtectionType: "Dual Function",
+    },
+    settings,
+    priceBook,
+  );
+
+  const countertopDevices = result.assembly.find(
+    (line) => line.id === "countertop-receptacles",
+  );
+  const breaker15A = result.assembly.find(
+    (line) => line.id === "kitchen-breakers-15a",
+  );
+  const breaker20A = result.assembly.find(
+    (line) => line.id === "kitchen-breakers-20a",
+  );
+
+  assert.equal(countertopDevices?.quantity, 4);
+  assert.equal(countertopDevices?.unitCost, 1.25);
+  assert.equal(countertopDevices?.description.includes("GFCI"), false);
+  assert.equal(breaker15A?.quantity, 1);
+  assert.equal(breaker15A?.unitCost, 64);
+  assert.equal(breaker15A?.description.includes("Q115DF"), true);
+  assert.equal(breaker20A?.quantity, 4);
+  assert.equal(breaker20A?.unitCost, 69);
+  assert.equal(breaker20A?.description.includes("Q120DF"), true);
+  assert.equal(
+    result.assembly.some((line) => line.id.endsWith("-breaker")),
+    false,
+  );
+  assert.equal(
+    result.assembly.some(
+      (line) => line.id === "kitchen-countertop-circuit-protection",
+    ),
+    false,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "kitchen-appliance-home-run-cable",
+    )?.quantity,
+    180,
+  );
+});
+
+test("Kitchen breaker protection types and quantity overrides resolve exact editable price-book rows", () => {
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      countertopReceptacles: 4,
+      includeLightingCircuit: true,
+      lightingCircuitFootage: 40,
+      lightingCircuitLaborHours: 3,
+      smallApplianceCircuits: 2,
+      microwaveCircuits: 1,
+      applianceHomeRun12_2Length: 60,
+      applianceCircuitAmperage: 20,
+      breaker15AQuantity: 2,
+      breaker15AProtectionType: "GFCI",
+      breaker20AQuantity: 5,
+      breaker20AProtectionType: "AFCI",
+    },
+    settings,
+    priceBook,
+  );
+
+  const breaker15A = result.assembly.find(
+    (line) => line.id === "kitchen-breakers-15a",
+  );
+  const breaker20A = result.assembly.find(
+    (line) => line.id === "kitchen-breakers-20a",
+  );
+  assert.equal(breaker15A?.quantity, 2);
+  assert.equal(breaker15A?.unitCost, 52);
+  assert.equal(breaker15A?.description.includes("QF115A"), true);
+  assert.equal(breaker15A?.source.includes("SKU SIEMENS-15-GFCI"), true);
+  assert.equal(breaker20A?.quantity, 5);
+  assert.equal(breaker20A?.unitCost, 58);
+  assert.equal(breaker20A?.description.includes("Q120AFC"), true);
+  assert.equal(breaker20A?.source.includes("SKU SIEMENS-20-AFCI"), true);
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      warning.includes("15A breaker quantity"),
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      warning.includes("20A breaker quantity"),
+    ),
+    true,
   );
 });
 

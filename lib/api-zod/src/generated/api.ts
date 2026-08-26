@@ -143,6 +143,10 @@ export const createQuoteBodyJobInputsThreeMicrowaveCircuitsMin = 0;
 export const createQuoteBodyJobInputsThreeApplianceHomeRun122LengthMin = 0;
 
 
+export const createQuoteBodyJobInputsThreeBreaker15AQuantityMin = 0;
+
+export const createQuoteBodyJobInputsThreeBreaker20AQuantityMin = 0;
+
 export const createQuoteBodyJobInputsFourRoomLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourRoomWidthMin = 0;
@@ -252,6 +256,10 @@ export const CreateQuoteBody = zod.object({
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
+  "breaker15AQuantity": zod.number().min(createQuoteBodyJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
+  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker20AQuantity": zod.number().min(createQuoteBodyJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
+  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -370,6 +378,10 @@ export const createQuoteResponseTwoJobInputsThreeMicrowaveCircuitsMin = 0;
 export const createQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
 
 
+export const createQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
+
 export const createQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
@@ -481,6 +493,10 @@ export const CreateQuoteResponse = zod.object({
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
+  "breaker15AQuantity": zod.number().min(createQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
+  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker20AQuantity": zod.number().min(createQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
+  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -628,6 +644,10 @@ export const previewQuoteBodyJobInputsThreeMicrowaveCircuitsMin = 0;
 export const previewQuoteBodyJobInputsThreeApplianceHomeRun122LengthMin = 0;
 
 
+export const previewQuoteBodyJobInputsThreeBreaker15AQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsThreeBreaker20AQuantityMin = 0;
+
 export const previewQuoteBodyJobInputsFourRoomLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourRoomWidthMin = 0;
@@ -733,6 +753,10 @@ export const PreviewQuoteBody = zod.object({
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
+  "breaker15AQuantity": zod.number().min(previewQuoteBodyJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
+  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker20AQuantity": zod.number().min(previewQuoteBodyJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
+  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -894,6 +918,10 @@ export const getQuoteResponseTwoJobInputsThreeMicrowaveCircuitsMin = 0;
 export const getQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
 
 
+export const getQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
+
 export const getQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
@@ -1005,6 +1033,10 @@ export const GetQuoteResponse = zod.object({
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
+  "breaker15AQuantity": zod.number().min(getQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
+  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker20AQuantity": zod.number().min(getQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
+  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -1163,6 +1195,10 @@ export const updateQuoteResponseTwoJobInputsThreeMicrowaveCircuitsMin = 0;
 export const updateQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
 
 
+export const updateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
+
 export const updateQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
@@ -1274,6 +1310,10 @@ export const UpdateQuoteResponse = zod.object({
   "applianceCircuitAmperage": zod.number().min(1).optional(),
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
+  "breaker15AQuantity": zod.number().min(updateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
+  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker20AQuantity": zod.number().min(updateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
+  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),

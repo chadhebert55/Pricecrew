@@ -40,14 +40,12 @@ const initialInputs: KitchenInputs = {
   microwaveCircuits: 1,
   applianceHomeRun12_2Length: 60,
   applianceCircuitAmperage: 20,
-  applianceCircuitProtectionType: "Standard",
+  breaker15AProtectionType: "Dual Function",
+  breaker20AProtectionType: "Dual Function",
   customerSuppliedFixtures: true,
   notes: "",
   laborRateType: "residential",
   panelManufacturer: "Siemens",
-  breakerAmperage: 20,
-  breakerPoleCount: 1,
-  breakerProtectionType: "GFCI",
   recessedLightSize: "4-inch",
   cableType: "12/2 NM-B",
 }
@@ -134,6 +132,18 @@ export function NewKitchenQuote() {
     Math.max(0, inputs.microwaveCircuits ?? 0)
   const applianceHomeRunLength = Math.max(0, inputs.applianceHomeRun12_2Length ?? 0)
   const applianceHomeRunFootage = applianceHomeRunLength * selectedApplianceCircuitCount
+  const includedLightingCircuitCount =
+    inputs.includeLightingCircuit &&
+    inputs.sinkLights + inputs.islandPendants + inputs.undercabinetLighting + inputs.recessedLights > 0
+      ? 1
+      : 0
+  const applianceCircuitAmperage = Math.max(1, inputs.applianceCircuitAmperage ?? 20)
+  const automatic15ABreakerQuantity =
+    includedLightingCircuitCount +
+    (applianceCircuitAmperage === 15 ? selectedApplianceCircuitCount : 0)
+  const automatic20ABreakerQuantity =
+    (inputs.countertopReceptacles > 0 ? 1 : 0) +
+    (applianceCircuitAmperage === 20 ? selectedApplianceCircuitCount : 0)
   const groups: Array<{
     title: string
     fields: Array<{ key: keyof KitchenInputs; label: string; help: string }>
@@ -150,9 +160,13 @@ export function NewKitchenQuote() {
       ],
     },
     {
+      title: "Breakers",
+      fields: [],
+    },
+    {
       title: "Devices and controls",
       fields: [
-        { key: "countertopReceptacles", label: "Countertop receptacles", help: "GFCI countertop devices" },
+        { key: "countertopReceptacles", label: "Countertop receptacles", help: "Normal Decora tamper-resistant devices; protection is priced separately at the breaker" },
         { key: "usbReceptacles", label: "USB receptacles", help: "USB charging devices" },
         { key: "threeWayOptions", label: "3-way options", help: "Paired 3-way controls" },
         { key: "dimmers", label: "Dimmers", help: "Lighting dimmer controls" },
@@ -268,6 +282,76 @@ export function NewKitchenQuote() {
                         </div>
                       </div>
                     )}
+                    {group.title === "Breakers" && (
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {([
+                          {
+                            amperage: 15,
+                            quantityKey: "breaker15AQuantity",
+                            protectionKey: "breaker15AProtectionType",
+                            automaticQuantity: automatic15ABreakerQuantity,
+                            help: "Automatically includes the selected 15A lighting circuit and any included 15A appliance circuits.",
+                          },
+                          {
+                            amperage: 20,
+                            quantityKey: "breaker20AQuantity",
+                            protectionKey: "breaker20AProtectionType",
+                            automaticQuantity: automatic20ABreakerQuantity,
+                            help: "Automatically includes one countertop circuit plus the included 20A small-appliance and microwave circuits.",
+                          },
+                        ] as const).map((breaker) => {
+                          const hasOverride = inputs[breaker.quantityKey] !== undefined
+                          return (
+                            <div key={breaker.amperage} className="rounded-lg border bg-primary/5 p-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <Label htmlFor={`kitchen-breaker-${breaker.amperage}-quantity`}>{breaker.amperage}A Breakers</Label>
+                                  <p className="mt-1 text-xs text-muted-foreground">{breaker.help}</p>
+                                </div>
+                                <Input
+                                  id={`kitchen-breaker-${breaker.amperage}-quantity`}
+                                  className="w-24 text-right font-mono"
+                                  type="number"
+                                  min="0"
+                                  value={inputs[breaker.quantityKey] ?? breaker.automaticQuantity}
+                                  onChange={(event) => setQuantity(breaker.quantityKey, event.target.value)}
+                                />
+                              </div>
+                              <div className="mt-4 space-y-2">
+                                <Label htmlFor={`kitchen-breaker-${breaker.amperage}-protection`}>Protection Type</Label>
+                                <select
+                                  id={`kitchen-breaker-${breaker.amperage}-protection`}
+                                  value={inputs[breaker.protectionKey] ?? "Dual Function"}
+                                  onChange={(event) => setInputs((current) => ({ ...current, [breaker.protectionKey]: event.target.value }))}
+                                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                >
+                                  <option value="AFCI">AFCI / Arc Fault</option>
+                                  <option value="GFCI">GFCI</option>
+                                  <option value="Dual Function">Dual Function AFCI + GFCI</option>
+                                </select>
+                              </div>
+                              <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                                <span>Included-circuit quantity: {breaker.automaticQuantity}</span>
+                                {hasOverride && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-auto px-2 py-1 text-xs"
+                                    onClick={() => setInputs((current) => ({ ...current, [breaker.quantityKey]: undefined }))}
+                                  >
+                                    Use included circuits
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                        <div className="rounded-md border border-primary/20 bg-background p-3 text-sm md:col-span-2">
+                          Breaker choices are configurable estimating defaults. Each selection resolves the matching panel manufacturer, protection type, and price-book SKU without changing the countertop receptacle device.
+                        </div>
+                      </div>
+                    )}
                     {group.title === "Lighting" && (
                       <div className="mt-4 space-y-4">
                         <div className="rounded-lg border bg-primary/5 p-4">
@@ -359,37 +443,8 @@ export function NewKitchenQuote() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="kitchen-breaker-protection">Countertop Breaker Protection</Label>
-                      <select id="kitchen-breaker-protection" value={inputs.breakerProtectionType ?? "GFCI"} onChange={(event) => setInputs((current) => ({ ...current, breakerProtectionType: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="Standard">Standard</option>
-                        <option value="GFCI">GFCI</option>
-                        <option value="AFCI">AFCI</option>
-                        <option value="Dual Function">Dual Function</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="kitchen-breaker-amps">Countertop Breaker Amperage</Label>
-                      <Input id="kitchen-breaker-amps" type="number" min="1" value={inputs.breakerAmperage ?? 20} onChange={(event) => setInputs((current) => ({ ...current, breakerAmperage: Number(event.target.value) }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="kitchen-breaker-poles">Countertop Breaker Pole Count</Label>
-                      <select id="kitchen-breaker-poles" value={inputs.breakerPoleCount ?? 1} onChange={(event) => setInputs((current) => ({ ...current, breakerPoleCount: Number(event.target.value) }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="1">1-pole</option>
-                        <option value="2">2-pole</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="kitchen-appliance-amps">Selected Branch-Circuit Amperage</Label>
                       <Input id="kitchen-appliance-amps" type="number" min="1" value={inputs.applianceCircuitAmperage ?? 20} onChange={(event) => setNumber("applianceCircuitAmperage", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="kitchen-appliance-protection">Selected Branch-Circuit Protection</Label>
-                      <select id="kitchen-appliance-protection" value={inputs.applianceCircuitProtectionType ?? "Standard"} onChange={(event) => setInputs((current) => ({ ...current, applianceCircuitProtectionType: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="Standard">Standard</option>
-                        <option value="GFCI">GFCI</option>
-                        <option value="AFCI">AFCI</option>
-                        <option value="Dual Function">Dual Function</option>
-                      </select>
                     </div>
                   </div>
                 </section>

@@ -19,6 +19,8 @@ export * from './evChargerInputs';
 export * from './healthStatus';
 export * from './kitchenInputs';
 export * from './kitchenInputsApplianceCircuitCableType';
+export * from './kitchenInputsBreaker15AProtectionType';
+export * from './kitchenInputsBreaker20AProtectionType';
 export * from './kitchenInputsCableType';
 export * from './kitchenInputsLightingCircuitAmperage';
 export * from './kitchenInputsRecessedLightSize';

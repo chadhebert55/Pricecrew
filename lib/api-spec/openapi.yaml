@@ -682,6 +682,22 @@ components:
           enum: [12/2 NM-B, 14/2 NM-B]
         applianceCircuitProtectionType:
           type: string
+        breaker15AQuantity:
+          type: number
+          minimum: 0
+          description: Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.
+        breaker15AProtectionType:
+          type: string
+          enum: [AFCI, GFCI, Dual Function]
+          description: Configurable 15A Kitchen breaker protection estimate.
+        breaker20AQuantity:
+          type: number
+          minimum: 0
+          description: Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.
+        breaker20AProtectionType:
+          type: string
+          enum: [AFCI, GFCI, Dual Function]
+          description: Configurable 20A Kitchen breaker protection estimate.
         customerSuppliedFixtures:
           type: boolean
         notes:

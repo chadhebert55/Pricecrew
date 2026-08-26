@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { KitchenInputsApplianceCircuitCableType } from './kitchenInputsApplianceCircuitCableType';
+import type { KitchenInputsBreaker15AProtectionType } from './kitchenInputsBreaker15AProtectionType';
+import type { KitchenInputsBreaker20AProtectionType } from './kitchenInputsBreaker20AProtectionType';
 import type { KitchenInputsCableType } from './kitchenInputsCableType';
 import type { KitchenInputsLightingCircuitAmperage } from './kitchenInputsLightingCircuitAmperage';
 import type { KitchenInputsRecessedLightSize } from './kitchenInputsRecessedLightSize';
@@ -88,6 +90,20 @@ export interface KitchenInputs {
   applianceCircuitAmperage?: number;
   applianceCircuitCableType?: KitchenInputsApplianceCircuitCableType;
   applianceCircuitProtectionType?: string;
+  /**
+     * Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.
+     * @minimum 0
+     */
+  breaker15AQuantity?: number;
+  /** Configurable 15A Kitchen breaker protection estimate. */
+  breaker15AProtectionType?: KitchenInputsBreaker15AProtectionType;
+  /**
+     * Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.
+     * @minimum 0
+     */
+  breaker20AQuantity?: number;
+  /** Configurable 20A Kitchen breaker protection estimate. */
+  breaker20AProtectionType?: KitchenInputsBreaker20AProtectionType;
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;

@@ -642,26 +642,24 @@ export function calculateKitchenEstimate(
     });
   };
 
-  const addConfiguredCircuit = ({
+  const usesBreakerSection =
+    inputs.breaker15AQuantity !== undefined ||
+    inputs.breaker15AProtectionType !== undefined ||
+    inputs.breaker20AQuantity !== undefined ||
+    inputs.breaker20AProtectionType !== undefined;
+
+  const addConfiguredBreaker = ({
     id,
     label,
-    footage,
-    quantity = 1,
+    quantity,
     amperage,
-    cableType,
     protection,
-    deviceKey,
-    deviceDescription,
   }: {
     id: string;
     label: string;
-    footage?: number;
-    quantity?: number;
-    amperage: number;
-    cableType: "12/2 NM-B" | "14/2 NM-B";
+    quantity: number;
+    amperage: 15 | 20;
     protection: string;
-    deviceKey?: string;
-    deviceDescription?: string;
   }) => {
     const safeQuantity = safeNumber(quantity);
     if (safeQuantity === 0) return;
@@ -676,7 +674,7 @@ export function calculateKitchenEstimate(
       pricingWarnings,
     );
     addLine(assembly, {
-      id: `${id}-breaker`,
+      id,
       category: "Protection",
       description: `${label}: ${breaker.description}`,
       quantity: safeQuantity,
@@ -684,6 +682,54 @@ export function calculateKitchenEstimate(
       unitCost: breaker.value,
       source: breaker.source,
     });
+  };
+
+  const addConfiguredCircuit = ({
+    id,
+    label,
+    footage,
+    quantity = 1,
+    amperage,
+    cableType,
+    protection,
+    includeBreaker = true,
+    deviceKey,
+    deviceDescription,
+  }: {
+    id: string;
+    label: string;
+    footage?: number;
+    quantity?: number;
+    amperage: number;
+    cableType: "12/2 NM-B" | "14/2 NM-B";
+    protection: string;
+    includeBreaker?: boolean;
+    deviceKey?: string;
+    deviceDescription?: string;
+  }) => {
+    const safeQuantity = safeNumber(quantity);
+    if (safeQuantity === 0) return;
+    if (includeBreaker) {
+      const breaker = resolveBreaker(
+        {
+          manufacturer: inputs.panelManufacturer ?? "",
+          amperage,
+          poleCount: 1,
+          protectionType: protection,
+        },
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: `${id}-breaker`,
+        category: "Protection",
+        description: `${label}: ${breaker.description}`,
+        quantity: safeQuantity,
+        unit: "ea",
+        unitCost: breaker.value,
+        source: breaker.source,
+      });
+    }
 
     if (footage !== undefined) {
       const safeFootage = safeNumber(footage);
@@ -745,8 +791,8 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "countertop-receptacles",
     "Devices",
-    "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
-    "20A tamper-resistant self-test countertop GFCI receptacle",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    "Decora-style tamper-resistant countertop receptacle",
     inputs.countertopReceptacles,
   );
   addPricedItem(
@@ -894,7 +940,8 @@ export function calculateKitchenEstimate(
       footage: safeNumber(inputs.lightingCircuitFootage),
       amperage: 15,
       cableType: "14/2 NM-B",
-      protection: "Standard",
+      protection: inputs.breaker15AProtectionType ?? "Standard",
+      includeBreaker: !usesBreakerSection,
     });
   }
 
@@ -907,7 +954,13 @@ export function calculateKitchenEstimate(
       ? "14/2 NM-B"
       : "12/2 NM-B";
   const applianceProtection =
-    inputs.applianceCircuitProtectionType ?? "Standard";
+    (applianceAmperage === 15
+      ? inputs.breaker15AProtectionType
+      : applianceAmperage === 20
+        ? inputs.breaker20AProtectionType
+        : undefined) ??
+    inputs.applianceCircuitProtectionType ??
+    "Standard";
   const smallApplianceQuantity =
     inputs.smallApplianceCircuits !== undefined
       ? safeNumber(inputs.smallApplianceCircuits)
@@ -937,6 +990,7 @@ export function calculateKitchenEstimate(
       amperage: applianceAmperage,
       cableType: "12/2 NM-B",
       protection: applianceProtection,
+      includeBreaker: !usesBreakerSection,
       deviceKey: "Kitchen small-appliance circuit device assumption",
       deviceDescription:
         "Small Appliance Circuits company-configured device assumption",
@@ -951,6 +1005,7 @@ export function calculateKitchenEstimate(
       amperage: applianceAmperage,
       cableType: applianceCable,
       protection: applianceProtection,
+      includeBreaker: !usesBreakerSection,
       deviceKey: "Kitchen small-appliance circuit device assumption",
       deviceDescription:
         "Small-appliance Circuit 1 company-configured device assumption",
@@ -966,6 +1021,7 @@ export function calculateKitchenEstimate(
       amperage: applianceAmperage,
       cableType: applianceCable,
       protection: applianceProtection,
+      includeBreaker: !usesBreakerSection,
       deviceKey: "Kitchen small-appliance circuit device assumption",
       deviceDescription:
         "Small-appliance Circuit 2 company-configured device assumption",
@@ -980,6 +1036,7 @@ export function calculateKitchenEstimate(
       amperage: applianceAmperage,
       cableType: "12/2 NM-B",
       protection: applianceProtection,
+      includeBreaker: !usesBreakerSection,
       deviceKey: "Kitchen microwave circuit device assumption",
       deviceDescription:
         "Microwave Circuit company-configured device assumption",
@@ -994,11 +1051,66 @@ export function calculateKitchenEstimate(
       amperage: applianceAmperage,
       cableType: applianceCable,
       protection: applianceProtection,
+      includeBreaker: !usesBreakerSection,
       deviceKey: "Kitchen microwave circuit device assumption",
       deviceDescription:
         "Dedicated microwave circuit company-configured device assumption",
     });
   }
+  if (usesBreakerSection) {
+    const automatic15AQuantity =
+      (inputs.includeLightingCircuit && lightingCount > 0 ? 1 : 0) +
+      (applianceAmperage === 15 ? selectedApplianceCircuitCount : 0);
+    const automatic20AQuantity =
+      (inputs.countertopReceptacles > 0 ? 1 : 0) +
+      (applianceAmperage === 20 ? selectedApplianceCircuitCount : 0);
+    const breaker15AQuantity =
+      inputs.breaker15AQuantity ?? automatic15AQuantity;
+    const breaker20AQuantity =
+      inputs.breaker20AQuantity ?? automatic20AQuantity;
+
+    addConfiguredBreaker({
+      id: "kitchen-breakers-15a",
+      label: "Kitchen 15A breaker selection",
+      quantity: breaker15AQuantity,
+      amperage: 15,
+      protection: inputs.breaker15AProtectionType ?? "Dual Function",
+    });
+    addConfiguredBreaker({
+      id: "kitchen-breakers-20a",
+      label: "Kitchen 20A breaker selection",
+      quantity: breaker20AQuantity,
+      amperage: 20,
+      protection: inputs.breaker20AProtectionType ?? "Dual Function",
+    });
+
+    if (
+      inputs.breaker15AQuantity !== undefined &&
+      breaker15AQuantity !== automatic15AQuantity
+    ) {
+      pricingWarnings.push(
+        `The estimator-set 15A breaker quantity (${breaker15AQuantity}) differs from the ${automatic15AQuantity} included 15A circuit(s). Confirm this configurable estimate before sending.`,
+      );
+    }
+    if (
+      inputs.breaker20AQuantity !== undefined &&
+      breaker20AQuantity !== automatic20AQuantity
+    ) {
+      pricingWarnings.push(
+        `The estimator-set 20A breaker quantity (${breaker20AQuantity}) differs from the ${automatic20AQuantity} included 20A circuit(s). Confirm this configurable estimate before sending.`,
+      );
+    }
+    if (
+      selectedApplianceCircuitCount > 0 &&
+      applianceAmperage !== 15 &&
+      applianceAmperage !== 20
+    ) {
+      pricingWarnings.push(
+        `The selected ${applianceAmperage}A appliance circuits are not represented by the configurable 15A/20A Kitchen breaker quantities.`,
+      );
+    }
+  }
+
   if (usesSharedApplianceHomeRun && selectedApplianceCircuitCount > 0) {
     if (applianceHomeRunFootage > 0) {
       const cable = unitCost(
@@ -1032,7 +1144,7 @@ export function calculateKitchenEstimate(
       "Both gas and electric range circuits are selected. Confirm the final appliance specification before sending.",
     );
   }
-  if (inputs.countertopReceptacles > 0) {
+  if (inputs.countertopReceptacles > 0 && !usesBreakerSection) {
     const breaker = resolveBreaker({
       manufacturer: inputs.panelManufacturer ?? "",
       amperage: inputs.breakerAmperage ?? 0,

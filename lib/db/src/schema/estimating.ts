@@ -99,6 +99,10 @@ export type KitchenInputRecord = {
   applianceCircuitAmperage?: number;
   applianceCircuitCableType?: CableType;
   applianceCircuitProtectionType?: string;
+  breaker15AQuantity?: number;
+  breaker15AProtectionType?: string;
+  breaker20AQuantity?: number;
+  breaker20AProtectionType?: string;
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;

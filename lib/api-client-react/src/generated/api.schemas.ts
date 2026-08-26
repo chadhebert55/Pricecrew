@@ -142,6 +142,30 @@ export const KitchenInputsApplianceCircuitCableType = {
   '14/2_NM-B': '14/2 NM-B',
 } as const;
 
+/**
+ * Configurable 15A Kitchen breaker protection estimate.
+ */
+export type KitchenInputsBreaker15AProtectionType = typeof KitchenInputsBreaker15AProtectionType[keyof typeof KitchenInputsBreaker15AProtectionType];
+
+
+export const KitchenInputsBreaker15AProtectionType = {
+  AFCI: 'AFCI',
+  GFCI: 'GFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+/**
+ * Configurable 20A Kitchen breaker protection estimate.
+ */
+export type KitchenInputsBreaker20AProtectionType = typeof KitchenInputsBreaker20AProtectionType[keyof typeof KitchenInputsBreaker20AProtectionType];
+
+
+export const KitchenInputsBreaker20AProtectionType = {
+  AFCI: 'AFCI',
+  GFCI: 'GFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
 export type KitchenInputsRecessedLightSize = typeof KitchenInputsRecessedLightSize[keyof typeof KitchenInputsRecessedLightSize];
 
 
@@ -236,6 +260,20 @@ export interface KitchenInputs {
   applianceCircuitAmperage?: number;
   applianceCircuitCableType?: KitchenInputsApplianceCircuitCableType;
   applianceCircuitProtectionType?: string;
+  /**
+     * Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.
+     * @minimum 0
+     */
+  breaker15AQuantity?: number;
+  /** Configurable 15A Kitchen breaker protection estimate. */
+  breaker15AProtectionType?: KitchenInputsBreaker15AProtectionType;
+  /**
+     * Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.
+     * @minimum 0
+     */
+  breaker20AQuantity?: number;
+  /** Configurable 20A Kitchen breaker protection estimate. */
+  breaker20AProtectionType?: KitchenInputsBreaker20AProtectionType;
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;
