@@ -2,6 +2,7 @@ import type {
   AssemblyLineRecord,
   BathroomInputRecord,
   EvChargerInputRecord,
+  KitchenInputRecord,
   PricingRecord,
 } from "@workspace/db";
 
@@ -43,16 +44,6 @@ const starterCosts: Record<string, number> = {
   "whole-home surge protection": 85,
   "panel modification allowance": 250,
   "permit allowance": 125,
-  "GFCI receptacle": 24,
-  "standard receptacle": 6,
-  "vanity light allowance": 95,
-  "recessed light": 38,
-  "exhaust fan": 145,
-  "fan/light": 210,
-  "fan/light/heat": 360,
-  "heated floor circuit allowance": 195,
-  "single-pole switch": 9,
-  "bathroom circuit materials": 135,
 };
 
 function normalized(value: string) {
@@ -410,6 +401,7 @@ export function calculateBathroomEstimate(
     description: string,
     quantity: number,
     customerSupplied = false,
+    unit = "ea",
   ) => {
     const safeQuantity = Math.max(0, Number(quantity) || 0);
     if (safeQuantity === 0) return;
@@ -421,7 +413,7 @@ export function calculateBathroomEstimate(
       category,
       description,
       quantity: safeQuantity,
-      unit: "ea",
+      unit,
       unitCost: price.value,
       source: price.source,
     });
@@ -507,6 +499,13 @@ export function calculateBathroomEstimate(
       "New dedicated bathroom circuit materials",
       1,
     );
+    addPricedItem(
+      "bathroom-circuit-protection",
+      "Protection",
+      "bathroom circuit protection allowance",
+      "Bathroom circuit protection allowance",
+      1,
+    );
   } else {
     pricingWarnings.push(
       "Existing bathroom circuit reuse must be field-verified for capacity and applicable protection requirements before the quote is sent.",
@@ -519,6 +518,51 @@ export function calculateBathroomEstimate(
     );
   }
 
+  const deviceCount =
+    inputs.gfciReceptacles +
+    inputs.additionalReceptacles +
+    inputs.additionalSwitches +
+    inputs.vanityLights +
+    inputs.recessedLights +
+    inputs.exhaustFans +
+    inputs.fanLights +
+    inputs.fanLightHeatUnits;
+  addPricedItem(
+    "bathroom-boxes",
+    "Rough-in",
+    "single-gang box",
+    "Bathroom device and fixture box allowance",
+    deviceCount,
+  );
+  addPricedItem(
+    "bathroom-plates",
+    "Trim",
+    "device plate",
+    "Bathroom device plate allowance",
+    inputs.gfciReceptacles +
+      inputs.additionalReceptacles +
+      inputs.additionalSwitches,
+  );
+  const routeLength = Math.max(0, Number(inputs.routeLength) || 0);
+  if (routeLength > 0) {
+    addPricedItem(
+      "bathroom-wiring",
+      "Conductor",
+      "#12 NM-B cable",
+      "Bathroom wiring allowance",
+      routeLength,
+      false,
+      "ft",
+    );
+  } else {
+    pricingWarnings.push(
+      "Bathroom route length is unresolved. Add a route length so common wiring material can be priced.",
+    );
+  }
+  pricingWarnings.push(
+    "Bathroom box, plate, and wiring quantities are planning allowances and must be verified against the final layout and field conditions.",
+  );
+
   const laborHours =
     1.5 +
     inputs.gfciReceptacles * 0.75 +
@@ -530,7 +574,182 @@ export function calculateBathroomEstimate(
     inputs.fanLightHeatUnits * 3.5 +
     (inputs.heatedFloorCircuit ? 3 : 0) +
     inputs.additionalSwitches * 0.5 +
+    routeLength / 30 +
     (/new/i.test(inputs.circuitOption) ? 3 : 0);
+
+  return finalizeEstimate(assembly, laborHours, settings, pricingWarnings);
+}
+
+export function calculateKitchenEstimate(
+  inputs: KitchenInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+
+  const addPricedItem = (
+    id: string,
+    category: string,
+    key: string,
+    description: string,
+    quantity: number,
+    customerSupplied = false,
+    unit = "ea",
+  ) => {
+    const safeQuantity = Math.max(0, Number(quantity) || 0);
+    if (safeQuantity === 0) return;
+    const price = customerSupplied
+      ? { value: 0, source: "Customer supplied fixture" }
+      : unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit,
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  const circuitItems: Array<[keyof KitchenInputRecord, string, string, string]> = [
+    ["refrigeratorCircuits", "refrigerator circuit materials", "Refrigerator dedicated circuit", "Circuit"],
+    ["dishwasherCircuits", "dishwasher circuit materials", "Dishwasher dedicated circuit", "Circuit"],
+    ["disposalCircuits", "disposal circuit materials", "Disposal circuit", "Circuit"],
+    ["gasRangeCircuits", "gas range circuit materials", "Gas range circuit", "Circuit"],
+    ["electricRangeCircuits", "electric range circuit materials", "Electric range circuit", "Circuit"],
+    ["additionalDedicatedCircuits", "additional dedicated circuit materials", "Additional dedicated kitchen circuit", "Circuit"],
+  ];
+  for (const [field, key, description, category] of circuitItems) {
+    addPricedItem(field, category, key, description, inputs[field] as number);
+  }
+
+  addPricedItem(
+    "countertop-receptacles",
+    "Devices",
+    "countertop GFCI receptacle",
+    "Countertop GFCI receptacle",
+    inputs.countertopReceptacles,
+  );
+  addPricedItem(
+    "usb-receptacles",
+    "Devices",
+    "USB receptacle",
+    "USB receptacle",
+    inputs.usbReceptacles,
+  );
+  addPricedItem(
+    "sink-lights",
+    "Lighting",
+    "sink light",
+    "Sink light",
+    inputs.sinkLights,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "island-pendants",
+    "Lighting",
+    "island pendant",
+    "Island pendant",
+    inputs.islandPendants,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "undercabinet-lighting",
+    "Lighting",
+    "undercabinet lighting",
+    "Undercabinet lighting allowance",
+    inputs.undercabinetLighting,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "recessed-lights",
+    "Lighting",
+    "kitchen recessed light",
+    "Kitchen recessed light",
+    inputs.recessedLights,
+    inputs.customerSuppliedFixtures,
+  );
+  addPricedItem(
+    "three-way-options",
+    "Controls",
+    "3-way switch pair",
+    "3-way switching option",
+    inputs.threeWayOptions,
+  );
+  addPricedItem(
+    "dimmers",
+    "Controls",
+    "dimmer switch",
+    "Dimmer switch",
+    inputs.dimmers,
+  );
+
+  const deviceCount =
+    inputs.countertopReceptacles +
+    inputs.usbReceptacles +
+    inputs.threeWayOptions * 2 +
+    inputs.dimmers;
+  addPricedItem(
+    "kitchen-boxes",
+    "Rough-in",
+    "single-gang box",
+    "Kitchen device box allowance",
+    deviceCount,
+  );
+  addPricedItem(
+    "kitchen-plates",
+    "Trim",
+    "device plate",
+    "Kitchen device plate allowance",
+    deviceCount,
+  );
+  if (inputs.routeLength > 0) {
+    addPricedItem(
+      "kitchen-wiring",
+      "Conductor",
+      "#12 NM-B cable",
+      "Kitchen wiring allowance",
+      inputs.routeLength,
+      false,
+      "ft",
+    );
+  }
+
+  if (inputs.routeLength <= 0) {
+    pricingWarnings.push(
+      "Kitchen route length is unresolved. Add a route length so common wiring material can be priced.",
+    );
+  }
+  if (inputs.electricRangeCircuits > 0 && inputs.gasRangeCircuits > 0) {
+    pricingWarnings.push(
+      "Both gas and electric range circuits are selected. Confirm the final appliance specification before sending.",
+    );
+  }
+  if (inputs.countertopReceptacles > 0) {
+    pricingWarnings.push(
+      "Countertop receptacle spacing, GFCI protection, and box locations must be field-verified.",
+    );
+  }
+
+  const laborHours =
+    2 +
+    inputs.routeLength / 30 +
+    inputs.refrigeratorCircuits * 1.5 +
+    inputs.dishwasherCircuits * 1.5 +
+    inputs.disposalCircuits * 1.25 +
+    inputs.gasRangeCircuits * 1.25 +
+    inputs.electricRangeCircuits * 2 +
+    inputs.countertopReceptacles * 0.6 +
+    inputs.sinkLights * 0.8 +
+    inputs.islandPendants * 1.1 +
+    inputs.undercabinetLighting * 1.2 +
+    inputs.recessedLights * 0.9 +
+    inputs.threeWayOptions * 0.75 +
+    inputs.dimmers * 0.35 +
+    inputs.usbReceptacles * 0.45 +
+    inputs.additionalDedicatedCircuits * 1.5;
 
   return finalizeEstimate(assembly, laborHours, settings, pricingWarnings);
 }

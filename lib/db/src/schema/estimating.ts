@@ -42,14 +42,36 @@ export type BathroomInputRecord = {
   fanLightHeatUnits: number;
   heatedFloorCircuit: boolean;
   additionalSwitches: number;
+  routeLength?: number;
   circuitOption: string;
+  customerSuppliedFixtures: boolean;
+  notes: string;
+};
+
+export type KitchenInputRecord = {
+  refrigeratorCircuits: number;
+  dishwasherCircuits: number;
+  disposalCircuits: number;
+  gasRangeCircuits: number;
+  electricRangeCircuits: number;
+  countertopReceptacles: number;
+  sinkLights: number;
+  islandPendants: number;
+  undercabinetLighting: number;
+  recessedLights: number;
+  threeWayOptions: number;
+  dimmers: number;
+  usbReceptacles: number;
+  additionalDedicatedCircuits: number;
+  routeLength: number;
   customerSuppliedFixtures: boolean;
   notes: string;
 };
 
 export type QuoteJobInputsRecord =
   | EvChargerInputRecord
-  | BathroomInputRecord;
+  | BathroomInputRecord
+  | KitchenInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;

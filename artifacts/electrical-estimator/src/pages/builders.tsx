@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight, Waves } from "lucide-react"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed } from "lucide-react"
 import { Link } from "wouter"
 
 export function Builders() {
@@ -21,6 +21,14 @@ export function Builders() {
       icon: Zap,
       status: "live",
       href: "/quotes/new"
+    },
+    {
+      id: "kitchen",
+      title: "Kitchen Electrical",
+      description: "Build appliance circuits, countertop receptacles, lighting, controls, and route-based kitchen wiring.",
+      icon: UtensilsCrossed,
+      status: "live",
+      href: "/quotes/new/kitchen"
     },
     {
       id: "service-upgrade",

@@ -86,7 +86,44 @@ export interface BathroomInputs {
   heatedFloorCircuit: boolean;
   /** @minimum 0 */
   additionalSwitches: number;
+  /** @minimum 0 */
+  routeLength?: number;
   circuitOption: BathroomInputsCircuitOption;
+  customerSuppliedFixtures: boolean;
+  notes: string;
+}
+
+export interface KitchenInputs {
+  /** @minimum 0 */
+  refrigeratorCircuits: number;
+  /** @minimum 0 */
+  dishwasherCircuits: number;
+  /** @minimum 0 */
+  disposalCircuits: number;
+  /** @minimum 0 */
+  gasRangeCircuits: number;
+  /** @minimum 0 */
+  electricRangeCircuits: number;
+  /** @minimum 0 */
+  countertopReceptacles: number;
+  /** @minimum 0 */
+  sinkLights: number;
+  /** @minimum 0 */
+  islandPendants: number;
+  /** @minimum 0 */
+  undercabinetLighting: number;
+  /** @minimum 0 */
+  recessedLights: number;
+  /** @minimum 0 */
+  threeWayOptions: number;
+  /** @minimum 0 */
+  dimmers: number;
+  /** @minimum 0 */
+  usbReceptacles: number;
+  /** @minimum 0 */
+  additionalDedicatedCircuits: number;
+  /** @minimum 0 */
+  routeLength: number;
   customerSuppliedFixtures: boolean;
   notes: string;
 }
@@ -123,12 +160,21 @@ export type PricingSummary = PricingInput & {
 export type Quote = QuoteSummary & ({
   /** @nullable */
   customerEmail: string | null;
-  jobInputs: EvChargerInputs | BathroomInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;
   createdAt: string;
 });
+
+export type QuoteInputModule = typeof QuoteInputModule[keyof typeof QuoteInputModule];
+
+
+export const QuoteInputModule = {
+  EV_CHARGER: 'EV_CHARGER',
+  BATHROOM: 'BATHROOM',
+  KITCHEN: 'KITCHEN',
+} as const;
 
 export interface QuoteInput {
   /** @minLength 1 */
@@ -137,8 +183,8 @@ export interface QuoteInput {
   customerEmail?: string | null;
   /** @minLength 1 */
   projectName: string;
-  module: string;
-  jobInputs: EvChargerInputs | BathroomInputs;
+  module: QuoteInputModule;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
   /**
      * @minimum 0
      * @nullable
@@ -153,9 +199,18 @@ export interface QuoteInput {
   proposalDescription: string;
 }
 
+export type QuotePreviewInputModule = typeof QuotePreviewInputModule[keyof typeof QuotePreviewInputModule];
+
+
+export const QuotePreviewInputModule = {
+  EV_CHARGER: 'EV_CHARGER',
+  BATHROOM: 'BATHROOM',
+  KITCHEN: 'KITCHEN',
+} as const;
+
 export interface QuotePreviewInput {
-  module: string;
-  jobInputs: EvChargerInputs | BathroomInputs;
+  module: QuotePreviewInputModule;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
   /**
      * @minimum 0
      * @nullable

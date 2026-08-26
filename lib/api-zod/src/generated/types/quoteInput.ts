@@ -7,6 +7,8 @@
  */
 import type { BathroomInputs } from './bathroomInputs';
 import type { EvChargerInputs } from './evChargerInputs';
+import type { KitchenInputs } from './kitchenInputs';
+import type { QuoteInputModule } from './quoteInputModule';
 
 export interface QuoteInput {
   /** @minLength 1 */
@@ -15,8 +17,8 @@ export interface QuoteInput {
   customerEmail?: string | null;
   /** @minLength 1 */
   projectName: string;
-  module: string;
-  jobInputs: EvChargerInputs | BathroomInputs;
+  module: QuoteInputModule;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
   /**
      * @minimum 0
      * @nullable

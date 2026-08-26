@@ -28,17 +28,23 @@ import {
   db,
   priceBookItemsTable,
   quotesTable,
+  type BathroomInputRecord,
+  type EvChargerInputRecord,
+  type KitchenInputRecord,
   type PricingRecord,
+  type QuoteJobInputsRecord,
 } from "@workspace/db";
 import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
   calculateBathroomEstimate,
   calculateEvChargerEstimate,
+  calculateKitchenEstimate,
 } from "../lib/estimating-engine";
 
 const router: IRouter = Router();
 
 type QuoteStatus = "draft" | "ready";
+type EstimateModule = "EV_CHARGER" | "BATHROOM" | "KITCHEN";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -136,10 +142,8 @@ async function companySettings() {
 }
 
 async function calculateEstimate(
-  module: string,
-  jobInputs:
-    | Parameters<typeof calculateEvChargerEstimate>[0]
-    | Parameters<typeof calculateBathroomEstimate>[0],
+  module: EstimateModule,
+  jobInputs: QuoteJobInputsRecord,
 ) {
   const settings = await companySettings();
   const priceBook = await db
@@ -158,18 +162,44 @@ async function calculateEstimate(
     .from(priceBookItemsTable)
     .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID));
 
-  if (module === "BATHROOM") {
-    return calculateBathroomEstimate(
-      jobInputs as Parameters<typeof calculateBathroomEstimate>[0],
-      settings,
-      priceBook,
-    );
+  if (module === "BATHROOM" && isBathroomInput(jobInputs)) {
+    return calculateBathroomEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "KITCHEN" && isKitchenInput(jobInputs)) {
+    return calculateKitchenEstimate(jobInputs, settings, priceBook);
+  }
+  if (module === "EV_CHARGER" && isEvInput(jobInputs)) {
+    return calculateEvChargerEstimate(jobInputs, settings, priceBook);
+  }
+  throw new Error(`Job inputs do not match module ${module}`);
+}
 
-  return calculateEvChargerEstimate(
-    jobInputs as Parameters<typeof calculateEvChargerEstimate>[0],
-    settings,
-    priceBook,
+function isEvInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is EvChargerInputRecord {
+  return "chargerQuantity" in jobInputs && "panelManufacturer" in jobInputs;
+}
+
+function isBathroomInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is BathroomInputRecord {
+  return "gfciReceptacles" in jobInputs && "circuitOption" in jobInputs;
+}
+
+function isKitchenInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is KitchenInputRecord {
+  return "refrigeratorCircuits" in jobInputs && "countertopReceptacles" in jobInputs;
+}
+
+function moduleMatchesInputs(
+  module: EstimateModule,
+  jobInputs: QuoteJobInputsRecord,
+) {
+  return (
+    (module === "EV_CHARGER" && isEvInput(jobInputs)) ||
+    (module === "BATHROOM" && isBathroomInput(jobInputs)) ||
+    (module === "KITCHEN" && isKitchenInput(jobInputs))
   );
 }
 
@@ -234,6 +264,17 @@ router.post("/quotes", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  if (!moduleMatchesInputs(parsed.data.module, parsed.data.jobInputs)) {
+    res.status(400).json({
+      error: `Job inputs do not match module ${parsed.data.module}`,
+    });
+    return;
+  }
+
+  const estimate = await calculateEstimate(
+    parsed.data.module,
+    parsed.data.jobInputs,
+  );
 
   const existingCustomers = await db
     .select()
@@ -255,10 +296,6 @@ router.post("/quotes", async (req, res): Promise<void> => {
         .returning()
     )[0];
 
-  const estimate = await calculateEstimate(
-    parsed.data.module,
-    parsed.data.jobInputs,
-  );
   const quotes = await db
     .select({ id: quotesTable.id })
     .from(quotesTable)
@@ -300,6 +337,12 @@ router.post("/quotes/preview", async (req, res): Promise<void> => {
   if (!parsed.success) {
     req.log.warn({ errors: parsed.error.message }, "Invalid quote preview");
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  if (!moduleMatchesInputs(parsed.data.module, parsed.data.jobInputs)) {
+    res.status(400).json({
+      error: `Job inputs do not match module ${parsed.data.module}`,
+    });
     return;
   }
 

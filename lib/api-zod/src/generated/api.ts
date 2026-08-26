@@ -82,6 +82,38 @@ export const createQuoteBodyJobInputsTwoFanLightHeatUnitsMin = 0;
 
 export const createQuoteBodyJobInputsTwoAdditionalSwitchesMin = 0;
 
+export const createQuoteBodyJobInputsTwoRouteLengthMin = 0;
+
+export const createQuoteBodyJobInputsThreeRefrigeratorCircuitsMin = 0;
+
+export const createQuoteBodyJobInputsThreeDishwasherCircuitsMin = 0;
+
+export const createQuoteBodyJobInputsThreeDisposalCircuitsMin = 0;
+
+export const createQuoteBodyJobInputsThreeGasRangeCircuitsMin = 0;
+
+export const createQuoteBodyJobInputsThreeElectricRangeCircuitsMin = 0;
+
+export const createQuoteBodyJobInputsThreeCountertopReceptaclesMin = 0;
+
+export const createQuoteBodyJobInputsThreeSinkLightsMin = 0;
+
+export const createQuoteBodyJobInputsThreeIslandPendantsMin = 0;
+
+export const createQuoteBodyJobInputsThreeUndercabinetLightingMin = 0;
+
+export const createQuoteBodyJobInputsThreeRecessedLightsMin = 0;
+
+export const createQuoteBodyJobInputsThreeThreeWayOptionsMin = 0;
+
+export const createQuoteBodyJobInputsThreeDimmersMin = 0;
+
+export const createQuoteBodyJobInputsThreeUsbReceptaclesMin = 0;
+
+export const createQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
+
+export const createQuoteBodyJobInputsThreeRouteLengthMin = 0;
+
 export const createQuoteBodyLaborOverrideMin = 0;
 
 export const createQuoteBodySellingPriceOverrideMin = 0;
@@ -93,7 +125,7 @@ export const CreateQuoteBody = zod.object({
   "customerName": zod.string().min(1),
   "customerEmail": zod.string().nullish(),
   "projectName": zod.string().min(1),
-  "module": zod.string(),
+  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN']),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
@@ -124,7 +156,26 @@ export const CreateQuoteBody = zod.object({
   "fanLightHeatUnits": zod.number().min(createQuoteBodyJobInputsTwoFanLightHeatUnitsMin),
   "heatedFloorCircuit": zod.boolean(),
   "additionalSwitches": zod.number().min(createQuoteBodyJobInputsTwoAdditionalSwitchesMin),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+}),zod.object({
+  "refrigeratorCircuits": zod.number().min(createQuoteBodyJobInputsThreeRefrigeratorCircuitsMin),
+  "dishwasherCircuits": zod.number().min(createQuoteBodyJobInputsThreeDishwasherCircuitsMin),
+  "disposalCircuits": zod.number().min(createQuoteBodyJobInputsThreeDisposalCircuitsMin),
+  "gasRangeCircuits": zod.number().min(createQuoteBodyJobInputsThreeGasRangeCircuitsMin),
+  "electricRangeCircuits": zod.number().min(createQuoteBodyJobInputsThreeElectricRangeCircuitsMin),
+  "countertopReceptacles": zod.number().min(createQuoteBodyJobInputsThreeCountertopReceptaclesMin),
+  "sinkLights": zod.number().min(createQuoteBodyJobInputsThreeSinkLightsMin),
+  "islandPendants": zod.number().min(createQuoteBodyJobInputsThreeIslandPendantsMin),
+  "undercabinetLighting": zod.number().min(createQuoteBodyJobInputsThreeUndercabinetLightingMin),
+  "recessedLights": zod.number().min(createQuoteBodyJobInputsThreeRecessedLightsMin),
+  "threeWayOptions": zod.number().min(createQuoteBodyJobInputsThreeThreeWayOptionsMin),
+  "dimmers": zod.number().min(createQuoteBodyJobInputsThreeDimmersMin),
+  "usbReceptacles": zod.number().min(createQuoteBodyJobInputsThreeUsbReceptaclesMin),
+  "additionalDedicatedCircuits": zod.number().min(createQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string()
 })]),
@@ -148,6 +199,38 @@ export const createQuoteResponseTwoJobInputsTwoFanLightsMin = 0;
 export const createQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
 
 export const createQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeDisposalCircuitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeSinkLightsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeIslandPendantsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeUndercabinetLightingMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeDimmersMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
 
 
 
@@ -193,7 +276,26 @@ export const CreateQuoteResponse = zod.object({
   "fanLightHeatUnits": zod.number().min(createQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
   "heatedFloorCircuit": zod.boolean(),
   "additionalSwitches": zod.number().min(createQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+}),zod.object({
+  "refrigeratorCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
+  "dishwasherCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
+  "disposalCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
+  "gasRangeCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin),
+  "electricRangeCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin),
+  "countertopReceptacles": zod.number().min(createQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin),
+  "sinkLights": zod.number().min(createQuoteResponseTwoJobInputsThreeSinkLightsMin),
+  "islandPendants": zod.number().min(createQuoteResponseTwoJobInputsThreeIslandPendantsMin),
+  "undercabinetLighting": zod.number().min(createQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
+  "recessedLights": zod.number().min(createQuoteResponseTwoJobInputsThreeRecessedLightsMin),
+  "threeWayOptions": zod.number().min(createQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "dimmers": zod.number().min(createQuoteResponseTwoJobInputsThreeDimmersMin),
+  "usbReceptacles": zod.number().min(createQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
+  "additionalDedicatedCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string()
 })]),
@@ -244,6 +346,38 @@ export const previewQuoteBodyJobInputsTwoFanLightHeatUnitsMin = 0;
 
 export const previewQuoteBodyJobInputsTwoAdditionalSwitchesMin = 0;
 
+export const previewQuoteBodyJobInputsTwoRouteLengthMin = 0;
+
+export const previewQuoteBodyJobInputsThreeRefrigeratorCircuitsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeDishwasherCircuitsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeDisposalCircuitsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeGasRangeCircuitsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeElectricRangeCircuitsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeCountertopReceptaclesMin = 0;
+
+export const previewQuoteBodyJobInputsThreeSinkLightsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeIslandPendantsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeUndercabinetLightingMin = 0;
+
+export const previewQuoteBodyJobInputsThreeRecessedLightsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeThreeWayOptionsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeDimmersMin = 0;
+
+export const previewQuoteBodyJobInputsThreeUsbReceptaclesMin = 0;
+
+export const previewQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
+
+export const previewQuoteBodyJobInputsThreeRouteLengthMin = 0;
+
 export const previewQuoteBodyLaborOverrideMin = 0;
 
 export const previewQuoteBodySellingPriceOverrideMin = 0;
@@ -251,7 +385,7 @@ export const previewQuoteBodySellingPriceOverrideMin = 0;
 
 
 export const PreviewQuoteBody = zod.object({
-  "module": zod.string(),
+  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN']),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
@@ -282,7 +416,26 @@ export const PreviewQuoteBody = zod.object({
   "fanLightHeatUnits": zod.number().min(previewQuoteBodyJobInputsTwoFanLightHeatUnitsMin),
   "heatedFloorCircuit": zod.boolean(),
   "additionalSwitches": zod.number().min(previewQuoteBodyJobInputsTwoAdditionalSwitchesMin),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+}),zod.object({
+  "refrigeratorCircuits": zod.number().min(previewQuoteBodyJobInputsThreeRefrigeratorCircuitsMin),
+  "dishwasherCircuits": zod.number().min(previewQuoteBodyJobInputsThreeDishwasherCircuitsMin),
+  "disposalCircuits": zod.number().min(previewQuoteBodyJobInputsThreeDisposalCircuitsMin),
+  "gasRangeCircuits": zod.number().min(previewQuoteBodyJobInputsThreeGasRangeCircuitsMin),
+  "electricRangeCircuits": zod.number().min(previewQuoteBodyJobInputsThreeElectricRangeCircuitsMin),
+  "countertopReceptacles": zod.number().min(previewQuoteBodyJobInputsThreeCountertopReceptaclesMin),
+  "sinkLights": zod.number().min(previewQuoteBodyJobInputsThreeSinkLightsMin),
+  "islandPendants": zod.number().min(previewQuoteBodyJobInputsThreeIslandPendantsMin),
+  "undercabinetLighting": zod.number().min(previewQuoteBodyJobInputsThreeUndercabinetLightingMin),
+  "recessedLights": zod.number().min(previewQuoteBodyJobInputsThreeRecessedLightsMin),
+  "threeWayOptions": zod.number().min(previewQuoteBodyJobInputsThreeThreeWayOptionsMin),
+  "dimmers": zod.number().min(previewQuoteBodyJobInputsThreeDimmersMin),
+  "usbReceptacles": zod.number().min(previewQuoteBodyJobInputsThreeUsbReceptaclesMin),
+  "additionalDedicatedCircuits": zod.number().min(previewQuoteBodyJobInputsThreeAdditionalDedicatedCircuitsMin),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string()
 })]),
@@ -340,6 +493,38 @@ export const getQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
 
 export const getQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
 
+export const getQuoteResponseTwoJobInputsTwoRouteLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeDisposalCircuitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeSinkLightsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeIslandPendantsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeUndercabinetLightingMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeDimmersMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
+
 
 
 export const GetQuoteResponse = zod.object({
@@ -384,7 +569,26 @@ export const GetQuoteResponse = zod.object({
   "fanLightHeatUnits": zod.number().min(getQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
   "heatedFloorCircuit": zod.boolean(),
   "additionalSwitches": zod.number().min(getQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+}),zod.object({
+  "refrigeratorCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
+  "dishwasherCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
+  "disposalCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
+  "gasRangeCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin),
+  "electricRangeCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin),
+  "countertopReceptacles": zod.number().min(getQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin),
+  "sinkLights": zod.number().min(getQuoteResponseTwoJobInputsThreeSinkLightsMin),
+  "islandPendants": zod.number().min(getQuoteResponseTwoJobInputsThreeIslandPendantsMin),
+  "undercabinetLighting": zod.number().min(getQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
+  "recessedLights": zod.number().min(getQuoteResponseTwoJobInputsThreeRecessedLightsMin),
+  "threeWayOptions": zod.number().min(getQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "dimmers": zod.number().min(getQuoteResponseTwoJobInputsThreeDimmersMin),
+  "usbReceptacles": zod.number().min(getQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
+  "additionalDedicatedCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string()
 })]),
@@ -446,6 +650,38 @@ export const updateQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
 
 export const updateQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
 
+export const updateQuoteResponseTwoJobInputsTwoRouteLengthMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeDisposalCircuitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeSinkLightsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeIslandPendantsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeUndercabinetLightingMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeDimmersMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
+
+export const updateQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
+
 
 
 export const UpdateQuoteResponse = zod.object({
@@ -490,7 +726,26 @@ export const UpdateQuoteResponse = zod.object({
   "fanLightHeatUnits": zod.number().min(updateQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
   "heatedFloorCircuit": zod.boolean(),
   "additionalSwitches": zod.number().min(updateQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "routeLength": zod.number().min(updateQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
   "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string()
+}),zod.object({
+  "refrigeratorCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
+  "dishwasherCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
+  "disposalCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
+  "gasRangeCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin),
+  "electricRangeCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin),
+  "countertopReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin),
+  "sinkLights": zod.number().min(updateQuoteResponseTwoJobInputsThreeSinkLightsMin),
+  "islandPendants": zod.number().min(updateQuoteResponseTwoJobInputsThreeIslandPendantsMin),
+  "undercabinetLighting": zod.number().min(updateQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
+  "recessedLights": zod.number().min(updateQuoteResponseTwoJobInputsThreeRecessedLightsMin),
+  "threeWayOptions": zod.number().min(updateQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "dimmers": zod.number().min(updateQuoteResponseTwoJobInputsThreeDimmersMin),
+  "usbReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
+  "additionalDedicatedCircuits": zod.number().min(updateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
+  "routeLength": zod.number().min(updateQuoteResponseTwoJobInputsThreeRouteLengthMin),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string()
 })]),

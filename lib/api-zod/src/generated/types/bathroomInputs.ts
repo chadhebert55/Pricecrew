@@ -25,6 +25,8 @@ export interface BathroomInputs {
   heatedFloorCircuit: boolean;
   /** @minimum 0 */
   additionalSwitches: number;
+  /** @minimum 0 */
+  routeLength?: number;
   circuitOption: BathroomInputsCircuitOption;
   customerSuppliedFixtures: boolean;
   notes: string;

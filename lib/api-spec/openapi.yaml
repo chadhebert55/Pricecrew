@@ -296,6 +296,7 @@ components:
               oneOf:
                 - $ref: "#/components/schemas/EvChargerInputs"
                 - $ref: "#/components/schemas/BathroomInputs"
+                - $ref: "#/components/schemas/KitchenInputs"
             assembly:
               type: array
               items:
@@ -326,10 +327,15 @@ components:
           minLength: 1
         module:
           type: string
+          enum:
+            - EV_CHARGER
+            - BATHROOM
+            - KITCHEN
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
+            - $ref: "#/components/schemas/KitchenInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -347,10 +353,15 @@ components:
       properties:
         module:
           type: string
+          enum:
+            - EV_CHARGER
+            - BATHROOM
+            - KITCHEN
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
+            - $ref: "#/components/schemas/KitchenInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -483,11 +494,84 @@ components:
         additionalSwitches:
           type: number
           minimum: 0
+        routeLength:
+          type: number
+          minimum: 0
         circuitOption:
           type: string
           enum:
             - New dedicated circuit
             - Reuse existing circuit
+        customerSuppliedFixtures:
+          type: boolean
+        notes:
+          type: string
+    KitchenInputs:
+      type: object
+      required:
+        - refrigeratorCircuits
+        - dishwasherCircuits
+        - disposalCircuits
+        - gasRangeCircuits
+        - electricRangeCircuits
+        - countertopReceptacles
+        - sinkLights
+        - islandPendants
+        - undercabinetLighting
+        - recessedLights
+        - threeWayOptions
+        - dimmers
+        - usbReceptacles
+        - additionalDedicatedCircuits
+        - routeLength
+        - customerSuppliedFixtures
+        - notes
+      properties:
+        refrigeratorCircuits:
+          type: number
+          minimum: 0
+        dishwasherCircuits:
+          type: number
+          minimum: 0
+        disposalCircuits:
+          type: number
+          minimum: 0
+        gasRangeCircuits:
+          type: number
+          minimum: 0
+        electricRangeCircuits:
+          type: number
+          minimum: 0
+        countertopReceptacles:
+          type: number
+          minimum: 0
+        sinkLights:
+          type: number
+          minimum: 0
+        islandPendants:
+          type: number
+          minimum: 0
+        undercabinetLighting:
+          type: number
+          minimum: 0
+        recessedLights:
+          type: number
+          minimum: 0
+        threeWayOptions:
+          type: number
+          minimum: 0
+        dimmers:
+          type: number
+          minimum: 0
+        usbReceptacles:
+          type: number
+          minimum: 0
+        additionalDedicatedCircuits:
+          type: number
+          minimum: 0
+        routeLength:
+          type: number
+          minimum: 0
         customerSuppliedFixtures:
           type: boolean
         notes:

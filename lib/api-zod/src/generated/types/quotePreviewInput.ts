@@ -7,10 +7,12 @@
  */
 import type { BathroomInputs } from './bathroomInputs';
 import type { EvChargerInputs } from './evChargerInputs';
+import type { KitchenInputs } from './kitchenInputs';
+import type { QuotePreviewInputModule } from './quotePreviewInputModule';
 
 export interface QuotePreviewInput {
-  module: string;
-  jobInputs: EvChargerInputs | BathroomInputs;
+  module: QuotePreviewInputModule;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
   /**
      * @minimum 0
      * @nullable

@@ -24,6 +24,7 @@ const initialInputs: BathroomInputs = {
   fanLightHeatUnits: 0,
   heatedFloorCircuit: false,
   additionalSwitches: 1,
+  routeLength: 30,
   circuitOption: BathroomInputsCircuitOption.New_dedicated_circuit,
   customerSuppliedFixtures: true,
   notes: "",
@@ -51,7 +52,7 @@ export function NewBathroomQuote() {
   const [inputs, setInputs] = useState<BathroomInputs>(initialInputs)
 
   const previewPayload = {
-    module: "BATHROOM",
+    module: "BATHROOM" as const,
     jobInputs: inputs,
     laborOverride: optionalAmount(laborOverride),
     sellingPriceOverride: optionalAmount(sellingPriceOverride),
@@ -192,6 +193,16 @@ export function NewBathroomQuote() {
                       <option value={BathroomInputsCircuitOption.New_dedicated_circuit}>New dedicated circuit</option>
                       <option value={BathroomInputsCircuitOption.Reuse_existing_circuit}>Reuse existing circuit</option>
                     </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bath-route">Common Wiring Route Length (FT)</Label>
+                    <Input
+                      id="bath-route"
+                      type="number"
+                      min="0"
+                      value={inputs.routeLength}
+                      onChange={(event) => setQuantity("routeLength", event.target.value)}
+                    />
                   </div>
                   <div className="space-y-4 rounded-lg border p-4">
                     <label className="flex items-center gap-3 text-sm font-medium">

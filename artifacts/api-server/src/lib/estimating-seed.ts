@@ -245,6 +245,53 @@ async function seedEstimatorData(): Promise<void> {
     await db.insert(priceBookItemsTable).values(siemensBreaker);
   }
 
+  const maintainableItems = [
+    { category: "Devices", item: "GFCI receptacle", unit: "ea", unitCost: 24 },
+    { category: "Devices", item: "standard receptacle", unit: "ea", unitCost: 6 },
+    { category: "Lighting", item: "vanity light allowance", unit: "ea", unitCost: 95 },
+    { category: "Lighting", item: "recessed light", unit: "ea", unitCost: 38 },
+    { category: "Ventilation", item: "exhaust fan", unit: "ea", unitCost: 145 },
+    { category: "Ventilation", item: "fan/light", unit: "ea", unitCost: 210 },
+    { category: "Ventilation", item: "fan/light/heat", unit: "ea", unitCost: 360 },
+    { category: "Circuit", item: "heated floor circuit allowance", unit: "ea", unitCost: 195 },
+    { category: "Devices", item: "single-pole switch", unit: "ea", unitCost: 9 },
+    { category: "Circuit", item: "bathroom circuit materials", unit: "ea", unitCost: 135 },
+    { category: "Protection", item: "bathroom circuit protection allowance", unit: "ea", unitCost: 52 },
+    { category: "Rough-in", item: "single-gang box", unit: "ea", unitCost: 3.5 },
+    { category: "Trim", item: "device plate", unit: "ea", unitCost: 1.25 },
+    { category: "Conductor", item: "#12 NM-B cable", unit: "ft", unitCost: 0.95 },
+    { category: "Circuit", item: "refrigerator circuit materials", unit: "ea", unitCost: 85 },
+    { category: "Circuit", item: "dishwasher circuit materials", unit: "ea", unitCost: 85 },
+    { category: "Circuit", item: "disposal circuit materials", unit: "ea", unitCost: 75 },
+    { category: "Circuit", item: "gas range circuit materials", unit: "ea", unitCost: 65 },
+    { category: "Circuit", item: "electric range circuit materials", unit: "ea", unitCost: 260 },
+    { category: "Circuit", item: "additional dedicated circuit materials", unit: "ea", unitCost: 85 },
+    { category: "Devices", item: "countertop GFCI receptacle", unit: "ea", unitCost: 24 },
+    { category: "Devices", item: "USB receptacle", unit: "ea", unitCost: 22 },
+    { category: "Lighting", item: "sink light", unit: "ea", unitCost: 38 },
+    { category: "Lighting", item: "island pendant", unit: "ea", unitCost: 95 },
+    { category: "Lighting", item: "undercabinet lighting", unit: "ea", unitCost: 120 },
+    { category: "Lighting", item: "kitchen recessed light", unit: "ea", unitCost: 38 },
+    { category: "Controls", item: "3-way switch pair", unit: "ea", unitCost: 26 },
+    { category: "Controls", item: "dimmer switch", unit: "ea", unitCost: 28 },
+  ];
+  const companyPriceBook = await db
+    .select({ item: priceBookItemsTable.item })
+    .from(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, company.id));
+  const existingItemNames = new Set(
+    companyPriceBook.map(({ item }) => item.toLowerCase()),
+  );
+
+  for (const item of maintainableItems) {
+    if (existingItemNames.has(item.item.toLowerCase())) continue;
+    await db.insert(priceBookItemsTable).values({
+      companyId: company.id,
+      ...item,
+      isDefault: true,
+    });
+  }
+
   const [existingQuote] = await db
     .select()
     .from(quotesTable)
