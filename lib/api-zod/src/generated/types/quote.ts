@@ -11,11 +11,12 @@ import type { EvChargerInputs } from './evChargerInputs';
 import type { KitchenInputs } from './kitchenInputs';
 import type { PricingSummary } from './pricingSummary';
 import type { QuoteSummary } from './quoteSummary';
+import type { RecessedLightingInputs } from './recessedLightingInputs';
 
 export type Quote = QuoteSummary & ({
   /** @nullable */
   customerEmail: string | null;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;

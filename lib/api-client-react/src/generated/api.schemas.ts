@@ -186,6 +186,89 @@ export interface KitchenInputs {
   cableType?: KitchenInputsCableType;
 }
 
+export type RecessedLightingInputsFixtureSize = typeof RecessedLightingInputsFixtureSize[keyof typeof RecessedLightingInputsFixtureSize];
+
+
+export const RecessedLightingInputsFixtureSize = {
+  '4-inch': '4-inch',
+  '6-inch': '6-inch',
+} as const;
+
+export type RecessedLightingInputsCircuitOption = typeof RecessedLightingInputsCircuitOption[keyof typeof RecessedLightingInputsCircuitOption];
+
+
+export const RecessedLightingInputsCircuitOption = {
+  'Reuse_existing_lighting_box/circuit': 'Reuse existing lighting box/circuit',
+  New_dedicated_circuit: 'New dedicated circuit',
+} as const;
+
+export type RecessedLightingInputsSwitchType = typeof RecessedLightingInputsSwitchType[keyof typeof RecessedLightingInputsSwitchType];
+
+
+export const RecessedLightingInputsSwitchType = {
+  'Single-pole': 'Single-pole',
+  '3-way': '3-way',
+} as const;
+
+export type RecessedLightingInputsDimmerOption = typeof RecessedLightingInputsDimmerOption[keyof typeof RecessedLightingInputsDimmerOption];
+
+
+export const RecessedLightingInputsDimmerOption = {
+  No_dimmer: 'No dimmer',
+  Include_dimmer: 'Include dimmer',
+} as const;
+
+export type RecessedLightingInputsThreeWaySwitchingOption = typeof RecessedLightingInputsThreeWaySwitchingOption[keyof typeof RecessedLightingInputsThreeWaySwitchingOption];
+
+
+export const RecessedLightingInputsThreeWaySwitchingOption = {
+  Not_included: 'Not included',
+  'Include_3-way_switching': 'Include 3-way switching',
+} as const;
+
+export type RecessedLightingInputsCableType = typeof RecessedLightingInputsCableType[keyof typeof RecessedLightingInputsCableType];
+
+
+export const RecessedLightingInputsCableType = {
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
+
+export interface RecessedLightingInputs {
+  /** @minimum 0 */
+  roomLength: number;
+  /** @minimum 0 */
+  roomWidth: number;
+  /** @minimum 0 */
+  ceilingHeight: number;
+  fixtureSize: RecessedLightingInputsFixtureSize;
+  /** @minimum 0 */
+  fixtureQuantity: number;
+  /**
+     * @minimum 4
+     * @maximum 12
+     */
+  spacingFeet: number;
+  customerSuppliedFixtures: boolean;
+  circuitOption: RecessedLightingInputsCircuitOption;
+  /** @minimum 0 */
+  wiringDistance: number;
+  /** @minimum 0 */
+  wiringAllowance: number;
+  switchType: RecessedLightingInputsSwitchType;
+  dimmerOption: RecessedLightingInputsDimmerOption;
+  threeWaySwitchingOption: RecessedLightingInputsThreeWaySwitchingOption;
+  notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  /** @minimum 0 */
+  breakerAmperage?: number;
+  /** @minimum 0 */
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  cableType?: RecessedLightingInputsCableType;
+}
+
 export interface AssemblyLine {
   id: string;
   category: string;
@@ -221,7 +304,7 @@ export type PricingSummary = PricingInput & {
 export type Quote = QuoteSummary & ({
   /** @nullable */
   customerEmail: string | null;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;
@@ -235,6 +318,7 @@ export const QuoteInputModule = {
   EV_CHARGER: 'EV_CHARGER',
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
+  RECESSED_LIGHTING: 'RECESSED_LIGHTING',
 } as const;
 
 export interface QuoteInput {
@@ -245,7 +329,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   /**
      * @minimum 0
      * @nullable
@@ -267,11 +351,12 @@ export const QuotePreviewInputModule = {
   EV_CHARGER: 'EV_CHARGER',
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
+  RECESSED_LIGHTING: 'RECESSED_LIGHTING',
 } as const;
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   /**
      * @minimum 0
      * @nullable
@@ -284,9 +369,18 @@ export interface QuotePreviewInput {
   sellingPriceOverride?: number | null;
 }
 
+export interface RecessedLightingPlanning {
+  suggestedFixtureQuantity: number;
+  actualFixtureQuantity: number;
+  spacingFeet: number;
+  quantitySource: string;
+  guidance: string;
+}
+
 export interface EstimatePreview {
   assembly: AssemblyLine[];
   pricing: PricingSummary;
+  planning?: RecessedLightingPlanning;
 }
 
 export interface QuoteUpdate {

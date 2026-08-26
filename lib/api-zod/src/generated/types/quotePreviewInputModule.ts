@@ -13,4 +13,5 @@ export const QuotePreviewInputModule = {
   EV_CHARGER: 'EV_CHARGER',
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
+  RECESSED_LIGHTING: 'RECESSED_LIGHTING',
 } as const;

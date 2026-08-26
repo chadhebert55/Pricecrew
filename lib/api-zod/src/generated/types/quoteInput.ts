@@ -9,6 +9,7 @@ import type { BathroomInputs } from './bathroomInputs';
 import type { EvChargerInputs } from './evChargerInputs';
 import type { KitchenInputs } from './kitchenInputs';
 import type { QuoteInputModule } from './quoteInputModule';
+import type { RecessedLightingInputs } from './recessedLightingInputs';
 
 export interface QuoteInput {
   /** @minLength 1 */
@@ -18,7 +19,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   /**
      * @minimum 0
      * @nullable

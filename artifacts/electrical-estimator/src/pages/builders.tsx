@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed } from "lucide-react"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb } from "lucide-react"
 import { Link } from "wouter"
 
 export function Builders() {
@@ -29,6 +29,14 @@ export function Builders() {
       icon: UtensilsCrossed,
       status: "live",
       href: "/quotes/new/kitchen"
+    },
+    {
+      id: "recessed-lighting",
+      title: "Recessed Lighting",
+      description: "Plan room-based recessed lighting with fixture guidance, switching, wiring, circuit options, and verified catalog pricing.",
+      icon: Lightbulb,
+      status: "live",
+      href: "/quotes/new/recessed-lighting"
     },
     {
       id: "service-upgrade",

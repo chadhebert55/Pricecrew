@@ -7,8 +7,10 @@
  */
 import type { AssemblyLine } from './assemblyLine';
 import type { PricingSummary } from './pricingSummary';
+import type { RecessedLightingPlanning } from './recessedLightingPlanning';
 
 export interface EstimatePreview {
   assembly: AssemblyLine[];
   pricing: PricingSummary;
+  planning?: RecessedLightingPlanning;
 }

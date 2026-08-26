@@ -33,18 +33,24 @@ import {
   type KitchenInputRecord,
   type PricingRecord,
   type QuoteJobInputsRecord,
+  type RecessedLightingInputRecord,
 } from "@workspace/db";
 import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
   calculateBathroomEstimate,
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
+  calculateRecessedLightingEstimate,
 } from "../lib/estimating-engine";
 
 const router: IRouter = Router();
 
 type QuoteStatus = "draft" | "ready";
-type EstimateModule = "EV_CHARGER" | "BATHROOM" | "KITCHEN";
+type EstimateModule =
+  | "EV_CHARGER"
+  | "BATHROOM"
+  | "KITCHEN"
+  | "RECESSED_LIGHTING";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -172,6 +178,12 @@ async function calculateEstimate(
   if (module === "EV_CHARGER" && isEvInput(jobInputs)) {
     return calculateEvChargerEstimate(jobInputs, settings, priceBook);
   }
+  if (
+    module === "RECESSED_LIGHTING" &&
+    isRecessedLightingInput(jobInputs)
+  ) {
+    return calculateRecessedLightingEstimate(jobInputs, settings, priceBook);
+  }
   throw new Error(`Job inputs do not match module ${module}`);
 }
 
@@ -193,6 +205,12 @@ function isKitchenInput(
   return "refrigeratorCircuits" in jobInputs && "countertopReceptacles" in jobInputs;
 }
 
+function isRecessedLightingInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is RecessedLightingInputRecord {
+  return "roomLength" in jobInputs && "fixtureQuantity" in jobInputs;
+}
+
 function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -200,7 +218,8 @@ function moduleMatchesInputs(
   return (
     (module === "EV_CHARGER" && isEvInput(jobInputs)) ||
     (module === "BATHROOM" && isBathroomInput(jobInputs)) ||
-    (module === "KITCHEN" && isKitchenInput(jobInputs))
+    (module === "KITCHEN" && isKitchenInput(jobInputs)) ||
+    (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs))
   );
 }
 

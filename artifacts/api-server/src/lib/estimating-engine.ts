@@ -5,6 +5,7 @@ import type {
   KitchenInputRecord,
   LaborRateType,
   PricingRecord,
+  RecessedLightingInputRecord,
 } from "@workspace/db";
 
 export type PriceBookItem = {
@@ -32,6 +33,13 @@ export type EstimatingSettings = {
 type EstimateResult = {
   assembly: AssemblyLineRecord[];
   pricing: PricingRecord;
+  planning?: {
+    suggestedFixtureQuantity: number;
+    actualFixtureQuantity: number;
+    spacingFeet: number;
+    quantitySource: string;
+    guidance: string;
+  };
 };
 
 function normalized(value: string) {
@@ -828,4 +836,229 @@ export function calculateKitchenEstimate(
     pricingWarnings,
     inputs.laborRateType,
   );
+}
+
+export function calculateRecessedLightingEstimate(
+  inputs: RecessedLightingInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  const roomLength = Math.max(0, Number(inputs.roomLength) || 0);
+  const roomWidth = Math.max(0, Number(inputs.roomWidth) || 0);
+  const ceilingHeight = Math.max(0, Number(inputs.ceilingHeight) || 0);
+  const spacingFeet = Math.min(
+    12,
+    Math.max(4, Number(inputs.spacingFeet) || 6),
+  );
+  const suggestedFixtureQuantity =
+    roomLength > 0 && roomWidth > 0
+      ? Math.max(
+          1,
+          Math.ceil(roomLength / spacingFeet) *
+            Math.ceil(roomWidth / spacingFeet),
+        )
+      : 0;
+  const manualQuantity = Math.max(0, Number(inputs.fixtureQuantity) || 0);
+  const actualFixtureQuantity =
+    manualQuantity > 0 ? manualQuantity : suggestedFixtureQuantity;
+  const quantitySource =
+    manualQuantity > 0 ? "Manual fixture quantity" : "Room-dimension suggestion";
+  const fixtureSize = inputs.fixtureSize === "6-inch" ? "6-inch" : "4-inch";
+  const fixtureKey = `Juno ${fixtureSize} regressed wafer light`;
+  const fixturePrice = inputs.customerSuppliedFixtures
+    ? { value: 0, source: "Customer supplied fixture" }
+    : unitCost(fixtureKey, priceBook, pricingWarnings);
+
+  if (suggestedFixtureQuantity === 0) {
+    pricingWarnings.push(
+      "Room dimensions are incomplete, so no planning fixture quantity could be suggested. Confirm the layout before sending.",
+    );
+  }
+  pricingWarnings.push(
+    `Planning guidance only: ${suggestedFixtureQuantity || "No"} fixture(s) at approximately ${spacingFeet} ft spacing. Verify layout, fixture ratings, access, and applicable requirements in the field; this estimate does not determine code compliance.`,
+  );
+
+  if (actualFixtureQuantity > 0) {
+    addLine(assembly, {
+      id: "recessed-fixtures",
+      category: "Lighting",
+      description: `${fixtureSize} Juno regressed wafer light${inputs.customerSuppliedFixtures ? " — customer supplied" : ""}`,
+      quantity: actualFixtureQuantity,
+      unit: "ea",
+      unitCost: fixturePrice.value,
+      source: fixturePrice.source,
+    });
+  }
+
+  const isNewCircuit =
+    inputs.circuitOption === "New dedicated circuit";
+  const selectedCable =
+    inputs.cableType === "14/3 NM-B" ? "14/3 NM-B cable" : "14/2 NM-B cable";
+  const cableDistance = Math.max(
+    0,
+    Number(inputs.wiringDistance) || 0,
+  );
+  const allowancePercent = Math.max(
+    0,
+    Number(inputs.wiringAllowance) || 0,
+  );
+  const cableQuantity = cableDistance * (1 + allowancePercent / 100);
+  if (cableQuantity > 0) {
+    const cable = unitCost(selectedCable, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id: "recessed-wiring",
+      category: "Conductor",
+      description: `${selectedCable} — lighting route plus ${allowancePercent}% allowance`,
+      quantity: cableQuantity,
+      unit: "ft",
+      unitCost: cable.value,
+      source: cable.source,
+    });
+  } else {
+    pricingWarnings.push(
+      "Lighting wiring distance is unresolved. Add an approximate route so conductor material can be priced.",
+    );
+  }
+
+  const includesThreeWay =
+    inputs.switchType === "3-way" ||
+    inputs.threeWaySwitchingOption === "Include 3-way switching";
+  if (
+    includesThreeWay &&
+    inputs.cableType === "14/2 NM-B"
+  ) {
+    pricingWarnings.push(
+      "3-way switching is selected with 14/2 NM-B. Verify conductor selection for the final switching arrangement; no cable type was substituted.",
+    );
+  }
+
+  const includesDimmer = inputs.dimmerOption === "Include dimmer";
+  const mechanicalSwitchQuantity = includesThreeWay
+    ? includesDimmer ? 1 : 2
+    : includesDimmer ? 0 : 1;
+  if (mechanicalSwitchQuantity > 0) {
+    const switchKey = includesThreeWay
+      ? "Legrand radiant TM873WCC10 15A 3-way switch"
+      : "Legrand radiant TM870WCC10 15A single-pole switch";
+    const switchItem = unitCost(switchKey, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id: "switches",
+      category: "Controls",
+      description: includesThreeWay
+        ? "Legrand radiant 15A 3-way switch"
+        : "Legrand radiant 15A single-pole switch",
+      quantity: mechanicalSwitchQuantity,
+      unit: "ea",
+      unitCost: switchItem.value,
+      source: switchItem.source,
+    });
+  }
+
+  if (includesDimmer) {
+    const dimmer = unitCost(
+      "Legrand radiant RHL153PWPW LED dimmer with wall plate",
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "dimmer",
+      category: "Controls",
+      description: "Legrand radiant LED dimmer with wall plate",
+      quantity: 1,
+      unit: "ea",
+      unitCost: dimmer.value,
+      source: dimmer.source,
+    });
+  }
+
+  const controlDeviceCount = includesThreeWay ? 2 : 1;
+  const boxes = unitCost(
+    "Carlon B114R-UPC 14 cu. in. single-gang old-work box",
+    priceBook,
+    pricingWarnings,
+  );
+  addLine(assembly, {
+    id: "control-boxes",
+    category: "Rough-in",
+    description: "Carlon 14 cu. in. single-gang old-work box",
+    quantity: controlDeviceCount,
+    unit: "ea",
+    unitCost: boxes.value,
+    source: boxes.source,
+  });
+  const wallPlateQuantity = controlDeviceCount - (includesDimmer ? 1 : 0);
+  if (wallPlateQuantity > 0) {
+    const plates = unitCost(
+      "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "control-plates",
+      category: "Trim",
+      description: "Legrand radiant 1-gang screwless wall plate",
+      quantity: wallPlateQuantity,
+      unit: "ea",
+      unitCost: plates.value,
+      source: plates.source,
+    });
+  }
+
+  if (isNewCircuit) {
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer ?? "",
+        amperage: inputs.breakerAmperage ?? 0,
+        poleCount: inputs.breakerPoleCount ?? 0,
+        protectionType: inputs.breakerProtectionType ?? "Standard",
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "lighting-circuit-breaker",
+      category: "Protection",
+      description: breaker.description,
+      quantity: 1,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
+  } else {
+    pricingWarnings.push(
+      "Existing lighting box/circuit reuse must be field-verified for capacity, grounding, protection, and available wiring before the quote is sent.",
+    );
+  }
+
+  const heightAdjustment = ceilingHeight > 8
+    ? (ceilingHeight - 8) * 0.15
+    : 0;
+  const laborHours =
+    1.5 +
+    actualFixtureQuantity * 0.65 +
+    cableDistance / 40 +
+    (includesThreeWay ? 0.9 : 0.35) +
+    (inputs.dimmerOption === "Include dimmer" ? 0.35 : 0) +
+    heightAdjustment +
+    (isNewCircuit ? 2.5 : 0);
+  const estimate = finalizeEstimate(
+    assembly,
+    laborHours,
+    settings,
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+  return {
+    ...estimate,
+    planning: {
+      suggestedFixtureQuantity,
+      actualFixtureQuantity,
+      spacingFeet,
+      quantitySource,
+      guidance:
+        "Use this as layout planning guidance only. Confirm fixture placement, switching, access, wiring, and applicable requirements in the field.",
+    },
+  };
 }

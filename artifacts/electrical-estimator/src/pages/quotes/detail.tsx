@@ -148,7 +148,9 @@ export function QuoteDetail() {
                   ? "Bathroom Builder"
                   : quote.module === "KITCHEN"
                     ? "Kitchen Builder"
-                    : "EV Charger Builder"}.
+                    : quote.module === "RECESSED_LIGHTING"
+                      ? "Recessed Lighting Builder"
+                      : "EV Charger Builder"}.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">

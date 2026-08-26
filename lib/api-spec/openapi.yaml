@@ -297,6 +297,7 @@ components:
                 - $ref: "#/components/schemas/EvChargerInputs"
                 - $ref: "#/components/schemas/BathroomInputs"
                 - $ref: "#/components/schemas/KitchenInputs"
+                - $ref: "#/components/schemas/RecessedLightingInputs"
             assembly:
               type: array
               items:
@@ -331,11 +332,13 @@ components:
             - EV_CHARGER
             - BATHROOM
             - KITCHEN
+            - RECESSED_LIGHTING
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
             - $ref: "#/components/schemas/KitchenInputs"
+            - $ref: "#/components/schemas/RecessedLightingInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -357,11 +360,13 @@ components:
             - EV_CHARGER
             - BATHROOM
             - KITCHEN
+            - RECESSED_LIGHTING
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
             - $ref: "#/components/schemas/KitchenInputs"
+            - $ref: "#/components/schemas/RecessedLightingInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -380,6 +385,8 @@ components:
             $ref: "#/components/schemas/AssemblyLine"
         pricing:
           $ref: "#/components/schemas/PricingSummary"
+        planning:
+          $ref: "#/components/schemas/RecessedLightingPlanning"
     QuoteUpdate:
       type: object
       properties:
@@ -526,6 +533,99 @@ components:
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+    RecessedLightingInputs:
+      type: object
+      required:
+        - roomLength
+        - roomWidth
+        - ceilingHeight
+        - fixtureSize
+        - fixtureQuantity
+        - spacingFeet
+        - customerSuppliedFixtures
+        - circuitOption
+        - wiringDistance
+        - wiringAllowance
+        - switchType
+        - dimmerOption
+        - threeWaySwitchingOption
+        - notes
+      properties:
+        roomLength:
+          type: number
+          minimum: 0
+        roomWidth:
+          type: number
+          minimum: 0
+        ceilingHeight:
+          type: number
+          minimum: 0
+        fixtureSize:
+          type: string
+          enum: [4-inch, 6-inch]
+        fixtureQuantity:
+          type: number
+          minimum: 0
+        spacingFeet:
+          type: number
+          minimum: 4
+          maximum: 12
+        customerSuppliedFixtures:
+          type: boolean
+        circuitOption:
+          type: string
+          enum: [Reuse existing lighting box/circuit, New dedicated circuit]
+        wiringDistance:
+          type: number
+          minimum: 0
+        wiringAllowance:
+          type: number
+          minimum: 0
+        switchType:
+          type: string
+          enum: [Single-pole, 3-way]
+        dimmerOption:
+          type: string
+          enum: [No dimmer, Include dimmer]
+        threeWaySwitchingOption:
+          type: string
+          enum: [Not included, Include 3-way switching]
+        notes:
+          type: string
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        panelManufacturer:
+          type: string
+        breakerAmperage:
+          type: number
+          minimum: 0
+        breakerPoleCount:
+          type: number
+          minimum: 0
+        breakerProtectionType:
+          type: string
+        cableType:
+          type: string
+          enum: [14/2 NM-B, 14/3 NM-B]
+    RecessedLightingPlanning:
+      type: object
+      required:
+        - suggestedFixtureQuantity
+        - actualFixtureQuantity
+        - spacingFeet
+        - quantitySource
+        - guidance
+      properties:
+        suggestedFixtureQuantity:
+          type: number
+        actualFixtureQuantity:
+          type: number
+        spacingFeet:
+          type: number
+        quantitySource:
+          type: string
+        guidance:
+          type: string
     KitchenInputs:
       type: object
       required:

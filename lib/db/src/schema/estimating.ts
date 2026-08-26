@@ -88,10 +88,34 @@ export type KitchenInputRecord = {
   cableType?: CableType;
 };
 
+export type RecessedLightingInputRecord = {
+  roomLength: number;
+  roomWidth: number;
+  ceilingHeight: number;
+  fixtureSize: RecessedLightSize;
+  fixtureQuantity: number;
+  spacingFeet: number;
+  customerSuppliedFixtures: boolean;
+  circuitOption: "Reuse existing lighting box/circuit" | "New dedicated circuit";
+  wiringDistance: number;
+  wiringAllowance: number;
+  switchType: "Single-pole" | "3-way";
+  dimmerOption: "No dimmer" | "Include dimmer";
+  threeWaySwitchingOption: "Not included" | "Include 3-way switching";
+  notes: string;
+  laborRateType?: LaborRateType;
+  panelManufacturer?: string;
+  breakerAmperage?: number;
+  breakerPoleCount?: number;
+  breakerProtectionType?: string;
+  cableType?: "14/2 NM-B" | "14/3 NM-B";
+};
+
 export type QuoteJobInputsRecord =
   | EvChargerInputRecord
   | BathroomInputRecord
-  | KitchenInputRecord;
+  | KitchenInputRecord
+  | RecessedLightingInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;
