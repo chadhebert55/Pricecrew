@@ -16,6 +16,23 @@ import { useLocation } from "wouter"
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
 
+type SwitchingMethod = NonNullable<RecessedLightingInputs["switchingMethod"]>
+
+const SINGLE_POLE: SwitchingMethod = "Single-pole"
+const TRADITIONAL_THREE_WAY: SwitchingMethod = "Traditional 3-way"
+const LUTRON_DIVA_PICO: SwitchingMethod =
+  "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote"
+
+function defaultProposalDescription(switchingMethod: SwitchingMethod) {
+  const switchingScope =
+    switchingMethod === TRADITIONAL_THREE_WAY
+      ? "traditional 3-way switching with a separately measured 14/3 NM-B traveler run"
+      : switchingMethod === LUTRON_DIVA_PICO
+        ? "a Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote"
+        : "standard single-pole switching"
+  return `Provide labor and listed materials to install recessed lighting at the agreed locations, including fixture installation, a 15A lighting circuit with ${switchingScope}, testing, and final trim. Final fixture spacing, ceiling conditions, circuit capacity, protection requirements, and concealed obstructions will be verified before work begins.`
+}
+
 const initialInputs: RecessedLightingInputs = {
   roomLength: 16,
   roomWidth: 12,
@@ -23,6 +40,8 @@ const initialInputs: RecessedLightingInputs = {
   fixtureSize: "4-inch",
   wiringOption: "New wiring from source",
   circuitOption: "Reuse existing circuit",
+  switchingMethod: SINGLE_POLE,
+  traditionalThreeWayFootage: 0,
   switchType: "Single-pole",
   dimmerSelection: "Include dimmer",
   customerSuppliedFixtures: false,
@@ -36,10 +55,10 @@ const initialInputs: RecessedLightingInputs = {
   notes: "",
   laborRateType: "residential",
   panelManufacturer: "Siemens",
-  breakerAmperage: 20,
+  breakerAmperage: 15,
   breakerPoleCount: 1,
   breakerProtectionType: "Standard",
-  cableType: "12/2 NM-B",
+  cableType: "14/2 NM-B",
 }
 
 function optionalAmount(value: string) {
@@ -62,8 +81,10 @@ export function NewRecessedLightingQuote() {
   const [customerEmail, setCustomerEmail] = useState("")
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
-    "Provide labor and listed materials to install recessed lighting at the agreed locations, including fixture installation, wiring and controls selected in this quote, testing, and final trim. Final fixture spacing, ceiling conditions, circuit capacity, protection requirements, and concealed obstructions will be verified before work begins.",
+    defaultProposalDescription(SINGLE_POLE),
   )
+  const [proposalDescriptionCustomized, setProposalDescriptionCustomized] =
+    useState(false)
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<RecessedLightingInputs>(initialInputs)
@@ -109,31 +130,18 @@ export function NewRecessedLightingQuote() {
     setInputs((current) => ({ ...current, [key]: numberValue(value, minimum) }))
   }
 
-  const handleSwitchType = (switchType: RecessedLightingInputs["switchType"]) => {
+  const handleSwitchingMethod = (switchingMethod: SwitchingMethod) => {
     setInputs((current) => ({
       ...current,
-      switchType,
-      cableType:
-        switchType === "3-way"
-          ? "14/3 NM-B"
-          : current.breakerAmperage <= 15
-            ? "14/2 NM-B"
-            : "12/2 NM-B",
-    }))
-  }
-
-  const handleBreakerAmperage = (value: string) => {
-    const breakerAmperage: RecessedLightingInputs["breakerAmperage"] =
-      value === "15" ? 15 : 20
-    setInputs((current) => ({
-      ...current,
-      breakerAmperage,
-      cableType:
-        current.switchType === "3-way"
-          ? "14/3 NM-B"
-          : breakerAmperage <= 15
-            ? "14/2 NM-B"
-            : "12/2 NM-B",
+      switchingMethod,
+      switchType:
+        switchingMethod === TRADITIONAL_THREE_WAY ? "3-way" : "Single-pole",
+      dimmerSelection:
+        switchingMethod === LUTRON_DIVA_PICO
+          ? "No dimmer"
+          : current.dimmerSelection,
+      breakerAmperage: 15,
+      cableType: current.cableType === "12/2 NM-B" ? "12/2 NM-B" : "14/2 NM-B",
     }))
   }
 
@@ -162,6 +170,13 @@ export function NewRecessedLightingQuote() {
   const fixtureCountIsSuggested = inputs.fixtureQuantity === planning.count
   const isNewWiring = inputs.wiringOption === "New wiring from source"
   const isNewCircuit = inputs.circuitOption === "New dedicated circuit"
+  const switchingMethod = inputs.switchingMethod ?? SINGLE_POLE
+
+  useEffect(() => {
+    if (!proposalDescriptionCustomized) {
+      setProposalDescription(defaultProposalDescription(switchingMethod))
+    }
+  }, [proposalDescriptionCustomized, switchingMethod])
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-24">
@@ -192,7 +207,10 @@ export function NewRecessedLightingQuote() {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="recessed-proposal">Customer-facing Proposal Description *</Label>
-                  <Textarea id="recessed-proposal" required value={proposalDescription} onChange={(event) => setProposalDescription(event.target.value)} />
+                  <Textarea id="recessed-proposal" required value={proposalDescription} onChange={(event) => {
+                    setProposalDescriptionCustomized(true)
+                    setProposalDescription(event.target.value)
+                  }} />
                 </div>
               </CardContent>
             </Card>
@@ -279,12 +297,14 @@ export function NewRecessedLightingQuote() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-switch-type">Switching</Label>
-                      <select id="recessed-switch-type" className={selectClassName} value={inputs.switchType} onChange={(event) => handleSwitchType(event.target.value as RecessedLightingInputs["switchType"])}>
-                        <option value="Single-pole">Single-pole</option>
-                        <option value="3-way">3-way</option>
+                      <Label htmlFor="recessed-switching-method">Switching Method</Label>
+                      <select id="recessed-switching-method" className={selectClassName} value={switchingMethod} onChange={(event) => handleSwitchingMethod(event.target.value as SwitchingMethod)}>
+                        <option value={SINGLE_POLE}>Single-pole</option>
+                        <option value={TRADITIONAL_THREE_WAY}>Traditional 3-way</option>
+                        <option value={LUTRON_DIVA_PICO}>Diva Smart Dimmer + Pico Remote</option>
                       </select>
                     </div>
+                    {switchingMethod !== LUTRON_DIVA_PICO && (
                     <div className="space-y-2">
                       <Label htmlFor="recessed-dimmer">Dimmer</Label>
                       <select id="recessed-dimmer" className={selectClassName} value={inputs.dimmerSelection} onChange={(event) => setInputs((current) => ({ ...current, dimmerSelection: event.target.value as RecessedLightingInputs["dimmerSelection"] }))}>
@@ -292,6 +312,7 @@ export function NewRecessedLightingQuote() {
                         <option value="Include dimmer">Include dimmer</option>
                       </select>
                     </div>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="recessed-additional-switches">Additional Switches</Label>
                       <Input id="recessed-additional-switches" type="number" min="0" step="1" value={inputs.additionalSwitches} onChange={(event) => setNumber("additionalSwitches", event.target.value)} />
@@ -301,20 +322,9 @@ export function NewRecessedLightingQuote() {
                         <div className="space-y-2">
                           <Label htmlFor="recessed-cable">Selected Cable</Label>
                           <select id="recessed-cable" className={selectClassName} value={inputs.cableType} onChange={(event) => setInputs((current) => ({ ...current, cableType: event.target.value as RecessedLightingInputs["cableType"] }))}>
-                            {inputs.switchType === "3-way" ? (
-                              <option value="14/3 NM-B">14/3 NM-B — 15A 3-way circuits only</option>
-                            ) : inputs.breakerAmperage > 15 ? (
-                              <option value="12/2 NM-B">12/2 NM-B — selected 20A circuit</option>
-                            ) : (
-                              <>
-                                <option value="14/2 NM-B">14/2 NM-B</option>
-                                <option value="12/2 NM-B">12/2 NM-B</option>
-                              </>
-                            )}
+                            <option value="14/2 NM-B">14/2 NM-B — main 15A lighting circuit</option>
+                            <option value="12/2 NM-B">12/2 NM-B — optional upsized branch wiring</option>
                           </select>
-                          {inputs.switchType === "3-way" && inputs.breakerAmperage > 15 && (
-                            <p className="text-xs text-amber-700">No verified 12/3 row is available. This cable remains unresolved until the circuit is 15A or a sourced 12/3 item is added.</p>
-                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="recessed-wire-run">Approximate Wire Run (FT)</Label>
@@ -325,6 +335,19 @@ export function NewRecessedLightingQuote() {
                           <Input id="recessed-wire-allowance" type="number" min="0" step="1" value={inputs.wiringAllowanceFeet} onChange={(event) => setNumber("wiringAllowanceFeet", event.target.value)} />
                         </div>
                       </>
+                    )}
+                    {switchingMethod === TRADITIONAL_THREE_WAY && (
+                      <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4 md:col-span-2">
+                        <Label htmlFor="recessed-three-way-footage">Dedicated 14/3 NM-B Traveler Run (FT)</Label>
+                        <Input id="recessed-three-way-footage" type="number" min="0" step="1" value={inputs.traditionalThreeWayFootage ?? 0} onChange={(event) => setNumber("traditionalThreeWayFootage", event.target.value)} />
+                        <p className="text-xs text-muted-foreground">Enter only the traveler run between switch locations. This creates a separate 14/3 material line and does not add another circuit or breaker.</p>
+                      </div>
+                    )}
+                    {switchingMethod === LUTRON_DIVA_PICO && (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm md:col-span-2">
+                        <p className="font-semibold">Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote</p>
+                        <p className="mt-1 text-muted-foreground">Includes one editable combo-pack line at the company price-book cost. The seeded default is $85. No 14/3 traveler footage is included with this switching method.</p>
+                      </div>
                     )}
                   </div>
                 </section>
@@ -367,10 +390,7 @@ export function NewRecessedLightingQuote() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="recessed-breaker-amps">Breaker Amperage</Label>
-                          <select id="recessed-breaker-amps" className={selectClassName} value={inputs.breakerAmperage} onChange={(event) => handleBreakerAmperage(event.target.value)}>
-                            <option value="15">15A</option>
-                            <option value="20">20A</option>
-                          </select>
+                          <div id="recessed-breaker-amps" className="flex h-9 items-center rounded-md border border-input bg-muted/30 px-3 text-sm font-medium">15A lighting circuit</div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="recessed-breaker-poles">Breaker Pole Count</Label>

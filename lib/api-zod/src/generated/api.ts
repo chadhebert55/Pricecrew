@@ -119,6 +119,8 @@ export const createQuoteBodyJobInputsFourRoomLengthMin = 0;
 export const createQuoteBodyJobInputsFourRoomWidthMin = 0;
 
 
+export const createQuoteBodyJobInputsFourTraditionalThreeWayFootageMin = 0;
+
 export const createQuoteBodyJobInputsFourWireRunLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourWiringAllowanceFeetMin = 0;
@@ -216,6 +218,8 @@ export const CreateQuoteBody = zod.object({
   "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
   "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
+  "switchingMethod": zod.enum(['Single-pole', 'Traditional 3-way', 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote']).optional(),
+  "traditionalThreeWayFootage": zod.number().min(createQuoteBodyJobInputsFourTraditionalThreeWayFootageMin).optional(),
   "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
   "customerSuppliedFixtures": zod.boolean(),
   "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
@@ -290,6 +294,8 @@ export const createQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
 
+
+export const createQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
 
@@ -390,6 +396,8 @@ export const CreateQuoteResponse = zod.object({
   "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
   "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
+  "switchingMethod": zod.enum(['Single-pole', 'Traditional 3-way', 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote']).optional(),
+  "traditionalThreeWayFootage": zod.number().min(createQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin).optional(),
   "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
   "customerSuppliedFixtures": zod.boolean(),
   "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
@@ -494,6 +502,8 @@ export const previewQuoteBodyJobInputsFourRoomLengthMin = 0;
 export const previewQuoteBodyJobInputsFourRoomWidthMin = 0;
 
 
+export const previewQuoteBodyJobInputsFourTraditionalThreeWayFootageMin = 0;
+
 export const previewQuoteBodyJobInputsFourWireRunLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourWiringAllowanceFeetMin = 0;
@@ -587,6 +597,8 @@ export const PreviewQuoteBody = zod.object({
   "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
   "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
+  "switchingMethod": zod.enum(['Single-pole', 'Traditional 3-way', 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote']).optional(),
+  "traditionalThreeWayFootage": zod.number().min(previewQuoteBodyJobInputsFourTraditionalThreeWayFootageMin).optional(),
   "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
   "customerSuppliedFixtures": zod.boolean(),
   "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
@@ -705,6 +717,8 @@ export const getQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 export const getQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
 
 
+export const getQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin = 0;
+
 export const getQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
@@ -804,6 +818,8 @@ export const GetQuoteResponse = zod.object({
   "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
   "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
+  "switchingMethod": zod.enum(['Single-pole', 'Traditional 3-way', 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote']).optional(),
+  "traditionalThreeWayFootage": zod.number().min(getQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin).optional(),
   "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
   "customerSuppliedFixtures": zod.boolean(),
   "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
@@ -919,6 +935,8 @@ export const updateQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
 export const updateQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
 
 
+export const updateQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin = 0;
+
 export const updateQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
@@ -1018,6 +1036,8 @@ export const UpdateQuoteResponse = zod.object({
   "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
   "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
   "switchType": zod.enum(['Single-pole', '3-way']),
+  "switchingMethod": zod.enum(['Single-pole', 'Traditional 3-way', 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote']).optional(),
+  "traditionalThreeWayFootage": zod.number().min(updateQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin).optional(),
   "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
   "customerSuppliedFixtures": zod.boolean(),
   "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),

@@ -313,6 +313,16 @@ async function seedEstimatorData(): Promise<void> {
       isDefault: false,
     },
     {
+      category: "Controls",
+      item: "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+      unit: "kit",
+      unitCost: 85,
+      supplier: "Company default",
+      manufacturer: "Lutron",
+      sourceDate: controlSourceDate,
+      isDefault: false,
+    },
+    {
       category: "Trim",
       item: "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
       unit: "ea",

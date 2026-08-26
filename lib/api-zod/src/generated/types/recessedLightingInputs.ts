@@ -13,6 +13,7 @@ import type { RecessedLightingInputsCeilingHeight } from './recessedLightingInpu
 import type { RecessedLightingInputsCircuitOption } from './recessedLightingInputsCircuitOption';
 import type { RecessedLightingInputsDimmerSelection } from './recessedLightingInputsDimmerSelection';
 import type { RecessedLightingInputsFixtureSize } from './recessedLightingInputsFixtureSize';
+import type { RecessedLightingInputsSwitchingMethod } from './recessedLightingInputsSwitchingMethod';
 import type { RecessedLightingInputsSwitchType } from './recessedLightingInputsSwitchType';
 import type { RecessedLightingInputsWiringOption } from './recessedLightingInputsWiringOption';
 
@@ -27,6 +28,9 @@ export interface RecessedLightingInputs {
   wiringOption: RecessedLightingInputsWiringOption;
   circuitOption: RecessedLightingInputsCircuitOption;
   switchType: RecessedLightingInputsSwitchType;
+  switchingMethod?: RecessedLightingInputsSwitchingMethod;
+  /** @minimum 0 */
+  traditionalThreeWayFootage?: number;
   dimmerSelection: RecessedLightingInputsDimmerSelection;
   customerSuppliedFixtures: boolean;
   ceilingHeight: RecessedLightingInputsCeilingHeight;

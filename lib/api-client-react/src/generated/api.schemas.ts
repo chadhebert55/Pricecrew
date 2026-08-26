@@ -218,6 +218,15 @@ export const RecessedLightingInputsSwitchType = {
   '3-way': '3-way',
 } as const;
 
+export type RecessedLightingInputsSwitchingMethod = typeof RecessedLightingInputsSwitchingMethod[keyof typeof RecessedLightingInputsSwitchingMethod];
+
+
+export const RecessedLightingInputsSwitchingMethod = {
+  'Single-pole': 'Single-pole',
+  'Traditional_3-way': 'Traditional 3-way',
+  'Lutron_Diva_Smart_Dimmer_3-way_kit_with_Pico_paddle_remote': 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote',
+} as const;
+
 export type RecessedLightingInputsDimmerSelection = typeof RecessedLightingInputsDimmerSelection[keyof typeof RecessedLightingInputsDimmerSelection];
 
 
@@ -273,6 +282,9 @@ export interface RecessedLightingInputs {
   wiringOption: RecessedLightingInputsWiringOption;
   circuitOption: RecessedLightingInputsCircuitOption;
   switchType: RecessedLightingInputsSwitchType;
+  switchingMethod?: RecessedLightingInputsSwitchingMethod;
+  /** @minimum 0 */
+  traditionalThreeWayFootage?: number;
   dimmerSelection: RecessedLightingInputsDimmerSelection;
   customerSuppliedFixtures: boolean;
   ceilingHeight: RecessedLightingInputsCeilingHeight;

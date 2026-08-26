@@ -7,4 +7,4 @@ New pricing fields must be additive and optional for historical records. Never m
 
 **Why:** Saved quotes are contractual snapshots. New estimator fields can be present on newly calculated estimates while older records retain their original byte-level pricing and assembly shape.
 
-**How to apply:** Keep serializers tolerant of absent additive fields, calculate only preview/new-quote flows from current settings, and verify existing assembly, pricing, total, and margin records remain unchanged across schema and seed changes.
+**How to apply:** Keep serializers tolerant of absent additive fields and legacy input shapes; do not require historical job-input JSON to satisfy the latest request validator. Calculate only preview/new-quote flows from current settings, and verify existing assembly, pricing, total, and margin records remain unchanged across schema and seed changes.

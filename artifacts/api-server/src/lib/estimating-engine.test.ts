@@ -41,6 +41,23 @@ const priceBook: PriceBookItem[] = [
   catalogRow("14/2 NM-B cable", 0.37),
   catalogRow("14/3 NM-B cable", 0.53),
   catalogRow("12/2 NM-B cable", 0.56),
+  catalogRow("Legrand radiant TM870WCC10 15A single-pole switch", 4.5, {
+    manufacturer: "Legrand",
+  }),
+  catalogRow("Legrand radiant TM873WCC10 15A 3-way switch", 7.5, {
+    manufacturer: "Legrand",
+  }),
+  catalogRow(
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+    85,
+    { manufacturer: "Lutron" },
+  ),
+  catalogRow("Siemens Q115 15A 1-pole standard breaker", 9.5, {
+    manufacturer: "Siemens",
+    amperage: 15,
+    poleCount: 1,
+    protectionType: "Standard",
+  }),
 ];
 
 const baseInputs: RecessedLightingInputRecord = {
@@ -69,71 +86,147 @@ const baseInputs: RecessedLightingInputRecord = {
   cableType: "14/2 NM-B",
 };
 
-function cableResult(inputs: RecessedLightingInputRecord) {
-  const result = calculateRecessedLightingEstimate(inputs, settings, priceBook);
-  return {
-    line: result.assembly.find((line) => line.id === "recessed-wiring"),
-    warnings: result.pricing.pricingWarnings,
-  };
-}
-
-test("15A single-pole can price selected 14/2 cable", () => {
-  const result = cableResult(baseInputs);
-  assert.equal(result.line?.unitCost, 0.37);
-});
-
-test("20A single-pole rejects selected 14/2 cable", () => {
-  const result = cableResult({
-    ...baseInputs,
-    breakerAmperage: 20,
-  });
-  assert.equal(result.line, undefined);
-  assert.ok(result.warnings.some((warning) => warning.includes("12/2 NM-B")));
-});
-
-test("20A single-pole can price selected 12/2 cable", () => {
-  const result = cableResult({
-    ...baseInputs,
-    breakerAmperage: 20,
-    cableType: "12/2 NM-B",
-  });
-  assert.equal(result.line?.unitCost, 0.56);
-});
-
-test("15A 3-way can price selected 14/3 cable", () => {
-  const result = cableResult({
-    ...baseInputs,
-    switchType: "3-way",
-    cableType: "14/3 NM-B",
-  });
-  assert.equal(result.line?.unitCost, 0.53);
-});
-
-test("20A 3-way remains unresolved without verified 12/3 cable", () => {
-  const result = cableResult({
-    ...baseInputs,
-    breakerAmperage: 20,
-    switchType: "3-way",
-    cableType: "14/3 NM-B",
-  });
-  assert.equal(result.line, undefined);
-  assert.ok(
-    result.warnings.some((warning) =>
-      warning.includes("verified 12/3 cable row"),
+test("single-pole uses the 15A branch-circuit cable without traveler materials", () => {
+  const result = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "Single-pole",
+    },
+    settings,
+    priceBook,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "recessed-wiring")?.unitCost,
+    0.37,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "recessed-three-way-traveler",
     ),
+    undefined,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "recessed-circuit-protection",
+    ),
+    undefined,
   );
 });
 
-test("unsupported breaker amperage never prices a cable", () => {
-  const result = cableResult({
-    ...baseInputs,
-    breakerAmperage: 30,
-    cableType: "12/2 NM-B",
-  });
-  assert.equal(result.line, undefined);
-  assert.ok(
-    result.warnings.some((warning) =>
-      warning.includes("supported 15A or 20A lighting circuit"),
+test("traditional 3-way prices adjustable 14/3 separately from 14/2", () => {
+  const result = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "Traditional 3-way",
+      switchType: "3-way",
+      traditionalThreeWayFootage: 37,
+    },
+    settings,
+    priceBook,
+  );
+  const branch = result.assembly.find((line) => line.id === "recessed-wiring");
+  const traveler = result.assembly.find(
+    (line) => line.id === "recessed-three-way-traveler",
+  );
+  assert.equal(branch?.description.includes("14/2 NM-B"), true);
+  assert.equal(branch?.quantity, 50);
+  assert.equal(branch?.unitCost, 0.37);
+  assert.equal(traveler?.quantity, 37);
+  assert.equal(traveler?.unitCost, 0.53);
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "recessed-circuit-protection",
     ),
+    undefined,
+  );
+});
+
+test("Diva and Pico switching uses one combo kit and no traveler cable", () => {
+  const result = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod:
+        "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+      traditionalThreeWayFootage: 50,
+      dimmerSelection: "Include dimmer",
+    },
+    settings,
+    priceBook,
+  );
+  const controls = result.assembly.find(
+    (line) => line.id === "switch-controls",
+  );
+  assert.equal(controls?.quantity, 1);
+  assert.equal(controls?.unit, "kit");
+  assert.equal(controls?.unitCost, 85);
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "recessed-three-way-traveler",
+    ),
+    undefined,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "recessed-dimmer"),
+    undefined,
+  );
+});
+
+test("an explicitly selected new lighting circuit adds one 15A breaker only", () => {
+  const result = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      circuitOption: "New dedicated circuit",
+      switchingMethod: "Traditional 3-way",
+      switchType: "3-way",
+      traditionalThreeWayFootage: 25,
+      breakerAmperage: 20,
+    },
+    settings,
+    priceBook,
+  );
+  const breakers = result.assembly.filter(
+    (line) => line.id === "recessed-circuit-protection",
+  );
+  assert.equal(breakers.length, 1);
+  assert.equal(breakers[0]?.description.includes("15A"), true);
+});
+
+test("contractor-edited traveler and combo-kit costs flow into estimates", () => {
+  const editedPriceBook = priceBook.map((row) =>
+    row.item === "14/3 NM-B cable"
+      ? { ...row, unitCost: 0.71 }
+      : row.item ===
+          "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote"
+        ? { ...row, unitCost: 99 }
+        : row,
+  );
+  const traditional = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "Traditional 3-way",
+      switchType: "3-way",
+      traditionalThreeWayFootage: 20,
+    },
+    settings,
+    editedPriceBook,
+  );
+  const smart = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod:
+        "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+    },
+    settings,
+    editedPriceBook,
+  );
+  assert.equal(
+    traditional.assembly.find(
+      (line) => line.id === "recessed-three-way-traveler",
+    )?.unitCost,
+    0.71,
+  );
+  assert.equal(
+    smart.assembly.find((line) => line.id === "switch-controls")?.unitCost,
+    99,
   );
 });

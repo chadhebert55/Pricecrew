@@ -847,12 +847,23 @@ export function calculateRecessedLightingEstimate(
   const additionalSwitches = Math.round(safeNumber(inputs.additionalSwitches));
   const wireRunLength = safeNumber(inputs.wireRunLength);
   const wiringAllowanceFeet = safeNumber(inputs.wiringAllowanceFeet);
+  const traditionalThreeWayFootage = safeNumber(
+    inputs.traditionalThreeWayFootage ?? 0,
+  );
   const laborAdjustmentHours = Number.isFinite(Number(inputs.laborAdjustmentHours))
     ? Number(inputs.laborAdjustmentHours)
     : 0;
   const isNewWiring = /new/i.test(inputs.wiringOption);
   const isNewCircuit = /new/i.test(inputs.circuitOption);
-  const isThreeWay = /3[- ]?way/i.test(inputs.switchType);
+  const switchingMethod =
+    inputs.switchingMethod ??
+    (/3[- ]?way/i.test(inputs.switchType)
+      ? "Traditional 3-way"
+      : "Single-pole");
+  const isTraditionalThreeWay = switchingMethod === "Traditional 3-way";
+  const isSmartKit =
+    switchingMethod ===
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   const fixtureKey =
     inputs.fixtureSize === "6-inch"
       ? "Juno 6-inch regressed wafer light"
@@ -901,18 +912,24 @@ export function calculateRecessedLightingEstimate(
     inputs.customerSuppliedFixtures,
   );
 
-  const controlKey = isThreeWay
-    ? "Unverified allowance — 3-way switch pair"
-    : "Unverified allowance — single-pole switch";
-  const controlDescription = isThreeWay
-    ? "3-way switch pair allowance"
-    : "Single-pole switch allowance";
+  const controlKey = isSmartKit
+    ? "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote"
+    : isTraditionalThreeWay
+      ? "Legrand radiant TM873WCC10 15A 3-way switch"
+      : "Legrand radiant TM870WCC10 15A single-pole switch";
+  const controlDescription = isSmartKit
+    ? "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote — combo pack"
+    : isTraditionalThreeWay
+      ? "Legrand radiant 15A traditional 3-way switches"
+      : "Legrand radiant 15A single-pole switch";
   addPricedItem(
     "switch-controls",
     "Controls",
     controlKey,
     controlDescription,
-    isThreeWay ? 2 : 1,
+    isTraditionalThreeWay ? 2 : 1,
+    false,
+    isSmartKit ? "kit" : "ea",
   );
   addPricedItem(
     "additional-switches",
@@ -921,7 +938,10 @@ export function calculateRecessedLightingEstimate(
     "Additional single-pole switch allowances",
     additionalSwitches,
   );
-  if (/include|yes|selected/i.test(inputs.dimmerSelection)) {
+  if (
+    !isSmartKit &&
+    /include|yes|selected/i.test(inputs.dimmerSelection)
+  ) {
     addPricedItem(
       "dimmer",
       "Controls",
@@ -933,33 +953,18 @@ export function calculateRecessedLightingEstimate(
 
   if (isNewWiring) {
     const selectedCable = inputs.cableType;
-    const isFifteenAmpCircuit = inputs.breakerAmperage === 15;
-    const isTwentyAmpCircuit = inputs.breakerAmperage === 20;
-    const isSupportedLightingCircuit =
-      isFifteenAmpCircuit || isTwentyAmpCircuit;
-    const cableIsAppropriate = isThreeWay
-      ? selectedCable === "14/3 NM-B" && isFifteenAmpCircuit
-      : (selectedCable === "12/2 NM-B" && isSupportedLightingCircuit) ||
-        (selectedCable === "14/2 NM-B" && isFifteenAmpCircuit);
+    const cableIsAppropriate =
+      selectedCable === "14/2 NM-B" || selectedCable === "12/2 NM-B";
     if (!cableIsAppropriate) {
-      const requiredCable = !isSupportedLightingCircuit
-        ? "a supported 15A or 20A lighting circuit with compatible verified cable"
-        : isThreeWay
-          ? isFifteenAmpCircuit
-            ? "14/3 NM-B"
-            : "a verified 12/3 cable row"
-          : isFifteenAmpCircuit
-            ? "12/2 NM-B or 14/2 NM-B"
-            : "12/2 NM-B";
       pricingWarnings.push(
-        `Selected ${selectedCable} cable is not appropriate for the ${inputs.breakerAmperage}A ${isThreeWay ? "3-way" : "single-pole"} configuration. Select ${requiredCable}; no cable cost was substituted.`,
+        `Selected ${selectedCable} cable is not a supported branch-circuit cable for this 15A recessed-lighting estimate. Select 14/2 NM-B or 12/2 NM-B; no cable cost was substituted.`,
       );
     } else if (wireRunLength + wiringAllowanceFeet > 0) {
       const cable = unitCost(`${selectedCable} cable`, priceBook, pricingWarnings);
       addLine(assembly, {
         id: "recessed-wiring",
         category: "Conductor",
-        description: `${selectedCable} cable — approximate run plus wiring allowance`,
+        description: `${selectedCable} cable — 15A lighting circuit run plus wiring allowance`,
         quantity: Number((wireRunLength + wiringAllowanceFeet).toFixed(2)),
         unit: "ft",
         unitCost: cable.value,
@@ -976,11 +981,40 @@ export function calculateRecessedLightingEstimate(
     );
   }
 
+  if (isTraditionalThreeWay) {
+    if (traditionalThreeWayFootage > 0) {
+      const travelerCable = unitCost(
+        "14/3 NM-B cable",
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: "recessed-three-way-traveler",
+        category: "Conductor",
+        description: "14/3 NM-B cable — traditional 3-way traveler run",
+        quantity: Number(traditionalThreeWayFootage.toFixed(2)),
+        unit: "ft",
+        unitCost: travelerCable.value,
+        source: travelerCable.source,
+      });
+    } else {
+      pricingWarnings.push(
+        "Traditional 3-way switching is selected, but the dedicated 14/3 NM-B traveler footage is zero. Enter the run footage so it can be priced separately from the main lighting circuit wiring.",
+      );
+    }
+  }
+
+  if (isSmartKit) {
+    pricingWarnings.push(
+      "Verify Lutron Diva and Pico compatibility, wireless range, device placement, and existing wiring requirements in the field before the quote is sent.",
+    );
+  }
+
   if (isNewCircuit) {
     const breaker = resolveBreaker(
       {
         manufacturer: inputs.panelManufacturer,
-        amperage: inputs.breakerAmperage,
+        amperage: 15,
         poleCount: inputs.breakerPoleCount,
         protectionType: inputs.breakerProtectionType,
       },
@@ -1035,10 +1069,14 @@ export function calculateRecessedLightingEstimate(
     (1.25 +
       fixtureQuantity * 0.85 +
       additionalLights * 0.65 +
-      (isThreeWay ? 1.25 : 0.5) +
+      (isTraditionalThreeWay ? 1.25 : isSmartKit ? 1 : 0.5) +
       additionalSwitches * 0.45 +
-      (/include|yes|selected/i.test(inputs.dimmerSelection) ? 0.5 : 0) +
+      (!isSmartKit &&
+      /include|yes|selected/i.test(inputs.dimmerSelection)
+        ? 0.5
+        : 0) +
       (isNewWiring ? (wireRunLength + wiringAllowanceFeet) / 40 : 0) +
+      (isTraditionalThreeWay ? traditionalThreeWayFootage / 40 : 0) +
       (isNewCircuit ? 2.5 : 0) +
       accessHours +
       laborAdjustmentHours) *

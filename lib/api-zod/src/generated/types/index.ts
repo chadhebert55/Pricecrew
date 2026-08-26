@@ -42,6 +42,7 @@ export * from './recessedLightingInputsCeilingHeight';
 export * from './recessedLightingInputsCircuitOption';
 export * from './recessedLightingInputsDimmerSelection';
 export * from './recessedLightingInputsFixtureSize';
+export * from './recessedLightingInputsSwitchingMethod';
 export * from './recessedLightingInputsSwitchType';
 export * from './recessedLightingInputsWiringOption';
 export * from './recessedLightingPlanning';

@@ -685,6 +685,15 @@ components:
         switchType:
           type: string
           enum: [Single-pole, 3-way]
+        switchingMethod:
+          type: string
+          enum:
+            - Single-pole
+            - Traditional 3-way
+            - Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote
+        traditionalThreeWayFootage:
+          type: number
+          minimum: 0
         dimmerSelection:
           type: string
           enum: [No dimmer, Include dimmer]
