@@ -433,10 +433,45 @@ export interface PricingInput {
   laborRateType?: LaborRateType;
 }
 
+export type PricingWarningSeverity = typeof PricingWarningSeverity[keyof typeof PricingWarningSeverity];
+
+
+export const PricingWarningSeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export type PricingWarningCategory = typeof PricingWarningCategory[keyof typeof PricingWarningCategory];
+
+
+export const PricingWarningCategory = {
+  'missing-price': 'missing-price',
+  rule: 'rule',
+  'field-verification': 'field-verification',
+  planning: 'planning',
+  compatibility: 'compatibility',
+  legacy: 'legacy',
+} as const;
+
+export type PricingWarningContext = { [key: string]: unknown };
+
+export interface PricingWarning {
+  /** @minLength 1 */
+  code: string;
+  severity: PricingWarningSeverity;
+  category: PricingWarningCategory;
+  /** @minLength 1 */
+  source: string;
+  /** @minLength 1 */
+  message: string;
+  context: PricingWarningContext;
+}
+
 export type PricingSummary = PricingInput & {
   grossProfit: number;
   grossMargin: number;
-  pricingWarnings: string[];
+  pricingWarnings: PricingWarning[];
 };
 
 export type Quote = QuoteSummary & ({
@@ -470,11 +505,13 @@ export interface QuoteInput {
   jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   /**
      * @minimum 0
+     * @maximum 999999999.99
      * @nullable
      */
   laborOverride?: number | null;
   /**
      * @minimum 0
+     * @maximum 999999999.99
      * @nullable
      */
   sellingPriceOverride?: number | null;
@@ -497,11 +534,13 @@ export interface QuotePreviewInput {
   jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   /**
      * @minimum 0
+     * @maximum 999999999.99
      * @nullable
      */
   laborOverride?: number | null;
   /**
      * @minimum 0
+     * @maximum 999999999.99
      * @nullable
      */
   sellingPriceOverride?: number | null;
@@ -523,9 +562,17 @@ export interface EstimatePreview {
 
 export interface QuoteUpdate {
   status?: QuoteStatus;
-  /** @nullable */
+  /**
+     * @minimum 0
+     * @maximum 999999999.99
+     * @nullable
+     */
   laborOverride?: number | null;
-  /** @nullable */
+  /**
+     * @minimum 0
+     * @maximum 999999999.99
+     * @nullable
+     */
   sellingPriceOverride?: number | null;
   proposalDescription?: string;
 }

@@ -11,6 +11,8 @@ import {
   type PricingRecord,
 } from "@workspace/db";
 
+export const SIEMENS_QF250A_SEED_COST = 151.702;
+
 export const DEFAULT_COMPANY_ID = 1;
 
 let seedPromise: Promise<void> | undefined;
@@ -222,7 +224,7 @@ async function seedEstimatorData(): Promise<void> {
       category: "Protection",
       item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
       unit: "ea",
-      unitCost: 151.702,
+      unitCost: SIEMENS_QF250A_SEED_COST,
       supplier: "Northeast Electrical",
       manufacturer: "Siemens",
       manufacturerPartNumber: "ITE QF250A",

@@ -1,4 +1,5 @@
 import { type EvChargerInputs, useCreateQuote, usePreviewQuote } from "@workspace/api-client-react"
+import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -475,8 +476,8 @@ export function NewQuote() {
                             Pricing needs confirmation
                           </div>
                           <ul className="space-y-1 pl-6 text-xs text-secondary-foreground/80 list-disc">
-                            {previewPricing.pricingWarnings.map((warning) => (
-                              <li key={warning}>{warning}</li>
+                            {previewPricing.pricingWarnings.map((warning, index) => (
+                              <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>
                             ))}
                           </ul>
                         </div>

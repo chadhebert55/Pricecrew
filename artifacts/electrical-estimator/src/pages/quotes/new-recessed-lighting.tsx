@@ -3,6 +3,7 @@ import {
   useCreateQuote,
   usePreviewQuote,
 } from "@workspace/api-client-react"
+import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -458,7 +459,9 @@ export function NewRecessedLightingQuote() {
                             <TriangleAlert size={16} /> Estimate needs confirmation
                           </div>
                           <ul className="list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">
-                            {pricing.pricingWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+                            {pricing.pricingWarnings.map((warning, index) => (
+                              <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>
+                            ))}
                           </ul>
                         </div>
                       )}

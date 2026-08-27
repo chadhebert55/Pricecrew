@@ -595,13 +595,17 @@ test("Kitchen breaker protection types and quantity overrides resolve exact edit
   assert.equal(breaker20A?.source.includes("SKU SIEMENS-20-AFCI"), true);
   assert.equal(
     result.pricing.pricingWarnings.some((warning) =>
-      warning.includes("15A breaker quantity"),
+      typeof warning === "string"
+        ? warning.includes("15A breaker quantity")
+        : warning.message.includes("15A breaker quantity"),
     ),
     true,
   );
   assert.equal(
     result.pricing.pricingWarnings.some((warning) =>
-      warning.includes("20A breaker quantity"),
+      typeof warning === "string"
+        ? warning.includes("20A breaker quantity")
+        : warning.message.includes("20A breaker quantity"),
     ),
     true,
   );

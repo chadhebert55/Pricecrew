@@ -162,6 +162,30 @@ export type AssemblyLineRecord = {
   source: string;
 };
 
+export type PricingWarningSeverity = "info" | "warning" | "error";
+
+export type PricingWarningCategory =
+  | "missing-price"
+  | "rule"
+  | "field-verification"
+  | "planning"
+  | "compatibility"
+  | "legacy";
+
+export type PricingWarningContext = Record<
+  string,
+  string | number | boolean | null
+>;
+
+export type PricingWarningRecord = {
+  code: string;
+  severity: PricingWarningSeverity;
+  category: PricingWarningCategory;
+  source: string;
+  message: string;
+  context: PricingWarningContext;
+};
+
 export type PricingRecord = {
   materialCost: number;
   laborCost: number;
@@ -172,7 +196,7 @@ export type PricingRecord = {
   sellingPriceOverride: number | null;
   grossProfit: number;
   grossMargin: number;
-  pricingWarnings: string[];
+  pricingWarnings: Array<PricingWarningRecord | string>;
   laborSellRate?: number;
   laborSellAmount?: number;
   laborRateType?: LaborRateType;

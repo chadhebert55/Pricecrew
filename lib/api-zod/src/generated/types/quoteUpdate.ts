@@ -9,9 +9,17 @@ import type { QuoteStatus } from './quoteStatus';
 
 export interface QuoteUpdate {
   status?: QuoteStatus;
-  /** @nullable */
+  /**
+     * @minimum 0
+     * @maximum 999999999.99
+     * @nullable
+     */
   laborOverride?: number | null;
-  /** @nullable */
+  /**
+     * @minimum 0
+     * @maximum 999999999.99
+     * @nullable
+     */
   sellingPriceOverride?: number | null;
   proposalDescription?: string;
 }

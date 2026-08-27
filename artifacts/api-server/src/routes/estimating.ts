@@ -1,5 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import { randomUUID } from "node:crypto";
 import {
   CreateQuoteBody,
   CreateQuoteResponse,
@@ -41,6 +42,7 @@ import {
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
+  normalizePricingWarnings,
 } from "../lib/estimating-engine";
 
 const router: IRouter = Router();
@@ -55,8 +57,28 @@ function normalizeQuoteStatus(status: string): QuoteStatus {
 function serializePricing(pricing: PricingRecord): PricingRecord {
   return {
     ...pricing,
-    pricingWarnings: pricing.pricingWarnings ?? [],
+    pricingWarnings: normalizePricingWarnings(pricing.pricingWarnings),
   };
+}
+
+export const MAX_OVERRIDE_VALUE = 999999999.99;
+
+export function validateOverrideValues(values: {
+  laborOverride?: number | null;
+  sellingPriceOverride?: number | null;
+}) {
+  return [values.laborOverride, values.sellingPriceOverride].every(
+    (value) =>
+      value === undefined ||
+      value === null ||
+      (Number.isFinite(value) &&
+        value >= 0 &&
+        value <= MAX_OVERRIDE_VALUE),
+  );
+}
+
+export function formatQuoteNumber(companyId: number, quoteId: number) {
+  return `Q-${companyId}-${String(quoteId).padStart(6, "0")}`;
 }
 
 function serializeQuote(quote: typeof quotesTable.$inferSelect) {
@@ -93,7 +115,7 @@ function serializeQuoteSummary(quote: typeof quotesTable.$inferSelect) {
   };
 }
 
-function withProfit(
+export function withProfit(
   pricing: PricingRecord,
   overrides: {
     laborOverride?: number | null;
@@ -127,6 +149,30 @@ function withProfit(
         : 0,
     pricingWarnings: pricing.pricingWarnings ?? [],
   };
+}
+
+export function pricingForQuoteUpdate(
+  pricing: PricingRecord,
+  update: {
+    laborOverride?: number | null;
+    sellingPriceOverride?: number | null;
+  },
+) {
+  if (
+    !("laborOverride" in update) &&
+    !("sellingPriceOverride" in update)
+  ) {
+    return pricing;
+  }
+
+  return withProfit(pricing, {
+    ...("laborOverride" in update
+      ? { laborOverride: update.laborOverride }
+      : {}),
+    ...("sellingPriceOverride" in update
+      ? { sellingPriceOverride: update.sellingPriceOverride }
+      : {}),
+  });
 }
 
 async function companySettings() {
@@ -277,6 +323,13 @@ router.post("/quotes", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  if (!validateOverrideValues(parsed.data)) {
+    res.status(400).json({
+      error:
+        "Override values must be finite, non-negative, and within the supported amount range.",
+    });
+    return;
+  }
   if (!moduleMatchesInputs(parsed.data.module, parsed.data.jobInputs)) {
     res.status(400).json({
       error: `Job inputs do not match module ${parsed.data.module}`,
@@ -309,33 +362,53 @@ router.post("/quotes", async (req, res): Promise<void> => {
         .returning()
     )[0];
 
-  const quotes = await db
-    .select({ id: quotesTable.id })
-    .from(quotesTable)
-    .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID));
   const pricing = withProfit(estimate.pricing, {
     laborOverride: parsed.data.laborOverride,
     sellingPriceOverride: parsed.data.sellingPriceOverride,
   });
-  const [quote] = await db
-    .insert(quotesTable)
-    .values({
-      companyId: DEFAULT_COMPANY_ID,
-      customerId: customer?.id,
-      quoteNumber: `Q-${1024 + quotes.length + 1}`,
-      customerName: parsed.data.customerName,
-      customerEmail: parsed.data.customerEmail,
-      projectName: parsed.data.projectName,
-      module: parsed.data.module,
-      status: "draft",
-      jobInputs: parsed.data.jobInputs,
-      assembly: estimate.assembly,
-      pricing,
-      proposalDescription: parsed.data.proposalDescription,
-      total: pricing.finalSellingPrice,
-      margin: pricing.grossMargin,
-    })
-    .returning();
+  const quote = await db.transaction(async (tx) => {
+    const [pendingQuote] = await tx
+      .insert(quotesTable)
+      .values({
+        companyId: DEFAULT_COMPANY_ID,
+        customerId: customer?.id,
+        quoteNumber: `PENDING-${randomUUID()}`,
+        customerName: parsed.data.customerName,
+        customerEmail: parsed.data.customerEmail,
+        projectName: parsed.data.projectName,
+        module: parsed.data.module,
+        status: "draft",
+        jobInputs: parsed.data.jobInputs,
+        assembly: estimate.assembly,
+        pricing,
+        proposalDescription: parsed.data.proposalDescription,
+        total: pricing.finalSellingPrice,
+        margin: pricing.grossMargin,
+      })
+      .returning();
+
+    if (!pendingQuote) {
+      return undefined;
+    }
+
+    const [numberedQuote] = await tx
+      .update(quotesTable)
+      .set({
+        quoteNumber: formatQuoteNumber(
+          DEFAULT_COMPANY_ID,
+          pendingQuote.id,
+        ),
+      })
+      .where(
+        and(
+          eq(quotesTable.id, pendingQuote.id),
+          eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+        ),
+      )
+      .returning();
+
+    return numberedQuote;
+  });
 
   if (!quote) {
     throw new Error("Unable to create quote");
@@ -350,6 +423,13 @@ router.post("/quotes/preview", async (req, res): Promise<void> => {
   if (!parsed.success) {
     req.log.warn({ errors: parsed.error.message }, "Invalid quote preview");
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  if (!validateOverrideValues(parsed.data)) {
+    res.status(400).json({
+      error:
+        "Override values must be finite, non-negative, and within the supported amount range.",
+    });
     return;
   }
   if (!moduleMatchesInputs(parsed.data.module, parsed.data.jobInputs)) {
@@ -407,6 +487,13 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  if (!validateOverrideValues(parsed.data)) {
+    res.status(400).json({
+      error:
+        "Override values must be finite, non-negative, and within the supported amount range.",
+    });
+    return;
+  }
 
   const [existingQuote] = await db
     .select()
@@ -417,14 +504,7 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const pricing = withProfit(serializePricing(existingQuote.pricing), {
-    ...("laborOverride" in parsed.data
-      ? { laborOverride: parsed.data.laborOverride }
-      : {}),
-    ...("sellingPriceOverride" in parsed.data
-      ? { sellingPriceOverride: parsed.data.sellingPriceOverride }
-      : {}),
-  });
+  const pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
   const [quote] = await db
     .update(quotesTable)
     .set({
@@ -434,7 +514,12 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
       total: pricing.finalSellingPrice,
       margin: pricing.grossMargin,
     })
-    .where(eq(quotesTable.id, existingQuote.id))
+    .where(
+      and(
+        eq(quotesTable.id, existingQuote.id),
+        eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+      ),
+    )
     .returning();
 
   if (!quote) {
@@ -479,10 +564,15 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
   const [item] = await db
     .update(priceBookItemsTable)
     .set({ unitCost: parsed.data.unitCost })
-    .where(eq(priceBookItemsTable.id, params.data.id))
+    .where(
+      and(
+        eq(priceBookItemsTable.id, params.data.id),
+        eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID),
+      ),
+    )
     .returning();
 
-  if (!item || item.companyId !== DEFAULT_COMPANY_ID) {
+  if (!item) {
     res.status(404).json({ error: "Price book item not found" });
     return;
   }

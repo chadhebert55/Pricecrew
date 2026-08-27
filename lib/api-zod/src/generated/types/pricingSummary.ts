@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PricingInput } from './pricingInput';
+import type { PricingWarning } from './pricingWarning';
 
 export type PricingSummary = PricingInput & {
   grossProfit: number;
   grossMargin: number;
-  pricingWarnings: string[];
+  pricingWarnings: PricingWarning[];
 };

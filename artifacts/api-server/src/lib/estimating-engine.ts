@@ -5,6 +5,10 @@ import type {
   KitchenInputRecord,
   LaborRateType,
   PricingRecord,
+  PricingWarningCategory,
+  PricingWarningContext,
+  PricingWarningRecord,
+  PricingWarningSeverity,
   RecessedLightingInputRecord,
 } from "@workspace/db";
 
@@ -34,6 +38,271 @@ type EstimateResult = {
   assembly: AssemblyLineRecord[];
   pricing: PricingRecord;
 };
+
+type WarningMetadata = {
+  code: string;
+  severity: PricingWarningSeverity;
+  category: PricingWarningCategory;
+  source: string;
+  context: PricingWarningContext;
+};
+
+function stableWarningCode(message: string) {
+  const template = message
+    .replace(/"[^"]+"/g, '"value"')
+    .replace(/\b\d+(?:\.\d+)?\b/g, "#")
+    .toUpperCase();
+  let hash = 2166136261;
+  for (let index = 0; index < template.length; index += 1) {
+    hash ^= template.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `ESTIMATE_WARNING_${(hash >>> 0).toString(16).toUpperCase().padStart(8, "0")}`;
+}
+
+function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("No verified price is available")) {
+    return {
+      code: "PRICE_BOOK_ITEM_UNRESOLVED",
+      severity: "error",
+      category: "missing-price",
+      source: "price-book",
+      context: { itemKey: message.match(/"([^"]+)"/)?.[1] ?? null },
+    };
+  }
+  if (message.startsWith("Unresolved breaker:")) {
+    const match = message.match(
+      /exact (.+?) (\d+|selected amperage)A (\d+|selected pole count)-pole ([^.]+) breaker/,
+    );
+    return {
+      code: "EXACT_BREAKER_UNRESOLVED",
+      severity: "error",
+      category: "missing-price",
+      source: "breaker-resolution",
+      context: {
+        manufacturer: match?.[1] ?? null,
+        amperage: match?.[2] ? Number(match[2]) || null : null,
+        poleCount: match?.[3] ? Number(match[3]) || null : null,
+        protectionType: match?.[4] ?? null,
+      },
+    };
+  }
+  if (message.includes("supported branch-circuit cable")) {
+    return {
+      code: "UNSUPPORTED_BRANCH_CABLE",
+      severity: "error",
+      category: "rule",
+      source: "conductor-rule",
+      context: { rule: "15A branch circuit requires 14/2 NM-B or 12/2 NM-B" },
+    };
+  }
+  if (message.includes("wire run is zero")) {
+    return {
+      code: "WIRE_RUN_LENGTH_ZERO",
+      severity: "warning",
+      category: "rule",
+      source: "conductor-rule",
+      context: { rule: "wire run plus wiring allowance must be greater than zero" },
+    };
+  }
+  if (message.includes("14/3 NM-B traveler footage is zero")) {
+    return {
+      code: "THREE_WAY_TRAVELER_FOOTAGE_ZERO",
+      severity: "warning",
+      category: "rule",
+      source: "switching-rule",
+      context: { conductor: "14/3 NM-B", switching: "traditional-3-way" },
+    };
+  }
+  if (message.includes("cable footage is zero")) {
+    return {
+      code: "CONFIGURABLE_CABLE_FOOTAGE_ZERO",
+      severity: "warning",
+      category: "rule",
+      source: "conductor-rule",
+      context: { rule: "selected cable footage must be greater than zero" },
+    };
+  }
+  if (message.includes("home run") && message.includes("zero")) {
+    return {
+      code: "APPLIANCE_HOME_RUN_LENGTH_ZERO",
+      severity: "warning",
+      category: "rule",
+      source: "circuit-rule",
+      context: { conductor: "12/2 NM-B", rule: "home run length must be greater than zero" },
+    };
+  }
+  if (message.includes("route length is unresolved")) {
+    return {
+      code: "ROUTE_LENGTH_UNRESOLVED",
+      severity: "warning",
+      category: "rule",
+      source: "circuit-rule",
+      context: { rule: "route length is required to price common wiring" },
+    };
+  }
+  if (message.includes("existing circuit") || message.includes("Existing bathroom circuit")) {
+    return {
+      code: "EXISTING_CIRCUIT_FIELD_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "circuit-rule",
+      context: { rule: "verify existing circuit capacity and protection in the field" },
+    };
+  }
+  if (message.includes("Verify Lutron Diva")) {
+    return {
+      code: "LUTRON_COMPATIBILITY_REVIEW",
+      severity: "warning",
+      category: "compatibility",
+      source: "smart-switching-rule",
+      context: { ecosystem: "Lutron Diva/Pico" },
+    };
+  }
+  if (message.includes("planning guidance")) {
+    return {
+      code: "LIGHTING_SPACING_PLANNING_GUIDANCE",
+      severity: "info",
+      category: "planning",
+      source: "lighting-planning",
+      context: { rule: "fixture spacing is planning guidance, not code compliance" },
+    };
+  }
+  if (message.includes("Room dimensions are incomplete")) {
+    return {
+      code: "ROOM_DIMENSIONS_INCOMPLETE",
+      severity: "warning",
+      category: "planning",
+      source: "lighting-planning",
+      context: { requiredInputs: "room length and width" },
+    };
+  }
+  if (message.includes("Fixture quantity and spacing")) {
+    return {
+      code: "LIGHTING_LAYOUT_FIELD_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "lighting-planning",
+      context: { rule: "verify ceiling layout, obstructions, insulation, and fire rating" },
+    };
+  }
+  if (message.includes("Lutron")) {
+    return {
+      code: "SMART_SWITCHING_FIELD_REVIEW",
+      severity: "warning",
+      category: "compatibility",
+      source: "switching-rule",
+      context: { ecosystem: "smart switching" },
+    };
+  }
+  if (message.includes("breaker quantity")) {
+    const amperage = message.match(/(15|20)A/)?.[1];
+    return {
+      code: "BREAKER_QUANTITY_OVERRIDE_REVIEW",
+      severity: "warning",
+      category: "rule",
+      source: "breaker-quantity-rule",
+      context: { amperage: amperage ? Number(amperage) : null },
+    };
+  }
+  if (message.includes("not represented by the configurable")) {
+    return {
+      code: "BREAKER_QUANTITY_UNREPRESENTED",
+      severity: "warning",
+      category: "rule",
+      source: "breaker-quantity-rule",
+      context: { rule: "selected circuit amperage must be represented by a configured breaker quantity" },
+    };
+  }
+  if (message.includes("Electric-range breaker")) {
+    return {
+      code: "HEAVY_APPLIANCE_ASSEMBLY_UNRESOLVED",
+      severity: "warning",
+      category: "missing-price",
+      source: "appliance-circuit-rule",
+      context: { appliance: "electric range" },
+    };
+  }
+  if (message.includes("Both gas and electric range")) {
+    return {
+      code: "RANGE_TYPE_CONFLICT",
+      severity: "warning",
+      category: "rule",
+      source: "appliance-circuit-rule",
+      context: { rule: "confirm final range fuel type" },
+    };
+  }
+  if (message.includes("Countertop receptacle spacing")) {
+    return {
+      code: "COUNTERTOP_LAYOUT_FIELD_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "countertop-receptacle-rule",
+      context: { rule: "verify spacing, protection, and box locations" },
+    };
+  }
+  if (message.includes("Appliance circuit prices")) {
+    return {
+      code: "APPLIANCE_ALLOWANCE_REVIEW",
+      severity: "warning",
+      category: "missing-price",
+      source: "appliance-circuit-rule",
+      context: { rule: "confirm appliance specifications and exact catalog requirements" },
+    };
+  }
+  if (message.includes("Dedicated-circuit and control requirements")) {
+    return {
+      code: "BATHROOM_EQUIPMENT_REQUIREMENT_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "bathroom-equipment-rule",
+      context: { rule: "verify heat-producing equipment circuit and control requirements" },
+    };
+  }
+  if (message.includes("Bathroom box, plate")) {
+    return {
+      code: "BATHROOM_LAYOUT_ALLOWANCE_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "bathroom-layout-rule",
+      context: { rule: "verify box, plate, and wiring quantities against final layout" },
+    };
+  }
+  const inferredCategory: PricingWarningCategory =
+    /field|verify|verified/i.test(message)
+      ? "field-verification"
+      : /allowance|planning/i.test(message)
+        ? "planning"
+        : "rule";
+  return {
+    code: stableWarningCode(message),
+    severity: "warning",
+    category: inferredCategory,
+    source: "estimating-engine",
+    context: {
+      ruleTemplate: message
+        .replace(/"[^"]+"/g, '"value"')
+        .replace(/\b\d+(?:\.\d+)?\b/g, "#"),
+    },
+  };
+}
+
+export function normalizePricingWarnings(
+  warnings: Array<PricingWarningRecord | string> | null | undefined,
+): PricingWarningRecord[] {
+  return (warnings ?? []).map((warning) => {
+    if (typeof warning !== "string") {
+      return {
+        ...warning,
+        context: warning.context ?? {},
+      };
+    }
+    return {
+      ...warningMetadata(warning),
+      message: warning,
+    };
+  });
+}
 
 function normalized(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -182,7 +451,7 @@ function finalizeEstimate(
         calculatedSellingPrice > 0
           ? Number((grossProfit / calculatedSellingPrice).toFixed(4))
           : 0,
-      pricingWarnings,
+      pricingWarnings: normalizePricingWarnings(pricingWarnings),
       laborSellRate,
       laborSellAmount,
       laborRateType,

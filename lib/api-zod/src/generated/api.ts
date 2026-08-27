@@ -164,8 +164,10 @@ export const createQuoteBodyJobInputsFourAdditionalLightsMin = 0;
 
 
 export const createQuoteBodyLaborOverrideMin = 0;
+export const createQuoteBodyLaborOverrideMax = 999999999.99;
 
 export const createQuoteBodySellingPriceOverrideMin = 0;
+export const createQuoteBodySellingPriceOverrideMax = 999999999.99;
 
 
 
@@ -296,8 +298,8 @@ export const CreateQuoteBody = zod.object({
   "breakerProtectionType": zod.string(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
-  "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).nullish(),
-  "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).nullish(),
+  "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).max(createQuoteBodyLaborOverrideMax).nullish(),
+  "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).max(createQuoteBodySellingPriceOverrideMax).nullish(),
   "proposalDescription": zod.string().min(1)
 })
 
@@ -396,6 +398,9 @@ export const createQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
 export const createQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
+
+
+
 
 
 
@@ -557,7 +562,14 @@ export const CreateQuoteResponse = zod.object({
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
-  "pricingWarnings": zod.array(zod.string())
+  "pricingWarnings": zod.array(zod.object({
+  "code": zod.string().min(1),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "category": zod.enum(['missing-price', 'rule', 'field-verification', 'planning', 'compatibility', 'legacy']),
+  "source": zod.string().min(1),
+  "message": zod.string().min(1),
+  "context": zod.record(zod.string(), zod.unknown())
+}))
 })),
   "proposalDescription": zod.string(),
   "createdAt": zod.coerce.date()
@@ -665,8 +677,10 @@ export const previewQuoteBodyJobInputsFourAdditionalLightsMin = 0;
 
 
 export const previewQuoteBodyLaborOverrideMin = 0;
+export const previewQuoteBodyLaborOverrideMax = 999999999.99;
 
 export const previewQuoteBodySellingPriceOverrideMin = 0;
+export const previewQuoteBodySellingPriceOverrideMax = 999999999.99;
 
 
 
@@ -793,9 +807,14 @@ export const PreviewQuoteBody = zod.object({
   "breakerProtectionType": zod.string(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
 })]),
-  "laborOverride": zod.number().min(previewQuoteBodyLaborOverrideMin).nullish(),
-  "sellingPriceOverride": zod.number().min(previewQuoteBodySellingPriceOverrideMin).nullish()
+  "laborOverride": zod.number().min(previewQuoteBodyLaborOverrideMin).max(previewQuoteBodyLaborOverrideMax).nullish(),
+  "sellingPriceOverride": zod.number().min(previewQuoteBodySellingPriceOverrideMin).max(previewQuoteBodySellingPriceOverrideMax).nullish()
 })
+
+
+
+
+
 
 export const PreviewQuoteResponse = zod.object({
   "assembly": zod.array(zod.object({
@@ -822,7 +841,14 @@ export const PreviewQuoteResponse = zod.object({
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
-  "pricingWarnings": zod.array(zod.string())
+  "pricingWarnings": zod.array(zod.object({
+  "code": zod.string().min(1),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "category": zod.enum(['missing-price', 'rule', 'field-verification', 'planning', 'compatibility', 'legacy']),
+  "source": zod.string().min(1),
+  "message": zod.string().min(1),
+  "context": zod.record(zod.string(), zod.unknown())
+}))
 })),
   "planning": zod.object({
   "suggestedFixtureQuantity": zod.number(),
@@ -936,6 +962,9 @@ export const getQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
 export const getQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
+
+
+
 
 
 
@@ -1097,7 +1126,14 @@ export const GetQuoteResponse = zod.object({
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
-  "pricingWarnings": zod.array(zod.string())
+  "pricingWarnings": zod.array(zod.object({
+  "code": zod.string().min(1),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "category": zod.enum(['missing-price', 'rule', 'field-verification', 'planning', 'compatibility', 'legacy']),
+  "source": zod.string().min(1),
+  "message": zod.string().min(1),
+  "context": zod.record(zod.string(), zod.unknown())
+}))
 })),
   "proposalDescription": zod.string(),
   "createdAt": zod.coerce.date()
@@ -1111,10 +1147,18 @@ export const UpdateQuoteParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updateQuoteBodyLaborOverrideMin = 0;
+export const updateQuoteBodyLaborOverrideMax = 999999999.99;
+
+export const updateQuoteBodySellingPriceOverrideMin = 0;
+export const updateQuoteBodySellingPriceOverrideMax = 999999999.99;
+
+
+
 export const UpdateQuoteBody = zod.object({
   "status": zod.enum(['draft', 'ready']).optional(),
-  "laborOverride": zod.number().nullish(),
-  "sellingPriceOverride": zod.number().nullish(),
+  "laborOverride": zod.number().min(updateQuoteBodyLaborOverrideMin).max(updateQuoteBodyLaborOverrideMax).nullish(),
+  "sellingPriceOverride": zod.number().min(updateQuoteBodySellingPriceOverrideMin).max(updateQuoteBodySellingPriceOverrideMax).nullish(),
   "proposalDescription": zod.string().optional()
 })
 
@@ -1213,6 +1257,9 @@ export const updateQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
 export const updateQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
+
+
+
 
 
 
@@ -1374,7 +1421,14 @@ export const UpdateQuoteResponse = zod.object({
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
-  "pricingWarnings": zod.array(zod.string())
+  "pricingWarnings": zod.array(zod.object({
+  "code": zod.string().min(1),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "category": zod.enum(['missing-price', 'rule', 'field-verification', 'planning', 'compatibility', 'legacy']),
+  "source": zod.string().min(1),
+  "message": zod.string().min(1),
+  "context": zod.record(zod.string(), zod.unknown())
+}))
 })),
   "proposalDescription": zod.string(),
   "createdAt": zod.coerce.date()

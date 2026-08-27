@@ -22,11 +22,13 @@ export interface QuoteInput {
   jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
   /**
      * @minimum 0
+     * @maximum 999999999.99
      * @nullable
      */
   laborOverride?: number | null;
   /**
      * @minimum 0
+     * @maximum 999999999.99
      * @nullable
      */
   sellingPriceOverride?: number | null;

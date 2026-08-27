@@ -342,9 +342,11 @@ components:
         laborOverride:
           type: ["number", "null"]
           minimum: 0
+          maximum: 999999999.99
         sellingPriceOverride:
           type: ["number", "null"]
           minimum: 0
+          maximum: 999999999.99
         proposalDescription:
           type: string
           minLength: 1
@@ -370,9 +372,11 @@ components:
         laborOverride:
           type: ["number", "null"]
           minimum: 0
+          maximum: 999999999.99
         sellingPriceOverride:
           type: ["number", "null"]
           minimum: 0
+          maximum: 999999999.99
     EstimatePreview:
       type: object
       required:
@@ -394,8 +398,12 @@ components:
           $ref: "#/components/schemas/QuoteStatus"
         laborOverride:
           type: ["number", "null"]
+          minimum: 0
+          maximum: 999999999.99
         sellingPriceOverride:
           type: ["number", "null"]
+          minimum: 0
+          maximum: 999999999.99
         proposalDescription:
           type: string
     EvChargerInputs:
@@ -893,7 +901,44 @@ components:
             pricingWarnings:
               type: array
               items:
-                type: string
+                $ref: "#/components/schemas/PricingWarning"
+    PricingWarning:
+      type: object
+      required:
+        - code
+        - severity
+        - category
+        - source
+        - message
+        - context
+      properties:
+        code:
+          type: string
+          minLength: 1
+        severity:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        category:
+          type: string
+          enum:
+            - missing-price
+            - rule
+            - field-verification
+            - planning
+            - compatibility
+            - legacy
+        source:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+        context:
+          type: object
+          additionalProperties: true
     QuoteStatus:
       type: string
       enum:

@@ -6,6 +6,7 @@ import {
   useGetQuote,
   useUpdateQuote,
 } from "@workspace/api-client-react"
+import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useParams } from "wouter"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -228,8 +229,8 @@ export function QuoteDetail() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-1 pl-5 text-sm list-disc">
-                  {quote.pricing.pricingWarnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
+                  {quote.pricing.pricingWarnings.map((warning, index) => (
+                    <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>
                   ))}
                 </ul>
               </CardContent>
@@ -319,6 +320,9 @@ export function QuoteDetail() {
                 <Label className="text-muted-foreground">Internal Labor Cost Override ($)</Label>
                 <Input 
                   type="number" 
+                  min="0"
+                  max="999999999.99"
+                  step="0.01"
                   placeholder={`Calc: $${quote.pricing.laborCost.toFixed(2)}`}
                   value={laborOverride}
                   onChange={e => setLaborOverride(e.target.value)}
@@ -329,6 +333,9 @@ export function QuoteDetail() {
                 <Label className="text-muted-foreground">Selling Price Override ($)</Label>
                 <Input 
                   type="number" 
+                  min="0"
+                  max="999999999.99"
+                  step="0.01"
                   placeholder={`Calc: $${quote.pricing.calculatedSellingPrice.toFixed(2)}`}
                   value={priceOverride}
                   onChange={e => setPriceOverride(e.target.value)}
