@@ -317,10 +317,16 @@ export const RecessedLightingInputsSwitchType = {
   '3-way': '3-way',
 } as const;
 
+/**
+ * Explicit switching choice for new recessed-lighting quotes. Omit for legacy clients.
+ */
 export type RecessedLightingInputsSwitchingMethod = typeof RecessedLightingInputsSwitchingMethod[keyof typeof RecessedLightingInputsSwitchingMethod];
 
 
 export const RecessedLightingInputsSwitchingMethod = {
+  'single-pole': 'single-pole',
+  'traditional-3-way': 'traditional-3-way',
+  'smart-3-way': 'smart-3-way',
   'Single-pole': 'Single-pole',
   'Traditional_3-way': 'Traditional 3-way',
   'Lutron_Diva_Smart_Dimmer_3-way_kit_with_Pico_paddle_remote': 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote',
@@ -381,8 +387,12 @@ export interface RecessedLightingInputs {
   wiringOption: RecessedLightingInputsWiringOption;
   circuitOption: RecessedLightingInputsCircuitOption;
   switchType: RecessedLightingInputsSwitchType;
+  /** Explicit switching choice for new recessed-lighting quotes. Omit for legacy clients. */
   switchingMethod?: RecessedLightingInputsSwitchingMethod;
-  /** @minimum 0 */
+  /**
+     * Contractor-entered 14/3 NM-B footage for traditional 3-way switching.
+     * @minimum 0
+     */
   traditionalThreeWayFootage?: number;
   dimmerSelection: RecessedLightingInputsDimmerSelection;
   customerSuppliedFixtures: boolean;
@@ -406,6 +416,11 @@ export interface RecessedLightingInputs {
   breakerProtectionType: string;
   cableType: RecessedLightingInputsCableType;
 }
+
+/**
+ * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
+ */
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -477,7 +492,7 @@ export type PricingSummary = PricingInput & {
 export type Quote = QuoteSummary & ({
   /** @nullable */
   customerEmail: string | null;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
+  jobInputs: QuoteJobInputsSnapshot;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;

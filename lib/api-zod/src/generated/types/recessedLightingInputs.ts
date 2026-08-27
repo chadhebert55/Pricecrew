@@ -28,8 +28,12 @@ export interface RecessedLightingInputs {
   wiringOption: RecessedLightingInputsWiringOption;
   circuitOption: RecessedLightingInputsCircuitOption;
   switchType: RecessedLightingInputsSwitchType;
+  /** Explicit switching choice for new recessed-lighting quotes. Omit for legacy clients. */
   switchingMethod?: RecessedLightingInputsSwitchingMethod;
-  /** @minimum 0 */
+  /**
+     * Contractor-entered 14/3 NM-B footage for traditional 3-way switching.
+     * @minimum 0
+     */
   traditionalThreeWayFootage?: number;
   dimmerSelection: RecessedLightingInputsDimmerSelection;
   customerSuppliedFixtures: boolean;

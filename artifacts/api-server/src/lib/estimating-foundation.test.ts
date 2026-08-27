@@ -204,7 +204,7 @@ const recessedInputs: RecessedLightingInputRecord = {
   wiringOption: "Use existing switch leg / lighting box",
   circuitOption: "Reuse existing circuit",
   switchType: "Single-pole",
-  switchingMethod: "Single-pole",
+  switchingMethod: "single-pole",
   dimmerSelection: "No dimmer",
   customerSuppliedFixtures: true,
   ceilingHeight: "Standard 8-10 ft",
@@ -293,7 +293,9 @@ test("traditional 3-way zero traveler footage has its specific warning code", ()
   const result = calculateRecessedLightingEstimate(
     {
       ...recessedInputs,
-      switchingMethod: "Traditional 3-way",
+      wiringOption: "New wiring from source",
+      switchingMethod: "traditional-3-way",
+      switchType: "3-way",
       traditionalThreeWayFootage: 0,
     },
     settings,

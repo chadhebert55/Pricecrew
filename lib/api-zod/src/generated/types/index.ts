@@ -37,6 +37,7 @@ export * from './pricingWarningSeverity';
 export * from './quote';
 export * from './quoteInput';
 export * from './quoteInputModule';
+export * from './quoteJobInputsSnapshot';
 export * from './quotePreviewInput';
 export * from './quotePreviewInputModule';
 export * from './quoteStatus';

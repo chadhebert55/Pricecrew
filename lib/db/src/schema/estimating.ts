@@ -121,12 +121,15 @@ export type RecessedLightingInputRecord = {
   fixtureSize: RecessedLightSize;
   wiringOption: string;
   circuitOption: string;
+  switchType: string;
   switchingMethod?:
+    | "single-pole"
+    | "traditional-3-way"
+    | "smart-3-way"
     | "Single-pole"
     | "Traditional 3-way"
     | "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   traditionalThreeWayFootage?: number;
-  switchType: string;
   dimmerSelection: string;
   customerSuppliedFixtures: boolean;
   ceilingHeight: string;

@@ -87,7 +87,10 @@ function warningMetadata(message: string): WarningMetadata {
       },
     };
   }
-  if (message.includes("supported branch-circuit cable")) {
+  if (
+    message.includes("supported branch-circuit cable") ||
+    message.includes("No cable cost was substituted")
+  ) {
     return {
       code: "UNSUPPORTED_BRANCH_CABLE",
       severity: "error",
@@ -105,7 +108,12 @@ function warningMetadata(message: string): WarningMetadata {
       context: { rule: "wire run plus wiring allowance must be greater than zero" },
     };
   }
-  if (message.includes("14/3 NM-B traveler footage is zero")) {
+  if (
+    message.includes("14/3 NM-B traveler footage is zero") ||
+    message.includes(
+      "contractor-entered 14/3 NM-B footage and wiring allowance are both zero",
+    )
+  ) {
     return {
       code: "THREE_WAY_TRAVELER_FOOTAGE_ZERO",
       severity: "warning",
@@ -1540,15 +1548,17 @@ export function calculateRecessedLightingEstimate(
     : 0;
   const isNewWiring = /new/i.test(inputs.wiringOption);
   const isNewCircuit = /new/i.test(inputs.circuitOption);
-  const switchingMethod =
-    inputs.switchingMethod ??
-    (/3[- ]?way/i.test(inputs.switchType)
-      ? "Traditional 3-way"
-      : "Single-pole");
-  const isTraditionalThreeWay = switchingMethod === "Traditional 3-way";
+  const switchingMethod = inputs.switchingMethod as string | undefined;
+  const isLegacyThreeWay =
+    !switchingMethod && /3[- ]?way/i.test(inputs.switchType);
+  const isTraditionalThreeWay =
+    switchingMethod === "traditional-3-way" ||
+    switchingMethod === "Traditional 3-way" ||
+    isLegacyThreeWay;
   const isSmartKit =
+    switchingMethod === "smart-3-way" ||
     switchingMethod ===
-    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
+      "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   const fixtureKey =
     inputs.fixtureSize === "6-inch"
       ? "Juno 6-inch regressed wafer light"
@@ -1598,7 +1608,7 @@ export function calculateRecessedLightingEstimate(
   );
 
   const controlKey = isSmartKit
-    ? "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote"
+    ? "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack"
     : isTraditionalThreeWay
       ? "Legrand radiant TM873WCC10 15A 3-way switch"
       : "Legrand radiant TM870WCC10 15A single-pole switch";
@@ -1608,7 +1618,7 @@ export function calculateRecessedLightingEstimate(
       ? "Legrand radiant 15A traditional 3-way switches"
       : "Legrand radiant 15A single-pole switch";
   addPricedItem(
-    "switch-controls",
+    isSmartKit ? "smart-switch-kit" : "switch-controls",
     "Controls",
     controlKey,
     controlDescription,
@@ -1637,56 +1647,56 @@ export function calculateRecessedLightingEstimate(
   }
 
   if (isNewWiring) {
-    const selectedCable = inputs.cableType;
-    const cableIsAppropriate =
-      selectedCable === "14/2 NM-B" || selectedCable === "12/2 NM-B";
-    if (!cableIsAppropriate) {
+    const selectedCable = isTraditionalThreeWay
+      ? "14/3 NM-B"
+      : inputs.cableType;
+    const cableMatchesBreaker =
+      !isNewCircuit ||
+      (inputs.breakerAmperage === 15
+        ? isTraditionalThreeWay
+          ? selectedCable === "14/3 NM-B"
+          : selectedCable === "14/2 NM-B" || selectedCable === "12/2 NM-B"
+        : inputs.breakerAmperage === 20
+          ? !isTraditionalThreeWay && selectedCable === "12/2 NM-B"
+          : false);
+    if (!cableMatchesBreaker) {
       pricingWarnings.push(
-        `Selected ${selectedCable} cable is not a supported branch-circuit cable for this 15A recessed-lighting estimate. Select 14/2 NM-B or 12/2 NM-B; no cable cost was substituted.`,
+        `Selected ${selectedCable} cable is not appropriate for the ${inputs.breakerAmperage}A ${isTraditionalThreeWay ? "3-way" : "single-pole"} configuration. No cable cost was substituted. Confirm the breaker and conductor selection in the field.`,
       );
-    } else if (wireRunLength + wiringAllowanceFeet > 0) {
+    } else {
+      const cableFootage = isTraditionalThreeWay
+        ? traditionalThreeWayFootage
+        : wireRunLength;
+      if (cableFootage + wiringAllowanceFeet <= 0) {
+        pricingWarnings.push(
+          isTraditionalThreeWay
+            ? "Traditional 3-way switching is selected but contractor-entered 14/3 NM-B footage and wiring allowance are both zero. Add footage so cable can be priced."
+            : "New wiring is selected but the approximate wire run is zero. Add a run length and/or wiring allowance so cable can be priced.",
+        );
+      } else {
       const cable = unitCost(`${selectedCable} cable`, priceBook, pricingWarnings);
       addLine(assembly, {
         id: "recessed-wiring",
         category: "Conductor",
-        description: `${selectedCable} cable — 15A lighting circuit run plus wiring allowance`,
-        quantity: Number((wireRunLength + wiringAllowanceFeet).toFixed(2)),
+          description: isTraditionalThreeWay
+            ? "14/3 NM-B cable — contractor-entered 3-way footage plus wiring allowance"
+            : `${selectedCable} cable — approximate run plus wiring allowance`,
+          quantity: Number((cableFootage + wiringAllowanceFeet).toFixed(2)),
         unit: "ft",
         unitCost: cable.value,
         source: cable.source,
       });
-    } else {
-      pricingWarnings.push(
-        "New wiring is selected but the approximate wire run is zero. Add a run length and/or wiring allowance so cable can be priced.",
-      );
+        if (isTraditionalThreeWay && cableFootage === 0) {
+          pricingWarnings.push(
+            "Traditional 3-way switching has zero contractor-entered 14/3 NM-B footage. Confirm the entered footage before the quote is sent.",
+          );
+        }
+      }
     }
   } else {
     pricingWarnings.push(
       "Existing switch leg / lighting box conditions must be opened and field-verified for capacity, grounding, box support, and accessible wiring before installation.",
     );
-  }
-
-  if (isTraditionalThreeWay) {
-    if (traditionalThreeWayFootage > 0) {
-      const travelerCable = unitCost(
-        "14/3 NM-B cable",
-        priceBook,
-        pricingWarnings,
-      );
-      addLine(assembly, {
-        id: "recessed-three-way-traveler",
-        category: "Conductor",
-        description: "14/3 NM-B cable — traditional 3-way traveler run",
-        quantity: Number(traditionalThreeWayFootage.toFixed(2)),
-        unit: "ft",
-        unitCost: travelerCable.value,
-        source: travelerCable.source,
-      });
-    } else {
-      pricingWarnings.push(
-        "Traditional 3-way switching is selected, but the dedicated 14/3 NM-B traveler footage is zero. Enter the run footage so it can be priced separately from the main lighting circuit wiring.",
-      );
-    }
   }
 
   if (isSmartKit) {
@@ -1699,7 +1709,7 @@ export function calculateRecessedLightingEstimate(
     const breaker = resolveBreaker(
       {
         manufacturer: inputs.panelManufacturer,
-        amperage: 15,
+        amperage: inputs.breakerAmperage,
         poleCount: inputs.breakerPoleCount,
         protectionType: inputs.breakerProtectionType,
       },
@@ -1760,8 +1770,13 @@ export function calculateRecessedLightingEstimate(
       /include|yes|selected/i.test(inputs.dimmerSelection)
         ? 0.5
         : 0) +
-      (isNewWiring ? (wireRunLength + wiringAllowanceFeet) / 40 : 0) +
-      (isTraditionalThreeWay ? traditionalThreeWayFootage / 40 : 0) +
+      (isNewWiring
+        ? ((isTraditionalThreeWay
+            ? traditionalThreeWayFootage
+            : wireRunLength) +
+            wiringAllowanceFeet) /
+          40
+        : 0) +
       (isNewCircuit ? 2.5 : 0) +
       accessHours +
       laborAdjustmentHours) *

@@ -329,10 +329,11 @@ async function seedEstimatorData(): Promise<void> {
     },
     {
       category: "Controls",
-      item: "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+      item:
+        "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack",
       unit: "kit",
       unitCost: 85,
-      supplier: "Company default",
+      supplier: "Lutron",
       manufacturer: "Lutron",
       sourceDate: controlSourceDate,
       isDefault: false,
@@ -621,6 +622,43 @@ async function seedEstimatorData(): Promise<void> {
       isDefault: false,
     },
   ];
+
+  const legacySmartKitName =
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
+  const canonicalSmartKitName =
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack";
+  const [canonicalSmartKit] = await db
+    .select()
+    .from(priceBookItemsTable)
+    .where(
+      and(
+        eq(priceBookItemsTable.companyId, company.id),
+        eq(priceBookItemsTable.item, canonicalSmartKitName),
+      ),
+    )
+    .limit(1);
+  if (!canonicalSmartKit) {
+    const [legacySmartKit] = await db
+      .select()
+      .from(priceBookItemsTable)
+      .where(
+        and(
+          eq(priceBookItemsTable.companyId, company.id),
+          eq(priceBookItemsTable.item, legacySmartKitName),
+        ),
+      )
+      .limit(1);
+    if (legacySmartKit) {
+      await db
+        .update(priceBookItemsTable)
+        .set({
+          item: canonicalSmartKitName,
+          supplier: "Lutron",
+          manufacturer: "Lutron",
+        })
+        .where(eq(priceBookItemsTable.id, legacySmartKit.id));
+    }
+  }
 
   for (const item of verifiedItems) {
     const [existing] = item.supplierSku

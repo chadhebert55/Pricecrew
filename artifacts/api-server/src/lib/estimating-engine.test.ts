@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
@@ -52,7 +53,7 @@ const priceBook: PriceBookItem[] = [
     manufacturer: "Legrand",
   }),
   catalogRow(
-    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack",
     85,
     { manufacturer: "Lutron" },
   ),
@@ -163,11 +164,43 @@ const baseInputs: RecessedLightingInputRecord = {
   cableType: "14/2 NM-B",
 };
 
-test("single-pole uses the 15A branch-circuit cable without traveler materials", () => {
+test("preview and create validation accept canonical and legacy switching values", () => {
+  const methods: NonNullable<RecessedLightingInputRecord["switchingMethod"]>[] = [
+    "single-pole",
+    "traditional-3-way",
+    "smart-3-way",
+    "Single-pole",
+    "Traditional 3-way",
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+  ];
+
+  for (const switchingMethod of methods) {
+    const jobInputs = { ...baseInputs, switchingMethod };
+    assert.equal(
+      PreviewQuoteBody.safeParse({
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+      }).success,
+      true,
+    );
+    assert.equal(
+      CreateQuoteBody.safeParse({
+        customerName: "Compatibility test",
+        projectName: "Switching compatibility",
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+        proposalDescription: "Compatibility validation",
+      }).success,
+      true,
+    );
+  }
+});
+
+test("single-pole uses the selected compatible branch-circuit cable", () => {
   const result = calculateRecessedLightingEstimate(
     {
       ...baseInputs,
-      switchingMethod: "Single-pole",
+      switchingMethod: "single-pole",
     },
     settings,
     priceBook,
@@ -190,26 +223,21 @@ test("single-pole uses the 15A branch-circuit cable without traveler materials",
   );
 });
 
-test("traditional 3-way prices adjustable 14/3 separately from 14/2", () => {
+test("traditional 3-way uses entered 14/3 footage plus wiring allowance", () => {
   const result = calculateRecessedLightingEstimate(
     {
       ...baseInputs,
-      switchingMethod: "Traditional 3-way",
+      switchingMethod: "traditional-3-way",
       switchType: "3-way",
       traditionalThreeWayFootage: 37,
     },
     settings,
     priceBook,
   );
-  const branch = result.assembly.find((line) => line.id === "recessed-wiring");
-  const traveler = result.assembly.find(
-    (line) => line.id === "recessed-three-way-traveler",
-  );
-  assert.equal(branch?.description.includes("14/2 NM-B"), true);
-  assert.equal(branch?.quantity, 50);
-  assert.equal(branch?.unitCost, 0.37);
-  assert.equal(traveler?.quantity, 37);
-  assert.equal(traveler?.unitCost, 0.53);
+  const cable = result.assembly.find((line) => line.id === "recessed-wiring");
+  assert.equal(cable?.description.includes("14/3 NM-B"), true);
+  assert.equal(cable?.quantity, 47);
+  assert.equal(cable?.unitCost, 0.53);
   assert.equal(
     result.assembly.find(
       (line) => line.id === "recessed-circuit-protection",
@@ -218,21 +246,46 @@ test("traditional 3-way prices adjustable 14/3 separately from 14/2", () => {
   );
 });
 
-test("Diva and Pico switching uses one combo kit and no traveler cable", () => {
+test("traditional 3-way prices 14/3 with the actual reused-circuit form defaults", () => {
   const result = calculateRecessedLightingEstimate(
     {
       ...baseInputs,
-      switchingMethod:
-        "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+      circuitOption: "Reuse existing circuit",
+      breakerAmperage: 20,
+      cableType: "12/2 NM-B",
+      switchingMethod: "traditional-3-way",
+      switchType: "3-way",
+      traditionalThreeWayFootage: 40,
+    },
+    settings,
+    priceBook,
+  );
+  const cable = result.assembly.find((line) => line.id === "recessed-wiring");
+  assert.equal(cable?.description.includes("14/3 NM-B"), true);
+  assert.equal(cable?.quantity, 50);
+  assert.equal(cable?.unitCost, 0.53);
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      (typeof warning === "string" ? warning : warning.message).includes(
+        "Existing circuit capacity",
+      ),
+    ),
+    true,
+  );
+});
+
+test("smart 3-way uses one combo kit and no separate dimmer", () => {
+  const result = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "smart-3-way",
       traditionalThreeWayFootage: 50,
       dimmerSelection: "Include dimmer",
     },
     settings,
     priceBook,
   );
-  const controls = result.assembly.find(
-    (line) => line.id === "switch-controls",
-  );
+  const controls = result.assembly.find((line) => line.id === "smart-switch-kit");
   assert.equal(controls?.quantity, 1);
   assert.equal(controls?.unit, "kit");
   assert.equal(controls?.unitCost, 85);
@@ -248,12 +301,12 @@ test("Diva and Pico switching uses one combo kit and no traveler cable", () => {
   );
 });
 
-test("an explicitly selected new lighting circuit adds one 15A breaker only", () => {
+test("an explicitly selected new lighting circuit keeps the contractor's breaker choice", () => {
   const result = calculateRecessedLightingEstimate(
     {
       ...baseInputs,
       circuitOption: "New dedicated circuit",
-      switchingMethod: "Traditional 3-way",
+      switchingMethod: "traditional-3-way",
       switchType: "3-way",
       traditionalThreeWayFootage: 25,
       breakerAmperage: 20,
@@ -265,7 +318,15 @@ test("an explicitly selected new lighting circuit adds one 15A breaker only", ()
     (line) => line.id === "recessed-circuit-protection",
   );
   assert.equal(breakers.length, 1);
-  assert.equal(breakers[0]?.description.includes("15A"), true);
+  assert.equal(breakers[0]?.description.includes("20A"), true);
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      (typeof warning === "string" ? warning : warning.message).includes(
+        "No cable cost was substituted",
+      ),
+    ),
+    true,
+  );
 });
 
 test("contractor-edited traveler and combo-kit costs flow into estimates", () => {
@@ -273,14 +334,14 @@ test("contractor-edited traveler and combo-kit costs flow into estimates", () =>
     row.item === "14/3 NM-B cable"
       ? { ...row, unitCost: 0.71 }
       : row.item ===
-          "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote"
+          "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack"
         ? { ...row, unitCost: 99 }
         : row,
   );
   const traditional = calculateRecessedLightingEstimate(
     {
       ...baseInputs,
-      switchingMethod: "Traditional 3-way",
+      switchingMethod: "traditional-3-way",
       switchType: "3-way",
       traditionalThreeWayFootage: 20,
     },
@@ -290,21 +351,44 @@ test("contractor-edited traveler and combo-kit costs flow into estimates", () =>
   const smart = calculateRecessedLightingEstimate(
     {
       ...baseInputs,
-      switchingMethod:
-        "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote",
+      switchingMethod: "smart-3-way",
     },
     settings,
     editedPriceBook,
   );
   assert.equal(
-    traditional.assembly.find(
-      (line) => line.id === "recessed-three-way-traveler",
-    )?.unitCost,
+    traditional.assembly.find((line) => line.id === "recessed-wiring")?.unitCost,
     0.71,
   );
   assert.equal(
-    smart.assembly.find((line) => line.id === "switch-controls")?.unitCost,
+    smart.assembly.find((line) => line.id === "smart-switch-kit")?.unitCost,
     99,
+  );
+});
+
+test("smart 3-way remains zero cost with a visible unresolved warning", () => {
+  const result = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "smart-3-way",
+      switchType: "3-way",
+    },
+    settings,
+    priceBook.filter(
+      (row) =>
+        row.item !==
+        "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack",
+    ),
+  );
+  const kit = result.assembly.find((line) => line.id === "smart-switch-kit");
+  assert.equal(kit?.unitCost, 0);
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      (typeof warning === "string" ? warning : warning.message).includes(
+        "Lutron Diva Smart Dimmer",
+      ),
+    ),
+    true,
   );
 });
 

@@ -85,6 +85,8 @@ export function QuoteDetail() {
   const totalCost = quote.pricing.materialCost + effectiveLabor
   const gp = quote.pricing.grossProfit
   const margin = quote.pricing.grossMargin * 100
+  const estimatorNotes =
+    typeof quote.jobInputs.notes === "string" ? quote.jobInputs.notes : ""
 
   return (
     <div className="space-y-6 pb-24">
@@ -207,10 +209,10 @@ export function QuoteDetail() {
                   )
                 })}
               </div>
-              {quote.jobInputs.notes && (
+              {estimatorNotes && (
                 <div className="mt-4 pt-4 border-t border-border">
                   <span className="text-muted-foreground text-xs uppercase tracking-wider block mb-1">Estimator Notes</span>
-                  <span className="font-mono text-xs text-foreground/80">{quote.jobInputs.notes}</span>
+                  <span className="font-mono text-xs text-foreground/80">{estimatorNotes}</span>
                 </div>
               )}
             </CardContent>

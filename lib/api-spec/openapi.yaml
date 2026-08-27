@@ -293,11 +293,7 @@ components:
             customerEmail:
               type: ["string", "null"]
             jobInputs:
-              oneOf:
-                - $ref: "#/components/schemas/EvChargerInputs"
-                - $ref: "#/components/schemas/BathroomInputs"
-                - $ref: "#/components/schemas/KitchenInputs"
-                - $ref: "#/components/schemas/RecessedLightingInputs"
+              $ref: "#/components/schemas/QuoteJobInputsSnapshot"
             assembly:
               type: array
               items:
@@ -350,6 +346,15 @@ components:
         proposalDescription:
           type: string
           minLength: 1
+    QuoteJobInputsSnapshot:
+      description: Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
+      oneOf:
+        - $ref: "#/components/schemas/EvChargerInputs"
+        - $ref: "#/components/schemas/BathroomInputs"
+        - $ref: "#/components/schemas/KitchenInputs"
+        - $ref: "#/components/schemas/RecessedLightingInputs"
+        - type: object
+          additionalProperties: true
     QuotePreviewInput:
       type: object
       required:
@@ -775,13 +780,18 @@ components:
           enum: [Single-pole, 3-way]
         switchingMethod:
           type: string
+          description: Explicit switching choice for new recessed-lighting quotes. Omit for legacy clients.
           enum:
+            - single-pole
+            - traditional-3-way
+            - smart-3-way
             - Single-pole
             - Traditional 3-way
             - Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote
         traditionalThreeWayFootage:
           type: number
           minimum: 0
+          description: Contractor-entered 14/3 NM-B footage for traditional 3-way switching.
         dimmerSelection:
           type: string
           enum: [No dimmer, Include dimmer]
