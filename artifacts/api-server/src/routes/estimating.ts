@@ -212,6 +212,7 @@ async function calculateEstimate(
       manufacturer: priceBookItemsTable.manufacturer,
       manufacturerPartNumber: priceBookItemsTable.manufacturerPartNumber,
       supplierSku: priceBookItemsTable.supplierSku,
+      upc: priceBookItemsTable.upc,
       sourceDate: priceBookItemsTable.sourceDate,
       amperage: priceBookItemsTable.amperage,
       poleCount: priceBookItemsTable.poleCount,
@@ -633,6 +634,7 @@ router.get("/settings", async (_req, res): Promise<void> => {
       targetMargin: settings.targetMargin,
       defaultTaxRate: settings.defaultTaxRate,
       evLaborAdjustmentHours: settings.evLaborAdjustmentHours,
+      evDefaultCableType: settings.evDefaultCableType,
       bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours,
       kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours,
       recessedLightingLaborAdjustmentHours:
@@ -680,6 +682,8 @@ router.patch("/settings", async (req, res): Promise<void> => {
       evLaborAdjustmentHours:
         parsed.data.evLaborAdjustmentHours ??
         currentSettings.evLaborAdjustmentHours,
+      evDefaultCableType:
+        parsed.data.evDefaultCableType ?? currentSettings.evDefaultCableType,
       bathroomLaborAdjustmentHours:
         parsed.data.bathroomLaborAdjustmentHours ??
         currentSettings.bathroomLaborAdjustmentHours,
@@ -725,6 +729,7 @@ router.patch("/settings", async (req, res): Promise<void> => {
       targetMargin: settings.targetMargin,
       defaultTaxRate: settings.defaultTaxRate,
       evLaborAdjustmentHours: settings.evLaborAdjustmentHours,
+      evDefaultCableType: settings.evDefaultCableType,
       bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours,
       kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours,
       recessedLightingLaborAdjustmentHours:

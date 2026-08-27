@@ -21,6 +21,7 @@ export type PriceBookItem = {
   manufacturer: string | null;
   manufacturerPartNumber: string | null;
   supplierSku: string | null;
+  upc: string | null;
   sourceDate: string | null;
   amperage: number | null;
   poleCount: number | null;
@@ -34,6 +35,7 @@ export type EstimatingSettings = {
   loadedLaborCost: number;
   materialMarkup: number;
   targetMargin: number;
+  evDefaultCableType?: string;
 };
 
 type EstimateResult = {
@@ -389,6 +391,7 @@ function catalogSource(item: PriceBookItem) {
       ? `MPN ${item.manufacturerPartNumber}`
       : null,
     item.supplierSku ? `SKU ${item.supplierSku}` : null,
+    item.upc ? `UPC ${item.upc}` : null,
     item.sourceDate,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" • ") : "Company price book";
@@ -508,6 +511,19 @@ function selectedLaborRateType(value?: string): LaborRateType {
   return value === "commercial" ? "commercial" : "residential";
 }
 
+function selectedEvCableType(
+  value?: string,
+): NonNullable<EvChargerInputRecord["cableType"]> {
+  switch (value) {
+    case "8/2 NM-B":
+    case "6/3 NM-B":
+    case "8/2 SER":
+      return value;
+    default:
+      return "8/3 NM-B";
+  }
+}
+
 function finalizeEstimate(
   assembly: AssemblyLineRecord[],
   laborHours: number,
@@ -570,6 +586,11 @@ export function calculateEvChargerEstimate(
   const pricingWarnings: string[] = [];
   const quantity = Math.max(1, Number(inputs.chargerQuantity) || 1);
   const routeLength = Math.max(0, Number(inputs.routeLength) || 0);
+  if (routeLength === 0) {
+    pricingWarnings.push(
+      "EV route length is zero or invalid. Cable and raceway footage must be confirmed before this estimate is complete.",
+    );
+  }
   const isConduit = /conduit|emt|pvc/i.test(inputs.wiringMethod);
   const isReceptacle = /receptacle|nema/i.test(inputs.connection);
   const circuitAmps = /auto/i.test(inputs.circuitAmps)
@@ -647,15 +668,37 @@ export function calculateEvChargerEstimate(
       source: conduit.source,
     });
   } else {
-    const ser = unitCost("#8/2 SER cable", priceBook, pricingWarnings);
+    const cableType =
+      inputs.cableType ??
+      (/ser cable/i.test(inputs.wiringMethod)
+        ? "8/2 SER"
+        : selectedEvCableType(settings.evDefaultCableType));
+    const isRomex = /romex|nm-b/i.test(inputs.wiringMethod);
+    const isSer = /ser cable/i.test(inputs.wiringMethod);
+    const isCompatible =
+      (isRomex && cableType.endsWith("NM-B")) ||
+      (isSer && cableType === "8/2 SER");
+    const cable = isCompatible
+      ? unitCost(`${cableType} cable`, priceBook, pricingWarnings)
+      : {
+          value: 0,
+          source: "Unresolved — wiring method and cable type are incompatible",
+        };
+    if (!isCompatible) {
+      pricingWarnings.push(
+        `EV wiring method "${inputs.wiringMethod}" is not compatible with cable type "${cableType}". No cable price was substituted.`,
+      );
+    }
     addLine(assembly, {
-      id: "ser",
+      id: "cable",
       category: "Cable",
-      description: "#8/2 SER cable — verify conductor sizing and route",
+      description: isCompatible
+        ? `${cableType} cable — verify conductor sizing and route`
+        : `${inputs.wiringMethod} / ${cableType} — unresolved compatibility`,
       quantity: routeLength * quantity,
       unit: "ft",
-      unitCost: ser.value,
-      source: ser.source,
+      unitCost: cable.value,
+      source: cable.source,
     });
   }
 

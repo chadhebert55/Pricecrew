@@ -45,7 +45,8 @@ export function NewQuote() {
     chargerSupply: "Customer Provided",
     connection: "Hardwired",
     routeLength: 15,
-    wiringMethod: "SER Cable",
+    wiringMethod: "Romex (NM-B)",
+    cableType: "8/3 NM-B",
     location: "Indoor",
     panelManufacturer: "Siemens",
     panelSpace: "Available",
@@ -64,9 +65,12 @@ export function NewQuote() {
 
   useEffect(() => {
     if (settings && !settingsLoaded) {
+      const defaultCableType = settings.evDefaultCableType ?? "8/3 NM-B"
       setInputs(current => ({
         ...current,
         laborAdjustmentHours: settings.evLaborAdjustmentHours ?? 0,
+        cableType: defaultCableType,
+        wiringMethod: defaultCableType === "8/2 SER" ? "SER Cable" : "Romex (NM-B)",
       }))
       setSettingsLoaded(true)
     }
@@ -279,7 +283,15 @@ export function NewQuote() {
                       <Label>Wiring Method</Label>
                       <BasicSelect 
                         value={inputs.wiringMethod} 
-                        onChange={v => setInputs({...inputs, wiringMethod: v})}
+                        onChange={v => {
+                          const cableType =
+                            v === "SER Cable"
+                              ? "8/2 SER"
+                              : v === "Romex (NM-B)"
+                                ? (inputs.cableType?.endsWith("NM-B") ? inputs.cableType : "8/3 NM-B")
+                                : inputs.cableType
+                          setInputs({...inputs, wiringMethod: v, cableType})
+                        }}
                         options={[
                           {value: "SER Cable", label: "SER Cable (Concealed)"},
                           {value: "EMT Conduit", label: "EMT Conduit"},
@@ -289,6 +301,32 @@ export function NewQuote() {
                         ]}
                       />
                     </div>
+                    {(inputs.wiringMethod === "Romex (NM-B)" || inputs.wiringMethod === "SER Cable") ? (
+                      <div className="space-y-2">
+                        <Label>Conductor / Cable Type</Label>
+                        <BasicSelect
+                          value={inputs.cableType ?? (inputs.wiringMethod === "SER Cable" ? "8/2 SER" : "8/3 NM-B")}
+                          onChange={v => setInputs({...inputs, cableType: v as NonNullable<EvChargerInputs["cableType"]>})}
+                          options={inputs.wiringMethod === "SER Cable"
+                            ? [{value: "8/2 SER", label: "8/2 SER"}]
+                            : [
+                                {value: "8/3 NM-B", label: "8/3 NM-B"},
+                                {value: "8/2 NM-B", label: "8/2 NM-B"},
+                                {value: "6/3 NM-B", label: "6/3 NM-B"},
+                              ]}
+                        />
+                        <p className="text-xs text-muted-foreground">Contractor/job assumption; verify applicable code and installation conditions.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label>Conductor / Cable Type</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {inputs.wiringMethod === "MC Cable"
+                            ? "No exact MC cable mapping is configured; preview will flag this material as unresolved."
+                            : "Conduit methods use the configured THHN assembly."}
+                        </p>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label>Location</Label>
                       <BasicSelect 
@@ -482,7 +520,7 @@ export function NewQuote() {
                     <div className="space-y-1">
                       <p className="font-semibold text-primary">Starter Assumptions Applied</p>
                       <p className="text-secondary-foreground/80 leading-snug">
-                        <strong>Auto</strong> sets a 50A circuit with #8 wire. Service upgrade references apply 3 x 4/0 XHHW for mast work if triggered.
+                        Circuit, breaker, route footage, and conductor selections are contractor/job assumptions—not universal code rules. Verify the final installation requirements.
                       </p>
                     </div>
                   </div>

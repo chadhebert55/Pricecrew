@@ -456,8 +456,16 @@ components:
           type: string
         routeLength:
           type: number
+          minimum: 0
         wiringMethod:
           type: string
+        cableType:
+          type: string
+          enum:
+            - 8/3 NM-B
+            - 8/2 NM-B
+            - 6/3 NM-B
+            - 8/2 SER
         location:
           type: string
         panelManufacturer:
@@ -1394,6 +1402,8 @@ components:
           type: ["string", "null"]
         supplierSku:
           type: ["string", "null"]
+        upc:
+          type: ["string", "null"]
         sourceDate:
           type: ["string", "null"]
         amperage:
@@ -1426,6 +1436,7 @@ components:
         - targetMargin
         - defaultTaxRate
         - evLaborAdjustmentHours
+        - evDefaultCableType
         - bathroomLaborAdjustmentHours
         - kitchenLaborAdjustmentHours
         - recessedLightingLaborAdjustmentHours
@@ -1454,6 +1465,13 @@ components:
           type: number
         evLaborAdjustmentHours:
           type: number
+        evDefaultCableType:
+          type: string
+          enum:
+            - 8/3 NM-B
+            - 8/2 NM-B
+            - 6/3 NM-B
+            - 8/2 SER
         bathroomLaborAdjustmentHours:
           type: number
         kitchenLaborAdjustmentHours:
@@ -1495,6 +1513,13 @@ components:
           type: number
         evLaborAdjustmentHours:
           type: number
+        evDefaultCableType:
+          type: string
+          enum:
+            - 8/3 NM-B
+            - 8/2 NM-B
+            - 6/3 NM-B
+            - 8/2 SER
         bathroomLaborAdjustmentHours:
           type: number
         kitchenLaborAdjustmentHours:

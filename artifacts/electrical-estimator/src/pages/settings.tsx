@@ -30,6 +30,7 @@ export function Settings() {
     targetMargin: "0",
     defaultTaxRate: "0",
     evLaborAdjustmentHours: "0",
+    evDefaultCableType: "8/3 NM-B",
     bathroomLaborAdjustmentHours: "0",
     kitchenLaborAdjustmentHours: "0",
     recessedLightingLaborAdjustmentHours: "0",
@@ -50,6 +51,7 @@ export function Settings() {
         targetMargin: (settings.targetMargin * 100).toString(),
         defaultTaxRate: (settings.defaultTaxRate * 100).toString(),
         evLaborAdjustmentHours: settings.evLaborAdjustmentHours.toString(),
+        evDefaultCableType: settings.evDefaultCableType,
         bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours.toString(),
         kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours.toString(),
         recessedLightingLaborAdjustmentHours: settings.recessedLightingLaborAdjustmentHours.toString(),
@@ -72,6 +74,7 @@ export function Settings() {
         targetMargin: parseFloat(form.targetMargin) / 100,
         defaultTaxRate: parseFloat(form.defaultTaxRate) / 100,
         evLaborAdjustmentHours: parseFloat(form.evLaborAdjustmentHours),
+        evDefaultCableType: form.evDefaultCableType as "8/3 NM-B" | "8/2 NM-B" | "6/3 NM-B" | "8/2 SER",
         bathroomLaborAdjustmentHours: parseFloat(form.bathroomLaborAdjustmentHours),
         kitchenLaborAdjustmentHours: parseFloat(form.kitchenLaborAdjustmentHours),
         recessedLightingLaborAdjustmentHours: parseFloat(form.recessedLightingLaborAdjustmentHours),
@@ -218,6 +221,19 @@ export function Settings() {
                 value={form.evLaborAdjustmentHours}
                 onChange={(e) => setForm(f => ({ ...f, evLaborAdjustmentHours: e.target.value }))}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>EV Default Cable Type</Label>
+              <select
+                value={form.evDefaultCableType}
+                onChange={(e) => setForm(f => ({ ...f, evDefaultCableType: e.target.value }))}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="8/3 NM-B">8/3 NM-B</option>
+                <option value="8/2 NM-B">8/2 NM-B</option>
+                <option value="6/3 NM-B">6/3 NM-B</option>
+                <option value="8/2 SER">8/2 SER</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Bathroom Labor Adjustment (hr)</Label>

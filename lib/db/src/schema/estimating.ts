@@ -12,6 +12,7 @@ import {
 
 export type LaborRateType = "residential" | "commercial";
 export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
+export type EvCableType = "8/3 NM-B" | "8/2 NM-B" | "6/3 NM-B" | "8/2 SER";
 export type RecessedLightSize = "4-inch" | "6-inch";
 export type ServiceUpgradeServiceSize = "100A" | "150A" | "200A";
 export type ServiceUpgradePanelManufacturer = "Siemens" | "Eaton" | "Square D";
@@ -35,6 +36,7 @@ export type EvChargerInputRecord = {
   connection: string;
   routeLength: number;
   wiringMethod: string;
+  cableType?: EvCableType;
   location: string;
   panelManufacturer: string;
   panelSpace: string;
@@ -403,6 +405,10 @@ export const companySettingsTable = pgTable(
     })
       .notNull()
       .default(0),
+    evDefaultCableType: text("ev_default_cable_type")
+      .$type<EvCableType>()
+      .notNull()
+      .default("8/3 NM-B"),
     bathroomLaborAdjustmentHours: numeric("bathroom_labor_adjustment_hours", {
       precision: 8,
       scale: 2,
@@ -477,12 +483,13 @@ export const priceBookItemsTable = pgTable("price_book_items", {
   category: text("category").notNull(),
   item: text("item").notNull(),
   unit: text("unit").notNull(),
-  unitCost: numeric("unit_cost", { precision: 12, scale: 3, mode: "number" })
+  unitCost: numeric("unit_cost", { precision: 15, scale: 6, mode: "number" })
     .notNull(),
   supplier: text("supplier"),
   manufacturer: text("manufacturer"),
   manufacturerPartNumber: text("manufacturer_part_number"),
   supplierSku: text("supplier_sku"),
+  upc: text("upc"),
   sourceDate: text("source_date"),
   amperage: integer("amperage"),
   poleCount: integer("pole_count"),

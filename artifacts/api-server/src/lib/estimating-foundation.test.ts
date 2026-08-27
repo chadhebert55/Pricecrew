@@ -7,6 +7,7 @@ import type {
   PricingWarningRecord,
   RecessedLightingInputRecord,
 } from "@workspace/db";
+import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   calculateBathroomEstimate,
   calculateEvChargerEstimate,
@@ -44,6 +45,7 @@ const catalogRow = (
   manufacturer: null,
   manufacturerPartNumber: null,
   supplierSku: null,
+  upc: null,
   sourceDate: "2026-08-25",
   amperage: null,
   poleCount: null,
@@ -59,6 +61,7 @@ const qf250a = catalogRow(
     manufacturer: "Siemens",
     manufacturerPartNumber: "ITE QF250A",
     supplierSku: "1101170",
+    upc: "88762121675",
     amperage: 50,
     poleCount: 2,
     protectionType: "GFCI",
@@ -111,6 +114,7 @@ test("EV resolves the exact Siemens QF250A price and structures missing material
   assert.equal(breaker?.unitCost, 151.702);
   assert.equal(breaker?.description.includes("ITE QF250A"), true);
   assert.equal(breaker?.source.includes("SKU 1101170"), true);
+  assert.equal(breaker?.source.includes("UPC 88762121675"), true);
   expectStructuredWarnings(result.pricing.pricingWarnings);
   const missingCable = result.pricing.pricingWarnings.find(
     (warning) =>
@@ -121,8 +125,154 @@ test("EV resolves the exact Siemens QF250A price and structures missing material
     typeof missingCable === "string"
       ? undefined
       : missingCable?.context.itemKey,
-    "#8/2 SER cable",
+    "8/2 SER cable",
   );
+});
+
+test("EV uses the selected non-conduit cable key and route footage per charger", () => {
+  const result = calculateEvChargerEstimate(
+    {
+      ...evInputs,
+      wiringMethod: "Romex (NM-B)",
+      cableType: "6/3 NM-B",
+      chargerQuantity: 2,
+      routeLength: 25,
+    },
+    settings,
+    [qf250a, catalogRow("6/3 NM-B cable", 9.5)],
+  );
+  const cable = result.assembly.find((line) => line.id === "cable");
+  assert.equal(cable?.description, "6/3 NM-B cable — verify conductor sizing and route");
+  assert.equal(cable?.quantity, 50);
+  assert.equal(cable?.unitCost, 9.5);
+});
+
+test("EV cable selection precedence is job override, company default, then system fallback", () => {
+  const companyDefault = calculateEvChargerEstimate(
+    { ...evInputs, wiringMethod: "Romex (NM-B)", cableType: undefined },
+    { ...settings, evDefaultCableType: "6/3 NM-B" },
+    [catalogRow("6/3 NM-B cable", 3.921784)],
+  );
+  const jobOverride = calculateEvChargerEstimate(
+    { ...evInputs, wiringMethod: "Romex (NM-B)", cableType: "8/2 NM-B" },
+    { ...settings, evDefaultCableType: "6/3 NM-B" },
+    [catalogRow("8/2 NM-B cable", 1.89096)],
+  );
+  const systemFallback = calculateEvChargerEstimate(
+    { ...evInputs, wiringMethod: "Romex (NM-B)", cableType: undefined },
+    settings,
+    [catalogRow("8/3 NM-B cable", 2.682868)],
+  );
+
+  assert.equal(companyDefault.assembly.find((line) => line.id === "cable")?.unitCost, 3.921784);
+  assert.equal(jobOverride.assembly.find((line) => line.id === "cable")?.unitCost, 1.89096);
+  assert.equal(systemFallback.assembly.find((line) => line.id === "cable")?.unitCost, 2.682868);
+});
+
+test("EV preview and create validate the same cable snapshot", () => {
+  const jobInputs = {
+    ...evInputs,
+    wiringMethod: "Romex (NM-B)",
+    cableType: "8/3 NM-B" as const,
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({ module: "EV_CHARGER", jobInputs }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "EV parity test",
+      projectName: "50A circuit",
+      module: "EV_CHARGER",
+      jobInputs,
+      proposalDescription: "Install configured EV circuit.",
+    }).success,
+    true,
+  );
+
+  const invalidInputs = { ...jobInputs, routeLength: -1 };
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "EV_CHARGER",
+      jobInputs: invalidInputs,
+    }).success,
+    false,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "EV parity test",
+      projectName: "Invalid route",
+      module: "EV_CHARGER",
+      jobInputs: invalidInputs,
+      proposalDescription: "Validation test.",
+    }).success,
+    false,
+  );
+});
+
+test("EV never substitutes a cable across incompatible wiring methods", () => {
+  for (const [wiringMethod, cableType] of [
+    ["MC Cable", "8/3 NM-B"],
+    ["SER Cable", "8/3 NM-B"],
+    ["Romex (NM-B)", "8/2 SER"],
+  ] as const) {
+    const result = calculateEvChargerEstimate(
+      { ...evInputs, wiringMethod, cableType },
+      settings,
+      [
+        catalogRow("8/3 NM-B cable", 2.682868),
+        catalogRow("8/2 SER cable", 4.25),
+      ],
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "cable")?.unitCost,
+      0,
+    );
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.message.includes("not compatible"),
+      ),
+      true,
+    );
+  }
+});
+
+test("EV zero route footage remains visible as a pricing warning", () => {
+  const result = calculateEvChargerEstimate(
+    {
+      ...evInputs,
+      wiringMethod: "Romex (NM-B)",
+      cableType: "8/3 NM-B",
+      routeLength: 0,
+    },
+    settings,
+    [catalogRow("8/3 NM-B cable", 2.682868)],
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.message.includes("route length is zero or invalid"),
+    ),
+    true,
+  );
+});
+
+test("EV legacy cable snapshots resolve by their original wiring method", () => {
+  const romex = calculateEvChargerEstimate(
+    { ...evInputs, wiringMethod: "Romex (NM-B)", cableType: undefined },
+    settings,
+    [qf250a],
+  );
+  const ser = calculateEvChargerEstimate(
+    { ...evInputs, wiringMethod: "SER Cable", cableType: undefined },
+    settings,
+    [qf250a],
+  );
+  assert.equal(romex.assembly.find((line) => line.id === "cable")?.description.startsWith("8/3 NM-B cable"), true);
+  assert.equal(ser.assembly.find((line) => line.id === "cable")?.description.startsWith("8/2 SER cable"), true);
 });
 
 test("EV does not substitute a generic breaker for the wrong manufacturer", () => {

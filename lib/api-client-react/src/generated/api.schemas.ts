@@ -38,6 +38,16 @@ export interface DashboardSummary {
   recentQuotes: QuoteSummary[];
 }
 
+export type EvChargerInputsCableType = typeof EvChargerInputsCableType[keyof typeof EvChargerInputsCableType];
+
+
+export const EvChargerInputsCableType = {
+  '8/3_NM-B': '8/3 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
+  '8/2_SER': '8/2 SER',
+} as const;
+
 export type LaborRateType = typeof LaborRateType[keyof typeof LaborRateType];
 
 
@@ -52,8 +62,10 @@ export interface EvChargerInputs {
   circuitAmps: string;
   chargerSupply: string;
   connection: string;
+  /** @minimum 0 */
   routeLength: number;
   wiringMethod: string;
+  cableType?: EvChargerInputsCableType;
   location: string;
   panelManufacturer: string;
   panelSpace: string;
@@ -935,6 +947,8 @@ export interface PriceBookItem {
   /** @nullable */
   supplierSku?: string | null;
   /** @nullable */
+  upc?: string | null;
+  /** @nullable */
   sourceDate?: string | null;
   /** @nullable */
   amperage?: number | null;
@@ -950,6 +964,16 @@ export interface PriceBookItemUpdate {
   unitCost: number;
 }
 
+export type CompanySettingsEvDefaultCableType = typeof CompanySettingsEvDefaultCableType[keyof typeof CompanySettingsEvDefaultCableType];
+
+
+export const CompanySettingsEvDefaultCableType = {
+  '8/3_NM-B': '8/3 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
+  '8/2_SER': '8/2 SER',
+} as const;
+
 export interface CompanySettings {
   companyName: string;
   /**
@@ -964,6 +988,7 @@ export interface CompanySettings {
   targetMargin: number;
   defaultTaxRate: number;
   evLaborAdjustmentHours: number;
+  evDefaultCableType: CompanySettingsEvDefaultCableType;
   bathroomLaborAdjustmentHours: number;
   kitchenLaborAdjustmentHours: number;
   recessedLightingLaborAdjustmentHours: number;
@@ -976,6 +1001,16 @@ export interface CompanySettings {
   /** @minimum 0 */
   panelReplacementHoursPerPerson: number;
 }
+
+export type CompanySettingsUpdateEvDefaultCableType = typeof CompanySettingsUpdateEvDefaultCableType[keyof typeof CompanySettingsUpdateEvDefaultCableType];
+
+
+export const CompanySettingsUpdateEvDefaultCableType = {
+  '8/3_NM-B': '8/3 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
+  '8/2_SER': '8/2 SER',
+} as const;
 
 export interface CompanySettingsUpdate {
   companyName?: string;
@@ -991,6 +1026,7 @@ export interface CompanySettingsUpdate {
   targetMargin?: number;
   defaultTaxRate?: number;
   evLaborAdjustmentHours?: number;
+  evDefaultCableType?: CompanySettingsUpdateEvDefaultCableType;
   bathroomLaborAdjustmentHours?: number;
   kitchenLaborAdjustmentHours?: number;
   recessedLightingLaborAdjustmentHours?: number;

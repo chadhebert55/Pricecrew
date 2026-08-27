@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { EvChargerInputsCableType } from './evChargerInputsCableType';
 import type { LaborRateType } from './laborRateType';
 
 export interface EvChargerInputs {
@@ -13,8 +14,10 @@ export interface EvChargerInputs {
   circuitAmps: string;
   chargerSupply: string;
   connection: string;
+  /** @minimum 0 */
   routeLength: number;
   wiringMethod: string;
+  cableType?: EvChargerInputsCableType;
   location: string;
   panelManufacturer: string;
   panelSpace: string;

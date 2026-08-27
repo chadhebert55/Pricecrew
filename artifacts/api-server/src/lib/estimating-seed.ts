@@ -379,7 +379,7 @@ export async function seedEstimatorData(
       isDefault: false,
     })),
   ];
-  const verifiedItems: SeedPriceBookItem[] = [
+  let verifiedItems: SeedPriceBookItem[] = [
     ...additionalServiceItems,
     ...additionalPanelReplacementItems,
     {
@@ -442,8 +442,8 @@ export async function seedEstimatorData(
       category: "Controls",
       item: "Legrand radiant TM870WCC10 15A single-pole switch",
       unit: "ea",
-      unitCost: 4.55,
-      supplier: "Legrand",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Legrand",
       manufacturerPartNumber: "TM870WCC10",
       supplierSku: "TM870WCC10",
@@ -455,8 +455,8 @@ export async function seedEstimatorData(
       category: "Controls",
       item: "Legrand radiant TM873WCC10 15A 3-way switch",
       unit: "ea",
-      unitCost: 6.83,
-      supplier: "Legrand",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Legrand",
       manufacturerPartNumber: "TM873WCC10",
       supplierSku: "TM873WCC10",
@@ -481,8 +481,8 @@ export async function seedEstimatorData(
       category: "Controls",
       item: "Legrand radiant RHL153PWPW LED dimmer with wall plate",
       unit: "ea",
-      unitCost: 36.75,
-      supplier: "Legrand",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Legrand",
       manufacturerPartNumber: "RHL153PWPW",
       supplierSku: "RHL153PWPW",
@@ -494,8 +494,8 @@ export async function seedEstimatorData(
       item:
         "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack",
       unit: "kit",
-      unitCost: 85,
-      supplier: "Lutron",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Lutron",
       sourceDate: controlSourceDate,
       isDefault: false,
@@ -504,8 +504,8 @@ export async function seedEstimatorData(
       category: "Trim",
       item: "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
       unit: "ea",
-      unitCost: 4.63,
-      supplier: "Legrand",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Legrand",
       manufacturerPartNumber: "RWP26WCC10",
       supplierSku: "RWP26WCC10",
@@ -516,8 +516,8 @@ export async function seedEstimatorData(
       category: "Rough-in",
       item: "Carlon B114R-UPC 14 cu. in. single-gang old-work box",
       unit: "ea",
-      unitCost: 3.28,
-      supplier: "Electrical Parts",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Carlon",
       manufacturerPartNumber: "B114R-UPC",
       sourceDate: controlSourceDate,
@@ -545,27 +545,42 @@ export async function seedEstimatorData(
       category: "Protection",
       item: "Siemens Q115 15A 1-pole standard breaker",
       unit: "ea",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
+      unitCost: 8.673,
+      supplier: "Northeast Electrical",
       manufacturer: "Siemens",
-      manufacturerPartNumber: "Q115",
-      supplierSku: "Q115",
-      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "ITE Q115",
+      supplierSku: "17237",
+      sourceDate,
       amperage: 15,
       poleCount: 1,
       protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens Q115DF 15A 1-pole dual-function breaker",
+      unit: "ea",
+      unitCost: 69.239,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE Q115DF",
+      supplierSku: "938243",
+      sourceDate,
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "Dual Function",
       isDefault: false,
     },
     {
       category: "Protection",
       item: "Eaton BR115 15A 1-pole standard breaker",
       unit: "ea",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
+      unitCost: 19.647,
+      supplier: "Northeast Electrical",
       manufacturer: "Eaton",
-      manufacturerPartNumber: "BR115",
-      supplierSku: "BR115",
-      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "C-H BR115",
+      supplierSku: "20956",
+      sourceDate,
       amperage: 15,
       poleCount: 1,
       protectionType: "Standard",
@@ -573,17 +588,62 @@ export async function seedEstimatorData(
     },
     {
       category: "Protection",
+      item: "Eaton BRN115AF 15A 1-pole AFCI breaker",
+      unit: "ea",
+      unitCost: 113.411,
+      supplier: "Northeast Electrical",
+      manufacturer: "Eaton",
+      manufacturerPartNumber: "C-H BRN115AF",
+      supplierSku: "1319470",
+      sourceDate,
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "AFCI",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Eaton BRN115DF 15A 1-pole dual-function breaker",
+      unit: "ea",
+      unitCost: 166.124,
+      supplier: "Northeast Electrical",
+      manufacturer: "Eaton",
+      manufacturerPartNumber: "C-H BRN115DF",
+      supplierSku: "1366627",
+      sourceDate,
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "Dual Function",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
       item: "Square D Homeline HOM115 15A 1-pole standard breaker",
       unit: "ea",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
+      unitCost: 13.321,
+      supplier: "Northeast Electrical",
       manufacturer: "Square D",
-      manufacturerPartNumber: "HOM115",
-      supplierSku: "HOM115",
-      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "SQD HOM115",
+      supplierSku: "15367",
+      sourceDate,
       amperage: 15,
       poleCount: 1,
       protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Square D Homeline HOM115GFI 15A 1-pole GFCI breaker",
+      unit: "ea",
+      unitCost: 133.568,
+      supplier: "Northeast Electrical",
+      manufacturer: "Square D",
+      manufacturerPartNumber: "SQD HOM115GFI",
+      supplierSku: "8508",
+      sourceDate,
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "GFCI",
       isDefault: false,
     },
     {
@@ -605,7 +665,7 @@ export async function seedEstimatorData(
       unitCost: 8.673,
       supplier: "Northeast Electrical",
       manufacturer: "Siemens",
-      manufacturerPartNumber: "Q120",
+      manufacturerPartNumber: "ITE Q120",
       supplierSku: "2149",
       sourceDate,
       amperage: 20,
@@ -620,7 +680,7 @@ export async function seedEstimatorData(
       unitCost: 69.239,
       supplier: "Northeast Electrical",
       manufacturer: "Siemens",
-      manufacturerPartNumber: "Q120DF",
+      manufacturerPartNumber: "ITE Q120DF",
       supplierSku: "942105",
       sourceDate,
       amperage: 20,
@@ -635,7 +695,7 @@ export async function seedEstimatorData(
       unitCost: 71.027,
       supplier: "Northeast Electrical",
       manufacturer: "Siemens",
-      manufacturerPartNumber: "QF120A",
+      manufacturerPartNumber: "ITE QF120A",
       supplierSku: "1098885",
       sourceDate,
       amperage: 20,
@@ -650,7 +710,8 @@ export async function seedEstimatorData(
       unitCost: 23.137,
       supplier: "Northeast Electrical",
       manufacturer: "Eaton",
-      manufacturerPartNumber: "BR120",
+      manufacturerPartNumber: "C-H BR120",
+      supplierSku: "24858",
       sourceDate,
       amperage: 20,
       poleCount: 1,
@@ -664,7 +725,8 @@ export async function seedEstimatorData(
       unitCost: 121.398,
       supplier: "Northeast Electrical",
       manufacturer: "Eaton",
-      manufacturerPartNumber: "BRN120AF",
+      manufacturerPartNumber: "C-H BRN120AF",
+      supplierSku: "1319471",
       sourceDate,
       amperage: 20,
       poleCount: 1,
@@ -678,7 +740,8 @@ export async function seedEstimatorData(
       unitCost: 158.137,
       supplier: "Northeast Electrical",
       manufacturer: "Eaton",
-      manufacturerPartNumber: "BRN120DF",
+      manufacturerPartNumber: "C-H BRN120DF",
+      supplierSku: "1365961",
       sourceDate,
       amperage: 20,
       poleCount: 1,
@@ -692,7 +755,8 @@ export async function seedEstimatorData(
       unitCost: 13.321,
       supplier: "Northeast Electrical",
       manufacturer: "Square D",
-      manufacturerPartNumber: "HOM120",
+      manufacturerPartNumber: "SQD HOM120",
+      supplierSku: "2015",
       sourceDate,
       amperage: 20,
       poleCount: 1,
@@ -706,7 +770,8 @@ export async function seedEstimatorData(
       unitCost: 133.651,
       supplier: "Northeast Electrical",
       manufacturer: "Square D",
-      manufacturerPartNumber: "HOM120GFI",
+      manufacturerPartNumber: "SQD HOM120GFI",
+      supplierSku: "87413",
       sourceDate,
       amperage: 20,
       poleCount: 1,
@@ -720,7 +785,8 @@ export async function seedEstimatorData(
       unitCost: 152.012,
       supplier: "Northeast Electrical",
       manufacturer: "Square D",
-      manufacturerPartNumber: "HOM120PAFGF",
+      manufacturerPartNumber: "SQD HOM120PAFGF",
+      supplierSku: "237119",
       sourceDate,
       amperage: 20,
       poleCount: 1,
@@ -731,8 +797,8 @@ export async function seedEstimatorData(
       category: "Lighting",
       item: "Juno 4-inch regressed wafer light",
       unit: "ea",
-      unitCost: 29,
-      supplier: "Northeast Electrical",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Juno",
       sourceDate,
       isDefault: false,
@@ -741,9 +807,45 @@ export async function seedEstimatorData(
       category: "Lighting",
       item: "Juno 6-inch regressed wafer light",
       unit: "ea",
-      unitCost: 32,
-      supplier: "Northeast Electrical",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       manufacturer: "Juno",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "8/3 NM-B cable",
+      unit: "ft",
+      unitCost: 2.682868,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. ROMEX 8/3",
+      supplierSku: "19117",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "8/2 NM-B cable",
+      unit: "ft",
+      unitCost: 1.89096,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. ROMEX 8/2",
+      supplierSku: "22923",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "6/3 NM-B cable",
+      unit: "ft",
+      unitCost: 3.921784,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. ROMEX 6/3",
+      supplierSku: "25138",
       sourceDate,
       isDefault: false,
     },
@@ -751,8 +853,11 @@ export async function seedEstimatorData(
       category: "Conductor",
       item: "12/2 NM-B cable",
       unit: "ft",
-      unitCost: 0.56,
+      unitCost: 0.562271,
       supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. ROMEX 12/2",
+      supplierSku: "3873",
       sourceDate,
       isDefault: false,
     },
@@ -760,8 +865,11 @@ export async function seedEstimatorData(
       category: "Conductor",
       item: "14/2 NM-B cable",
       unit: "ft",
-      unitCost: 0.37,
+      unitCost: 0.379697,
       supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. ROMEX 14/2",
+      supplierSku: "27892",
       sourceDate,
       isDefault: false,
     },
@@ -769,17 +877,107 @@ export async function seedEstimatorData(
       category: "Conductor",
       item: "14/3 NM-B cable",
       unit: "ft",
-      unitCost: 0.53,
+      unitCost: 0.53995,
       supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. ROMEX 14/3",
+      supplierSku: "10802",
       sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "#8 copper THHN",
+      unit: "ft",
+      unitCost: 0.700684,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wic.",
+      manufacturerPartNumber: "WIC. THHN 8 STR",
+      supplierSku: "61161",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "1/0 aluminum XHHW conductor",
+      unit: "ft",
+      unitCost: 0.730841,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wia.",
+      manufacturerPartNumber: "WIA. XHHW 1/0 S",
+      supplierSku: "1020694",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "3/0 aluminum XHHW conductor",
+      unit: "ft",
+      unitCost: 1.072337,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wia.",
+      manufacturerPartNumber: "WIA. XHHW 3/0 S",
+      supplierSku: "1005949",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "4/0 aluminum XHHW conductor",
+      unit: "ft",
+      unitCost: 1.191903,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wia.",
+      manufacturerPartNumber: "WIA. XHHW 4/0 S",
+      supplierSku: "392124",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "1/0 aluminum SER cable",
+      unit: "ft",
+      unitCost: 2.631865,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wia.",
+      manufacturerPartNumber: "WIA. SER 1/0-1/",
+      supplierSku: "295793",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "3/0 aluminum SER cable",
+      unit: "ft",
+      unitCost: 3.930704,
+      supplier: "Northeast Electrical",
+      manufacturer: "Wia.",
+      manufacturerPartNumber: "WIA. SER 3/0-3/",
+      supplierSku: "239619",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Square D 50A 2-pole GFCI breaker",
+      unit: "ea",
+      unitCost: 278.491,
+      supplier: "Northeast Electrical",
+      manufacturer: "Square D",
+      manufacturerPartNumber: "SQD HOM250GFI",
+      supplierSku: "87379",
+      sourceDate,
+      amperage: 50,
+      poleCount: 2,
+      protectionType: "GFCI",
       isDefault: false,
     },
     {
       category: "Protection",
       item: "Whole-home surge protection",
       unit: "ea",
-      unitCost: 143,
-      supplier: "Company verified cost",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
       sourceDate,
       isDefault: false,
     },
@@ -1147,6 +1345,49 @@ export async function seedEstimatorData(
     },
   ];
 
+  // UPCs are transcribed from the uploaded Northeast Electrical Supplier Catalog.
+  // Keep this keyed to the supplier SKU so seed metadata stays tied to its source.
+  const northeastUpcs: Record<string, string> = {
+    "1101170": "88762121675",
+    "243085": "78500724027",
+    "1003404": "78500703646",
+    "1020717": "78500703610",
+    "17237": "78364314818",
+    "938243": "88762181730",
+    "20956": "78667636205",
+    "1319470": "78668904088",
+    "1366627": "78668905967",
+    "15367": "78590106520",
+    "8508": "78590106536",
+    "1697956": "88517037546",
+    "2149": "78364314819",
+    "942105": "88762181732",
+    "1098885": "88762121655",
+    "24858": "78667636210",
+    "1319471": "78668904089",
+    "1365961": "78668905969",
+    "2015": "78590106521",
+    "87413": "78590106537",
+    "237119": "78590177821",
+    "19117": "98010026338",
+    "22923": "98010026315",
+    "25138": "98010026371",
+    "3873": "98010026305",
+    "27892": "98010026300",
+    "10802": "98010026350",
+    "61161": "98010023129",
+    "1020694": "980120S4718",
+    "1005949": "980120S0164",
+    "392124": "980120S0174",
+    "295793": "980120S0025",
+    "239619": "980120S0034",
+    "87379": "78590178357",
+  };
+  verifiedItems = verifiedItems.map((item) => ({
+    ...item,
+    upc: item.supplierSku ? northeastUpcs[item.supplierSku] : undefined,
+  }));
+
   const legacySmartKitName =
     "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   const canonicalSmartKitName =
@@ -1208,33 +1449,181 @@ export async function seedEstimatorData(
       .where(eq(priceBookItemsTable.id, legacyStarterSurge.id));
   }
 
+  const priorCableCosts: Record<string, number> = {
+    "12/2 NM-B cable": 0.56,
+    "14/2 NM-B cable": 0.37,
+    "14/3 NM-B cable": 0.53,
+  };
+  const prior15ABreakerPartNumbers: Record<string, string> = {
+    "Siemens Q115 15A 1-pole standard breaker": "Q115",
+    "Eaton BR115 15A 1-pole standard breaker": "BR115",
+    "Square D Homeline HOM115 15A 1-pole standard breaker": "HOM115",
+  };
+  const priorUnverifiedSystemRows: Record<
+    string,
+    {
+      unitCost: number;
+      supplier: string;
+      sourceDate: string;
+      manufacturerPartNumber: string | null;
+      supplierSku: string | null;
+    }
+  > = {
+    "Legrand radiant TM870WCC10 15A single-pole switch": {
+      unitCost: 4.55,
+      supplier: "Legrand",
+      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "TM870WCC10",
+      supplierSku: "TM870WCC10",
+    },
+    "Legrand radiant TM873WCC10 15A 3-way switch": {
+      unitCost: 6.83,
+      supplier: "Legrand",
+      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "TM873WCC10",
+      supplierSku: "TM873WCC10",
+    },
+    "Legrand radiant RHL153PWPW LED dimmer with wall plate": {
+      unitCost: 36.75,
+      supplier: "Legrand",
+      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "RHL153PWPW",
+      supplierSku: "RHL153PWPW",
+    },
+    "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack": {
+      unitCost: 85,
+      supplier: "Lutron",
+      sourceDate: controlSourceDate,
+      manufacturerPartNumber: null,
+      supplierSku: null,
+    },
+    "Legrand radiant RWP26WCC10 1-gang screwless wall plate": {
+      unitCost: 4.63,
+      supplier: "Legrand",
+      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "RWP26WCC10",
+      supplierSku: "RWP26WCC10",
+    },
+    "Carlon B114R-UPC 14 cu. in. single-gang old-work box": {
+      unitCost: 3.28,
+      supplier: "Electrical Parts",
+      sourceDate: controlSourceDate,
+      manufacturerPartNumber: "B114R-UPC",
+      supplierSku: null,
+    },
+    "Juno 4-inch regressed wafer light": {
+      unitCost: 29,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturerPartNumber: null,
+      supplierSku: null,
+    },
+    "Juno 6-inch regressed wafer light": {
+      unitCost: 32,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturerPartNumber: null,
+      supplierSku: null,
+    },
+    "Whole-home surge protection": {
+      unitCost: 143,
+      supplier: "Company verified cost",
+      sourceDate,
+      manufacturerPartNumber: null,
+      supplierSku: null,
+    },
+  };
+  const isKnownPriorSystemSeed = (
+    existing: typeof priceBookItemsTable.$inferSelect,
+    replacement: SeedPriceBookItem,
+  ) => {
+    const priorUnverified = priorUnverifiedSystemRows[replacement.item];
+    return (
+      (existing.unitCost === 0 &&
+        existing.supplier === "Company default — set current cost" &&
+        existing.sourceDate === sourceDate &&
+        existing.manufacturerPartNumber === null &&
+        existing.supplierSku === null) ||
+      (existing.unitCost === priorCableCosts[replacement.item] &&
+        existing.supplier === "Northeast Electrical" &&
+        existing.sourceDate === sourceDate &&
+        existing.manufacturer === null &&
+        existing.manufacturerPartNumber === null &&
+        existing.supplierSku === null) ||
+      (existing.unitCost === 0 &&
+        existing.supplier === "Company default — set current cost" &&
+        existing.sourceDate === controlSourceDate &&
+        existing.manufacturerPartNumber ===
+          prior15ABreakerPartNumbers[replacement.item] &&
+        existing.supplierSku === prior15ABreakerPartNumbers[replacement.item]) ||
+      (priorUnverified !== undefined &&
+        existing.unitCost === priorUnverified.unitCost &&
+        existing.supplier === priorUnverified.supplier &&
+        existing.sourceDate === priorUnverified.sourceDate &&
+        existing.manufacturerPartNumber ===
+          priorUnverified.manufacturerPartNumber &&
+        existing.supplierSku === priorUnverified.supplierSku)
+    );
+  };
+  const isUntouchedSeedMissingUpc = (
+    existing: typeof priceBookItemsTable.$inferSelect,
+    replacement: SeedPriceBookItem,
+  ) =>
+    replacement.upc !== undefined &&
+    existing.upc === null &&
+    existing.category === replacement.category &&
+    existing.item === replacement.item &&
+    existing.unit === replacement.unit &&
+    existing.unitCost === replacement.unitCost &&
+    existing.supplier === (replacement.supplier ?? null) &&
+    existing.manufacturer === (replacement.manufacturer ?? null) &&
+    existing.manufacturerPartNumber ===
+      (replacement.manufacturerPartNumber ?? null) &&
+    existing.supplierSku === (replacement.supplierSku ?? null) &&
+    existing.sourceDate === (replacement.sourceDate ?? null) &&
+    existing.amperage === (replacement.amperage ?? null) &&
+    existing.poleCount === (replacement.poleCount ?? null) &&
+    existing.protectionType === (replacement.protectionType ?? null) &&
+    existing.isDefault === replacement.isDefault;
+
   for (const item of verifiedItems) {
-    const [existing] = item.supplierSku
-      ? await database
-          .select()
-          .from(priceBookItemsTable)
-          .where(
-            and(
-              eq(priceBookItemsTable.companyId, company.id),
-              eq(priceBookItemsTable.supplierSku, item.supplierSku),
-            ),
-          )
-          .limit(1)
-      : await database
-          .select()
-          .from(priceBookItemsTable)
-          .where(
-            and(
-              eq(priceBookItemsTable.companyId, company.id),
-              eq(priceBookItemsTable.item, item.item),
-            ),
-          )
-          .limit(1);
+    const [itemMatch] = await database
+      .select()
+      .from(priceBookItemsTable)
+      .where(
+        and(
+          eq(priceBookItemsTable.companyId, company.id),
+          eq(priceBookItemsTable.item, item.item),
+        ),
+      )
+      .limit(1);
+    const [skuMatch] =
+      itemMatch || !item.supplierSku
+        ? []
+        : await database
+            .select()
+            .from(priceBookItemsTable)
+            .where(
+              and(
+                eq(priceBookItemsTable.companyId, company.id),
+                eq(priceBookItemsTable.supplierSku, item.supplierSku),
+              ),
+            )
+            .limit(1);
+    const existing = itemMatch ?? skuMatch;
     if (!existing) {
       await database.insert(priceBookItemsTable).values({
         companyId: company.id,
         ...item,
       });
+    } else if (
+      isKnownPriorSystemSeed(existing, item) ||
+      isUntouchedSeedMissingUpc(existing, item)
+    ) {
+      await database
+        .update(priceBookItemsTable)
+        .set(item)
+        .where(eq(priceBookItemsTable.id, existing.id));
     }
   }
 

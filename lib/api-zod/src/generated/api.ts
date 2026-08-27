@@ -66,6 +66,8 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
  */
 
 
+export const createQuoteBodyJobInputsOneRouteLengthMin = 0;
+
 export const createQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
 
 export const createQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -319,8 +321,9 @@ export const CreateQuoteBody = zod.object({
   "circuitAmps": zod.string(),
   "chargerSupply": zod.string(),
   "connection": zod.string(),
-  "routeLength": zod.number(),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsOneRouteLengthMin),
   "wiringMethod": zod.string(),
+  "cableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
   "location": zod.string(),
   "panelManufacturer": zod.string(),
   "panelSpace": zod.string(),
@@ -550,6 +553,8 @@ export const CreateQuoteBody = zod.object({
   "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).max(createQuoteBodySellingPriceOverrideMax).nullish(),
   "proposalDescription": zod.string().min(1)
 })
+
+export const createQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
@@ -807,8 +812,9 @@ export const CreateQuoteResponse = zod.object({
   "circuitAmps": zod.string(),
   "chargerSupply": zod.string(),
   "connection": zod.string(),
-  "routeLength": zod.number(),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsOneRouteLengthMin),
   "wiringMethod": zod.string(),
+  "cableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
   "location": zod.string(),
   "panelManufacturer": zod.string(),
   "panelSpace": zod.string(),
@@ -1075,6 +1081,8 @@ export const CreateQuoteResponse = zod.object({
 /**
  * @summary Preview an authoritative estimate
  */
+export const previewQuoteBodyJobInputsOneRouteLengthMin = 0;
+
 export const previewQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
 
 export const previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -1324,8 +1332,9 @@ export const PreviewQuoteBody = zod.object({
   "circuitAmps": zod.string(),
   "chargerSupply": zod.string(),
   "connection": zod.string(),
-  "routeLength": zod.number(),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsOneRouteLengthMin),
   "wiringMethod": zod.string(),
+  "cableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
   "location": zod.string(),
   "panelManufacturer": zod.string(),
   "panelSpace": zod.string(),
@@ -1611,6 +1620,8 @@ export const GetQuoteParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
+
 export const getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -1867,8 +1878,9 @@ export const GetQuoteResponse = zod.object({
   "circuitAmps": zod.string(),
   "chargerSupply": zod.string(),
   "connection": zod.string(),
-  "routeLength": zod.number(),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsOneRouteLengthMin),
   "wiringMethod": zod.string(),
+  "cableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
   "location": zod.string(),
   "panelManufacturer": zod.string(),
   "panelSpace": zod.string(),
@@ -2154,6 +2166,8 @@ export const UpdateQuoteBody = zod.object({
   "proposalDescription": zod.string().optional()
 })
 
+export const updateQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
+
 export const updateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const updateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -2410,8 +2424,9 @@ export const UpdateQuoteResponse = zod.object({
   "circuitAmps": zod.string(),
   "chargerSupply": zod.string(),
   "connection": zod.string(),
-  "routeLength": zod.number(),
+  "routeLength": zod.number().min(updateQuoteResponseTwoJobInputsOneRouteLengthMin),
   "wiringMethod": zod.string(),
+  "cableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
   "location": zod.string(),
   "panelManufacturer": zod.string(),
   "panelSpace": zod.string(),
@@ -2688,6 +2703,7 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "manufacturer": zod.string().nullish(),
   "manufacturerPartNumber": zod.string().nullish(),
   "supplierSku": zod.string().nullish(),
+  "upc": zod.string().nullish(),
   "sourceDate": zod.string().nullish(),
   "amperage": zod.number().nullish(),
   "poleCount": zod.number().nullish(),
@@ -2719,6 +2735,7 @@ export const UpdatePriceBookItemResponse = zod.object({
   "manufacturer": zod.string().nullish(),
   "manufacturerPartNumber": zod.string().nullish(),
   "supplierSku": zod.string().nullish(),
+  "upc": zod.string().nullish(),
   "sourceDate": zod.string().nullish(),
   "amperage": zod.number().nullish(),
   "poleCount": zod.number().nullish(),
@@ -2749,6 +2766,7 @@ export const GetSettingsResponse = zod.object({
   "targetMargin": zod.number(),
   "defaultTaxRate": zod.number(),
   "evLaborAdjustmentHours": zod.number(),
+  "evDefaultCableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']),
   "bathroomLaborAdjustmentHours": zod.number(),
   "kitchenLaborAdjustmentHours": zod.number(),
   "recessedLightingLaborAdjustmentHours": zod.number(),
@@ -2780,6 +2798,7 @@ export const UpdateSettingsBody = zod.object({
   "targetMargin": zod.number().optional(),
   "defaultTaxRate": zod.number().optional(),
   "evLaborAdjustmentHours": zod.number().optional(),
+  "evDefaultCableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
   "bathroomLaborAdjustmentHours": zod.number().optional(),
   "kitchenLaborAdjustmentHours": zod.number().optional(),
   "recessedLightingLaborAdjustmentHours": zod.number().optional(),
@@ -2807,6 +2826,7 @@ export const UpdateSettingsResponse = zod.object({
   "targetMargin": zod.number(),
   "defaultTaxRate": zod.number(),
   "evLaborAdjustmentHours": zod.number(),
+  "evDefaultCableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']),
   "bathroomLaborAdjustmentHours": zod.number(),
   "kitchenLaborAdjustmentHours": zod.number(),
   "recessedLightingLaborAdjustmentHours": zod.number(),

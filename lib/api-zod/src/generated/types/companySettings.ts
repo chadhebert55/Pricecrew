@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CompanySettingsEvDefaultCableType } from './companySettingsEvDefaultCableType';
 
 export interface CompanySettings {
   companyName: string;
@@ -20,6 +21,7 @@ export interface CompanySettings {
   targetMargin: number;
   defaultTaxRate: number;
   evLaborAdjustmentHours: number;
+  evDefaultCableType: CompanySettingsEvDefaultCableType;
   bathroomLaborAdjustmentHours: number;
   kitchenLaborAdjustmentHours: number;
   recessedLightingLaborAdjustmentHours: number;

@@ -21,6 +21,8 @@ export interface PriceBookItem {
   /** @nullable */
   supplierSku?: string | null;
   /** @nullable */
+  upc?: string | null;
+  /** @nullable */
   sourceDate?: string | null;
   /** @nullable */
   amperage?: number | null;

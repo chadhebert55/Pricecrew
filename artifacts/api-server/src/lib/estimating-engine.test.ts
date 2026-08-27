@@ -35,6 +35,7 @@ const catalogRow = (
   manufacturer: null,
   manufacturerPartNumber: null,
   supplierSku: null,
+  upc: null,
   sourceDate: "2026-08-25",
   amperage: null,
   poleCount: null,

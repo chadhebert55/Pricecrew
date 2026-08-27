@@ -100,10 +100,10 @@ function PriceBookRow({ item, updateItem }: { item: any, updateItem: any }) {
     <TableRow>
       <TableCell className="font-medium">{item.item}</TableCell>
       <TableCell className="text-xs text-muted-foreground">
-        {item.manufacturer || item.supplier ? (
+        {item.manufacturer || item.supplier || item.upc ? (
           <div>
             {(item.manufacturer || item.manufacturerPartNumber) && <div className="font-medium text-foreground">{[item.manufacturer, item.manufacturerPartNumber].filter(Boolean).join(" ")}</div>}
-            <div>{[item.supplier, item.supplierSku ? `SKU ${item.supplierSku}` : null, item.sourceDate].filter(Boolean).join(" · ")}</div>
+            <div>{[item.supplier, item.supplierSku ? `SKU ${item.supplierSku}` : null, item.upc ? `UPC ${item.upc}` : null, item.sourceDate].filter(Boolean).join(" · ")}</div>
             {(item.amperage || item.poleCount || item.protectionType) && <div>{[item.amperage ? `${item.amperage}A` : null, item.poleCount ? `${item.poleCount}-pole` : null, item.protectionType].filter(Boolean).join(" · ")}</div>}
           </div>
         ) : item.item.startsWith("Unverified") ? <span className="font-medium text-amber-700">Unverified company allowance</span> : "General item"}
