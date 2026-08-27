@@ -1,11 +1,27 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb } from "lucide-react"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock } from "lucide-react"
 import { Link } from "wouter"
 
 export function Builders() {
   const modules = [
+    {
+      id: "service-call",
+      title: "Service Call",
+      description: "Build residential or commercial service visits with common device replacements, adjustable labor, verified materials, and visible pricing warnings.",
+      icon: Wrench,
+      status: "live",
+      href: "/quotes/new/service-call"
+    },
+    {
+      id: "time-materials",
+      title: "Time & Materials",
+      description: "Estimate adjustable crew hours, labor rates, loaded costs, margin targets, and miscellaneous material lines.",
+      icon: Clock,
+      status: "live",
+      href: "/quotes/new/time-materials"
+    },
     {
       id: "bathroom",
       title: "Bathroom Electrical",

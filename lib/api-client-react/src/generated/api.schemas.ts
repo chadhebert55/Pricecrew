@@ -38,6 +38,27 @@ export interface DashboardSummary {
   recentQuotes: QuoteSummary[];
 }
 
+export interface CustomerProposalLine {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface CustomerProposal {
+  id: number;
+  quoteNumber: string;
+  customerName: string;
+  /** @nullable */
+  customerEmail: string | null;
+  projectName: string;
+  status: QuoteStatus;
+  proposalDescription: string;
+  createdAt: string;
+  finalSellingPrice: number;
+  scope: CustomerProposalLine[];
+}
+
 export type EvChargerInputsCableType = typeof EvChargerInputsCableType[keyof typeof EvChargerInputsCableType];
 
 
@@ -790,10 +811,96 @@ export interface PanelReplacementInputs {
   notes: string;
 }
 
+export type ServiceCallInputsServiceType = typeof ServiceCallInputsServiceType[keyof typeof ServiceCallInputsServiceType];
+
+
+export const ServiceCallInputsServiceType = {
+  Diagnostic_service_call: 'Diagnostic service call',
+  Residential_standard_service_visit: 'Residential standard service visit',
+  Commercial_standard_service_visit: 'Commercial standard service visit',
+} as const;
+
+export interface MiscellaneousMaterialInput {
+  /** @minLength 1 */
+  id: string;
+  description: string;
+  /** @minimum 0 */
+  cost: number;
+}
+
+export interface ServiceCallInputs {
+  serviceType: ServiceCallInputsServiceType;
+  /** @minimum 1 */
+  visitQuantity: number;
+  /** @minimum 0 */
+  receptacleReplacementQuantity: number;
+  /** @minimum 0 */
+  trReceptacleReplacementQuantity: number;
+  /** @minimum 0 */
+  switchReplacementQuantity: number;
+  /** @minimum 0 */
+  gfciReplacementQuantity: number;
+  /** @minimum 1 */
+  crewSize: number;
+  /** @minimum 0 */
+  crewHours: number;
+  laborRateType: LaborRateType;
+  /**
+     * Material markup percentage.
+     * @minimum 0
+     * @maximum 500
+     */
+  materialMarkup: number;
+  /**
+     * Target gross margin percentage.
+     * @minimum 0
+     * @maximum 99.99
+     */
+  targetMargin: number;
+  miscellaneousMaterials: MiscellaneousMaterialInput[];
+  notes: string;
+}
+
+export type TimeMaterialsInputsServiceType = typeof TimeMaterialsInputsServiceType[keyof typeof TimeMaterialsInputsServiceType];
+
+
+export const TimeMaterialsInputsServiceType = {
+  General_time_and_materials: 'General time and materials',
+  Residential_time_and_materials: 'Residential time and materials',
+  Commercial_time_and_materials: 'Commercial time and materials',
+} as const;
+
+export interface TimeMaterialsInputs {
+  serviceType: TimeMaterialsInputsServiceType;
+  /** @minimum 1 */
+  crewSize: number;
+  /** @minimum 0 */
+  crewHours: number;
+  laborRateType: LaborRateType;
+  /** @minimum 0 */
+  laborSellRate: number;
+  /** @minimum 0 */
+  loadedLaborCost: number;
+  /**
+     * Material markup percentage.
+     * @minimum 0
+     * @maximum 500
+     */
+  materialMarkup: number;
+  /**
+     * Target gross margin percentage.
+     * @minimum 0
+     * @maximum 99.99
+     */
+  targetMargin: number;
+  miscellaneousMaterials: MiscellaneousMaterialInput[];
+  notes: string;
+}
+
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -872,6 +979,14 @@ export type Quote = QuoteSummary & ({
   createdAt: string;
 });
 
+export type QuoteUpdateResult = Quote & ({
+  /**
+     * Rotating signed token issued only for ready customer proposals.
+     * @nullable
+     */
+  proposalShareToken: string | null;
+});
+
 export type QuoteInputModule = typeof QuoteInputModule[keyof typeof QuoteInputModule];
 
 
@@ -882,6 +997,8 @@ export const QuoteInputModule = {
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
   SERVICE_UPGRADE: 'SERVICE_UPGRADE',
   PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
+  SERVICE_CALL: 'SERVICE_CALL',
+  TIME_MATERIALS: 'TIME_MATERIALS',
 } as const;
 
 export interface QuoteInput {
@@ -892,7 +1009,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -919,11 +1036,13 @@ export const QuotePreviewInputModule = {
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
   SERVICE_UPGRADE: 'SERVICE_UPGRADE',
   PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
+  SERVICE_CALL: 'SERVICE_CALL',
+  TIME_MATERIALS: 'TIME_MATERIALS',
 } as const;
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99

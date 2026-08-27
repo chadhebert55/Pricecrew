@@ -6,6 +6,8 @@ import type {
   KitchenInputRecord,
   PricingWarningRecord,
   RecessedLightingInputRecord,
+  ServiceCallInputRecord,
+  TimeMaterialsInputRecord,
 } from "@workspace/db";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
@@ -13,14 +15,20 @@ import {
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
+  calculateServiceCallEstimate,
+  calculateTimeMaterialsEstimate,
   normalizePricingWarnings,
   type EstimatingSettings,
   type PriceBookItem,
 } from "./estimating-engine";
 import {
   formatQuoteNumber,
+  customerMaterialDescription,
+  createProposalShareToken,
+  hasBlockingPricingWarnings,
   MAX_OVERRIDE_VALUE,
   pricingForQuoteUpdate,
+  parseProposalShareToken,
   validateOverrideValues,
   withProfit,
 } from "../routes/estimating";
@@ -586,4 +594,178 @@ test("company-aware quote numbers remain unique across concurrent IDs and deleti
   assert.equal(existing, "Q-1-000041");
   assert.equal(new Set([existing, ...concurrent]).size, 4);
   assert.equal(formatQuoteNumber(1, 44), "Q-1-000044");
+});
+
+const serviceCallInputs: ServiceCallInputRecord = {
+  serviceType: "Residential standard service visit",
+  visitQuantity: 1,
+  receptacleReplacementQuantity: 1,
+  trReceptacleReplacementQuantity: 1,
+  switchReplacementQuantity: 0,
+  gfciReplacementQuantity: 1,
+  crewSize: 1,
+  crewHours: 2,
+  laborRateType: "residential",
+  materialMarkup: 30,
+  targetMargin: 35,
+  miscellaneousMaterials: [],
+  notes: "",
+};
+
+const timeMaterialsInputs: TimeMaterialsInputRecord = {
+  serviceType: "Commercial time and materials",
+  crewSize: 2,
+  crewHours: 3,
+  laborRateType: "commercial",
+  laborSellRate: 200,
+  loadedLaborCost: 60,
+  materialMarkup: 50,
+  targetMargin: 30,
+  miscellaneousMaterials: [
+    { id: "wire", description: "Wire and fittings allowance", cost: 100 },
+  ],
+  notes: "",
+};
+
+test("Service Call uses verified device rows and visibly preserves unresolved materials", () => {
+  const result = calculateServiceCallEstimate(serviceCallInputs, settings, [
+    catalogRow("Pass & Seymour 3232-TRW 15A TR duplex receptacle", 1.25),
+    catalogRow("Pass & Seymour 2097-TRWRW 20A TR self-test GFCI", 24.5),
+  ]);
+  assert.equal(
+    result.assembly.find((line) => line.id === "tr-receptacle-replacement")
+      ?.unitCost,
+    1.25,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "standard-receptacle-replacement")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(result.pricing.materialMarkup, 0.3);
+  assert.equal(result.pricing.laborCost, 243.75);
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "standard receptacle",
+    ),
+    true,
+  );
+  expectStructuredWarnings(result.pricing.pricingWarnings);
+});
+
+test("Time & Materials honors quote-local labor, loaded cost, markup, and margin assumptions", () => {
+  const result = calculateTimeMaterialsEstimate(
+    timeMaterialsInputs,
+    settings,
+    [],
+  );
+  assert.equal(result.pricing.materialCost, 100);
+  assert.equal(result.pricing.laborCost, 360);
+  assert.equal(result.pricing.laborSellRate, 200);
+  assert.equal(result.pricing.laborSellAmount, 1200);
+  assert.equal(result.pricing.materialMarkup, 0.5);
+  assert.equal(result.pricing.finalSellingPrice, 1350);
+  assert.equal(result.pricing.grossMargin, 0.6593);
+  expectStructuredWarnings(result.pricing.pricingWarnings);
+});
+
+test("new builder preview and create contracts accept identical snapshots and reject invalid labor", () => {
+  for (const [module, jobInputs] of [
+    ["SERVICE_CALL", serviceCallInputs],
+    ["TIME_MATERIALS", timeMaterialsInputs],
+  ] as const) {
+    const preview = PreviewQuoteBody.safeParse({ module, jobInputs });
+    const create = CreateQuoteBody.safeParse({
+      customerName: "Parity customer",
+      projectName: "Service estimate",
+      proposalDescription: "Customer-facing scope",
+      module,
+      jobInputs,
+    });
+    assert.equal(preview.success, true);
+    assert.equal(create.success, true);
+    if (preview.success && create.success) {
+      assert.deepEqual(create.data.jobInputs, preview.data.jobInputs);
+    }
+  }
+
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "TIME_MATERIALS",
+      jobInputs: { ...timeMaterialsInputs, crewHours: -1 },
+    }).success,
+    false,
+  );
+});
+
+test("zero-cost active T&M material lines produce a structured audit warning", () => {
+  const result = calculateTimeMaterialsEstimate(
+    {
+      ...timeMaterialsInputs,
+      miscellaneousMaterials: [
+        { id: "unknown", description: "Unconfirmed specialty part", cost: 0 },
+      ],
+    },
+    settings,
+    [],
+  );
+  assert.equal(result.assembly[0]?.unitCost, 0);
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "TIME_MATERIALS_REVIEW" &&
+        warning.message.includes("zero cost"),
+    ),
+    true,
+  );
+});
+
+test("quotes with unresolved catalog prices cannot enter a ready state", () => {
+  const unresolved = calculateServiceCallEstimate(serviceCallInputs, settings, []);
+  assert.equal(
+    hasBlockingPricingWarnings(unresolved.pricing.pricingWarnings),
+    true,
+  );
+  const resolved = calculateTimeMaterialsEstimate(
+    timeMaterialsInputs,
+    settings,
+    [],
+  );
+  assert.equal(hasBlockingPricingWarnings(resolved.pricing.pricingWarnings), false);
+});
+
+test("customer proposal descriptions strip exact catalog identity", () => {
+  assert.equal(
+    customerMaterialDescription(
+      "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI replacement",
+    ),
+    "GFCI receptacle",
+  );
+  assert.equal(
+    customerMaterialDescription(
+      "Siemens Q120DF 20A 1-pole dual-function breaker — SKU 123",
+    ),
+    "20A 1-pole dual-function breaker",
+  );
+});
+
+test("customer proposal tokens are high entropy, tamper evident, and rotate with quote changes", () => {
+  const firstUpdate = new Date("2026-08-27T20:00:00.000Z");
+  const secondUpdate = new Date("2026-08-27T20:00:01.000Z");
+  const first = createProposalShareToken(42, firstUpdate);
+  const second = createProposalShareToken(42, secondUpdate);
+  assert.ok(first.length >= 50);
+  assert.notEqual(first, second);
+  assert.deepEqual(parseProposalShareToken(first), {
+    quoteId: 42,
+    timestamp: firstUpdate.getTime(),
+  });
+  assert.equal(
+    parseProposalShareToken(`${first.slice(0, -1)}x`),
+    null,
+  );
 });

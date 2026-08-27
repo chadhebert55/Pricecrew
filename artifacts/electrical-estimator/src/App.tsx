@@ -20,6 +20,9 @@ import { NewKitchenQuote } from '@/pages/quotes/new-kitchen';
 import { NewRecessedLightingQuote } from '@/pages/quotes/new-recessed-lighting';
 import { NewServiceUpgradeQuote } from '@/pages/quotes/new-service-upgrade';
 import { NewPanelReplacementQuote } from '@/pages/quotes/new-panel-replacement';
+import { NewServiceCallQuote } from '@/pages/quotes/new-service-call';
+import { NewTimeMaterialsQuote } from '@/pages/quotes/new-time-materials';
+import { QuoteProposal } from '@/pages/quotes/proposal';
 import { QuoteDetail } from '@/pages/quotes/detail';
 import { Builders } from '@/pages/builders';
 import { PriceBook } from '@/pages/price-book';
@@ -48,7 +51,10 @@ function Router() {
           <Route path="/quotes/new/recessed-lighting" component={NewRecessedLightingQuote} />
           <Route path="/quotes/new/service-upgrade" component={NewServiceUpgradeQuote} />
           <Route path="/quotes/new/panel-replacement" component={NewPanelReplacementQuote} />
+          <Route path="/quotes/new/service-call" component={NewServiceCallQuote} />
+          <Route path="/quotes/new/time-materials" component={NewTimeMaterialsQuote} />
           <Route path="/quotes/:id" component={QuoteDetail} />
+          <Route path="/proposals/:token" component={QuoteProposal} />
           <Route path="/builders" component={Builders} />
           <Route path="/price-book" component={PriceBook} />
           <Route path="/customers" component={Customers} />

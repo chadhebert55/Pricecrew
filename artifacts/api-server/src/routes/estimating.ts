@@ -1,10 +1,12 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import {
   CreateQuoteBody,
   CreateQuoteResponse,
   GetDashboardSummaryResponse,
+  GetCustomerProposalParams,
+  GetCustomerProposalResponse,
   GetQuoteParams,
   GetQuoteResponse,
   GetSettingsResponse,
@@ -36,7 +38,9 @@ import {
   type PricingRecord,
   type QuoteJobInputsRecord,
   type RecessedLightingInputRecord,
+  type ServiceCallInputRecord,
   type ServiceUpgradeInputRecord,
+  type TimeMaterialsInputRecord,
 } from "@workspace/db";
 import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
@@ -45,7 +49,9 @@ import {
   calculateKitchenEstimate,
   calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
+  calculateServiceCallEstimate,
   calculateServiceUpgradeEstimate,
+  calculateTimeMaterialsEstimate,
   normalizePricingWarnings,
 } from "../lib/estimating-engine";
 
@@ -58,7 +64,9 @@ type EstimateModule =
   | "KITCHEN"
   | "RECESSED_LIGHTING"
   | "SERVICE_UPGRADE"
-  | "PANEL_REPLACEMENT";
+  | "PANEL_REPLACEMENT"
+  | "SERVICE_CALL"
+  | "TIME_MATERIALS";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -125,6 +133,83 @@ function serializeQuoteSummary(quote: typeof quotesTable.$inferSelect) {
   };
 }
 
+function proposalSecret() {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET is required");
+  return secret;
+}
+
+export function createProposalShareToken(
+  quoteId: number,
+  updatedAt: Date,
+) {
+  const payload = `${quoteId}.${updatedAt.getTime()}`;
+  const signature = createHmac("sha256", proposalSecret())
+    .update(payload)
+    .digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+export function parseProposalShareToken(token: string) {
+  const [idText, timestampText, signature, ...extra] = token.split(".");
+  const quoteId = Number(idText);
+  const timestamp = Number(timestampText);
+  if (
+    extra.length > 0 ||
+    !Number.isSafeInteger(quoteId) ||
+    quoteId < 1 ||
+    !Number.isSafeInteger(timestamp) ||
+    timestamp < 1 ||
+    !signature
+  ) {
+    return null;
+  }
+  const payload = `${quoteId}.${timestamp}`;
+  const expected = createHmac("sha256", proposalSecret())
+    .update(payload)
+    .digest("base64url");
+  const providedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (
+    providedBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(providedBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+  return { quoteId, timestamp };
+}
+
+export function customerMaterialDescription(description: string) {
+  const rules: Array<[RegExp, string]> = [
+    [/^Milbank .*200A meter-main.*$/i, "200A meter-main with built-in disconnect"],
+    [/^Siemens .*200A .*panel.*$/i, "200A Siemens panel"],
+    [/^Square D .*100A .*load center.*$/i, "100A Square D panel"],
+    [/^.*intersystem bonding (?:terminal|connector).*$/i, "Intersystem bonding connector"],
+    [/^#8 solid grounding conductor$/i, "#8 bare copper"],
+    [/^#4 green bonding conductor$/i, "#4 green copper"],
+    [/^.*Pass & Seymour.*traditional 3-way switches.*$/i, "3-way switches"],
+    [/^.*Pass & Seymour.*single-pole switches?.*$/i, "Single-pole switch"],
+    [/^.*Pass & Seymour.*GFCI.*$/i, "GFCI receptacle"],
+    [/^.*Pass & Seymour.*duplex receptacle.*$/i, "Tamper-resistant receptacle"],
+    [/^.*Legrand radiant.*single-pole switch.*$/i, "Single-pole switch"],
+    [/^.*Lutron.*dimmer.*$/i, "Dimmer"],
+    [/^.*Juno.*4-inch.*(?:wafer|light).*$/i, "4-inch recessed light"],
+    [/^.*Juno.*6-inch.*(?:wafer|light).*$/i, "6-inch recessed light"],
+  ];
+  for (const [pattern, replacement] of rules) {
+    if (pattern.test(description)) return replacement;
+  }
+  if (/\bbreaker\b/i.test(description)) {
+    const breaker = description.match(
+      /(\d+A).*?(\d)-pole.*?(standard|GFCI|AFCI|dual-function).*?breaker/i,
+    );
+    return breaker
+      ? `${breaker[1]} ${breaker[2]}-pole ${breaker[3]} breaker`
+      : "Circuit breaker";
+  }
+  return description;
+}
+
 export function withProfit(
   pricing: PricingRecord,
   overrides: {
@@ -185,6 +270,16 @@ export function pricingForQuoteUpdate(
   });
 }
 
+export function hasBlockingPricingWarnings(
+  warnings: PricingRecord["pricingWarnings"],
+) {
+  return warnings.some((warning) =>
+    typeof warning === "string"
+      ? warning.startsWith("No verified price is available")
+      : warning.severity === "error",
+  );
+}
+
 async function companySettings() {
   await ensureEstimatorSeed();
   const [settings] = await db
@@ -241,6 +336,12 @@ async function calculateEstimate(
   if (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs)) {
     return calculatePanelReplacementEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "SERVICE_CALL" && isServiceCallInput(jobInputs)) {
+    return calculateServiceCallEstimate(jobInputs, settings, priceBook);
+  }
+  if (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs)) {
+    return calculateTimeMaterialsEstimate(jobInputs, settings, priceBook);
+  }
   throw new Error(`Job inputs do not match module ${module}`);
 }
 
@@ -280,6 +381,18 @@ function isPanelReplacementInput(
   return "replacementType" in jobInputs && "feederConductor" in jobInputs;
 }
 
+function isServiceCallInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is ServiceCallInputRecord {
+  return "visitQuantity" in jobInputs && "trReceptacleReplacementQuantity" in jobInputs;
+}
+
+function isTimeMaterialsInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is TimeMaterialsInputRecord {
+  return "serviceType" in jobInputs && "laborSellRate" in jobInputs;
+}
+
 function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -291,6 +404,8 @@ function moduleMatchesInputs(
     (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs))
     || (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs))
     || (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs))
+    || (module === "SERVICE_CALL" && isServiceCallInput(jobInputs))
+    || (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs))
   );
 }
 
@@ -486,6 +601,56 @@ router.post("/quotes/preview", async (req, res): Promise<void> => {
   );
 });
 
+router.get("/proposals/:token", async (req, res): Promise<void> => {
+  await ensureEstimatorSeed();
+  const params = GetCustomerProposalParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      eq(
+        quotesTable.id,
+        parseProposalShareToken(params.data.token)?.quoteId ?? -1,
+      ),
+    );
+  const tokenData = parseProposalShareToken(params.data.token);
+  if (
+    !quote ||
+    quote.companyId !== DEFAULT_COMPANY_ID ||
+    normalizeQuoteStatus(quote.status) !== "ready" ||
+    !tokenData ||
+    quote.updatedAt.getTime() !== tokenData.timestamp
+  ) {
+    res.status(404).json({ error: "Proposal not found" });
+    return;
+  }
+
+  res.json(
+    GetCustomerProposalResponse.parse({
+      id: quote.id,
+      quoteNumber: quote.quoteNumber,
+      customerName: quote.customerName,
+      customerEmail: quote.customerEmail,
+      projectName: quote.projectName,
+      status: normalizeQuoteStatus(quote.status),
+      proposalDescription: quote.proposalDescription,
+      createdAt: quote.createdAt.toISOString(),
+      finalSellingPrice: quote.pricing.finalSellingPrice,
+      scope: quote.assembly.map((line) => ({
+        id: line.id,
+        description: customerMaterialDescription(line.description),
+        quantity: line.quantity,
+        unit: line.unit,
+      })),
+    }),
+  );
+});
+
 router.get("/quotes/:id", async (req, res): Promise<void> => {
   await ensureEstimatorSeed();
   const params = GetQuoteParams.safeParse(req.params);
@@ -535,6 +700,16 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Quote not found" });
     return;
   }
+  if (
+    parsed.data.status === "ready" &&
+    hasBlockingPricingWarnings(existingQuote.pricing.pricingWarnings)
+  ) {
+    res.status(409).json({
+      error:
+        "Resolve all missing or invalid material prices before marking this quote ready.",
+    });
+    return;
+  }
 
   const pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
   const [quote] = await db
@@ -559,7 +734,15 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
   }
 
   req.log.info({ quoteId: quote.id }, "Updated quote");
-  res.json(UpdateQuoteResponse.parse(serializeQuote(quote)));
+  res.json(
+    UpdateQuoteResponse.parse({
+      ...serializeQuote(quote),
+      proposalShareToken:
+        normalizeQuoteStatus(quote.status) === "ready"
+          ? createProposalShareToken(quote.id, quote.updatedAt)
+          : null,
+    }),
+  );
 });
 
 router.get("/price-book", async (_req, res): Promise<void> => {

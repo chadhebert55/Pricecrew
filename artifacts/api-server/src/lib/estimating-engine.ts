@@ -11,7 +11,9 @@ import type {
   PricingWarningRecord,
   PricingWarningSeverity,
   RecessedLightingInputRecord,
+  ServiceCallInputRecord,
   ServiceUpgradeInputRecord,
+  TimeMaterialsInputRecord,
 } from "@workspace/db";
 
 const JUNO_WF4_VERIFIED =
@@ -70,6 +72,24 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Service Call")) {
+    return {
+      code: "SERVICE_CALL_FIELD_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "service-call",
+      context: { rule: "confirm service conditions and final repair scope in the field" },
+    };
+  }
+  if (message.startsWith("Time & Materials")) {
+    return {
+      code: "TIME_MATERIALS_REVIEW",
+      severity: "warning",
+      category: "planning",
+      source: "time-materials",
+      context: { rule: "confirm actual labor and material usage before invoicing" },
+    };
+  }
   if (message.startsWith("Exact catalog selection")) {
     const match =
       message.match(/"([^"]+)" for (\w+)/) ??
@@ -652,6 +672,79 @@ function finalizeEstimate(
       laborRateType,
     },
   };
+}
+
+function percentage(value: number | undefined, fallback: number, maximum: number) {
+  return Number.isFinite(Number(value))
+    ? Math.min(maximum, Math.max(0, Number(value))) / 100
+    : fallback;
+}
+
+function configuredEstimateSettings(
+  settings: EstimatingSettings,
+  inputs: {
+    laborRateType?: LaborRateType;
+    laborSellRate?: number;
+    loadedLaborCost?: number;
+    materialMarkup?: number;
+    targetMargin?: number;
+  },
+): EstimatingSettings {
+  const selectedType = selectedLaborRateType(inputs.laborRateType);
+  const sellRate =
+    Number.isFinite(Number(inputs.laborSellRate)) && Number(inputs.laborSellRate) >= 0
+      ? Number(inputs.laborSellRate)
+      : selectedType === "commercial"
+        ? settings.commercialLaborSellRate
+        : settings.residentialLaborSellRate;
+  return {
+    ...settings,
+    loadedLaborCost:
+      Number.isFinite(Number(inputs.loadedLaborCost)) &&
+      Number(inputs.loadedLaborCost) >= 0
+        ? Number(inputs.loadedLaborCost)
+        : settings.loadedLaborCost,
+    residentialLaborSellRate:
+      selectedType === "residential" ? sellRate : settings.residentialLaborSellRate,
+    commercialLaborSellRate:
+      selectedType === "commercial" ? sellRate : settings.commercialLaborSellRate,
+    materialMarkup: percentage(inputs.materialMarkup, settings.materialMarkup, 500),
+    targetMargin: percentage(inputs.targetMargin, settings.targetMargin, 99.99),
+  };
+}
+
+function addMiscellaneousMaterialLines(
+  assembly: AssemblyLineRecord[],
+  pricingWarnings: string[],
+  lines: Array<{ id: string; description: string; cost: number }>,
+  warningPrefix: "Service Call" | "Time & Materials",
+) {
+  lines.forEach((line, index) => {
+    const description = line.description.trim();
+    const cost = Number.isFinite(Number(line.cost))
+      ? Math.max(0, Number(line.cost))
+      : 0;
+    if (!description && cost === 0) return;
+    if (!description) {
+      pricingWarnings.push(
+        `${warningPrefix} material line ${index + 1} has a cost but no description. Confirm the material before sending the quote.`,
+      );
+    }
+    if (cost === 0) {
+      pricingWarnings.push(
+        `${warningPrefix} material "${description || `line ${index + 1}`}" has zero cost and must be confirmed before sending the quote.`,
+      );
+    }
+    addLine(assembly, {
+      id: `misc-${line.id || index + 1}`,
+      category: "Materials",
+      description: description || `Miscellaneous material ${index + 1}`,
+      quantity: 1,
+      unit: "allowance",
+      unitCost: cost,
+      source: "Contractor-entered material allowance",
+    });
+  });
 }
 
 export function calculateEvChargerEstimate(
@@ -2889,6 +2982,131 @@ export function calculateRecessedLightingEstimate(
     assembly,
     Math.max(0, laborHours),
     settings,
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+}
+
+export function calculateServiceCallEstimate(
+  inputs: ServiceCallInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  const safeQuantity = (value: number) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+  const addCatalogLine = (
+    id: string,
+    description: string,
+    key: string,
+    quantity: number,
+  ) => {
+    const selectedQuantity = safeQuantity(quantity);
+    if (selectedQuantity === 0) return;
+    const price = unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category: "Devices",
+      description,
+      quantity: selectedQuantity,
+      unit: "ea",
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  addCatalogLine(
+    "standard-receptacle-replacement",
+    "Standard receptacle replacement",
+    "standard receptacle",
+    inputs.receptacleReplacementQuantity,
+  );
+  addCatalogLine(
+    "tr-receptacle-replacement",
+    "Tamper-resistant receptacle replacement",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    inputs.trReceptacleReplacementQuantity,
+  );
+  addCatalogLine(
+    "single-pole-switch-replacement",
+    "Single-pole switch replacement",
+    "Legrand radiant TM870WCC10 15A single-pole switch",
+    inputs.switchReplacementQuantity,
+  );
+  addCatalogLine(
+    "gfci-replacement",
+    "20A tamper-resistant self-test GFCI replacement",
+    "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
+    inputs.gfciReplacementQuantity,
+  );
+  addMiscellaneousMaterialLines(
+    assembly,
+    pricingWarnings,
+    inputs.miscellaneousMaterials,
+    "Service Call",
+  );
+
+  const visitQuantity = Math.max(1, safeQuantity(inputs.visitQuantity));
+  const crewSize = Math.max(1, safeQuantity(inputs.crewSize));
+  const crewHours = safeQuantity(inputs.crewHours);
+  const deviceLaborHours =
+    safeQuantity(inputs.receptacleReplacementQuantity) * 0.5 +
+    safeQuantity(inputs.trReceptacleReplacementQuantity) * 0.5 +
+    safeQuantity(inputs.switchReplacementQuantity) * 0.5 +
+    safeQuantity(inputs.gfciReplacementQuantity) * 0.75;
+  const laborHours = visitQuantity * crewSize * crewHours + deviceLaborHours;
+  if (laborHours === 0) {
+    pricingWarnings.push(
+      "Service Call labor is zero. Enter visit hours before sending the quote.",
+    );
+  }
+  pricingWarnings.push(
+    "Service Call scope, device condition, circuit capacity, and protection requirements must be confirmed in the field.",
+  );
+
+  return finalizeEstimate(
+    assembly,
+    laborHours,
+    configuredEstimateSettings(settings, inputs),
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+}
+
+export function calculateTimeMaterialsEstimate(
+  inputs: TimeMaterialsInputRecord,
+  settings: EstimatingSettings,
+  _priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  addMiscellaneousMaterialLines(
+    assembly,
+    pricingWarnings,
+    inputs.miscellaneousMaterials,
+    "Time & Materials",
+  );
+  const crewSize = Number.isFinite(Number(inputs.crewSize))
+    ? Math.max(1, Number(inputs.crewSize))
+    : 1;
+  const crewHours = Number.isFinite(Number(inputs.crewHours))
+    ? Math.max(0, Number(inputs.crewHours))
+    : 0;
+  const laborHours = crewSize * crewHours;
+  if (laborHours === 0) {
+    pricingWarnings.push(
+      "Time & Materials labor is zero. Enter expected hours before sending the quote.",
+    );
+  }
+  pricingWarnings.push(
+    "Time & Materials values are an authorization estimate. Confirm actual labor and material usage before invoicing.",
+  );
+
+  return finalizeEstimate(
+    assembly,
+    laborHours,
+    configuredEstimateSettings(settings, inputs),
     pricingWarnings,
     inputs.laborRateType,
   );

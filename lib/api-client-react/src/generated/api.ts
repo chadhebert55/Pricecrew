@@ -22,6 +22,7 @@ import type {
 import type {
   CompanySettings,
   CompanySettingsUpdate,
+  CustomerProposal,
   DashboardSummary,
   EstimatePreview,
   HealthStatus,
@@ -32,7 +33,8 @@ import type {
   QuoteInput,
   QuotePreviewInput,
   QuoteSummary,
-  QuoteUpdate
+  QuoteUpdate,
+  QuoteUpdateResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -443,6 +445,83 @@ export const usePreviewQuote = <TError = ErrorType<unknown>,
       return useMutation(getPreviewQuoteMutationOptions(options));
     }
 
+export const getGetCustomerProposalUrl = (token: string,) => {
+
+
+
+
+  return `/api/proposals/${token}`
+}
+
+/**
+ * @summary Get a customer-safe proposal
+ */
+export const getCustomerProposal = async (token: string, options?: Parameters<typeof customFetch>[1]): Promise<CustomerProposal> => {
+
+  return customFetch<CustomerProposal>(getGetCustomerProposalUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCustomerProposalQueryKey = (token: string,) => {
+    return [
+    `/api/proposals/${token}`
+    ] as const;
+    }
+
+
+export const getGetCustomerProposalQueryOptions = <TData = Awaited<ReturnType<typeof getCustomerProposal>>, TError = ErrorType<void>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomerProposal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCustomerProposalQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCustomerProposal>>> = ({ signal }) => getCustomerProposal(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCustomerProposal>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCustomerProposalQueryResult = NonNullable<Awaited<ReturnType<typeof getCustomerProposal>>>
+export type GetCustomerProposalQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a customer-safe proposal
+ */
+
+export function useGetCustomerProposal<TData = Awaited<ReturnType<typeof getCustomerProposal>>, TError = ErrorType<void>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomerProposal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCustomerProposalQueryOptions(token,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetQuoteUrl = (id: number,) => {
 
 
@@ -532,9 +611,9 @@ export const getUpdateQuoteUrl = (id: number,) => {
  * @summary Update a quote
  */
 export const updateQuote = async (id: number,
-    quoteUpdate: QuoteUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+    quoteUpdate: QuoteUpdate, options?: Parameters<typeof customFetch>[1]): Promise<QuoteUpdateResult> => {
 
-  return customFetch<Quote>(getUpdateQuoteUrl(id),
+  return customFetch<QuoteUpdateResult>(getUpdateQuoteUrl(id),
   {
     ...options,
     method: 'PATCH',

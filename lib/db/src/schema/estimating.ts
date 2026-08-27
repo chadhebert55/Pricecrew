@@ -28,6 +28,22 @@ export type PanelReplacementFeederConductor =
   | "2/0 copper service conductor alternative"
   | "Other configured feeder conductor";
 
+export type ServiceCallServiceType =
+  | "Diagnostic service call"
+  | "Residential standard service visit"
+  | "Commercial standard service visit";
+
+export type TimeMaterialsServiceType =
+  | "General time and materials"
+  | "Residential time and materials"
+  | "Commercial time and materials";
+
+export type MiscellaneousMaterialInput = {
+  id: string;
+  description: string;
+  cost: number;
+};
+
 export type EvChargerInputRecord = {
   chargerQuantity: number;
   chargerOutputAmps: number;
@@ -287,6 +303,35 @@ export type PanelReplacementInputRecord = {
   notes: string;
 };
 
+export type ServiceCallInputRecord = {
+  serviceType: ServiceCallServiceType;
+  visitQuantity: number;
+  receptacleReplacementQuantity: number;
+  trReceptacleReplacementQuantity: number;
+  switchReplacementQuantity: number;
+  gfciReplacementQuantity: number;
+  crewSize: number;
+  crewHours: number;
+  laborRateType: LaborRateType;
+  materialMarkup: number;
+  targetMargin: number;
+  miscellaneousMaterials: MiscellaneousMaterialInput[];
+  notes: string;
+};
+
+export type TimeMaterialsInputRecord = {
+  serviceType: TimeMaterialsServiceType;
+  crewSize: number;
+  crewHours: number;
+  laborRateType: LaborRateType;
+  laborSellRate: number;
+  loadedLaborCost: number;
+  materialMarkup: number;
+  targetMargin: number;
+  miscellaneousMaterials: MiscellaneousMaterialInput[];
+  notes: string;
+};
+
 export type ExactCatalogPartSelectors = {
   meterDisconnect?: string;
   servicePanel?: string;
@@ -321,7 +366,9 @@ export type QuoteJobInputsRecord =
   | KitchenInputRecord
   | RecessedLightingInputRecord
   | ServiceUpgradeInputRecord
-  | PanelReplacementInputRecord;
+  | PanelReplacementInputRecord
+  | ServiceCallInputRecord
+  | TimeMaterialsInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;

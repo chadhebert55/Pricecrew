@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert } from "lucide-react"
+import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 
 export function QuoteDetail() {
@@ -32,6 +32,7 @@ export function QuoteDetail() {
   const updateQuote = useUpdateQuote({
     mutation: {
       onSuccess: (updatedQuote) => {
+        setStatus(updatedQuote.status)
         queryClient.setQueryData(getGetQuoteQueryKey(updatedQuote.id), updatedQuote)
         void queryClient.invalidateQueries({ queryKey: getListQuotesQueryKey() })
         void queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() })
@@ -72,11 +73,24 @@ export function QuoteDetail() {
   }
 
   const handleMarkReady = () => {
-    setStatus("ready")
     updateQuote.mutate({
       id: quote.id,
       data: { status: "ready" }
     })
+  }
+
+  const handleOpenProposal = () => {
+    if (status !== "ready" || hasBlockingWarnings) return
+    updateQuote.mutate(
+      { id: quote.id, data: { status: "ready" } },
+      {
+        onSuccess: (updatedQuote) => {
+          if (updatedQuote.proposalShareToken) {
+            setLocation(`/proposals/${updatedQuote.proposalShareToken}`)
+          }
+        },
+      },
+    )
   }
 
   // Derived effective pricing
@@ -88,6 +102,9 @@ export function QuoteDetail() {
   const margin = quote.pricing.grossMargin * 100
   const estimatorNotes =
     typeof quote.jobInputs.notes === "string" ? quote.jobInputs.notes : ""
+  const hasBlockingWarnings = quote.pricing.pricingWarnings.some(
+    (warning) => warning.severity === "error",
+  )
 
   return (
     <div className="space-y-6 pb-24">
@@ -110,8 +127,11 @@ export function QuoteDetail() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleOpenProposal} disabled={status !== "ready" || hasBlockingWarnings || updateQuote.isPending} title={status !== "ready" ? "Mark this quote ready before opening the customer proposal" : undefined}>
+            <ExternalLink size={16} className="mr-2" /> Customer Proposal
+          </Button>
           {status !== 'ready' && (
-            <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={handleMarkReady} disabled={updateQuote.isPending}>
+            <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={handleMarkReady} disabled={updateQuote.isPending || hasBlockingWarnings} title={hasBlockingWarnings ? "Resolve pricing errors before marking ready" : undefined}>
               <Check size={16} className="mr-2" /> Mark Ready
             </Button>
           )}
@@ -120,6 +140,11 @@ export function QuoteDetail() {
           </Button>
         </div>
       </div>
+      {status !== "ready" && hasBlockingWarnings && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          This quote cannot be marked ready until all missing or invalid material prices are resolved.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -158,6 +183,10 @@ export function QuoteDetail() {
                         ? "Service Upgrade Builder"
                         : quote.module === "PANEL_REPLACEMENT"
                           ? "Panel Replacement Builder"
+                           : quote.module === "SERVICE_CALL"
+                             ? "Service Call Builder"
+                             : quote.module === "TIME_MATERIALS"
+                               ? "Time & Materials Builder"
                     : "EV Charger Builder"}.
               </CardDescription>
             </CardHeader>
