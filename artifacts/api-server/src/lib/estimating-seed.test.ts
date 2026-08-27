@@ -36,8 +36,8 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       const surge = seededRows.find(
         (row) => row.item === "Whole-home surge protection",
       );
-      assert.equal(surge?.unitCost, 0);
-      assert.equal(surge?.supplier, "Company default — set current cost");
+      assert.equal(surge?.unitCost, 143);
+      assert.equal(surge?.supplier, "Company verified cost");
       assert.equal(surge?.isDefault, false);
 
       const expectedNortheastCatalog = [
@@ -93,6 +93,18 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.unit, unit);
         assert.equal(row?.supplier, "Northeast Electrical");
         assert.equal(row?.supplierSku, supplierSku);
+        assert.equal(row?.manufacturerPartNumber, manufacturerPartNumber);
+        assert.equal(row?.sourceDate, "2026-08-27");
+      }
+      for (const [item, unitCost, manufacturerPartNumber] of [
+        ["Juno WF4DREGSMAL 4-inch regressed wafer light", 30.605, "WF4DREGSMAL"],
+        ["Juno WF6-DREG 6-inch regressed wafer light", 34.006, "WF6-DREG"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, unitCost);
+        assert.equal(row?.unit, "ea");
+        assert.equal(row?.supplier, "Company verified cost");
+        assert.equal(row?.manufacturer, "Juno");
         assert.equal(row?.manufacturerPartNumber, manufacturerPartNumber);
         assert.equal(row?.sourceDate, "2026-08-27");
       }

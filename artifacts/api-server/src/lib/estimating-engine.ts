@@ -14,6 +14,11 @@ import type {
   ServiceUpgradeInputRecord,
 } from "@workspace/db";
 
+const JUNO_WF4_VERIFIED =
+  "Juno WF4DREGSMAL 4-inch regressed wafer light";
+const JUNO_WF6_VERIFIED =
+  "Juno WF6-DREG 6-inch regressed wafer light";
+
 export type PriceBookItem = {
   category: string;
   item: string;
@@ -937,8 +942,8 @@ export function calculateBathroomEstimate(
     "recessed-lights",
     "Lighting",
     inputs.recessedLightSize === "6-inch"
-      ? "Juno 6-inch regressed wafer light"
-      : "Juno 4-inch regressed wafer light",
+      ? JUNO_WF6_VERIFIED
+      : JUNO_WF4_VERIFIED,
     `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
     inputs.customerSuppliedFixtures,
@@ -1314,8 +1319,8 @@ export function calculateKitchenEstimate(
     "recessed-lights",
     "Lighting",
     inputs.recessedLightSize === "6-inch"
-      ? "Juno 6-inch regressed wafer light"
-      : "Juno 4-inch regressed wafer light",
+      ? JUNO_WF6_VERIFIED
+      : JUNO_WF4_VERIFIED,
     `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
     inputs.customerSuppliedFixtures,
@@ -1818,26 +1823,42 @@ export function calculateServiceUpgradeEstimate(
     });
   };
 
-  const breaker = resolveBreaker(
-    {
-      manufacturer: inputs.panelManufacturer,
-      amperage: Math.max(1, Number(inputs.breakerAmperage) || 1),
-      poleCount: Math.max(1, Number(inputs.breakerPoleCount) || 1),
-      protectionType: inputs.breakerProtectionType,
-    },
-    priceBook,
-    pricingWarnings,
-    true,
+  const serviceAmperage = Number.parseInt(inputs.serviceSize, 10);
+  const breakerAmperage = Math.max(1, Number(inputs.breakerAmperage) || 1);
+  const breakerPoleCount = Math.max(1, Number(inputs.breakerPoleCount) || 1);
+  const selectedMeterEquipment = normalized(
+    inputs.exactCatalogParts?.meterDisconnect ??
+      inputs.meterDisconnectEquipment,
   );
-  addLine(assembly, {
-    id: "service-breaker",
-    category: "Protection",
-    description: breaker.description,
-    quantity: 1,
-    unit: "ea",
-    unitCost: breaker.value,
-    source: breaker.source,
-  });
+  const meterMainIncludesMainBreaker =
+    inputs.serviceDisconnect === "Meter-main combination" &&
+    selectedMeterEquipment.includes("meter main") &&
+    breakerAmperage === serviceAmperage &&
+    breakerPoleCount === 2 &&
+    normalized(inputs.breakerProtectionType) === "standard";
+
+  if (!meterMainIncludesMainBreaker) {
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: breakerAmperage,
+        poleCount: breakerPoleCount,
+        protectionType: inputs.breakerProtectionType,
+      },
+      priceBook,
+      pricingWarnings,
+      true,
+    );
+    addLine(assembly, {
+      id: "service-breaker",
+      category: "Protection",
+      description: breaker.description,
+      quantity: 1,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
+  }
 
   addExactOrLegacy(
     "service-meter-disconnect",
@@ -2117,7 +2138,7 @@ export function calculateServiceUpgradeEstimate(
   addPricedItem(
     "water-meter-bonding-conductor",
     "Bonding",
-    "#4 green water-meter bonding conductor",
+    "#4 green bonding conductor",
     "#4 green water-meter bonding conductor",
     inputs.waterMeterBondingFootage,
     "ft",
@@ -2608,8 +2629,8 @@ export function calculateRecessedLightingEstimate(
       "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   const fixtureKey =
     inputs.fixtureSize === "6-inch"
-      ? "Juno 6-inch regressed wafer light"
-      : "Juno 4-inch regressed wafer light";
+      ? JUNO_WF6_VERIFIED
+      : JUNO_WF4_VERIFIED;
   const fixtureLabel = inputs.fixtureSize === "6-inch" ? "6-inch" : "4-inch";
 
   const addPricedItem = (

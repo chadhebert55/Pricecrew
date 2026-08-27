@@ -46,8 +46,13 @@ const catalogRow = (
 });
 
 const priceBook: PriceBookItem[] = [
-  catalogRow("Juno 4-inch regressed wafer light", 29, {
+  catalogRow("Juno WF4DREGSMAL 4-inch regressed wafer light", 30.605, {
     manufacturer: "Juno",
+    manufacturerPartNumber: "WF4DREGSMAL",
+  }),
+  catalogRow("Juno WF6-DREG 6-inch regressed wafer light", 34.006, {
+    manufacturer: "Juno",
+    manufacturerPartNumber: "WF6-DREG",
   }),
   catalogRow("14/2 NM-B cable", 0.37),
   catalogRow("14/3 NM-B cable", 0.53),
@@ -752,8 +757,8 @@ test("default integrated 200A service upgrade exposes the complete assembly and 
     15,
   );
   assert.equal(
-    result.assembly.find((line) => line.id === "service-breaker")?.unitCost,
-    180,
+    result.assembly.some((line) => line.id === "service-breaker"),
+    false,
   );
   assert.equal(
     result.assembly.find((line) => line.id === "service-meter-disconnect")
@@ -797,6 +802,104 @@ test("default integrated 200A service upgrade exposes the complete assembly and 
   assert.equal(
     result.assembly.some((line) => line.id === "plywood-backing"),
     true,
+  );
+});
+
+test("verified Milbank meter-main includes the 200A main breaker without a duplicate line or warning", () => {
+  const milbankMeterMain =
+    "Milbank U3990-XL-200 200A meter-main — SKU 304898";
+  const result = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      exactCatalogParts: { meterDisconnect: milbankMeterMain },
+    },
+    settings,
+    [
+      ...servicePriceBook.filter(
+        (row) =>
+          !(
+            row.amperage === 200 &&
+            row.poleCount === 2 &&
+            row.protectionType === "Standard"
+          ),
+      ),
+      catalogRow(milbankMeterMain, 441.525, {
+        category: "Equipment",
+        manufacturer: "Milbank",
+        manufacturerPartNumber: "U3990-XL-200",
+        supplierSku: "304898",
+        amperage: 200,
+      }),
+    ],
+  );
+
+  assert.equal(
+    result.assembly.some((line) => line.id === "service-breaker"),
+    false,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-meter-disconnect")
+      ?.unitCost,
+    441.525,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      (typeof warning === "string" ? warning : warning.message).includes(
+        "200A 2-pole Standard breaker",
+      ),
+    ),
+    false,
+  );
+});
+
+test("service upgrade consumes exact Erico ground rod, Erico clamp, and AGP duct-seal rows", () => {
+  const groundRod = "Erico 615880 5/8x8ft copper ground rod — SKU 160523";
+  const groundClamp = "Erico CP58 5/8 ground rod clamp — SKU 31589";
+  const ductSeal = "AGP DS1 1lb duct seal — SKU 1009903";
+  const result = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      exactCatalogParts: {
+        groundRod,
+        acornClamp: groundClamp,
+        ductSeal,
+      },
+    },
+    settings,
+    [
+      ...servicePriceBook,
+      catalogRow(groundRod, 25.313, {
+        category: "Grounding",
+        manufacturer: "Erico",
+        manufacturerPartNumber: "615880",
+        supplierSku: "160523",
+      }),
+      catalogRow(groundClamp, 6.092, {
+        category: "Grounding",
+        manufacturer: "Erico",
+        manufacturerPartNumber: "CP58",
+        supplierSku: "31589",
+      }),
+      catalogRow(ductSeal, 3.801, {
+        category: "Normal Stock",
+        manufacturer: "AGP",
+        manufacturerPartNumber: "DS1",
+        supplierSku: "1009903",
+      }),
+    ],
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "ground-rods")?.unitCost,
+    25.313,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "acorn-clamps")?.unitCost,
+    6.092,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "duct-seal")?.unitCost,
+    3.801,
   );
 });
 
@@ -1047,7 +1150,11 @@ test("service upgrade preserves contractor prices and never substitutes unresolv
   );
 
   const unresolved = calculateServiceUpgradeEstimate(
-    serviceUpgradeInputs,
+    {
+      ...serviceUpgradeInputs,
+      serviceDisconnect: "Outdoor service disconnect",
+      meterDisconnectEquipment: "200A outdoor meter/disconnect",
+    },
     settings,
     [],
   );
@@ -1272,6 +1379,8 @@ test("service upgrade breaker resolution rejects unknown protection and unverifi
   const unknownProtection = calculateServiceUpgradeEstimate(
     {
       ...serviceUpgradeInputs,
+      serviceDisconnect: "Outdoor service disconnect",
+      meterDisconnectEquipment: "200A outdoor meter/disconnect",
       breakerProtectionType: "Standard-like",
     },
     settings,
@@ -1284,7 +1393,11 @@ test("service upgrade breaker resolution rejects unknown protection and unverifi
   );
 
   const defaultOnly = calculateServiceUpgradeEstimate(
-    serviceUpgradeInputs,
+    {
+      ...serviceUpgradeInputs,
+      serviceDisconnect: "Outdoor service disconnect",
+      meterDisconnectEquipment: "200A outdoor meter/disconnect",
+    },
     settings,
     servicePriceBook.map((row) =>
       row.item === "Siemens 200A 2-pole standard breaker"
@@ -1332,6 +1445,29 @@ const baseInputs: RecessedLightingInputRecord = {
   breakerProtectionType: "Standard",
   cableType: "14/2 NM-B",
 };
+
+test("recessed lighting consumes the verified Juno 4-inch and 6-inch fixture rows", () => {
+  const fourInch = calculateRecessedLightingEstimate(
+    baseInputs,
+    settings,
+    priceBook,
+  );
+  const sixInch = calculateRecessedLightingEstimate(
+    { ...baseInputs, fixtureSize: "6-inch" },
+    settings,
+    priceBook,
+  );
+
+  assert.equal(
+    fourInch.assembly.find((line) => line.id === "recessed-fixtures")
+      ?.unitCost,
+    30.605,
+  );
+  assert.equal(
+    sixInch.assembly.find((line) => line.id === "recessed-fixtures")?.unitCost,
+    34.006,
+  );
+});
 
 test("preview and create validation accept canonical and legacy switching values", () => {
   const methods: NonNullable<RecessedLightingInputRecord["switchingMethod"]>[] = [
