@@ -1392,6 +1392,68 @@ test("single-pole uses the selected compatible branch-circuit cable", () => {
   );
 });
 
+test("verified Needco controls price recessed single-pole, 3-way, and dimmer selections", () => {
+  const verifiedControls = [
+    ...priceBook,
+    catalogRow(
+      "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",
+      1.85,
+      { category: "Controls", manufacturer: "Pass & Seymour" },
+    ),
+    catalogRow(
+      "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128",
+      2.25,
+      { category: "Controls", manufacturer: "Pass & Seymour" },
+    ),
+    catalogRow(
+      "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",
+      30.28,
+      { category: "Controls", manufacturer: "Lutron" },
+    ),
+  ];
+  const singlePole = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "single-pole",
+      dimmerSelection: "Include dimmer",
+      additionalSwitches: 1,
+    },
+    settings,
+    verifiedControls,
+  );
+  assert.equal(
+    singlePole.assembly.find((line) => line.id === "switch-controls")?.unitCost,
+    1.85,
+  );
+  assert.equal(
+    singlePole.assembly.find((line) => line.id === "additional-switches")?.unitCost,
+    1.85,
+  );
+  assert.equal(
+    singlePole.assembly.find((line) => line.id === "dimmer")?.unitCost,
+    30.28,
+  );
+
+  const threeWay = calculateRecessedLightingEstimate(
+    {
+      ...baseInputs,
+      switchingMethod: "traditional-3-way",
+      switchType: "3-way",
+      traditionalThreeWayFootage: 20,
+    },
+    settings,
+    verifiedControls,
+  );
+  assert.equal(
+    threeWay.assembly.find((line) => line.id === "switch-controls")?.unitCost,
+    2.25,
+  );
+  assert.equal(
+    threeWay.assembly.find((line) => line.id === "switch-controls")?.quantity,
+    2,
+  );
+});
+
 test("traditional 3-way uses entered 14/3 footage plus wiring allowance", () => {
   const result = calculateRecessedLightingEstimate(
     {
@@ -1587,6 +1649,57 @@ const baseKitchenInputs: KitchenInputRecord = {
   recessedLightSize: "4-inch",
   cableType: "12/2 NM-B",
 };
+
+test("verified Needco controls and boxes price standard kitchen locations", () => {
+  const result = calculateKitchenEstimate(
+    {
+      ...baseKitchenInputs,
+      threeWayOptions: 1,
+      fourWayLocations: 1,
+      fourWayCableFootage: 10,
+      dimmers: 1,
+    },
+    settings,
+    [
+      ...priceBook,
+      catalogRow(
+        "Pass & Seymour S1-18-W 1-gang box — SKU 18134",
+        2.4769,
+        { category: "Rough-in", manufacturer: "Pass & Seymour" },
+      ),
+      catalogRow(
+        "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128",
+        2.25,
+        { category: "Controls", manufacturer: "Pass & Seymour" },
+      ),
+      catalogRow(
+        "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",
+        30.28,
+        { category: "Controls", manufacturer: "Lutron" },
+      ),
+    ],
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "three-way-options")?.quantity,
+    2,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "three-way-options")?.unitCost,
+    2.25,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "dimmers")?.unitCost,
+    30.28,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-boxes")?.unitCost,
+    2.4769,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "kitchen-four-way-boxes")?.unitCost,
+    2.4769,
+  );
+});
 
 test("kitchen lighting uses one configured 15A breaker and 14/2 cable", () => {
   const result = calculateKitchenEstimate(

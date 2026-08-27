@@ -80,6 +80,35 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.upc, upc);
         assert.equal(row?.sourceDate, "2026-08-25");
       }
+      for (const [item, unitCost, unit, supplierSku, manufacturerPartNumber] of [
+        ["Milbank U3990-XL-200 200A meter-main — SKU 304898", 441.525, "ea", "304898", "U3990-XL-200"],
+        ["Siemens PN4040B1200C 200A 40-space panel — SKU 1552599", 294.625, "ea", "1552599", "PN4040B1200C"],
+        ["Pass & Seymour S1-18-W 1-gang box — SKU 18134", 2.4769, "ea", "18134", "S1-18-W"],
+        ["Pass & Seymour TM870-W 15A single-pole switch — SKU 3211", 1.85, "ea", "3211", "TM870-W"],
+        ["Pass & Seymour TM873-W 15A 3-way switch — SKU 32128", 2.25, "ea", "32128", "TM873-W"],
+        ["Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393", 30.28, "ea", "607393", "DVCL-153P-WH"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, unitCost);
+        assert.equal(row?.unit, unit);
+        assert.equal(row?.supplier, "Northeast Electrical");
+        assert.equal(row?.supplierSku, supplierSku);
+        assert.equal(row?.manufacturerPartNumber, manufacturerPartNumber);
+        assert.equal(row?.sourceDate, "2026-08-27");
+      }
+      for (const [item, unitCost, supplier, supplierSku] of [
+        ["4/0 aluminum SER cable", 4.4198, "Company verified cost", null],
+        ["intersystem bonding terminal", 15.1108, "Northeast Electrical", "1054291"],
+        ["#8 solid grounding conductor", 0.6337, "Northeast Electrical", "21465"],
+        ["#4 green bonding conductor", 1.7836, "Northeast Electrical", "77344"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, unitCost);
+        assert.equal(row?.unit, item === "intersystem bonding terminal" ? "ea" : "ft");
+        assert.equal(row?.supplier, supplier);
+        assert.equal(row?.supplierSku, supplierSku);
+        assert.equal(row?.sourceDate, "2026-08-27");
+      }
 
       for (const [item, unitCost, supplierSku, manufacturerPartNumber] of [
         ["Siemens Q115 15A 1-pole standard breaker", 8.673, "17237", "ITE Q115"],
@@ -99,7 +128,6 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.sourceDate, "2026-08-25");
       }
       for (const item of [
-        "4/0 aluminum SER cable",
         "1/0 copper service conductor alternative",
         "2/0 copper service conductor alternative",
         "4/0 copper service conductor alternative",

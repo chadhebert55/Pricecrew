@@ -1323,9 +1323,9 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "three-way-options",
     "Controls",
-    "Unverified allowance — 3-way switch pair",
-    "3-way switching allowance",
-    inputs.threeWayOptions,
+    "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128",
+    "Pass & Seymour 15A 3-way switches",
+    inputs.threeWayOptions * 2,
   );
   const fourWayLocations = safeNumber(inputs.fourWayLocations);
   addPricedItem(
@@ -1338,7 +1338,7 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "kitchen-four-way-boxes",
     "Rough-in",
-    "Carlon B114R-UPC 14 cu. in. single-gang old-work box",
+    "Pass & Seymour S1-18-W 1-gang box — SKU 18134",
     "Kitchen 4-way switch-location box",
     fourWayLocations,
   );
@@ -1376,8 +1376,8 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "dimmers",
     "Controls",
-    "Unverified allowance — dimmer switch",
-    "Dimmer switch allowance",
+    "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",
+    "Lutron Diva LED+ dimmer",
     inputs.dimmers,
   );
 
@@ -1389,7 +1389,7 @@ export function calculateKitchenEstimate(
   addPricedItem(
     "kitchen-boxes",
     "Rough-in",
-    "Unverified allowance — single-gang box",
+    "Pass & Seymour S1-18-W 1-gang box — SKU 18134",
     "Kitchen device box allowance",
     deviceCount,
   );
@@ -1850,7 +1850,6 @@ export function calculateServiceUpgradeEstimate(
     (item) =>
       inputs.serviceDisconnect === "Meter-main combination" &&
       itemInCategory(item, "Equipment") &&
-      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
       item.amperage === Number.parseInt(inputs.serviceSize, 10) &&
       itemHasTerms(item, "meter"),
   );
@@ -2658,13 +2657,13 @@ export function calculateRecessedLightingEstimate(
   const controlKey = isSmartKit
     ? "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack"
     : isTraditionalThreeWay
-      ? "Legrand radiant TM873WCC10 15A 3-way switch"
-      : "Legrand radiant TM870WCC10 15A single-pole switch";
+      ? "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128"
+      : "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211";
   const controlDescription = isSmartKit
     ? "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote — combo pack"
     : isTraditionalThreeWay
-      ? "Legrand radiant 15A traditional 3-way switches"
-      : "Legrand radiant 15A single-pole switch";
+      ? "Pass & Seymour 15A traditional 3-way switches"
+      : "Pass & Seymour 15A single-pole switch";
   addPricedItem(
     isSmartKit ? "smart-switch-kit" : "switch-controls",
     "Controls",
@@ -2677,8 +2676,8 @@ export function calculateRecessedLightingEstimate(
   addPricedItem(
     "additional-switches",
     "Controls",
-    "Unverified allowance — single-pole switch",
-    "Additional single-pole switch allowances",
+    "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",
+    "Additional Pass & Seymour single-pole switches",
     additionalSwitches,
   );
   if (
@@ -2688,8 +2687,8 @@ export function calculateRecessedLightingEstimate(
     addPricedItem(
       "dimmer",
       "Controls",
-      "Unverified allowance — dimmer switch",
-      "Dimming control allowance — final load compatibility to be verified",
+      "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",
+      "Lutron Diva LED+ dimming control — final load compatibility to be verified",
       1,
     );
   }

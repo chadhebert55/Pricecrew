@@ -22,9 +22,20 @@ const selectClassName =
 
 type ExactCatalogPartKey = keyof NonNullable<ServiceUpgradeInputs["exactCatalogParts"]>
 
+const MILBANK_200A_METER_MAIN =
+  "Milbank U3990-XL-200 200A meter-main — SKU 304898"
+const SIEMENS_200A_PANEL =
+  "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599"
+
 const exactCatalogOptions = {
-  meterDisconnect: [{ value: "Siemens MC0816B1200 200A meter-load-center — SKU 132873", label: "Siemens MC0816B1200 200A meter-load-center — SKU 132873" }],
-  servicePanel: [{ value: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", label: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511" }],
+  meterDisconnect: [
+    { value: MILBANK_200A_METER_MAIN, label: MILBANK_200A_METER_MAIN },
+    { value: "Siemens MC0816B1200 200A meter-load-center — SKU 132873", label: "Siemens MC0816B1200 200A meter-load-center — SKU 132873" },
+  ],
+  servicePanel: [
+    { value: SIEMENS_200A_PANEL, label: SIEMENS_200A_PANEL },
+    { value: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", label: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511" },
+  ],
   mastRaceway: [{ value: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", label: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891" }],
   mastWeatherhead: [{ value: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902", label: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902" }],
   mastHub: [{ value: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", label: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750" }],
@@ -110,6 +121,10 @@ const initialInputs: ServiceUpgradeInputs = {
   existingBreakers: [],
   existingOtherBreakerQuantity: 0,
   laborRateType: "residential",
+  exactCatalogParts: {
+    meterDisconnect: MILBANK_200A_METER_MAIN,
+    servicePanel: SIEMENS_200A_PANEL,
+  },
   notes: "",
 }
 
@@ -269,6 +284,14 @@ export function NewServiceUpgradeQuote() {
       delete next.serviceToPanelConductor
       delete next.serviceToPanelRaceway
       delete next.meterDisconnect
+      if (serviceSize === "200A") {
+        if (inputs.serviceDisconnect === "Meter-main combination") {
+          next.meterDisconnect = MILBANK_200A_METER_MAIN
+        }
+        if (inputs.panelManufacturer === "Siemens") {
+          next.servicePanel = SIEMENS_200A_PANEL
+        }
+      }
       return { ...current, serviceSize, ...defaults, ...(Object.keys(next).length > 0 ? { exactCatalogParts: next } : {}) }
     })
   }
@@ -384,6 +407,12 @@ export function NewServiceUpgradeQuote() {
                           setInputs(({ exactCatalogParts, ...current }) => {
                             const next = { ...(exactCatalogParts ?? {}) }
                             delete next.meterDisconnect
+                            if (
+                              serviceDisconnect === "Meter-main combination" &&
+                              current.serviceSize === "200A"
+                            ) {
+                              next.meterDisconnect = MILBANK_200A_METER_MAIN
+                            }
                             return {
                               ...current,
                               serviceDisconnect,
@@ -407,9 +436,12 @@ export function NewServiceUpgradeQuote() {
                         const exactCatalogParts = { ...(c.exactCatalogParts ?? {}) }
                         delete exactCatalogParts.servicePanel
                         delete exactCatalogParts.groundBar
-                         delete exactCatalogParts.meterDisconnect
-                         delete exactCatalogParts.mastHub
-                        return { ...c, panelManufacturer: e.target.value as ServiceUpgradeInputs["panelManufacturer"], ...(Object.keys(exactCatalogParts).length > 0 ? { exactCatalogParts } : { exactCatalogParts: undefined }) }
+                        delete exactCatalogParts.mastHub
+                        const panelManufacturer = e.target.value as ServiceUpgradeInputs["panelManufacturer"]
+                        if (panelManufacturer === "Siemens" && c.serviceSize === "200A") {
+                          exactCatalogParts.servicePanel = SIEMENS_200A_PANEL
+                        }
+                        return { ...c, panelManufacturer, ...(Object.keys(exactCatalogParts).length > 0 ? { exactCatalogParts } : { exactCatalogParts: undefined }) }
                       })}>
                         <option value="Siemens">Siemens</option>
                         <option value="Eaton">Eaton</option>
@@ -440,18 +472,22 @@ export function NewServiceUpgradeQuote() {
                     {exactCatalogSelect(
                       "su-meter-exact",
                       "meterDisconnect",
-                       inputs.serviceSize === "200A" &&
-                         inputs.serviceDisconnect === "Meter-main combination" &&
-                         inputs.panelManufacturer === "Siemens"
+                        inputs.serviceSize === "200A" &&
+                          inputs.serviceDisconnect === "Meter-main combination"
                         ? exactCatalogOptions.meterDisconnect
                         : [],
                     )}
                     {exactCatalogSelect(
                       "su-panel-exact",
                       "servicePanel",
-                      inputs.serviceSize === "100A" && inputs.panelManufacturer === "Square D"
-                        ? exactCatalogOptions.servicePanel
-                        : [],
+                      exactCatalogOptions.servicePanel.filter((option) =>
+                        (inputs.serviceSize === "200A" &&
+                          inputs.panelManufacturer === "Siemens" &&
+                          option.value === SIEMENS_200A_PANEL) ||
+                        (inputs.serviceSize === "100A" &&
+                          inputs.panelManufacturer === "Square D" &&
+                          option.value !== SIEMENS_200A_PANEL),
+                      ),
                     )}
                     <div className="space-y-2">
                       <Label htmlFor="su-surge">Surge Protection</Label>

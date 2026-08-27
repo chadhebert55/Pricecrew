@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 
 export const SIEMENS_QF250A_SEED_COST = 151.702;
+export const USER_VERIFIED_4_0_SER_SEED_COST = 4.4198;
 
 export const DEFAULT_COMPANY_ID = 1;
 
@@ -232,6 +233,7 @@ export async function seedEstimatorData(
   >;
   const sourceDate = "2026-08-25";
   const controlSourceDate = "2026-08-26";
+  const needcoSourceDate = "2026-08-27";
   const additionalServiceItems: SeedPriceBookItem[] = [
     ...([100, 150, 200] as const).map((amperage) => ({
       category: "Equipment",
@@ -380,6 +382,26 @@ export async function seedEstimatorData(
     })),
   ];
   let verifiedItems: SeedPriceBookItem[] = [
+    ...[
+      ["Equipment", "Milbank U3990-XL-200 200A meter-main — SKU 304898", "ea", 441.525, "Milbank", "U3990-XL-200", "304898", 200],
+      ["Panel", "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599", "ea", 294.625, "Siemens", "PN4040B1200C", "1552599", 200],
+      ["Rough-in", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", "ea", 2.4769, "Pass & Seymour", "S1-18-W", "18134", undefined],
+      ["Controls", "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211", "ea", 1.85, "Pass & Seymour", "TM870-W", "3211", 15],
+      ["Controls", "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128", "ea", 2.25, "Pass & Seymour", "TM873-W", "32128", 15],
+      ["Controls", "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393", "ea", 30.28, "Lutron", "DVCL-153P-WH", "607393", 15],
+    ].map<SeedPriceBookItem>(([category, item, unit, unitCost, manufacturer, manufacturerPartNumber, supplierSku, amperage]) => ({
+      category: String(category),
+      item: String(item),
+      unit: String(unit),
+      unitCost: Number(unitCost),
+      supplier: "Northeast Electrical",
+      manufacturer: String(manufacturer),
+      manufacturerPartNumber: String(manufacturerPartNumber),
+      supplierSku: String(supplierSku),
+      amperage: typeof amperage === "number" ? amperage : undefined,
+      sourceDate: needcoSourceDate,
+      isDefault: false,
+    })),
     ...[
       ["Equipment", "Siemens MC0816B1200 200A meter-load-center — SKU 132873", "ea", 523.989, "Siemens", "MC0816B1200", "132873", 200, "78364351070"],
       ["Panel", "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", "ea", 151.625, "Square D", "HOM612L100R", "79511", 100, "78590106120"],
@@ -1177,9 +1199,9 @@ export async function seedEstimatorData(
       category: "Conductor",
       item: "4/0 aluminum SER cable",
       unit: "ft",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
-      sourceDate,
+      unitCost: USER_VERIFIED_4_0_SER_SEED_COST,
+      supplier: "Company verified cost",
+      sourceDate: needcoSourceDate,
       isDefault: false,
     },
     {
@@ -1222,27 +1244,32 @@ export async function seedEstimatorData(
       category: "Bonding",
       item: "intersystem bonding terminal",
       unit: "ea",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
-      sourceDate,
+      unitCost: 15.1108,
+      supplier: "Northeast Electrical",
+      manufacturer: "Madison",
+      manufacturerPartNumber: "MEIBB",
+      supplierSku: "1054291",
+      sourceDate: needcoSourceDate,
       isDefault: false,
     },
     {
       category: "Grounding",
       item: "#8 solid grounding conductor",
       unit: "ft",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
-      sourceDate,
+      unitCost: 0.6337,
+      supplier: "Northeast Electrical",
+      supplierSku: "21465",
+      sourceDate: needcoSourceDate,
       isDefault: false,
     },
     {
       category: "Bonding",
       item: "#4 green bonding conductor",
       unit: "ft",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
-      sourceDate,
+      unitCost: 1.7836,
+      supplier: "Northeast Electrical",
+      supplierSku: "77344",
+      sourceDate: needcoSourceDate,
       isDefault: false,
     },
     {
