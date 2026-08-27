@@ -971,6 +971,10 @@ export interface CompanySettings {
   serviceUpgradeCrewSize: number;
   /** @minimum 0 */
   serviceUpgradeHoursPerPerson: number;
+  /** @minimum 1 */
+  panelReplacementCrewSize: number;
+  /** @minimum 0 */
+  panelReplacementHoursPerPerson: number;
 }
 
 export interface CompanySettingsUpdate {
@@ -994,6 +998,10 @@ export interface CompanySettingsUpdate {
   serviceUpgradeCrewSize?: number;
   /** @minimum 0 */
   serviceUpgradeHoursPerPerson?: number;
+  /** @minimum 1 */
+  panelReplacementCrewSize?: number;
+  /** @minimum 0 */
+  panelReplacementHoursPerPerson?: number;
 }
 
 export type ListQuotesParams = {

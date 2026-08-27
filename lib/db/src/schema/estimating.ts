@@ -436,6 +436,19 @@ export const companySettingsTable = pgTable(
     )
       .notNull()
       .default(16),
+    panelReplacementCrewSize: numeric("panel_replacement_crew_size", {
+      precision: 5,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(2),
+    panelReplacementHoursPerPerson: numeric(
+      "panel_replacement_hours_per_person",
+      { precision: 8, scale: 2, mode: "number" },
+    )
+      .notNull()
+      .default(10),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()

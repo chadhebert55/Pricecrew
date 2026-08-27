@@ -24,6 +24,14 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
 
       await seedEstimatorData(transaction as unknown as typeof db);
 
+      const [seededSettings] = await transaction
+        .select()
+        .from(companySettingsTable);
+      assert.equal(seededSettings?.serviceUpgradeCrewSize, 2);
+      assert.equal(seededSettings?.serviceUpgradeHoursPerPerson, 16);
+      assert.equal(seededSettings?.panelReplacementCrewSize, 2);
+      assert.equal(seededSettings?.panelReplacementHoursPerPerson, 10);
+
       const seededRows = await transaction.select().from(priceBookItemsTable);
       const surge = seededRows.find(
         (row) => row.item === "Whole-home surge protection",

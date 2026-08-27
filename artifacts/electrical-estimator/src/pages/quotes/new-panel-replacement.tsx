@@ -104,8 +104,8 @@ export function NewPanelReplacementQuote() {
     if (settings && !settingsLoaded) {
       setInputs((current) => ({
         ...current,
-        crewSize: settings.serviceUpgradeCrewSize ?? 2,
-        crewHours: settings.serviceUpgradeHoursPerPerson ?? 8,
+        crewSize: settings.panelReplacementCrewSize ?? 2,
+        crewHours: settings.panelReplacementHoursPerPerson ?? 10,
       }))
       setSettingsLoaded(true)
     }

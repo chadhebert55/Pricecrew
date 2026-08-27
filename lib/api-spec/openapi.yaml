@@ -1431,6 +1431,8 @@ components:
         - recessedLightingLaborAdjustmentHours
         - serviceUpgradeCrewSize
         - serviceUpgradeHoursPerPerson
+        - panelReplacementCrewSize
+        - panelReplacementHoursPerPerson
       properties:
         companyName:
           type: string
@@ -1462,6 +1464,12 @@ components:
           type: number
           minimum: 1
         serviceUpgradeHoursPerPerson:
+          type: number
+          minimum: 0
+        panelReplacementCrewSize:
+          type: number
+          minimum: 1
+        panelReplacementHoursPerPerson:
           type: number
           minimum: 0
     CompanySettingsUpdate:
@@ -1497,5 +1505,11 @@ components:
           type: number
           minimum: 1
         serviceUpgradeHoursPerPerson:
+          type: number
+          minimum: 0
+        panelReplacementCrewSize:
+          type: number
+          minimum: 1
+        panelReplacementHoursPerPerson:
           type: number
           minimum: 0

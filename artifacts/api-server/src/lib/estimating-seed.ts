@@ -151,6 +151,8 @@ export async function seedEstimatorData(
       recessedLightingLaborAdjustmentHours: 0,
       serviceUpgradeCrewSize: 2,
       serviceUpgradeHoursPerPerson: 16,
+      panelReplacementCrewSize: 2,
+      panelReplacementHoursPerPerson: 10,
     });
   }
 

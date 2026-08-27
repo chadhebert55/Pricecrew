@@ -27,4 +27,8 @@ export interface CompanySettingsUpdate {
   serviceUpgradeCrewSize?: number;
   /** @minimum 0 */
   serviceUpgradeHoursPerPerson?: number;
+  /** @minimum 1 */
+  panelReplacementCrewSize?: number;
+  /** @minimum 0 */
+  panelReplacementHoursPerPerson?: number;
 }

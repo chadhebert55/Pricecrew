@@ -35,6 +35,8 @@ export function Settings() {
     recessedLightingLaborAdjustmentHours: "0",
     serviceUpgradeCrewSize: "2",
     serviceUpgradeHoursPerPerson: "16",
+    panelReplacementCrewSize: "2",
+    panelReplacementHoursPerPerson: "10",
   })
 
   useEffect(() => {
@@ -53,6 +55,8 @@ export function Settings() {
         recessedLightingLaborAdjustmentHours: settings.recessedLightingLaborAdjustmentHours.toString(),
         serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize.toString(),
         serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson.toString(),
+        panelReplacementCrewSize: settings.panelReplacementCrewSize.toString(),
+        panelReplacementHoursPerPerson: settings.panelReplacementHoursPerPerson.toString(),
       })
     }
   }, [settings])
@@ -73,6 +77,8 @@ export function Settings() {
         recessedLightingLaborAdjustmentHours: parseFloat(form.recessedLightingLaborAdjustmentHours),
         serviceUpgradeCrewSize: parseInt(form.serviceUpgradeCrewSize, 10),
         serviceUpgradeHoursPerPerson: parseFloat(form.serviceUpgradeHoursPerPerson),
+        panelReplacementCrewSize: parseInt(form.panelReplacementCrewSize, 10),
+        panelReplacementHoursPerPerson: parseFloat(form.panelReplacementHoursPerPerson),
       }
     })
   }
@@ -263,6 +269,28 @@ export function Settings() {
                 className="font-mono"
                 value={form.serviceUpgradeHoursPerPerson}
                 onChange={(e) => setForm(f => ({ ...f, serviceUpgradeHoursPerPerson: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Panel Replacement Crew Size</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                className="font-mono"
+                value={form.panelReplacementCrewSize}
+                onChange={(e) => setForm(f => ({ ...f, panelReplacementCrewSize: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Panel Replacement Hours Per Person</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.25"
+                className="font-mono"
+                value={form.panelReplacementHoursPerPerson}
+                onChange={(e) => setForm(f => ({ ...f, panelReplacementHoursPerPerson: e.target.value }))}
               />
             </div>
           </div>

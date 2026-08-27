@@ -2735,6 +2735,9 @@ export const UpdatePriceBookItemResponse = zod.object({
 export const getSettingsResponseServiceUpgradeHoursPerPersonMin = 0;
 
 
+export const getSettingsResponsePanelReplacementHoursPerPersonMin = 0;
+
+
 
 export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
@@ -2750,7 +2753,9 @@ export const GetSettingsResponse = zod.object({
   "kitchenLaborAdjustmentHours": zod.number(),
   "recessedLightingLaborAdjustmentHours": zod.number(),
   "serviceUpgradeCrewSize": zod.number().min(1),
-  "serviceUpgradeHoursPerPerson": zod.number().min(getSettingsResponseServiceUpgradeHoursPerPersonMin)
+  "serviceUpgradeHoursPerPerson": zod.number().min(getSettingsResponseServiceUpgradeHoursPerPersonMin),
+  "panelReplacementCrewSize": zod.number().min(1),
+  "panelReplacementHoursPerPerson": zod.number().min(getSettingsResponsePanelReplacementHoursPerPersonMin)
 })
 
 
@@ -2759,6 +2764,9 @@ export const GetSettingsResponse = zod.object({
  */
 
 export const updateSettingsBodyServiceUpgradeHoursPerPersonMin = 0;
+
+
+export const updateSettingsBodyPanelReplacementHoursPerPersonMin = 0;
 
 
 
@@ -2776,11 +2784,16 @@ export const UpdateSettingsBody = zod.object({
   "kitchenLaborAdjustmentHours": zod.number().optional(),
   "recessedLightingLaborAdjustmentHours": zod.number().optional(),
   "serviceUpgradeCrewSize": zod.number().min(1).optional(),
-  "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsBodyServiceUpgradeHoursPerPersonMin).optional()
+  "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsBodyServiceUpgradeHoursPerPersonMin).optional(),
+  "panelReplacementCrewSize": zod.number().min(1).optional(),
+  "panelReplacementHoursPerPerson": zod.number().min(updateSettingsBodyPanelReplacementHoursPerPersonMin).optional()
 })
 
 
 export const updateSettingsResponseServiceUpgradeHoursPerPersonMin = 0;
+
+
+export const updateSettingsResponsePanelReplacementHoursPerPersonMin = 0;
 
 
 
@@ -2798,7 +2811,9 @@ export const UpdateSettingsResponse = zod.object({
   "kitchenLaborAdjustmentHours": zod.number(),
   "recessedLightingLaborAdjustmentHours": zod.number(),
   "serviceUpgradeCrewSize": zod.number().min(1),
-  "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsResponseServiceUpgradeHoursPerPersonMin)
+  "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsResponseServiceUpgradeHoursPerPersonMin),
+  "panelReplacementCrewSize": zod.number().min(1),
+  "panelReplacementHoursPerPerson": zod.number().min(updateSettingsResponsePanelReplacementHoursPerPersonMin)
 })
 
 

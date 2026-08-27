@@ -375,6 +375,20 @@ test("panel replacement resolves exact panel, breaker, and compatible feeder row
   assert.equal(result.pricing.laborCost, 24 * settings.loadedLaborCost);
 });
 
+test("panel replacement labor uses quote-local crew size and hours", () => {
+  const result = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      crewSize: 3,
+      crewHours: 12,
+    },
+    settings,
+    panelReplacementPriceBook,
+  );
+
+  assert.equal(result.pricing.laborCost, 40 * settings.loadedLaborCost);
+});
+
 test("panel replacement never prices an incompatible feeder or generic breaker", () => {
   const result = calculatePanelReplacementEstimate(
     {

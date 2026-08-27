@@ -639,6 +639,8 @@ router.get("/settings", async (_req, res): Promise<void> => {
         settings.recessedLightingLaborAdjustmentHours,
       serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize,
       serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson,
+      panelReplacementCrewSize: settings.panelReplacementCrewSize,
+      panelReplacementHoursPerPerson: settings.panelReplacementHoursPerPerson,
     }),
   );
 });
@@ -693,6 +695,12 @@ router.patch("/settings", async (req, res): Promise<void> => {
       serviceUpgradeHoursPerPerson:
         parsed.data.serviceUpgradeHoursPerPerson ??
         currentSettings.serviceUpgradeHoursPerPerson,
+      panelReplacementCrewSize:
+        parsed.data.panelReplacementCrewSize ??
+        currentSettings.panelReplacementCrewSize,
+      panelReplacementHoursPerPerson:
+        parsed.data.panelReplacementHoursPerPerson ??
+        currentSettings.panelReplacementHoursPerPerson,
     })
     .where(eq(companySettingsTable.id, currentSettings.id))
     .returning();
@@ -723,6 +731,8 @@ router.patch("/settings", async (req, res): Promise<void> => {
         settings.recessedLightingLaborAdjustmentHours,
       serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize,
       serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson,
+      panelReplacementCrewSize: settings.panelReplacementCrewSize,
+      panelReplacementHoursPerPerson: settings.panelReplacementHoursPerPerson,
     }),
   );
 });
