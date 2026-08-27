@@ -7,6 +7,7 @@ import {
   useUpdateQuote,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
+import { contractorMaterialName, contractorMaterialSource } from "@/lib/material-display"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useParams } from "wouter"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -176,8 +177,8 @@ export function QuoteDetail() {
                     <TableRow key={line.id}>
                       <TableCell className="font-medium text-xs uppercase tracking-wider text-muted-foreground">{line.category}</TableCell>
                       <TableCell>
-                        <div>{line.description}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">{line.source}</div>
+                        <div>{contractorMaterialName(line.description)}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">{contractorMaterialSource(line.source)}</div>
                       </TableCell>
                       <TableCell className="text-right font-mono">{line.quantity}</TableCell>
                       <TableCell className="text-right text-xs font-mono text-muted-foreground">{line.unit}</TableCell>

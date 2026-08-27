@@ -7,6 +7,7 @@ import {
   useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
+import { contractorMaterialName } from "@/lib/material-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -376,11 +377,11 @@ export function NewPanelReplacementQuote() {
                       <Input id="pr-spaces" data-testid="input-panel-spaces" type="number" min="1" step="1" value={inputs.panelSpaceCount} onChange={(e) => setPanelSpaceCount(e.target.value)} />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="pr-panel-product">Exact Panel Product</Label>
+                      <Label htmlFor="pr-panel-product">Panel material</Label>
                       <select id="pr-panel-product" data-testid="select-panel-product" className={selectClassName} value={inputs.exactCatalogParts?.panelProduct ?? ""} onChange={(e) => setExactCatalogPart("panelProduct", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
                         {isCompatiblePanelProduct(inputs, exactCatalogItems.panelProduct) && (
-                          <option value={exactCatalogItems.panelProduct}>{exactCatalogItems.panelProduct}</option>
+                          <option value={exactCatalogItems.panelProduct}>100A Square D panel</option>
                         )}
                       </select>
                     </div>
@@ -441,17 +442,17 @@ export function NewPanelReplacementQuote() {
                       <Input id="pr-rw-fit" data-testid="input-rw-fit" type="number" min="0" step="1" value={inputs.feederRacewayFittingsQuantity} onChange={(e) => setNumber("feederRacewayFittingsQuantity", e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pr-rw-product">Exact Raceway</Label>
+                      <Label htmlFor="pr-rw-product">Raceway material</Label>
                       <select id="pr-rw-product" data-testid="select-feeder-raceway-product" className={selectClassName} value={inputs.exactCatalogParts?.feederRaceway ?? ""} onChange={(e) => setExactCatalogPart("feederRaceway", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
-                        <option value={exactCatalogItems.feederRaceway}>{exactCatalogItems.feederRaceway}</option>
+                        <option value={exactCatalogItems.feederRaceway}>2-inch PVC</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pr-rw-fitting-product">Exact Raceway Fitting</Label>
+                      <Label htmlFor="pr-rw-fitting-product">Raceway fitting</Label>
                       <select id="pr-rw-fitting-product" data-testid="select-feeder-raceway-fitting-product" className={selectClassName} value={inputs.exactCatalogParts?.feederRacewayFitting ?? ""} onChange={(e) => setExactCatalogPart("feederRacewayFitting", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
-                        <option value={exactCatalogItems.feederRacewayFitting}>{exactCatalogItems.feederRacewayFitting}</option>
+                        <option value={exactCatalogItems.feederRacewayFitting}>2-inch coupling</option>
                       </select>
                     </div>
                   </div>
@@ -469,19 +470,19 @@ export function NewPanelReplacementQuote() {
                       <Input id="pr-g-rod" data-testid="input-g-rod" type="number" min="0" step="1" value={inputs.groundRodQuantity} onChange={(e) => setNumber("groundRodQuantity", e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pr-g-bar-product">Exact Ground Bar</Label>
+                      <Label htmlFor="pr-g-bar-product">Ground bar</Label>
                       <select id="pr-g-bar-product" data-testid="select-ground-bar-product" className={selectClassName} value={inputs.exactCatalogParts?.groundBar ?? ""} onChange={(e) => setExactCatalogPart("groundBar", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
-                        <option value={exactCatalogItems.universalGroundBar}>{exactCatalogItems.universalGroundBar}</option>
-                        {inputs.panelManufacturer === "Siemens" && <option value={exactCatalogItems.siemensGroundBar}>{exactCatalogItems.siemensGroundBar}</option>}
-                        {inputs.panelManufacturer === "Square D" && <option value={exactCatalogItems.squareDGroundBar}>{exactCatalogItems.squareDGroundBar}</option>}
+                        <option value={exactCatalogItems.universalGroundBar}>Universal ground bar</option>
+                        {inputs.panelManufacturer === "Siemens" && <option value={exactCatalogItems.siemensGroundBar}>Siemens ground bar</option>}
+                        {inputs.panelManufacturer === "Square D" && <option value={exactCatalogItems.squareDGroundBar}>Square D ground bar</option>}
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pr-g-rod-product">Exact Ground Rod</Label>
+                      <Label htmlFor="pr-g-rod-product">Ground rod</Label>
                       <select id="pr-g-rod-product" data-testid="select-ground-rod-product" className={selectClassName} value={inputs.exactCatalogParts?.groundRod ?? ""} onChange={(e) => setExactCatalogPart("groundRod", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
-                        <option value={exactCatalogItems.groundRod}>{exactCatalogItems.groundRod}</option>
+                        <option value={exactCatalogItems.groundRod}>Ground rod</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -559,10 +560,10 @@ export function NewPanelReplacementQuote() {
                       <Input id="pr-anti-ox" data-testid="input-anti-ox" type="number" min="0" step="1" value={inputs.antiOxidantQuantity} onChange={(e) => setNumber("antiOxidantQuantity", e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pr-anti-ox-product">Exact Anti-Oxidant</Label>
+                      <Label htmlFor="pr-anti-ox-product">Anti-oxidant material</Label>
                       <select id="pr-anti-ox-product" data-testid="select-anti-oxidant-product" className={selectClassName} value={inputs.exactCatalogParts?.antiOxidant ?? ""} onChange={(e) => setExactCatalogPart("antiOxidant", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
-                        <option value={exactCatalogItems.antiOxidant}>{exactCatalogItems.antiOxidant}</option>
+                        <option value={exactCatalogItems.antiOxidant}>Anti-oxidant compound</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -570,10 +571,10 @@ export function NewPanelReplacementQuote() {
                       <Input id="pr-tape" data-testid="input-tape" type="number" min="0" step="1" value={inputs.electricalTapeQuantity} onChange={(e) => setNumber("electricalTapeQuantity", e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pr-tape-product">Exact Electrical Tape</Label>
+                      <Label htmlFor="pr-tape-product">Electrical tape material</Label>
                       <select id="pr-tape-product" data-testid="select-electrical-tape-product" className={selectClassName} value={inputs.exactCatalogParts?.electricalTape ?? ""} onChange={(e) => setExactCatalogPart("electricalTape", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
-                        <option value={exactCatalogItems.electricalTape}>{exactCatalogItems.electricalTape}</option>
+                        <option value={exactCatalogItems.electricalTape}>Electrical tape</option>
                       </select>
                     </div>
                   </div>
@@ -706,7 +707,7 @@ export function NewPanelReplacementQuote() {
                     <ul data-testid="list-generated-assembly" className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border/50 p-2 text-xs">
                       {assembly.map((item) => (
                         <li key={item.id} data-testid={`row-assembly-${item.id}`} className="flex justify-between gap-3 border-b border-border/40 pb-1 last:border-0 last:pb-0">
-                          <span className="truncate">{item.description}</span>
+                          <span className="truncate">{contractorMaterialName(item.description)}</span>
                           <span className="shrink-0 font-mono text-muted-foreground">{item.quantity} {item.unit}</span>
                         </li>
                       ))}

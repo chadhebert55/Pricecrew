@@ -5,6 +5,7 @@ import {
   useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
+import { contractorMaterialName } from "@/lib/material-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -53,7 +54,7 @@ function proposalDescriptionFor(method: SwitchingMethod) {
     method === "traditional-3-way"
       ? "traditional 3-way switching with contractor-entered 14/3 NM-B between the switches"
       : method === "smart-3-way"
-        ? "a Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote wireless companion"
+        ? "a smart dimmer 3-way kit with a wireless companion"
         : "standard single-pole switching"
   return `Provide labor and listed materials to install recessed lighting at the agreed locations, including fixture installation, wiring, ${switchingScope}, testing, and final trim. Final fixture spacing, ceiling conditions, circuit capacity, protection requirements, switching compatibility, and concealed obstructions will be verified before work begins.`
 }
@@ -296,10 +297,10 @@ export function NewRecessedLightingQuote() {
                       <p className="text-xs text-muted-foreground">{fixtureCountIsSuggested ? "Matches planning guidance." : "Manual quantity override is active."}</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recessed-size">Verified Juno Fixture</Label>
+                       <Label htmlFor="recessed-size">Recessed light</Label>
                       <select id="recessed-size" className={selectClassName} value={inputs.fixtureSize} onChange={(event) => setInputs((current) => ({ ...current, fixtureSize: event.target.value as RecessedLightingInputs["fixtureSize"] }))}>
-                        <option value="4-inch">4-inch regressed wafer — verified $29 cost</option>
-                        <option value="6-inch">6-inch regressed wafer — verified $32 cost</option>
+                         <option value="4-inch">4-inch regressed wafer light</option>
+                         <option value="6-inch">6-inch regressed wafer light</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -332,7 +333,7 @@ export function NewRecessedLightingQuote() {
                       </select>
                       <p className="text-xs text-muted-foreground">
                         {isSmartThreeWay
-                          ? "Includes one Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo pack."
+                           ? "Includes one smart dimmer 3-way kit with a wireless companion."
                           : isTraditionalThreeWay
                             ? "Uses contractor-entered 14/3 NM-B footage between the two traditional 3-way switches."
                             : "One standard switch control for the recessed lighting group."}
@@ -520,7 +521,7 @@ export function NewRecessedLightingQuote() {
                         <p className="text-xs font-bold uppercase tracking-wider text-secondary-foreground/60">Priced assembly</p>
                         {assembly.slice(0, 5).map((line) => (
                           <div key={line.id} className="flex justify-between gap-3 text-xs">
-                            <span className="text-secondary-foreground/75">{line.description}</span>
+                            <span className="text-secondary-foreground/75">{contractorMaterialName(line.description)}</span>
                             <span className="shrink-0 font-mono">${line.extendedCost.toFixed(2)}</span>
                           </div>
                         ))}

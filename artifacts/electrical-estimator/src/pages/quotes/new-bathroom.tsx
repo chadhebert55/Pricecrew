@@ -203,7 +203,7 @@ export function NewBathroomQuote() {
                 </div>
 
                 <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and catalog selections</h3>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and materials</h3>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="bath-labor-rate">Labor Sell Rate</Label>
@@ -215,15 +215,15 @@ export function NewBathroomQuote() {
                     <div className="space-y-2">
                       <Label htmlFor="bath-gfci-rating">GFCI Device Rating</Label>
                       <select id="bath-gfci-rating" value={inputs.gfciAmperage ?? 20} onChange={(event) => setInputs((current) => ({ ...current, gfciAmperage: Number(event.target.value) }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="15">15A P&amp;S 1597-TRWRW</option>
-                        <option value="20">20A P&amp;S 2097-TRWRW</option>
+                        <option value="15">15A tamper-resistant GFCI</option>
+                        <option value="20">20A tamper-resistant GFCI</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="bath-recessed-size">Recessed Light Product</Label>
+                      <Label htmlFor="bath-recessed-size">Recessed light</Label>
                       <select id="bath-recessed-size" value={inputs.recessedLightSize ?? "4-inch"} onChange={(event) => setInputs((current) => ({ ...current, recessedLightSize: event.target.value as BathroomInputs["recessedLightSize"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="4-inch">Juno 4-inch regressed wafer</option>
-                        <option value="6-inch">Juno 6-inch regressed wafer</option>
+                        <option value="4-inch">4-inch regressed wafer light</option>
+                        <option value="6-inch">6-inch regressed wafer light</option>
                       </select>
                     </div>
                     <div className="space-y-2">

@@ -7,6 +7,7 @@ import {
   useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
+import { contractorMaterialName } from "@/lib/material-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -29,39 +30,39 @@ const SIEMENS_200A_PANEL =
 
 const exactCatalogOptions = {
   meterDisconnect: [
-    { value: MILBANK_200A_METER_MAIN, label: MILBANK_200A_METER_MAIN },
-    { value: "Siemens MC0816B1200 200A meter-load-center — SKU 132873", label: "Siemens MC0816B1200 200A meter-load-center — SKU 132873" },
+    { value: MILBANK_200A_METER_MAIN, label: "200A meter-main with built-in disconnect" },
+    { value: "Siemens MC0816B1200 200A meter-load-center — SKU 132873", label: "200A meter-load-center with built-in disconnect" },
   ],
   servicePanel: [
-    { value: SIEMENS_200A_PANEL, label: SIEMENS_200A_PANEL },
-    { value: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", label: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511" },
+    { value: SIEMENS_200A_PANEL, label: "200A Siemens panel" },
+    { value: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", label: "100A Square D panel" },
   ],
-  mastRaceway: [{ value: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", label: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891" }],
-  mastWeatherhead: [{ value: "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", label: "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902" }],
-  mastExpansionCoupling: [{ value: "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350", label: "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350" }],
-  mastStrap: [{ value: "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755", label: "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755" }],
-  mastHub: [{ value: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", label: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750" }],
-  mastLb: [{ value: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807", label: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807" }],
-  mastNinety: [{ value: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745", label: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745" }],
-  mastCoupling: [{ value: "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466", label: "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466" }],
-  serviceToPanelRaceway: [{ value: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", label: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891" }],
+  mastRaceway: [{ value: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", label: "2-inch PVC" }],
+  mastWeatherhead: [{ value: "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", label: "2-inch weatherhead" }],
+  mastExpansionCoupling: [{ value: "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350", label: "2-inch expansion coupling" }],
+  mastStrap: [{ value: "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755", label: "2-inch two-hole strap" }],
+  mastHub: [{ value: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", label: "2-inch panel hub" }],
+  mastLb: [{ value: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807", label: "2-inch LB" }],
+  mastNinety: [{ value: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745", label: "2-inch PVC 90" }],
+  mastCoupling: [{ value: "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466", label: "2-inch coupling" }],
+  serviceToPanelRaceway: [{ value: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", label: "2-inch PVC" }],
   serviceToPanelConductor: [
     "28551", "79651", "1266468", "239663", "300640",
-  ].map((sku) => ({ value: `Wia 4/0 aluminum SER — SKU ${sku}`, label: `Wia 4/0 aluminum SER — SKU ${sku}` })),
+  ].map((sku, index) => ({ value: `Wia 4/0 aluminum SER — SKU ${sku}`, label: `4/0 aluminum SER${index === 0 ? "" : ` — company option ${index + 1}`}` })),
   groundBar: [
-    { value: "GE TGK12 12-hole ground bar — SKU 17742", label: "GE TGK12 12-hole ground bar — SKU 17742" },
-    { value: "Siemens ECGB20 20-position ground bar — SKU 35113", label: "Siemens ECGB20 20-position ground bar — SKU 35113" },
-    { value: "Square D PK3GTA1 ground bar — SKU 86163", label: "Square D PK3GTA1 ground bar — SKU 86163" },
+    { value: "GE TGK12 12-hole ground bar — SKU 17742", label: "Universal ground bar" },
+    { value: "Siemens ECGB20 20-position ground bar — SKU 35113", label: "Siemens ground bar" },
+    { value: "Square D PK3GTA1 ground bar — SKU 86163", label: "Square D ground bar" },
   ],
-  groundRod: [{ value: "Erico 615880 5/8x8ft copper ground rod — SKU 160523", label: "Erico 615880 5/8x8ft copper ground rod — SKU 160523" }],
-  acornClamp: [{ value: "Erico CP58 5/8 ground rod clamp — SKU 31589", label: "Erico CP58 5/8 ground rod clamp — SKU 31589" }],
-  groundingRaceway: [{ value: "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871", label: "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871" }],
-  groundingRacewayFitting: [{ value: "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952", label: "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952" }],
-  ductSeal: [{ value: "AGP DS1 1lb duct seal — SKU 1009903", label: "AGP DS1 1lb duct seal — SKU 1009903" }],
-  pvcPrimer: [{ value: "PVCFIT clear quart primer — 100-count confirmed package — SKU 152609", label: "PVCFIT clear quart primer — 100-count confirmed package — SKU 152609" }],
-  pvcGlue: [{ value: "PVCFIT clear quart cement — 100-count confirmed package — SKU 152791", label: "PVCFIT clear quart cement — 100-count confirmed package — SKU 152791" }],
-  antiOxidant: [{ value: "Ideal 30-026 4oz anti-oxidant — SKU 32650", label: "Ideal 30-026 4oz anti-oxidant — SKU 32650" }],
-  electricalTape: [{ value: "3M 69 3/4x66ft electrical tape — SKU 21719", label: "3M 69 3/4x66ft electrical tape — SKU 21719" }],
+  groundRod: [{ value: "Erico 615880 5/8x8ft copper ground rod — SKU 160523", label: "Ground rod" }],
+  acornClamp: [{ value: "Erico CP58 5/8 ground rod clamp — SKU 31589", label: "Acorn clamp" }],
+  groundingRaceway: [{ value: "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871", label: "3/4-inch PVC" }],
+  groundingRacewayFitting: [{ value: "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952", label: "3/4-inch coupling" }],
+  ductSeal: [{ value: "AGP DS1 1lb duct seal — SKU 1009903", label: "Duct seal" }],
+  pvcPrimer: [{ value: "PVCFIT clear quart primer — 100-count confirmed package — SKU 152609", label: "PVC primer" }],
+  pvcGlue: [{ value: "PVCFIT clear quart cement — 100-count confirmed package — SKU 152791", label: "PVC cement" }],
+  antiOxidant: [{ value: "Ideal 30-026 4oz anti-oxidant — SKU 32650", label: "Anti-oxidant compound" }],
+  electricalTape: [{ value: "3M 69 3/4x66ft electrical tape — SKU 21719", label: "Electrical tape" }],
 } satisfies Partial<Record<ExactCatalogPartKey, { value: string; label: string }[]>>
 
 const initialInputs: ServiceUpgradeInputs = {
@@ -243,31 +244,20 @@ export function NewServiceUpgradeQuote() {
     setInputs((current) => ({ ...current, [key]: numberValue(value, minimum) }))
   }
 
-  const setExactCatalogPart = (key: ExactCatalogPartKey, value: string) => {
-    setInputs(({ exactCatalogParts, ...current }) => {
-      const next = { ...(exactCatalogParts ?? {}) }
-      if (value) next[key] = value
-      else delete next[key]
-      return Object.keys(next).length > 0 ? { ...current, exactCatalogParts: next } : current
-    })
-  }
-
   const exactCatalogSelect = (
     id: string,
     key: keyof typeof exactCatalogOptions,
     options = exactCatalogOptions[key],
   ) => (
     <div className="space-y-2">
-      <Label htmlFor={id}>Exact catalog item (optional)</Label>
-      <select
+      <Label>Material</Label>
+      <div
         id={id}
-        className={selectClassName}
-        value={options.some((option) => option.value === inputs.exactCatalogParts?.[key]) ? inputs.exactCatalogParts?.[key] : ""}
-        onChange={(e) => setExactCatalogPart(key, e.target.value)}
+        className="flex min-h-9 items-center rounded-md border border-input bg-muted/35 px-3 text-sm text-foreground"
       >
-        <option value="">Company price-book key / unresolved</option>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
+        {options.find((option) => option.value === inputs.exactCatalogParts?.[key])?.label ??
+          "Company price-book material"}
+      </div>
     </div>
   )
 
@@ -967,7 +957,7 @@ export function NewServiceUpgradeQuote() {
                             <ul className="space-y-1 text-secondary-foreground/80">
                               {assembly.map((item, index) => (
                                 <li key={index} className="flex justify-between border-b border-secondary-border/50 pb-1 last:border-0 last:pb-0">
-                                  <span className="truncate pr-2">{item.description}</span>
+                                  <span className="truncate pr-2">{contractorMaterialName(item.description)}</span>
                                   <span className="shrink-0 font-mono opacity-75">{item.quantity} {item.unit}</span>
                                 </li>
                               ))}

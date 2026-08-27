@@ -5,6 +5,7 @@ import {
   useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
+import { contractorMaterialName } from "@/lib/material-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -364,7 +365,7 @@ export function NewKitchenQuote() {
                           )
                         })}
                         <div className="rounded-md border border-primary/20 bg-background p-3 text-sm md:col-span-2">
-                          Breaker choices are configurable estimating defaults. Each selection resolves the matching panel manufacturer, protection type, and price-book SKU without changing the countertop receptacle device.
+                          Breaker choices are configurable estimating defaults. Each selection resolves the matching panel manufacturer, protection type, and company price-book material without changing the countertop receptacle device.
                         </div>
                       </div>
                     )}
@@ -426,7 +427,7 @@ export function NewKitchenQuote() {
                 ))}
 
                 <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and catalog selections</h3>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Pricing and materials</h3>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="kitchen-labor-rate">Labor Sell Rate</Label>
@@ -436,10 +437,10 @@ export function NewKitchenQuote() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="kitchen-recessed-size">Recessed Light Product</Label>
+                      <Label htmlFor="kitchen-recessed-size">Recessed light</Label>
                       <select id="kitchen-recessed-size" value={inputs.recessedLightSize ?? "4-inch"} onChange={(event) => setInputs((current) => ({ ...current, recessedLightSize: event.target.value as KitchenInputs["recessedLightSize"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="4-inch">Juno 4-inch regressed wafer</option>
-                        <option value="6-inch">Juno 6-inch regressed wafer</option>
+                        <option value="4-inch">4-inch regressed wafer light</option>
+                        <option value="6-inch">6-inch regressed wafer light</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -531,7 +532,7 @@ export function NewKitchenQuote() {
                           <div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-xs">
                             {assembly.map((line, index) => (
                               <div key={`${line.id}-${index}`} className="flex justify-between gap-3">
-                                <span className="text-secondary-foreground/80">{line.description} × {line.quantity} {line.unit}</span>
+                                <span className="text-secondary-foreground/80">{contractorMaterialName(line.description)} × {line.quantity} {line.unit}</span>
                                 <span className="shrink-0 font-mono">${line.extendedCost.toFixed(2)}</span>
                               </div>
                             ))}
