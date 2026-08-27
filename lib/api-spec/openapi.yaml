@@ -329,12 +329,14 @@ components:
             - BATHROOM
             - KITCHEN
             - RECESSED_LIGHTING
+            - SERVICE_UPGRADE
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
             - $ref: "#/components/schemas/KitchenInputs"
             - $ref: "#/components/schemas/RecessedLightingInputs"
+            - $ref: "#/components/schemas/ServiceUpgradeInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -353,6 +355,7 @@ components:
         - $ref: "#/components/schemas/BathroomInputs"
         - $ref: "#/components/schemas/KitchenInputs"
         - $ref: "#/components/schemas/RecessedLightingInputs"
+        - $ref: "#/components/schemas/ServiceUpgradeInputs"
         - type: object
           additionalProperties: true
     QuotePreviewInput:
@@ -368,12 +371,14 @@ components:
             - BATHROOM
             - KITCHEN
             - RECESSED_LIGHTING
+            - SERVICE_UPGRADE
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
             - $ref: "#/components/schemas/KitchenInputs"
             - $ref: "#/components/schemas/RecessedLightingInputs"
+            - $ref: "#/components/schemas/ServiceUpgradeInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -836,6 +841,183 @@ components:
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+    ServiceUpgradeInputs:
+      type: object
+      required:
+        - serviceSize
+        - serviceConfiguration
+        - serviceDisconnect
+        - panelManufacturer
+        - breakerAmperage
+        - breakerPoleCount
+        - breakerProtectionType
+        - meterDisconnectEquipment
+        - surgeProtection
+        - includeOverheadMast
+        - mastFootage
+        - weatherheadQuantity
+        - hubQuantity
+        - lbQuantity
+        - ninetyQuantity
+        - couplingQuantity
+        - mastRelatedPartsQuantity
+        - mastConductor
+        - mastConductorQuantity
+        - mastConductorFootage
+        - serviceToPanelConductor
+        - serviceToPanelFootage
+        - groundBarQuantity
+        - groundRodQuantity
+        - acornClampQuantity
+        - intersystemBondingQuantity
+        - groundingConductorFootage
+        - bondingConductorFootage
+        - pvcThreeQuarterFootage
+        - pvcThreeQuarterFittingsQuantity
+        - waterMeterBondingQuantity
+        - waterMeterBondingFootage
+        - fourSquareBoxQuantity
+        - receptacle20AQuantity
+        - receptaclePlateQuantity
+        - plywoodQuantity
+        - studsQuantity
+        - permitAllowance
+        - inspectionAllowance
+        - miscellaneousAllowance
+        - crewSize
+        - crewHours
+        - laborAdjustmentHours
+        - notes
+      properties:
+        serviceSize:
+          type: string
+          enum: [100A, 150A, 200A]
+        serviceConfiguration:
+          type: string
+          enum: [Overhead mast, Underground service, Other configured arrangement]
+        serviceDisconnect:
+          type: string
+          enum: [Outdoor service disconnect, Indoor main disconnect, Meter-main combination]
+        panelManufacturer:
+          type: string
+          enum: [Siemens, Eaton, Square D]
+        breakerAmperage:
+          type: number
+          minimum: 1
+        breakerPoleCount:
+          type: number
+          minimum: 1
+        breakerProtectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        meterDisconnectEquipment:
+          type: string
+        surgeProtection:
+          type: string
+        includeOverheadMast:
+          type: boolean
+        mastFootage:
+          type: number
+          minimum: 0
+        weatherheadQuantity:
+          type: number
+          minimum: 0
+        hubQuantity:
+          type: number
+          minimum: 0
+        lbQuantity:
+          type: number
+          minimum: 0
+        ninetyQuantity:
+          type: number
+          minimum: 0
+        couplingQuantity:
+          type: number
+          minimum: 0
+        mastRelatedPartsQuantity:
+          type: number
+          minimum: 0
+        mastConductor:
+          type: string
+          enum: [1/0 aluminum XHHW conductor, 3/0 aluminum XHHW conductor, 4/0 aluminum XHHW conductor]
+        mastConductorQuantity:
+          type: number
+          minimum: 0
+        mastConductorFootage:
+          type: number
+          minimum: 0
+        serviceToPanelConductor:
+          type: string
+          enum: [1/0 aluminum SER, 1/0 copper alternative, 3/0 aluminum SER, 2/0 copper alternative, 4/0 aluminum SER, 4/0 copper alternative, Other configured conductor]
+        serviceToPanelFootage:
+          type: number
+          minimum: 0
+        groundBarQuantity:
+          type: number
+          minimum: 0
+        groundRodQuantity:
+          type: number
+          minimum: 0
+        acornClampQuantity:
+          type: number
+          minimum: 0
+        intersystemBondingQuantity:
+          type: number
+          minimum: 0
+        groundingConductorFootage:
+          type: number
+          minimum: 0
+        bondingConductorFootage:
+          type: number
+          minimum: 0
+        pvcThreeQuarterFootage:
+          type: number
+          minimum: 0
+        pvcThreeQuarterFittingsQuantity:
+          type: number
+          minimum: 0
+        waterMeterBondingQuantity:
+          type: number
+          minimum: 0
+        waterMeterBondingFootage:
+          type: number
+          minimum: 0
+        fourSquareBoxQuantity:
+          type: number
+          minimum: 0
+        receptacle20AQuantity:
+          type: number
+          minimum: 0
+        receptaclePlateQuantity:
+          type: number
+          minimum: 0
+        plywoodQuantity:
+          type: number
+          minimum: 0
+        studsQuantity:
+          type: number
+          minimum: 0
+        permitAllowance:
+          type: number
+          minimum: 0
+        inspectionAllowance:
+          type: number
+          minimum: 0
+        miscellaneousAllowance:
+          type: number
+          minimum: 0
+        crewSize:
+          type: number
+          minimum: 1
+        crewHours:
+          type: number
+          minimum: 0
+        laborAdjustmentHours:
+          type: number
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        notes:
+          type: string
     AssemblyLine:
       type: object
       required:

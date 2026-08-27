@@ -4,12 +4,14 @@ import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
+  calculateServiceUpgradeEstimate,
   type EstimatingSettings,
   type PriceBookItem,
 } from "./estimating-engine";
 import type {
   KitchenInputRecord,
   RecessedLightingInputRecord,
+  ServiceUpgradeInputRecord,
 } from "@workspace/db";
 
 const settings: EstimatingSettings = {
@@ -137,6 +139,438 @@ const priceBook: PriceBookItem[] = [
   catalogRow("Kitchen small-appliance circuit device assumption", 6),
   catalogRow("Kitchen microwave circuit device assumption", 8),
 ];
+
+const serviceUpgradeInputs: ServiceUpgradeInputRecord = {
+  serviceSize: "200A",
+  serviceConfiguration: "Overhead mast",
+  serviceDisconnect: "Outdoor service disconnect",
+  panelManufacturer: "Siemens",
+  breakerAmperage: 200,
+  breakerPoleCount: 2,
+  breakerProtectionType: "Standard",
+  meterDisconnectEquipment: "200A outdoor meter/disconnect",
+  surgeProtection: "Whole-home surge protection",
+  includeOverheadMast: true,
+  mastFootage: 10,
+  weatherheadQuantity: 1,
+  hubQuantity: 1,
+  lbQuantity: 1,
+  ninetyQuantity: 1,
+  couplingQuantity: 2,
+  mastRelatedPartsQuantity: 1,
+  mastConductor: "4/0 aluminum XHHW conductor",
+  mastConductorQuantity: 3,
+  mastConductorFootage: 10,
+  serviceToPanelConductor: "4/0 aluminum SER",
+  serviceToPanelFootage: 15,
+  groundBarQuantity: 2,
+  groundRodQuantity: 2,
+  acornClampQuantity: 2,
+  intersystemBondingQuantity: 1,
+  groundingConductorFootage: 30,
+  bondingConductorFootage: 20,
+  pvcThreeQuarterFootage: 10,
+  pvcThreeQuarterFittingsQuantity: 4,
+  waterMeterBondingQuantity: 2,
+  waterMeterBondingFootage: 20,
+  fourSquareBoxQuantity: 1,
+  receptacle20AQuantity: 1,
+  receptaclePlateQuantity: 1,
+  plywoodQuantity: 1,
+  studsQuantity: 2,
+  permitAllowance: 150,
+  inspectionAllowance: 75,
+  miscellaneousAllowance: 100,
+  crewSize: 2,
+  crewHours: 12,
+  laborAdjustmentHours: 0,
+  laborRateType: "residential",
+  notes: "",
+};
+
+const servicePriceBook: PriceBookItem[] = [
+  catalogRow("100A outdoor meter/disconnect", 260),
+  catalogRow("150A outdoor meter/disconnect", 340),
+  catalogRow("200A outdoor meter/disconnect", 425),
+  catalogRow("Outdoor service disconnect", 280),
+  catalogRow("Siemens 100A service panel", 220, { manufacturer: "Siemens" }),
+  catalogRow("Siemens 150A service panel", 285, { manufacturer: "Siemens" }),
+  catalogRow("Siemens 200A service panel", 350, { manufacturer: "Siemens" }),
+  catalogRow("Siemens 100A 2-pole standard breaker", 95, {
+    manufacturer: "Siemens",
+    amperage: 100,
+    poleCount: 2,
+    protectionType: "Standard",
+  }),
+  catalogRow("Siemens 150A 2-pole standard breaker", 135, {
+    manufacturer: "Siemens",
+    amperage: 150,
+    poleCount: 2,
+    protectionType: "Standard",
+  }),
+  catalogRow("Siemens 200A 2-pole standard breaker", 180, {
+    manufacturer: "Siemens",
+    amperage: 200,
+    poleCount: 2,
+    protectionType: "Standard",
+  }),
+  catalogRow("service upgrade surge protection", 143),
+  catalogRow("2-inch PVC mast raceway", 4.25),
+  catalogRow("2-inch PVC weatherhead", 48),
+  catalogRow("2-inch PVC hub", 18),
+  catalogRow("2-inch PVC LB", 42),
+  catalogRow("2-inch PVC 90", 30),
+  catalogRow("2-inch PVC coupling", 8),
+  catalogRow("2-inch PVC mast related parts", 25),
+  catalogRow("1/0 aluminum XHHW conductor", 1.65),
+  catalogRow("3/0 aluminum XHHW conductor", 2.05),
+  catalogRow("4/0 aluminum XHHW conductor", 2.4),
+  catalogRow("1/0 aluminum SER cable", 5.25),
+  catalogRow("3/0 aluminum SER cable", 7.1),
+  catalogRow("4/0 aluminum SER cable", 8.5),
+  catalogRow("1/0 copper service conductor alternative", 9),
+  catalogRow("2/0 copper service conductor alternative", 12),
+  catalogRow("4/0 copper service conductor alternative", 15),
+  catalogRow("ground bar", 18),
+  catalogRow("ground rod", 22),
+  catalogRow("acorn clamp", 7),
+  catalogRow("intersystem bonding terminal", 32),
+  catalogRow("#8 solid grounding conductor", 1.2),
+  catalogRow("#4 green bonding conductor", 2.8),
+  catalogRow("3/4-inch PVC raceway", 1.5),
+  catalogRow("3/4-inch PVC fittings", 4),
+  catalogRow("water-meter bonding clamp", 12),
+  catalogRow("#4 green water-meter bonding conductor", 2.8),
+  catalogRow("4-square deep box", 5),
+  catalogRow("20A receptacle", 8),
+  catalogRow("20A receptacle plate", 3),
+  catalogRow("4x4x3/4 plywood", 55),
+  catalogRow("2x4x8 stud", 6),
+];
+
+test("service upgrade preview and create validation accept the same additive input snapshot", () => {
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "SERVICE_UPGRADE",
+      jobInputs: serviceUpgradeInputs,
+      laborOverride: 1600,
+      sellingPriceOverride: 7900,
+    }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Service customer",
+      projectName: "200A service upgrade",
+      module: "SERVICE_UPGRADE",
+      jobInputs: serviceUpgradeInputs,
+      proposalDescription: "Upgrade the selected electrical service.",
+      laborOverride: 1600,
+      sellingPriceOverride: 7900,
+    }).success,
+    true,
+  );
+});
+
+test("service upgrade preview and create validation reject unknown panel manufacturers", () => {
+  const invalidInputs = {
+    ...serviceUpgradeInputs,
+    panelManufacturer: "Unknown Manufacturer",
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "SERVICE_UPGRADE",
+      jobInputs: invalidInputs,
+    }).success,
+    false,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Service customer",
+      projectName: "Service upgrade",
+      module: "SERVICE_UPGRADE",
+      jobInputs: invalidInputs,
+      proposalDescription: "Upgrade the selected electrical service.",
+    }).success,
+    false,
+  );
+});
+
+test("default 200A overhead service upgrade exposes the complete assembly and 24 person-hours", () => {
+  const result = calculateServiceUpgradeEstimate(
+    serviceUpgradeInputs,
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "mast-conductors")?.quantity,
+    30,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "mast-raceway")?.quantity,
+    10,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-to-panel-conductor")
+      ?.quantity,
+    15,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-breaker")?.unitCost,
+    180,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-meter-disconnect")
+      ?.unitCost,
+    425,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "200A outdoor meter/disconnect",
+    ),
+    false,
+  );
+  assert.equal(result.pricing.laborCost, 24 * settings.loadedLaborCost);
+  assert.equal(
+    result.assembly.some((line) => line.id === "water-meter-bonding"),
+    true,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id === "plywood-backing"),
+    true,
+  );
+});
+
+test("100A and 150A service selections resolve size-specific equipment and conductors", () => {
+  const configurations = [
+    {
+      serviceSize: "100A" as const,
+      amperage: 100,
+      meter: "100A outdoor meter/disconnect",
+      mast: "1/0 aluminum XHHW conductor",
+      feeder: "1/0 aluminum SER" as const,
+      expected: {
+        breaker: 95,
+        meter: 260,
+        panel: 220,
+        mast: 1.65,
+        feeder: 5.25,
+      },
+    },
+    {
+      serviceSize: "150A" as const,
+      amperage: 150,
+      meter: "150A outdoor meter/disconnect",
+      mast: "3/0 aluminum XHHW conductor",
+      feeder: "3/0 aluminum SER" as const,
+      expected: {
+        breaker: 135,
+        meter: 340,
+        panel: 285,
+        mast: 2.05,
+        feeder: 7.1,
+      },
+    },
+  ];
+
+  for (const configuration of configurations) {
+    const result = calculateServiceUpgradeEstimate(
+      {
+        ...serviceUpgradeInputs,
+        serviceSize: configuration.serviceSize,
+        breakerAmperage: configuration.amperage,
+        meterDisconnectEquipment: configuration.meter,
+        mastConductor: configuration.mast,
+        serviceToPanelConductor: configuration.feeder,
+      },
+      settings,
+      servicePriceBook,
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "service-breaker")?.unitCost,
+      configuration.expected.breaker,
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "service-panel")?.unitCost,
+      configuration.expected.panel,
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "service-meter-disconnect")
+        ?.unitCost,
+      configuration.expected.meter,
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "mast-conductors")?.unitCost,
+      configuration.expected.mast,
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "service-to-panel-conductor")
+        ?.unitCost,
+      configuration.expected.feeder,
+    );
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+          warning.context.itemKey === configuration.meter,
+      ),
+      false,
+    );
+  }
+});
+
+test("service upgrade warns when breaker amperage conflicts with selected service size", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, serviceSize: "100A", breakerAmperage: 200 },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "SERVICE_UPGRADE_SIZE_COMPATIBILITY_REVIEW",
+    ),
+    true,
+  );
+});
+
+test("service upgrade conductor, quantity, footage, and labor choices remain explicit", () => {
+  const result = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      serviceConfiguration: "Underground service",
+      includeOverheadMast: false,
+      serviceToPanelConductor: "4/0 copper alternative",
+      serviceToPanelFootage: 27,
+      groundRodQuantity: 3,
+      crewSize: 3,
+      crewHours: 9,
+      laborAdjustmentHours: 2,
+    },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id === "mast-weatherhead"),
+    false,
+  );
+  const conductor = result.assembly.find(
+    (line) => line.id === "service-to-panel-conductor",
+  );
+  assert.equal(conductor?.quantity, 27);
+  assert.equal(conductor?.unitCost, 15);
+  assert.equal(
+    result.assembly.find((line) => line.id === "ground-rods")?.quantity,
+    3,
+  );
+  assert.equal(result.pricing.laborCost, 29 * settings.loadedLaborCost);
+  assert.equal(
+    result.pricing.pricingWarnings.some((warning) =>
+      (typeof warning === "string" ? warning : warning.code) ===
+      "SERVICE_UPGRADE_COPPER_ALTERNATIVE_REVIEW"),
+    true,
+  );
+});
+
+test("service upgrade preserves contractor prices and never substitutes unresolved exact items", () => {
+  const editedPriceBook = servicePriceBook.map((row) =>
+    row.item === "4/0 aluminum SER cable"
+      ? { ...row, unitCost: 11.25 }
+      : row,
+  );
+  const edited = calculateServiceUpgradeEstimate(
+    serviceUpgradeInputs,
+    settings,
+    editedPriceBook,
+  );
+  assert.equal(
+    edited.assembly.find((line) => line.id === "service-to-panel-conductor")
+      ?.unitCost,
+    11.25,
+  );
+
+  const unresolved = calculateServiceUpgradeEstimate(
+    serviceUpgradeInputs,
+    settings,
+    [],
+  );
+  assert.equal(
+    unresolved.assembly.find((line) => line.id === "service-breaker")?.unitCost,
+    0,
+  );
+  assert.equal(
+    unresolved.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED",
+    ),
+    true,
+  );
+  assert.equal(
+    unresolved.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED",
+    ),
+    true,
+  );
+});
+
+test("service upgrade mast assembly obeys the explicit include control", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, includeOverheadMast: false },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id.startsWith("mast-")),
+    false,
+  );
+});
+
+test("service upgrade breaker resolution rejects unknown protection and unverified default rows", () => {
+  const unknownProtection = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      breakerProtectionType: "Standard-like",
+    },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    unknownProtection.assembly.find((line) => line.id === "service-breaker")
+      ?.unitCost,
+    0,
+  );
+
+  const defaultOnly = calculateServiceUpgradeEstimate(
+    serviceUpgradeInputs,
+    settings,
+    servicePriceBook.map((row) =>
+      row.item === "Siemens 200A 2-pole standard breaker"
+        ? { ...row, isDefault: true }
+        : row,
+    ),
+  );
+  assert.equal(
+    defaultOnly.assembly.find((line) => line.id === "service-breaker")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    defaultOnly.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED",
+    ),
+    true,
+  );
+});
 
 const baseInputs: RecessedLightingInputRecord = {
   roomLength: 16,

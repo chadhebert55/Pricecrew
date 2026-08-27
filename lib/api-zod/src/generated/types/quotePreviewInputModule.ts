@@ -14,4 +14,5 @@ export const QuotePreviewInputModule = {
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
+  SERVICE_UPGRADE: 'SERVICE_UPGRADE',
 } as const;

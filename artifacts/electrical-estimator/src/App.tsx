@@ -18,6 +18,7 @@ import { NewQuote } from '@/pages/quotes/new';
 import { NewBathroomQuote } from '@/pages/quotes/new-bathroom';
 import { NewKitchenQuote } from '@/pages/quotes/new-kitchen';
 import { NewRecessedLightingQuote } from '@/pages/quotes/new-recessed-lighting';
+import { NewServiceUpgradeQuote } from '@/pages/quotes/new-service-upgrade';
 import { QuoteDetail } from '@/pages/quotes/detail';
 import { Builders } from '@/pages/builders';
 import { PriceBook } from '@/pages/price-book';
@@ -44,6 +45,7 @@ function Router() {
           <Route path="/quotes/new/bathroom" component={NewBathroomQuote} />
           <Route path="/quotes/new/kitchen" component={NewKitchenQuote} />
           <Route path="/quotes/new/recessed-lighting" component={NewRecessedLightingQuote} />
+          <Route path="/quotes/new/service-upgrade" component={NewServiceUpgradeQuote} />
           <Route path="/quotes/:id" component={QuoteDetail} />
           <Route path="/builders" component={Builders} />
           <Route path="/price-book" component={PriceBook} />

@@ -1,3 +1,5 @@
 - [Orval Zod compatibility](orval-zod-compatibility.md) — OpenAPI integer/email formats generate helpers unavailable in the current shared Zod version.
 - [Estimate snapshot compatibility](estimate-snapshot-compatibility.md) — pricing fields evolve additively; saved quote JSON must never be backfilled or recalculated.
 - [Conductor ampacity validation](conductor-ampacity-validation.md) — cable pricing must validate breaker amperage and switching together; unsupported combinations stay unresolved.
+- [Selectable estimating dimensions](selectable-estimating-dimensions.md) — every exposed option needs contract validation, linked assembly defaults, and editable exact catalog rows.
+- [Price-book seed ownership](price-book-seed-ownership.md) — edits must clear default ownership; only untouched starter rows may be promoted to verified catalog data.

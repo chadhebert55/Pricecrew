@@ -43,8 +43,8 @@ export function Builders() {
       title: "Service Upgrade",
       description: "100A to 200A residential and commercial service upgrades. Includes mast, meter main, and grounding.",
       icon: Construction,
-      status: "upcoming",
-      href: "/builders"
+      status: "live",
+      href: "/quotes/new/service-upgrade"
     },
     {
       id: "panel-swap",

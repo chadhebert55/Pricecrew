@@ -153,6 +153,8 @@ export function QuoteDetail() {
                     ? "Kitchen Builder"
                     : quote.module === "RECESSED_LIGHTING"
                       ? "Recessed Lighting Builder"
+                      : quote.module === "SERVICE_UPGRADE"
+                        ? "Service Upgrade Builder"
                     : "EV Charger Builder"}.
               </CardDescription>
             </CardHeader>

@@ -110,12 +110,17 @@ export function ensureEstimatorSeed(): Promise<void> {
   return seedPromise;
 }
 
-async function seedEstimatorData(): Promise<void> {
-  const [existingCompany] = await db.select().from(companiesTable).limit(1);
+export async function seedEstimatorData(
+  database: typeof db = db,
+): Promise<void> {
+  const [existingCompany] = await database
+    .select()
+    .from(companiesTable)
+    .limit(1);
   const company =
     existingCompany ??
     (
-      await db
+      await database
         .insert(companiesTable)
         .values({ id: DEFAULT_COMPANY_ID, name: "Starter Electrical Co." })
         .returning()
@@ -125,13 +130,13 @@ async function seedEstimatorData(): Promise<void> {
     throw new Error("Unable to create starter estimating company");
   }
 
-  const [existingSettings] = await db
+  const [existingSettings] = await database
     .select()
     .from(companySettingsTable)
     .where(eq(companySettingsTable.companyId, company.id));
 
   if (!existingSettings) {
-    await db.insert(companySettingsTable).values({
+    await database.insert(companySettingsTable).values({
       companyId: company.id,
       laborRate: 95,
       residentialLaborSellRate: 150,
@@ -143,7 +148,7 @@ async function seedEstimatorData(): Promise<void> {
     });
   }
 
-  const [existingCustomer] = await db
+  const [existingCustomer] = await database
     .select()
     .from(customersTable)
     .where(eq(customersTable.companyId, company.id))
@@ -152,7 +157,7 @@ async function seedEstimatorData(): Promise<void> {
   const customer =
     existingCustomer ??
     (
-      await db
+      await database
         .insert(customersTable)
         .values({
           companyId: company.id,
@@ -162,14 +167,14 @@ async function seedEstimatorData(): Promise<void> {
         .returning()
     )[0];
 
-  const [existingPriceBookItem] = await db
+  const [existingPriceBookItem] = await database
     .select()
     .from(priceBookItemsTable)
     .where(eq(priceBookItemsTable.companyId, company.id))
     .limit(1);
 
   if (!existingPriceBookItem) {
-    await db.insert(priceBookItemsTable).values([
+    await database.insert(priceBookItemsTable).values([
       {
         companyId: company.id,
         category: "Protection",
@@ -219,7 +224,73 @@ async function seedEstimatorData(): Promise<void> {
   >;
   const sourceDate = "2026-08-25";
   const controlSourceDate = "2026-08-26";
+  const additionalServiceItems: SeedPriceBookItem[] = [
+    ...([100, 150] as const).map((amperage) => ({
+      category: "Equipment",
+      item: `${amperage}A outdoor meter/disconnect`,
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    })),
+    ...([
+      ["Siemens", 100],
+      ["Siemens", 150],
+      ["Eaton", 100],
+      ["Eaton", 150],
+      ["Eaton", 200],
+      ["Square D", 100],
+      ["Square D", 150],
+      ["Square D", 200],
+    ] as const).map(([manufacturer, amperage]) => ({
+      category: "Panel",
+      item: `${manufacturer} ${amperage}A service panel`,
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      manufacturer,
+      sourceDate,
+      isDefault: false,
+    })),
+    ...(["Siemens", "Eaton", "Square D"] as const).flatMap((manufacturer) =>
+      ([100, 150, 200] as const).flatMap((amperage) =>
+        (["Standard", "GFCI", "AFCI", "Dual Function"] as const).map(
+          (protectionType) => ({
+            category: "Protection",
+            item: `${manufacturer} ${amperage}A 2-pole ${protectionType} breaker`,
+            unit: "ea",
+            unitCost: 0,
+            supplier: "Company default — set current cost",
+            manufacturer,
+            sourceDate,
+            amperage,
+            poleCount: 2,
+            protectionType,
+            isDefault: false,
+          }),
+        ),
+      ),
+    ),
+    ...[
+      ["1/0 aluminum XHHW conductor", "ft"],
+      ["3/0 aluminum XHHW conductor", "ft"],
+      ["1/0 aluminum SER cable", "ft"],
+      ["3/0 aluminum SER cable", "ft"],
+      ["1/0 copper service conductor alternative", "ft"],
+      ["2/0 copper service conductor alternative", "ft"],
+    ].map(([item, unit]) => ({
+      category: "Conductor",
+      item,
+      unit,
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    })),
+  ];
   const verifiedItems: SeedPriceBookItem[] = [
+    ...additionalServiceItems,
     {
       category: "Protection",
       item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
@@ -621,13 +692,359 @@ async function seedEstimatorData(): Promise<void> {
       sourceDate,
       isDefault: false,
     },
+    {
+      category: "Equipment",
+      item: "200A outdoor meter/disconnect",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Equipment",
+      item: "Outdoor service disconnect",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Equipment",
+      item: "Indoor main disconnect",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Equipment",
+      item: "Meter-main combination",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Panel",
+      item: "Siemens 200A service panel",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      manufacturer: "Siemens",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens 200A 2-pole standard breaker",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      manufacturer: "Siemens",
+      sourceDate,
+      amperage: 200,
+      poleCount: 2,
+      protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Eaton 200A 2-pole standard breaker",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      manufacturer: "Eaton",
+      sourceDate,
+      amperage: 200,
+      poleCount: 2,
+      protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Square D 200A 2-pole standard breaker",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      manufacturer: "Square D",
+      sourceDate,
+      amperage: 200,
+      poleCount: 2,
+      protectionType: "Standard",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "service upgrade surge protection",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC mast raceway",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC weatherhead",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC hub",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC LB",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC 90",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC coupling",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "2-inch PVC mast related parts",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "4/0 aluminum XHHW conductor",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "4/0 aluminum SER cable",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Conductor",
+      item: "4/0 copper service conductor alternative",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Grounding",
+      item: "ground bar",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Grounding",
+      item: "ground rod",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Grounding",
+      item: "acorn clamp",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Bonding",
+      item: "intersystem bonding terminal",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Grounding",
+      item: "#8 solid grounding conductor",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Bonding",
+      item: "#4 green bonding conductor",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "3/4-inch PVC raceway",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Raceway",
+      item: "3/4-inch PVC fittings",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Bonding",
+      item: "water-meter bonding clamp",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Bonding",
+      item: "#4 green water-meter bonding conductor",
+      unit: "ft",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Devices",
+      item: "4-square deep box",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Devices",
+      item: "20A receptacle",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Trim",
+      item: "20A receptacle plate",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Backing",
+      item: "4x4x3/4 plywood",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Framing",
+      item: "2x4x8 stud",
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Allowance",
+      item: "service upgrade permit allowance",
+      unit: "allowance",
+      unitCost: 0,
+      supplier: "Company default — local amount required",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Allowance",
+      item: "service upgrade inspection allowance",
+      unit: "allowance",
+      unitCost: 0,
+      supplier: "Company default — local amount required",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Allowance",
+      item: "service upgrade miscellaneous allowance",
+      unit: "allowance",
+      unitCost: 0,
+      supplier: "Company default — local amount required",
+      sourceDate,
+      isDefault: false,
+    },
   ];
 
   const legacySmartKitName =
     "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   const canonicalSmartKitName =
     "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote combo-pack";
-  const [canonicalSmartKit] = await db
+  const [canonicalSmartKit] = await database
     .select()
     .from(priceBookItemsTable)
     .where(
@@ -638,7 +1055,7 @@ async function seedEstimatorData(): Promise<void> {
     )
     .limit(1);
   if (!canonicalSmartKit) {
-    const [legacySmartKit] = await db
+    const [legacySmartKit] = await database
       .select()
       .from(priceBookItemsTable)
       .where(
@@ -649,7 +1066,7 @@ async function seedEstimatorData(): Promise<void> {
       )
       .limit(1);
     if (legacySmartKit) {
-      await db
+      await database
         .update(priceBookItemsTable)
         .set({
           item: canonicalSmartKitName,
@@ -660,9 +1077,33 @@ async function seedEstimatorData(): Promise<void> {
     }
   }
 
+  const [legacyStarterSurge] = await database
+    .select()
+    .from(priceBookItemsTable)
+    .where(
+      and(
+        eq(priceBookItemsTable.companyId, company.id),
+        eq(priceBookItemsTable.item, "Whole-home surge protection"),
+      ),
+    )
+    .limit(1);
+  if (legacyStarterSurge?.isDefault) {
+    const verifiedSurge = verifiedItems.find(
+      (item) => item.item === "Whole-home surge protection",
+    );
+    await database
+      .update(priceBookItemsTable)
+      .set(
+        legacyStarterSurge.unitCost === 85 && verifiedSurge
+          ? verifiedSurge
+          : { isDefault: false },
+      )
+      .where(eq(priceBookItemsTable.id, legacyStarterSurge.id));
+  }
+
   for (const item of verifiedItems) {
     const [existing] = item.supplierSku
-      ? await db
+      ? await database
           .select()
           .from(priceBookItemsTable)
           .where(
@@ -672,7 +1113,7 @@ async function seedEstimatorData(): Promise<void> {
             ),
           )
           .limit(1)
-      : await db
+      : await database
           .select()
           .from(priceBookItemsTable)
           .where(
@@ -683,15 +1124,10 @@ async function seedEstimatorData(): Promise<void> {
           )
           .limit(1);
     if (!existing) {
-      await db.insert(priceBookItemsTable).values({
+      await database.insert(priceBookItemsTable).values({
         companyId: company.id,
         ...item,
       });
-    } else if (existing.isDefault) {
-      await db
-        .update(priceBookItemsTable)
-        .set(item)
-        .where(eq(priceBookItemsTable.id, existing.id));
     }
   }
 
@@ -731,7 +1167,7 @@ async function seedEstimatorData(): Promise<void> {
   ] as const;
 
   for (const [oldName, newName] of allowanceRenames) {
-    const [existing] = await db
+    const [existing] = await database
       .select()
       .from(priceBookItemsTable)
       .where(
@@ -742,7 +1178,7 @@ async function seedEstimatorData(): Promise<void> {
       )
       .limit(1);
     if (existing?.isDefault) {
-      await db
+      await database
         .update(priceBookItemsTable)
         .set({ item: newName })
         .where(eq(priceBookItemsTable.id, existing.id));
@@ -779,7 +1215,7 @@ async function seedEstimatorData(): Promise<void> {
     { category: "Controls", item: "Unverified allowance — 3-way switch pair", unit: "ea", unitCost: 26 },
     { category: "Controls", item: "Unverified allowance — dimmer switch", unit: "ea", unitCost: 28 },
   ];
-  const companyPriceBook = await db
+  const companyPriceBook = await database
     .select({ item: priceBookItemsTable.item })
     .from(priceBookItemsTable)
     .where(eq(priceBookItemsTable.companyId, company.id));
@@ -789,21 +1225,21 @@ async function seedEstimatorData(): Promise<void> {
 
   for (const item of maintainableItems) {
     if (existingItemNames.has(item.item.toLowerCase())) continue;
-    await db.insert(priceBookItemsTable).values({
+    await database.insert(priceBookItemsTable).values({
       companyId: company.id,
       ...item,
       isDefault: true,
     });
   }
 
-  const [existingQuote] = await db
+  const [existingQuote] = await database
     .select()
     .from(quotesTable)
     .where(eq(quotesTable.companyId, company.id))
     .limit(1);
 
   if (!existingQuote && customer) {
-    await db.insert(quotesTable).values({
+    await database.insert(quotesTable).values({
       companyId: company.id,
       customerId: customer.id,
       quoteNumber: "Q-1024",

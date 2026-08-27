@@ -13,6 +13,8 @@ import {
 export type LaborRateType = "residential" | "commercial";
 export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
 export type RecessedLightSize = "4-inch" | "6-inch";
+export type ServiceUpgradeServiceSize = "100A" | "150A" | "200A";
+export type ServiceUpgradePanelManufacturer = "Siemens" | "Eaton" | "Square D";
 
 export type EvChargerInputRecord = {
   chargerQuantity: number;
@@ -148,11 +150,60 @@ export type RecessedLightingInputRecord = {
   cableType: CableType;
 };
 
+export type ServiceUpgradeInputRecord = {
+  serviceSize: ServiceUpgradeServiceSize;
+  serviceConfiguration: string;
+  serviceDisconnect: string;
+  panelManufacturer: ServiceUpgradePanelManufacturer;
+  breakerAmperage: number;
+  breakerPoleCount: number;
+  breakerProtectionType: string;
+  meterDisconnectEquipment: string;
+  surgeProtection: string;
+  includeOverheadMast: boolean;
+  mastFootage: number;
+  weatherheadQuantity: number;
+  hubQuantity: number;
+  lbQuantity: number;
+  ninetyQuantity: number;
+  couplingQuantity: number;
+  mastRelatedPartsQuantity: number;
+  mastConductor: string;
+  mastConductorQuantity: number;
+  mastConductorFootage: number;
+  serviceToPanelConductor: string;
+  serviceToPanelFootage: number;
+  groundBarQuantity: number;
+  groundRodQuantity: number;
+  acornClampQuantity: number;
+  intersystemBondingQuantity: number;
+  groundingConductorFootage: number;
+  bondingConductorFootage: number;
+  pvcThreeQuarterFootage: number;
+  pvcThreeQuarterFittingsQuantity: number;
+  waterMeterBondingQuantity: number;
+  waterMeterBondingFootage: number;
+  fourSquareBoxQuantity: number;
+  receptacle20AQuantity: number;
+  receptaclePlateQuantity: number;
+  plywoodQuantity: number;
+  studsQuantity: number;
+  permitAllowance: number;
+  inspectionAllowance: number;
+  miscellaneousAllowance: number;
+  crewSize: number;
+  crewHours: number;
+  laborAdjustmentHours: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+};
+
 export type QuoteJobInputsRecord =
   | EvChargerInputRecord
   | BathroomInputRecord
   | KitchenInputRecord
-  | RecessedLightingInputRecord;
+  | RecessedLightingInputRecord
+  | ServiceUpgradeInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;

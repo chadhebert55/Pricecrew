@@ -10,6 +10,7 @@ import type {
   PricingWarningRecord,
   PricingWarningSeverity,
   RecessedLightingInputRecord,
+  ServiceUpgradeInputRecord,
 } from "@workspace/db";
 
 export type PriceBookItem = {
@@ -85,6 +86,42 @@ function warningMetadata(message: string): WarningMetadata {
         poleCount: match?.[3] ? Number(match[3]) || null : null,
         protectionType: match?.[4] ?? null,
       },
+    };
+  }
+  if (message.startsWith("Service Upgrade allowance")) {
+    return {
+      code: "SERVICE_UPGRADE_ALLOWANCE_REVIEW",
+      severity: "warning",
+      category: "planning",
+      source: "service-upgrade-allowance",
+      context: { rule: "local permit, inspection, or miscellaneous amount requires confirmation" },
+    };
+  }
+  if (message.includes("service configuration") || message.includes("field conditions")) {
+    return {
+      code: "SERVICE_UPGRADE_FIELD_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "service-upgrade-configuration",
+      context: { rule: "verify utility arrangement, existing service, and field conditions" },
+    };
+  }
+  if (message.includes("copper alternative")) {
+    return {
+      code: "SERVICE_UPGRADE_COPPER_ALTERNATIVE_REVIEW",
+      severity: "warning",
+      category: "compatibility",
+      source: "service-upgrade-conductor",
+      context: { rule: "confirm the explicitly selected copper service conductor with the company price book" },
+    };
+  }
+  if (message.includes("does not match the selected service size")) {
+    return {
+      code: "SERVICE_UPGRADE_SIZE_COMPATIBILITY_REVIEW",
+      severity: "warning",
+      category: "compatibility",
+      source: "service-upgrade-size",
+      context: { rule: "confirm service equipment and protection match the selected service size" },
     };
   }
   if (
@@ -359,11 +396,23 @@ function addLine(
   });
 }
 
-function protectionType(value: string) {
-  if (/dual|afci.*gfci|gfci.*afci/i.test(value)) return "Dual Function";
-  if (/afci/i.test(value)) return "AFCI";
-  if (/gfci/i.test(value)) return "GFCI";
-  return "Standard";
+function protectionType(value: string): string | null {
+  const selection = normalized(value);
+  if (
+    selection.includes("dual function") ||
+    (selection.includes("afci") && selection.includes("gfci"))
+  ) {
+    return "Dual Function";
+  }
+  if (selection.split(" ").includes("afci")) return "AFCI";
+  if (selection.split(" ").includes("gfci")) return "GFCI";
+  if (
+    selection === "standard" ||
+    selection.endsWith(" standard breaker")
+  ) {
+    return "Standard";
+  }
+  return null;
 }
 
 type BreakerSelection = {
@@ -377,14 +426,27 @@ function resolveBreaker(
   selection: BreakerSelection,
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
+  excludeDefaultRows = false,
 ) {
   const exactProtectionType = protectionType(selection.protectionType);
+  if (!exactProtectionType) {
+    pricingWarnings.push(
+      `Unresolved breaker: protection type "${selection.protectionType || "not selected"}" is not an exact supported selection. No Standard or generic breaker cost was substituted.`,
+    );
+    return {
+      value: 0,
+      description: `${selection.poleCount || "?"}-pole ${selection.amperage || "?"}A ${selection.protectionType || "unselected protection"} breaker — unresolved`,
+      source: "Unresolved exact breaker — select supported protection",
+    };
+  }
   const match = priceBook.find(
     (item) =>
       normalized(item.manufacturer ?? "") === normalized(selection.manufacturer) &&
       item.amperage === selection.amperage &&
       item.poleCount === selection.poleCount &&
       normalized(item.protectionType ?? "") === normalized(exactProtectionType) &&
+      (!excludeDefaultRows || !item.isDefault) &&
+      !normalized(item.item).startsWith("unverified ") &&
       Number.isFinite(item.unitCost) &&
       item.unitCost > 0,
   );
@@ -1518,6 +1580,301 @@ export function calculateKitchenEstimate(
   return finalizeEstimate(
     assembly,
     laborHours,
+    settings,
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+}
+
+export function calculateServiceUpgradeEstimate(
+  inputs: ServiceUpgradeInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  const safeNumber = (value: number | undefined) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+
+  const addPricedItem = (
+    id: string,
+    category: string,
+    key: string,
+    description: string,
+    quantity: number,
+    unit = "ea",
+  ) => {
+    const safeQuantity = safeNumber(quantity);
+    if (safeQuantity === 0) return;
+    const price = unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit,
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  const addAllowance = (
+    id: string,
+    label: string,
+    key: string,
+    amount: number,
+  ) => {
+    const enteredAmount = safeNumber(amount);
+    const price =
+      enteredAmount > 0
+        ? {
+            value: enteredAmount,
+            source: "Contractor-entered configurable allowance",
+          }
+        : unitCost(key, priceBook, pricingWarnings);
+    if (price.value === 0) {
+      pricingWarnings.push(
+        `Service Upgrade allowance "${label}" is unresolved until a local amount is entered or a company price-book value is configured.`,
+      );
+    }
+    addLine(assembly, {
+      id,
+      category: "Allowance",
+      description: `${label} — configurable allowance`,
+      quantity: 1,
+      unit: "allowance",
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  const breaker = resolveBreaker(
+    {
+      manufacturer: inputs.panelManufacturer,
+      amperage: Math.max(1, Number(inputs.breakerAmperage) || 1),
+      poleCount: Math.max(1, Number(inputs.breakerPoleCount) || 1),
+      protectionType: inputs.breakerProtectionType,
+    },
+    priceBook,
+    pricingWarnings,
+    true,
+  );
+  addLine(assembly, {
+    id: "service-breaker",
+    category: "Protection",
+    description: breaker.description,
+    quantity: 1,
+    unit: "ea",
+    unitCost: breaker.value,
+    source: breaker.source,
+  });
+
+  addPricedItem(
+    "service-meter-disconnect",
+    "Equipment",
+    inputs.meterDisconnectEquipment,
+    inputs.meterDisconnectEquipment,
+    1,
+  );
+  addPricedItem(
+    "service-disconnect",
+    "Equipment",
+    inputs.serviceDisconnect,
+    inputs.serviceDisconnect,
+    1,
+  );
+  addPricedItem(
+    "service-panel",
+    "Panel",
+    `${inputs.panelManufacturer} ${inputs.serviceSize} service panel`,
+    `${inputs.panelManufacturer} ${inputs.serviceSize} service panel`,
+    1,
+  );
+  if (inputs.surgeProtection !== "None") {
+    addPricedItem(
+      "service-surge-protection",
+      "Protection",
+      "service upgrade surge protection",
+      inputs.surgeProtection,
+      1,
+    );
+  }
+
+  if (inputs.includeOverheadMast) {
+    addPricedItem(
+      "mast-raceway",
+      "Raceway",
+      "2-inch PVC mast raceway",
+      "2-inch PVC mast raceway",
+      inputs.mastFootage,
+      "ft",
+    );
+    addPricedItem(
+      "mast-weatherhead",
+      "Raceway",
+      "2-inch PVC weatherhead",
+      "2-inch PVC weatherhead",
+      inputs.weatherheadQuantity,
+    );
+    addPricedItem(
+      "mast-hub",
+      "Raceway",
+      "2-inch PVC hub",
+      "2-inch PVC hub",
+      inputs.hubQuantity,
+    );
+    addPricedItem(
+      "mast-lb",
+      "Raceway",
+      "2-inch PVC LB",
+      "2-inch PVC LB",
+      inputs.lbQuantity,
+    );
+    addPricedItem(
+      "mast-90",
+      "Raceway",
+      "2-inch PVC 90",
+      "2-inch PVC 90",
+      inputs.ninetyQuantity,
+    );
+    addPricedItem(
+      "mast-couplings",
+      "Raceway",
+      "2-inch PVC coupling",
+      "2-inch PVC couplings",
+      inputs.couplingQuantity,
+    );
+    addPricedItem(
+      "mast-related-parts",
+      "Raceway",
+      "2-inch PVC mast related parts",
+      "2-inch PVC mast related parts",
+      inputs.mastRelatedPartsQuantity,
+    );
+    addPricedItem(
+      "mast-conductors",
+      "Conductor",
+      inputs.mastConductor,
+      `${inputs.mastConductor}s`,
+      inputs.mastConductorQuantity * inputs.mastConductorFootage,
+      "ft",
+    );
+  }
+
+  const serviceConductorKey = {
+    "1/0 aluminum SER": "1/0 aluminum SER cable",
+    "1/0 copper alternative": "1/0 copper service conductor alternative",
+    "3/0 aluminum SER": "3/0 aluminum SER cable",
+    "2/0 copper alternative": "2/0 copper service conductor alternative",
+    "4/0 aluminum SER": "4/0 aluminum SER cable",
+    "4/0 copper alternative": "4/0 copper service conductor alternative",
+    "Other configured conductor": "other configured service conductor",
+  }[inputs.serviceToPanelConductor] ?? "other configured service conductor";
+  const serviceConductor = unitCost(
+    serviceConductorKey,
+    priceBook,
+    pricingWarnings,
+  );
+  addLine(assembly, {
+    id: "service-to-panel-conductor",
+    category: "Conductor",
+    description: `${inputs.serviceToPanelConductor} from meter/disconnect to panel`,
+    quantity: safeNumber(inputs.serviceToPanelFootage),
+    unit: "ft",
+    unitCost: serviceConductor.value,
+    source: serviceConductor.source,
+  });
+  if (inputs.serviceToPanelConductor.includes("copper alternative")) {
+    pricingWarnings.push(
+      "A copper alternative is explicitly selected for meter/disconnect-to-panel wiring; confirm the configured conductor and company price-book value.",
+    );
+  }
+
+  addPricedItem("ground-bars", "Grounding", "ground bar", "Ground bars", inputs.groundBarQuantity);
+  addPricedItem("ground-rods", "Grounding", "ground rod", "Ground rods", inputs.groundRodQuantity);
+  addPricedItem("acorn-clamps", "Grounding", "acorn clamp", "Acorn clamps", inputs.acornClampQuantity);
+  addPricedItem(
+    "intersystem-bonding",
+    "Bonding",
+    "intersystem bonding terminal",
+    "Intersystem bonding terminal",
+    inputs.intersystemBondingQuantity,
+  );
+  addPricedItem(
+    "grounding-conductor",
+    "Grounding",
+    "#8 solid grounding conductor",
+    "#8 solid grounding conductor",
+    inputs.groundingConductorFootage,
+    "ft",
+  );
+  addPricedItem(
+    "bonding-conductor",
+    "Bonding",
+    "#4 green bonding conductor",
+    "#4 green bonding conductor",
+    inputs.bondingConductorFootage,
+    "ft",
+  );
+  addPricedItem(
+    "grounding-pvc",
+    "Raceway",
+    "3/4-inch PVC raceway",
+    "3/4-inch PVC / raceway",
+    inputs.pvcThreeQuarterFootage,
+    "ft",
+  );
+  addPricedItem(
+    "grounding-pvc-fittings",
+    "Raceway",
+    "3/4-inch PVC fittings",
+    "3/4-inch PVC fittings",
+    inputs.pvcThreeQuarterFittingsQuantity,
+  );
+  addPricedItem(
+    "water-meter-bonding",
+    "Bonding",
+    "water-meter bonding clamp",
+    "Water-meter bonding",
+    inputs.waterMeterBondingQuantity,
+  );
+  addPricedItem(
+    "water-meter-bonding-conductor",
+    "Bonding",
+    "#4 green water-meter bonding conductor",
+    "#4 green water-meter bonding conductor",
+    inputs.waterMeterBondingFootage,
+    "ft",
+  );
+
+  addPricedItem("four-square-box", "Devices", "4-square deep box", "4-square deep box", inputs.fourSquareBoxQuantity);
+  addPricedItem("receptacle-20a", "Devices", "20A receptacle", "20A receptacle", inputs.receptacle20AQuantity);
+  addPricedItem("receptacle-plate", "Trim", "20A receptacle plate", "20A receptacle plate", inputs.receptaclePlateQuantity);
+  addPricedItem("plywood-backing", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
+  addPricedItem("studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
+
+  addAllowance("permit-allowance", "Permit", "service upgrade permit allowance", inputs.permitAllowance);
+  addAllowance("inspection-allowance", "Inspection", "service upgrade inspection allowance", inputs.inspectionAllowance);
+  addAllowance("miscellaneous-allowance", "Miscellaneous", "service upgrade miscellaneous allowance", inputs.miscellaneousAllowance);
+
+  pricingWarnings.push(
+    "Service configuration and existing utility conditions require field verification; selections are configurable estimating assumptions, not universal code requirements.",
+  );
+  if (inputs.breakerAmperage !== Number.parseInt(inputs.serviceSize, 10)) {
+    pricingWarnings.push(
+      `The selected ${inputs.breakerAmperage}A main breaker does not match the selected service size ${inputs.serviceSize}; confirm the intentional equipment configuration before quoting.`,
+    );
+  }
+  const crewSize = Math.max(1, Number(inputs.crewSize) || 1);
+  const crewHours = safeNumber(inputs.crewHours);
+  const laborAdjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
+    ? Number(inputs.laborAdjustmentHours)
+    : 0;
+  const personHours = Math.max(0, crewSize * crewHours + laborAdjustment);
+
+  return finalizeEstimate(
+    assembly,
+    personHours,
     settings,
     pricingWarnings,
     inputs.laborRateType,

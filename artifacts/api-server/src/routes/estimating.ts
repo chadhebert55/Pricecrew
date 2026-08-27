@@ -35,6 +35,7 @@ import {
   type PricingRecord,
   type QuoteJobInputsRecord,
   type RecessedLightingInputRecord,
+  type ServiceUpgradeInputRecord,
 } from "@workspace/db";
 import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
@@ -42,13 +43,19 @@ import {
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
+  calculateServiceUpgradeEstimate,
   normalizePricingWarnings,
 } from "../lib/estimating-engine";
 
 const router: IRouter = Router();
 
 type QuoteStatus = "draft" | "ready";
-type EstimateModule = "EV_CHARGER" | "BATHROOM" | "KITCHEN" | "RECESSED_LIGHTING";
+type EstimateModule =
+  | "EV_CHARGER"
+  | "BATHROOM"
+  | "KITCHEN"
+  | "RECESSED_LIGHTING"
+  | "SERVICE_UPGRADE";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -223,6 +230,9 @@ async function calculateEstimate(
   if (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs)) {
     return calculateRecessedLightingEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs)) {
+    return calculateServiceUpgradeEstimate(jobInputs, settings, priceBook);
+  }
   throw new Error(`Job inputs do not match module ${module}`);
 }
 
@@ -250,6 +260,12 @@ function isRecessedLightingInput(
   return "roomLength" in jobInputs && "fixtureQuantity" in jobInputs;
 }
 
+function isServiceUpgradeInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is ServiceUpgradeInputRecord {
+  return "serviceSize" in jobInputs && "crewHours" in jobInputs;
+}
+
 function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -259,6 +275,7 @@ function moduleMatchesInputs(
     (module === "BATHROOM" && isBathroomInput(jobInputs)) ||
     (module === "KITCHEN" && isKitchenInput(jobInputs)) ||
     (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs))
+    || (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs))
   );
 }
 
@@ -563,7 +580,7 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
 
   const [item] = await db
     .update(priceBookItemsTable)
-    .set({ unitCost: parsed.data.unitCost })
+    .set({ unitCost: parsed.data.unitCost, isDefault: false })
     .where(
       and(
         eq(priceBookItemsTable.id, params.data.id),

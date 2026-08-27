@@ -417,10 +417,158 @@ export interface RecessedLightingInputs {
   cableType: RecessedLightingInputsCableType;
 }
 
+export type ServiceUpgradeInputsServiceSize = typeof ServiceUpgradeInputsServiceSize[keyof typeof ServiceUpgradeInputsServiceSize];
+
+
+export const ServiceUpgradeInputsServiceSize = {
+  '100A': '100A',
+  '150A': '150A',
+  '200A': '200A',
+} as const;
+
+export type ServiceUpgradeInputsServiceConfiguration = typeof ServiceUpgradeInputsServiceConfiguration[keyof typeof ServiceUpgradeInputsServiceConfiguration];
+
+
+export const ServiceUpgradeInputsServiceConfiguration = {
+  Overhead_mast: 'Overhead mast',
+  Underground_service: 'Underground service',
+  Other_configured_arrangement: 'Other configured arrangement',
+} as const;
+
+export type ServiceUpgradeInputsServiceDisconnect = typeof ServiceUpgradeInputsServiceDisconnect[keyof typeof ServiceUpgradeInputsServiceDisconnect];
+
+
+export const ServiceUpgradeInputsServiceDisconnect = {
+  Outdoor_service_disconnect: 'Outdoor service disconnect',
+  Indoor_main_disconnect: 'Indoor main disconnect',
+  'Meter-main_combination': 'Meter-main combination',
+} as const;
+
+export type ServiceUpgradeInputsPanelManufacturer = typeof ServiceUpgradeInputsPanelManufacturer[keyof typeof ServiceUpgradeInputsPanelManufacturer];
+
+
+export const ServiceUpgradeInputsPanelManufacturer = {
+  Siemens: 'Siemens',
+  Eaton: 'Eaton',
+  Square_D: 'Square D',
+} as const;
+
+export type ServiceUpgradeInputsBreakerProtectionType = typeof ServiceUpgradeInputsBreakerProtectionType[keyof typeof ServiceUpgradeInputsBreakerProtectionType];
+
+
+export const ServiceUpgradeInputsBreakerProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type ServiceUpgradeInputsMastConductor = typeof ServiceUpgradeInputsMastConductor[keyof typeof ServiceUpgradeInputsMastConductor];
+
+
+export const ServiceUpgradeInputsMastConductor = {
+  '1/0_aluminum_XHHW_conductor': '1/0 aluminum XHHW conductor',
+  '3/0_aluminum_XHHW_conductor': '3/0 aluminum XHHW conductor',
+  '4/0_aluminum_XHHW_conductor': '4/0 aluminum XHHW conductor',
+} as const;
+
+export type ServiceUpgradeInputsServiceToPanelConductor = typeof ServiceUpgradeInputsServiceToPanelConductor[keyof typeof ServiceUpgradeInputsServiceToPanelConductor];
+
+
+export const ServiceUpgradeInputsServiceToPanelConductor = {
+  '1/0_aluminum_SER': '1/0 aluminum SER',
+  '1/0_copper_alternative': '1/0 copper alternative',
+  '3/0_aluminum_SER': '3/0 aluminum SER',
+  '2/0_copper_alternative': '2/0 copper alternative',
+  '4/0_aluminum_SER': '4/0 aluminum SER',
+  '4/0_copper_alternative': '4/0 copper alternative',
+  Other_configured_conductor: 'Other configured conductor',
+} as const;
+
+export interface ServiceUpgradeInputs {
+  serviceSize: ServiceUpgradeInputsServiceSize;
+  serviceConfiguration: ServiceUpgradeInputsServiceConfiguration;
+  serviceDisconnect: ServiceUpgradeInputsServiceDisconnect;
+  panelManufacturer: ServiceUpgradeInputsPanelManufacturer;
+  /** @minimum 1 */
+  breakerAmperage: number;
+  /** @minimum 1 */
+  breakerPoleCount: number;
+  breakerProtectionType: ServiceUpgradeInputsBreakerProtectionType;
+  meterDisconnectEquipment: string;
+  surgeProtection: string;
+  includeOverheadMast: boolean;
+  /** @minimum 0 */
+  mastFootage: number;
+  /** @minimum 0 */
+  weatherheadQuantity: number;
+  /** @minimum 0 */
+  hubQuantity: number;
+  /** @minimum 0 */
+  lbQuantity: number;
+  /** @minimum 0 */
+  ninetyQuantity: number;
+  /** @minimum 0 */
+  couplingQuantity: number;
+  /** @minimum 0 */
+  mastRelatedPartsQuantity: number;
+  mastConductor: ServiceUpgradeInputsMastConductor;
+  /** @minimum 0 */
+  mastConductorQuantity: number;
+  /** @minimum 0 */
+  mastConductorFootage: number;
+  serviceToPanelConductor: ServiceUpgradeInputsServiceToPanelConductor;
+  /** @minimum 0 */
+  serviceToPanelFootage: number;
+  /** @minimum 0 */
+  groundBarQuantity: number;
+  /** @minimum 0 */
+  groundRodQuantity: number;
+  /** @minimum 0 */
+  acornClampQuantity: number;
+  /** @minimum 0 */
+  intersystemBondingQuantity: number;
+  /** @minimum 0 */
+  groundingConductorFootage: number;
+  /** @minimum 0 */
+  bondingConductorFootage: number;
+  /** @minimum 0 */
+  pvcThreeQuarterFootage: number;
+  /** @minimum 0 */
+  pvcThreeQuarterFittingsQuantity: number;
+  /** @minimum 0 */
+  waterMeterBondingQuantity: number;
+  /** @minimum 0 */
+  waterMeterBondingFootage: number;
+  /** @minimum 0 */
+  fourSquareBoxQuantity: number;
+  /** @minimum 0 */
+  receptacle20AQuantity: number;
+  /** @minimum 0 */
+  receptaclePlateQuantity: number;
+  /** @minimum 0 */
+  plywoodQuantity: number;
+  /** @minimum 0 */
+  studsQuantity: number;
+  /** @minimum 0 */
+  permitAllowance: number;
+  /** @minimum 0 */
+  inspectionAllowance: number;
+  /** @minimum 0 */
+  miscellaneousAllowance: number;
+  /** @minimum 1 */
+  crewSize: number;
+  /** @minimum 0 */
+  crewHours: number;
+  laborAdjustmentHours: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+}
+
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -507,6 +655,7 @@ export const QuoteInputModule = {
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
+  SERVICE_UPGRADE: 'SERVICE_UPGRADE',
 } as const;
 
 export interface QuoteInput {
@@ -517,7 +666,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -542,11 +691,12 @@ export const QuotePreviewInputModule = {
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
+  SERVICE_UPGRADE: 'SERVICE_UPGRADE',
 } as const;
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
