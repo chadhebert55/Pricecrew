@@ -438,11 +438,13 @@ export async function seedEstimatorData(
       ["Grounding", "Erico 615880 5/8x8ft copper ground rod — SKU 160523", "ea", 25.313, "Erico", "615880", "160523", undefined, "78285630609"],
       ["Grounding", "Erico CP58 5/8 ground rod clamp — SKU 31589", "ea", 6.092, "Erico", "CP58", "31589", undefined, "78285630703"],
       ["Raceway", "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", "ea", 11.954, "Siemens", "ECHS200", "26750", undefined, "78364345512"],
-      ["Raceway", "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", "ft", 1.12886, "PVCFIT", undefined, "8891", undefined, "98006006026"],
-      ["Raceway", "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902", "ea", 15.70706, "PVCFIT", undefined, "512902", undefined, "98006006613"],
+      ["Raceway", "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", "ft", 1.12886, "Pvcfit", "PVCFIT 200P40-20F", "8891", undefined, "98006006026"],
+      ["Raceway", "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", "ea", 15.70706, "Pvcfit", "PVCFIT 200P WH", "512902", undefined, "98006006613"],
+      ["Raceway", "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350", "ea", 23.68549, "Pvcfit", "PVCFIT 200P EC", "15350", undefined, "98006006126"],
+      ["Raceway", "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755", "ea", 0.67005, "Pvcfit", "PVCFIT 200P PS", "152755", undefined, "98006006946"],
       ["Raceway", "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807", "ea", 16.62609, "PVCFIT", undefined, "25807", undefined, "98006006546"],
       ["Raceway", "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745", "ea", 5.1391, "PVCFIT", undefined, "18745", undefined, "98006006046"],
-      ["Raceway", "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466", "ea", 0.84149, "PVCFIT", undefined, "26466", undefined, "98006006106"],
+      ["Raceway", "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466", "ea", 0.84149, "Pvcfit", "PVCFIT 200P CP", "26466", undefined, "98006006106"],
       ["Raceway", "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871", "ft", 0.36399, "PVC", undefined, "9871", undefined, "98006006002"],
       ["Raceway", "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952", "ea", 22.144, "Ocal", "CPL3/4-G", "30952", undefined, "70450836255"],
       ["Normal Stock", "AGP DS1 1lb duct seal — SKU 1009903", "ea", 3.801, "AGP", "DS1", "1009903", undefined, "78073020001"],
@@ -1435,7 +1437,7 @@ export async function seedEstimatorData(
     "132873": "78364351070", "79511": "78590106120",
     "28551": "98012058495", "79651": "980120S0029", "1266468": "980120S4953", "239663": "98012058496", "300640": "98012058499",
     "17742": "78316415846", "35113": "78364345239", "86163": "78590115693", "160523": "78285630609", "31589": "78285630703",
-    "26750": "78364345512", "8891": "98006006026", "512902": "98006006613", "25807": "98006006546", "18745": "98006006046", "26466": "98006006106",
+    "26750": "78364345512", "8891": "98006006026", "512902": "98006006613", "15350": "98006006126", "152755": "98006006946", "25807": "98006006546", "18745": "98006006046", "26466": "98006006106",
     "9871": "98006006002", "30952": "70450836255", "1009903": "78073020001", "152609": "98006022982", "152791": "980060S0191", "32650": "78325030026", "21719": "05400709910",
     "1101170": "88762121675",
     "243085": "78500724027",
@@ -1551,9 +1553,12 @@ export async function seedEstimatorData(
   const priorUnverifiedSystemRows: Record<
     string,
     {
+      item?: string;
+      legacyItems?: string[];
       unitCost: number;
       supplier: string;
       sourceDate: string;
+      manufacturer?: string | null;
       manufacturerPartNumber: string | null;
       supplierSku: string | null;
     }
@@ -1621,13 +1626,59 @@ export async function seedEstimatorData(
       manufacturerPartNumber: null,
       supplierSku: null,
     },
+    "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891": {
+      item: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891",
+      legacyItems: [
+        "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 20-ft stick — SKU 8891",
+      ],
+      unitCost: 1.12886,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "PVCFIT",
+      manufacturerPartNumber: null,
+      supplierSku: "8891",
+    },
+    "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902": {
+      item: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902",
+      unitCost: 15.70706,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "PVCFIT",
+      manufacturerPartNumber: null,
+      supplierSku: "512902",
+    },
+    "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466": {
+      item: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466",
+      unitCost: 0.84149,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "PVCFIT",
+      manufacturerPartNumber: null,
+      supplierSku: "26466",
+    },
   };
   const isKnownPriorSystemSeed = (
     existing: typeof priceBookItemsTable.$inferSelect,
     replacement: SeedPriceBookItem,
   ) => {
     const priorUnverified = priorUnverifiedSystemRows[replacement.item];
+    const isUntouchedPriorTenFootCorrection =
+      replacement.supplierSku === "8891" &&
+      existing.item ===
+        "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 20-ft stick — SKU 8891" &&
+      existing.category === replacement.category &&
+      existing.unit === replacement.unit &&
+      existing.unitCost === replacement.unitCost &&
+      existing.supplier === (replacement.supplier ?? null) &&
+      existing.manufacturer === (replacement.manufacturer ?? null) &&
+      existing.manufacturerPartNumber ===
+        (replacement.manufacturerPartNumber ?? null) &&
+      existing.supplierSku === replacement.supplierSku &&
+      existing.upc === (replacement.upc ?? null) &&
+      existing.sourceDate === (replacement.sourceDate ?? null) &&
+      existing.isDefault === replacement.isDefault;
     return (
+      isUntouchedPriorTenFootCorrection ||
       (existing.unitCost === 0 &&
         existing.supplier === "Company default — set current cost" &&
         existing.sourceDate === sourceDate &&
@@ -1646,9 +1697,14 @@ export async function seedEstimatorData(
           prior15ABreakerPartNumbers[replacement.item] &&
         existing.supplierSku === prior15ABreakerPartNumbers[replacement.item]) ||
       (priorUnverified !== undefined &&
+        (priorUnverified.item === undefined ||
+          existing.item === priorUnverified.item ||
+          priorUnverified.legacyItems?.includes(existing.item) === true) &&
         existing.unitCost === priorUnverified.unitCost &&
         existing.supplier === priorUnverified.supplier &&
         existing.sourceDate === priorUnverified.sourceDate &&
+        (priorUnverified.manufacturer === undefined ||
+          existing.manufacturer === priorUnverified.manufacturer) &&
         existing.manufacturerPartNumber ===
           priorUnverified.manufacturerPartNumber &&
         existing.supplierSku === priorUnverified.supplierSku)

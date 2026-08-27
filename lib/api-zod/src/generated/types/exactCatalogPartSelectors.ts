@@ -14,6 +14,8 @@ export interface ExactCatalogPartSelectors {
   servicePanel?: string;
   mastRaceway?: string;
   mastWeatherhead?: string;
+  mastExpansionCoupling?: string;
+  mastStrap?: string;
   mastHub?: string;
   mastLb?: string;
   mastNinety?: string;

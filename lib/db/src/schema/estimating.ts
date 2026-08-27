@@ -184,6 +184,8 @@ export type ServiceUpgradeInputRecord = {
   includeOverheadMast: boolean;
   mastFootage: number;
   weatherheadQuantity: number;
+  mastExpansionCouplingQuantity?: number;
+  mastStrapQuantity?: number;
   hubQuantity: number;
   lbQuantity: number;
   ninetyQuantity: number;
@@ -290,6 +292,8 @@ export type ExactCatalogPartSelectors = {
   servicePanel?: string;
   mastRaceway?: string;
   mastWeatherhead?: string;
+  mastExpansionCoupling?: string;
+  mastStrap?: string;
   mastHub?: string;
   mastLb?: string;
   mastNinety?: string;

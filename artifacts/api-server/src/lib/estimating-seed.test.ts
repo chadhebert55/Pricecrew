@@ -69,7 +69,11 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         ["Siemens MC0816B1200 200A meter-load-center — SKU 132873", 523.989, "ea", "132873", "78364351070"],
         ["Wia 4/0 aluminum SER — SKU 1266468", 3.30776, "ft", "1266468", "980120S4953"],
         ["Erico 615880 5/8x8ft copper ground rod — SKU 160523", 25.313, "ea", "160523", "78285630609"],
-        ["PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", 1.12886, "ft", "8891", "98006006026"],
+        ["PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", 1.12886, "ft", "8891", "98006006026"],
+        ["PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", 15.70706, "ea", "512902", "98006006613"],
+        ["PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350", 23.68549, "ea", "15350", "98006006126"],
+        ["PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755", 0.67005, "ea", "152755", "98006006946"],
+        ["PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466", 0.84149, "ea", "26466", "98006006106"],
         ["AGP DS1 1lb duct seal — SKU 1009903", 3.801, "ea", "1009903", "78073020001"],
       ] as const) {
         const row = seededRows.find((candidate) => candidate.item === item);
@@ -79,6 +83,18 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.supplierSku, supplierSku);
         assert.equal(row?.upc, upc);
         assert.equal(row?.sourceDate, "2026-08-25");
+      }
+      for (const [item, manufacturerPartNumber] of [
+        ["PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", "PVCFIT 200P40-20F"],
+        ["PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", "PVCFIT 200P WH"],
+        ["PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350", "PVCFIT 200P EC"],
+        ["PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755", "PVCFIT 200P PS"],
+        ["PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466", "PVCFIT 200P CP"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.manufacturer, "Pvcfit");
+        assert.equal(row?.manufacturerPartNumber, manufacturerPartNumber);
+        assert.equal(row?.isDefault, false);
       }
       for (const [item, unitCost, unit, supplierSku, manufacturerPartNumber] of [
         ["Milbank U3990-XL-200 200A meter-main — SKU 304898", 441.525, "ea", "304898", "U3990-XL-200"],
@@ -198,6 +214,13 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         (row) => row.item === "Siemens 200A panel replacement enclosure",
       );
       assert.ok(editableRow);
+      const [quoteBeforeReseed] = await transaction.select().from(quotesTable);
+      assert.ok(quoteBeforeReseed);
+      const immutableSnapshotBeforeReseed = JSON.stringify({
+        jobInputs: quoteBeforeReseed.jobInputs,
+        assembly: quoteBeforeReseed.assembly,
+        pricing: quoteBeforeReseed.pricing,
+      });
       await transaction
         .update(priceBookItemsTable)
         .set({ unitCost: 999, isDefault: false })
@@ -210,6 +233,18 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         .where(eq(priceBookItemsTable.id, editableRow.id));
       assert.equal(preserved?.unitCost, 999);
       assert.equal(preserved?.isDefault, false);
+      const [quoteAfterReseed] = await transaction
+        .select()
+        .from(quotesTable)
+        .where(eq(quotesTable.id, quoteBeforeReseed.id));
+      assert.equal(
+        JSON.stringify({
+          jobInputs: quoteAfterReseed?.jobInputs,
+          assembly: quoteAfterReseed?.assembly,
+          pricing: quoteAfterReseed?.pricing,
+        }),
+        immutableSnapshotBeforeReseed,
+      );
 
       const exactCatalogRow = seededRows.find(
         (row) => row.item === "Wia 4/0 aluminum SER — SKU 1266468",
@@ -289,6 +324,20 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
           protectionType: "Standard",
           isDefault: false,
         },
+        {
+          companyId: 1,
+          category: "Raceway",
+          item: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 20-ft stick — SKU 8891",
+          unit: "ft",
+          unitCost: 1.12886,
+          supplier: "Northeast Electrical",
+          manufacturer: "Pvcfit",
+          manufacturerPartNumber: "PVCFIT 200P40-20F",
+          supplierSku: "8891",
+          upc: "98006006026",
+          sourceDate: "2026-08-25",
+          isDefault: false,
+        },
       ]);
 
       await seedEstimatorData(transaction as unknown as typeof db);
@@ -312,6 +361,19 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
       assert.equal(upgradedBreaker?.supplierSku, "17237");
       assert.equal(upgradedBreaker?.manufacturerPartNumber, "ITE Q115");
       assert.equal(upgradedBreaker?.upc, "78364314818");
+      const correctedConduit = rows.find(
+        (row) => row.supplierSku === "8891",
+      );
+      assert.equal(
+        correctedConduit?.item,
+        "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891",
+      );
+      assert.equal(correctedConduit?.unit, "ft");
+      assert.equal(correctedConduit?.unitCost, 1.12886);
+      assert.equal(
+        rows.some((row) => row.item.includes("20-ft stick")),
+        false,
+      );
 
       throw new RollbackFreshSeedTest();
     });

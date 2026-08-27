@@ -443,6 +443,8 @@ export interface ExactCatalogPartSelectors {
   servicePanel?: string;
   mastRaceway?: string;
   mastWeatherhead?: string;
+  mastExpansionCoupling?: string;
+  mastStrap?: string;
   mastHub?: string;
   mastLb?: string;
   mastNinety?: string;
@@ -571,6 +573,10 @@ export interface ServiceUpgradeInputs {
   mastFootage: number;
   /** @minimum 0 */
   weatherheadQuantity: number;
+  /** @minimum 0 */
+  mastExpansionCouplingQuantity?: number;
+  /** @minimum 0 */
+  mastStrapQuantity?: number;
   /** @minimum 0 */
   hubQuantity: number;
   /** @minimum 0 */

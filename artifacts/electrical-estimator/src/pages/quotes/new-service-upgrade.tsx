@@ -36,13 +36,15 @@ const exactCatalogOptions = {
     { value: SIEMENS_200A_PANEL, label: SIEMENS_200A_PANEL },
     { value: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", label: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511" },
   ],
-  mastRaceway: [{ value: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", label: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891" }],
-  mastWeatherhead: [{ value: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902", label: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902" }],
+  mastRaceway: [{ value: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", label: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891" }],
+  mastWeatherhead: [{ value: "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", label: "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902" }],
+  mastExpansionCoupling: [{ value: "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350", label: "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350" }],
+  mastStrap: [{ value: "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755", label: "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755" }],
   mastHub: [{ value: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", label: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750" }],
   mastLb: [{ value: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807", label: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807" }],
   mastNinety: [{ value: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745", label: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745" }],
-  mastCoupling: [{ value: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466", label: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466" }],
-  serviceToPanelRaceway: [{ value: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", label: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891" }],
+  mastCoupling: [{ value: "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466", label: "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466" }],
+  serviceToPanelRaceway: [{ value: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", label: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891" }],
   serviceToPanelConductor: [
     "28551", "79651", "1266468", "239663", "300640",
   ].map((sku) => ({ value: `Wia 4/0 aluminum SER — SKU ${sku}`, label: `Wia 4/0 aluminum SER — SKU ${sku}` })),
@@ -79,7 +81,9 @@ const initialInputs: ServiceUpgradeInputs = {
   lbQuantity: 1,
   ninetyQuantity: 1,
   couplingQuantity: 2,
-  mastRelatedPartsQuantity: 1,
+  mastExpansionCouplingQuantity: 1,
+  mastStrapQuantity: 2,
+  mastRelatedPartsQuantity: 0,
   mastConductor: "4/0 aluminum XHHW conductor",
   mastConductorQuantity: 3,
   mastConductorFootage: 10,
@@ -126,6 +130,8 @@ const initialInputs: ServiceUpgradeInputs = {
     servicePanel: SIEMENS_200A_PANEL,
     mastRaceway: exactCatalogOptions.mastRaceway[0].value,
     mastWeatherhead: exactCatalogOptions.mastWeatherhead[0].value,
+    mastExpansionCoupling: exactCatalogOptions.mastExpansionCoupling[0].value,
+    mastStrap: exactCatalogOptions.mastStrap[0].value,
     mastHub: exactCatalogOptions.mastHub[0].value,
     mastLb: exactCatalogOptions.mastLb[0].value,
     mastNinety: exactCatalogOptions.mastNinety[0].value,
@@ -525,7 +531,7 @@ export function NewServiceUpgradeQuote() {
                     {inputs.includeOverheadMast && (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="su-mast-ft">Mast Footage (FT)</Label>
+                          <Label htmlFor="su-mast-ft">2-Inch PVC Conduit Footage (FT)</Label>
                           <Input id="su-mast-ft" type="number" min="0" step="1" value={inputs.mastFootage} onChange={(e) => setNumber("mastFootage", e.target.value)} />
                         </div>
                         {exactCatalogSelect("su-mast-raceway-exact", "mastRaceway")}
@@ -534,6 +540,16 @@ export function NewServiceUpgradeQuote() {
                           <Input id="su-weatherhead" type="number" min="0" step="1" value={inputs.weatherheadQuantity} onChange={(e) => setNumber("weatherheadQuantity", e.target.value)} />
                         </div>
                         {exactCatalogSelect("su-weatherhead-exact", "mastWeatherhead")}
+                        <div className="space-y-2">
+                          <Label htmlFor="su-expansion-coupling">Expansion Coupling Qty</Label>
+                          <Input id="su-expansion-coupling" type="number" min="0" step="1" value={inputs.mastExpansionCouplingQuantity ?? 0} onChange={(e) => setNumber("mastExpansionCouplingQuantity", e.target.value)} />
+                        </div>
+                        {exactCatalogSelect("su-expansion-coupling-exact", "mastExpansionCoupling")}
+                        <div className="space-y-2">
+                          <Label htmlFor="su-mast-strap">Two-Hole Strap Qty</Label>
+                          <Input id="su-mast-strap" type="number" min="0" step="1" value={inputs.mastStrapQuantity ?? 0} onChange={(e) => setNumber("mastStrapQuantity", e.target.value)} />
+                        </div>
+                        {exactCatalogSelect("su-mast-strap-exact", "mastStrap")}
                         <div className="space-y-2">
                           <Label htmlFor="su-hub">Hub Qty</Label>
                           <Input id="su-hub" type="number" min="0" step="1" value={inputs.hubQuantity} onChange={(e) => setNumber("hubQuantity", e.target.value)} />

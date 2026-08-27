@@ -18,7 +18,6 @@ const JUNO_WF4_VERIFIED =
   "Juno WF4DREGSMAL 4-inch regressed wafer light";
 const JUNO_WF6_VERIFIED =
   "Juno WF6-DREG 6-inch regressed wafer light";
-
 export type PriceBookItem = {
   category: string;
   item: string;
@@ -467,11 +466,22 @@ function exactCatalogCost(
   compatible: (item: PriceBookItem) => boolean = () => true,
 ) {
   if (!selection?.trim()) return null;
+  const selectedSku = selection.match(/(?:SKU|Northeast #)\s*([A-Z0-9-]+)/i)?.[1];
+  const isSelectable = (item: PriceBookItem) =>
+    !item.isDefault &&
+    !normalized(item.item).startsWith("unverified ");
   const selected = priceBook.find(
     (item) =>
       normalized(item.item) === normalized(selection) &&
-      !item.isDefault &&
-      !normalized(item.item).startsWith("unverified "),
+      isSelectable(item),
+  ) ?? (
+    selectedSku
+      ? priceBook.find(
+          (item) =>
+            normalized(item.supplierSku ?? "") === normalized(selectedSku) &&
+            isSelectable(item),
+        )
+      : undefined
   );
   if (!selected || !Number.isFinite(selected.unitCost) || selected.unitCost <= 0) {
     pricingWarnings.push(
@@ -1948,6 +1958,30 @@ export function calculateServiceUpgradeEstimate(
         itemHasTerms(item, "2 inch", "weatherhead"),
     );
     addExactOrLegacy(
+      "mast-expansion-coupling",
+      "Raceway",
+      "mastExpansionCoupling",
+      "2-inch PVC expansion coupling",
+      "2-inch PVC expansion couplings",
+      inputs.mastExpansionCouplingQuantity ?? 0,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "expansion", "coupling"),
+    );
+    addExactOrLegacy(
+      "mast-straps",
+      "Raceway",
+      "mastStrap",
+      "2-inch PVC conduit strap",
+      "2-inch PVC conduit straps",
+      inputs.mastStrapQuantity ?? 0,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "conduit", "strap"),
+    );
+    addExactOrLegacy(
       "mast-hub",
       "Raceway",
       "mastHub",
@@ -1995,7 +2029,8 @@ export function calculateServiceUpgradeEstimate(
       "ea",
       (item) =>
         itemInCategory(item, "Raceway") &&
-        itemHasTerms(item, "2 inch", "coupling"),
+        itemHasTerms(item, "2 inch", "coupling") &&
+        !normalized(item.item).includes("expansion"),
     );
     addPricedItem(
       "mast-related-parts",

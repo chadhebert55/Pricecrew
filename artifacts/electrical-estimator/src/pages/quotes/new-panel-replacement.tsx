@@ -25,8 +25,8 @@ const exactCatalogItems = {
   universalGroundBar: "GE TGK12 12-hole ground bar — SKU 17742",
   squareDGroundBar: "Square D PK3GTA1 ground bar — SKU 86163",
   groundRod: "Erico 615880 5/8x8ft copper ground rod — SKU 160523",
-  feederRaceway: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891",
-  feederRacewayFitting: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466",
+  feederRaceway: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891",
+  feederRacewayFitting: "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466",
   antiOxidant: "Ideal 30-026 4oz anti-oxidant — SKU 32650",
   electricalTape: "3M 69 3/4x66ft electrical tape — SKU 21719",
 } as const

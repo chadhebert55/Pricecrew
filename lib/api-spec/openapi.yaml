@@ -945,6 +945,12 @@ components:
         weatherheadQuantity:
           type: number
           minimum: 0
+        mastExpansionCouplingQuantity:
+          type: number
+          minimum: 0
+        mastStrapQuantity:
+          type: number
+          minimum: 0
         hubQuantity:
           type: number
           minimum: 0
@@ -1242,6 +1248,8 @@ components:
         servicePanel: { type: string }
         mastRaceway: { type: string }
         mastWeatherhead: { type: string }
+        mastExpansionCoupling: { type: string }
+        mastStrap: { type: string }
         mastHub: { type: string }
         mastLb: { type: string }
         mastNinety: { type: string }

@@ -171,6 +171,10 @@ export const createQuoteBodyJobInputsFiveMastFootageMin = 0;
 
 export const createQuoteBodyJobInputsFiveWeatherheadQuantityMin = 0;
 
+export const createQuoteBodyJobInputsFiveMastExpansionCouplingQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFiveMastStrapQuantityMin = 0;
+
 export const createQuoteBodyJobInputsFiveHubQuantityMin = 0;
 
 export const createQuoteBodyJobInputsFiveLbQuantityMin = 0;
@@ -445,6 +449,8 @@ export const CreateQuoteBody = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -477,6 +483,8 @@ export const CreateQuoteBody = zod.object({
   "includeOverheadMast": zod.boolean(),
   "mastFootage": zod.number().min(createQuoteBodyJobInputsFiveMastFootageMin),
   "weatherheadQuantity": zod.number().min(createQuoteBodyJobInputsFiveWeatherheadQuantityMin),
+  "mastExpansionCouplingQuantity": zod.number().min(createQuoteBodyJobInputsFiveMastExpansionCouplingQuantityMin).optional(),
+  "mastStrapQuantity": zod.number().min(createQuoteBodyJobInputsFiveMastStrapQuantityMin).optional(),
   "hubQuantity": zod.number().min(createQuoteBodyJobInputsFiveHubQuantityMin),
   "lbQuantity": zod.number().min(createQuoteBodyJobInputsFiveLbQuantityMin),
   "ninetyQuantity": zod.number().min(createQuoteBodyJobInputsFiveNinetyQuantityMin),
@@ -536,6 +544,8 @@ export const CreateQuoteBody = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -708,6 +718,10 @@ export const createQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
 export const createQuoteResponseTwoJobInputsFiveMastFootageMin = 0;
 
 export const createQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveMastStrapQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsFiveHubQuantityMin = 0;
 
@@ -986,6 +1000,8 @@ export const CreateQuoteResponse = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -1018,6 +1034,8 @@ export const CreateQuoteResponse = zod.object({
   "includeOverheadMast": zod.boolean(),
   "mastFootage": zod.number().min(createQuoteResponseTwoJobInputsFiveMastFootageMin),
   "weatherheadQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin),
+  "mastExpansionCouplingQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin).optional(),
+  "mastStrapQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveMastStrapQuantityMin).optional(),
   "hubQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveHubQuantityMin),
   "lbQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveLbQuantityMin),
   "ninetyQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveNinetyQuantityMin),
@@ -1077,6 +1095,8 @@ export const CreateQuoteResponse = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -1285,6 +1305,10 @@ export const previewQuoteBodyJobInputsFourAdditionalLightsMin = 0;
 export const previewQuoteBodyJobInputsFiveMastFootageMin = 0;
 
 export const previewQuoteBodyJobInputsFiveWeatherheadQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFiveMastExpansionCouplingQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFiveMastStrapQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsFiveHubQuantityMin = 0;
 
@@ -1556,6 +1580,8 @@ export const PreviewQuoteBody = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -1588,6 +1614,8 @@ export const PreviewQuoteBody = zod.object({
   "includeOverheadMast": zod.boolean(),
   "mastFootage": zod.number().min(previewQuoteBodyJobInputsFiveMastFootageMin),
   "weatherheadQuantity": zod.number().min(previewQuoteBodyJobInputsFiveWeatherheadQuantityMin),
+  "mastExpansionCouplingQuantity": zod.number().min(previewQuoteBodyJobInputsFiveMastExpansionCouplingQuantityMin).optional(),
+  "mastStrapQuantity": zod.number().min(previewQuoteBodyJobInputsFiveMastStrapQuantityMin).optional(),
   "hubQuantity": zod.number().min(previewQuoteBodyJobInputsFiveHubQuantityMin),
   "lbQuantity": zod.number().min(previewQuoteBodyJobInputsFiveLbQuantityMin),
   "ninetyQuantity": zod.number().min(previewQuoteBodyJobInputsFiveNinetyQuantityMin),
@@ -1647,6 +1675,8 @@ export const PreviewQuoteBody = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -1874,6 +1904,10 @@ export const getQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
 export const getQuoteResponseTwoJobInputsFiveMastFootageMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveMastStrapQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveHubQuantityMin = 0;
 
@@ -2152,6 +2186,8 @@ export const GetQuoteResponse = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -2184,6 +2220,8 @@ export const GetQuoteResponse = zod.object({
   "includeOverheadMast": zod.boolean(),
   "mastFootage": zod.number().min(getQuoteResponseTwoJobInputsFiveMastFootageMin),
   "weatherheadQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin),
+  "mastExpansionCouplingQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin).optional(),
+  "mastStrapQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveMastStrapQuantityMin).optional(),
   "hubQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveHubQuantityMin),
   "lbQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveLbQuantityMin),
   "ninetyQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveNinetyQuantityMin),
@@ -2243,6 +2281,8 @@ export const GetQuoteResponse = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -2470,6 +2510,10 @@ export const updateQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
 export const updateQuoteResponseTwoJobInputsFiveMastFootageMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFiveMastStrapQuantityMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFiveHubQuantityMin = 0;
 
@@ -2748,6 +2792,8 @@ export const UpdateQuoteResponse = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),
@@ -2780,6 +2826,8 @@ export const UpdateQuoteResponse = zod.object({
   "includeOverheadMast": zod.boolean(),
   "mastFootage": zod.number().min(updateQuoteResponseTwoJobInputsFiveMastFootageMin),
   "weatherheadQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin),
+  "mastExpansionCouplingQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin).optional(),
+  "mastStrapQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveMastStrapQuantityMin).optional(),
   "hubQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveHubQuantityMin),
   "lbQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveLbQuantityMin),
   "ninetyQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveNinetyQuantityMin),
@@ -2839,6 +2887,8 @@ export const UpdateQuoteResponse = zod.object({
   "servicePanel": zod.string().optional(),
   "mastRaceway": zod.string().optional(),
   "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
   "mastHub": zod.string().optional(),
   "mastLb": zod.string().optional(),
   "mastNinety": zod.string().optional(),

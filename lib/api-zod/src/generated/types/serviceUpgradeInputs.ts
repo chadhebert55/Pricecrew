@@ -35,6 +35,10 @@ export interface ServiceUpgradeInputs {
   /** @minimum 0 */
   weatherheadQuantity: number;
   /** @minimum 0 */
+  mastExpansionCouplingQuantity?: number;
+  /** @minimum 0 */
+  mastStrapQuantity?: number;
+  /** @minimum 0 */
   hubQuantity: number;
   /** @minimum 0 */
   lbQuantity: number;

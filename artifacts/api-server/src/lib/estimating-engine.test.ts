@@ -386,9 +386,9 @@ test("panel exact selections enforce product role, manufacturer, amperage, and s
   const exactPanel =
     "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511";
   const exactRaceway =
-    "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891";
+    "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891";
   const exactFitting =
-    "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466";
+    "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466";
   const exactGroundBar = "Square D PK3GTA1 ground bar — SKU 86163";
   const exactPriceBook = [
     ...panelReplacementPriceBook,
@@ -1360,6 +1360,103 @@ test("service exact equipment and raceway selectors enforce compatibility and re
         warning.context.group === "servicePanel",
     ),
     true,
+  );
+});
+
+test("service upgrade prices the exact Northeast 2-inch PVC mast rows at normalized estimating units", () => {
+  const conduit =
+    "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891";
+  const weatherhead =
+    "PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902";
+  const expansionCoupling =
+    "PVCFIT 200P EC 2-inch PVC expansion coupling — SKU 15350";
+  const strap =
+    "PVCFIT 200P PS 2-inch two-hole PVC conduit strap — SKU 152755";
+  const coupling =
+    "PVCFIT 200P CP 2-inch PVC conduit coupling — SKU 26466";
+  const result = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      mastFootage: 10,
+      weatherheadQuantity: 1,
+      mastExpansionCouplingQuantity: 1,
+      mastStrapQuantity: 3,
+      couplingQuantity: 2,
+      mastRelatedPartsQuantity: 0,
+      exactCatalogParts: {
+        mastRaceway: conduit,
+        mastWeatherhead: weatherhead,
+        mastExpansionCoupling: expansionCoupling,
+        mastStrap: strap,
+        mastCoupling: coupling,
+      },
+    },
+    settings,
+    [
+      ...servicePriceBook,
+      catalogRow(conduit, 1.12886, {
+        category: "Raceway",
+        manufacturer: "Pvcfit",
+        manufacturerPartNumber: "PVCFIT 200P40-20F",
+        supplierSku: "8891",
+      }),
+      catalogRow(weatherhead, 15.70706, {
+        category: "Raceway",
+        manufacturer: "Pvcfit",
+        manufacturerPartNumber: "PVCFIT 200P WH",
+        supplierSku: "512902",
+      }),
+      catalogRow(expansionCoupling, 23.68549, {
+        category: "Raceway",
+        manufacturer: "Pvcfit",
+        manufacturerPartNumber: "PVCFIT 200P EC",
+        supplierSku: "15350",
+      }),
+      catalogRow(strap, 0.67005, {
+        category: "Raceway",
+        manufacturer: "Pvcfit",
+        manufacturerPartNumber: "PVCFIT 200P PS",
+        supplierSku: "152755",
+      }),
+      catalogRow(coupling, 0.84149, {
+        category: "Raceway",
+        manufacturer: "Pvcfit",
+        manufacturerPartNumber: "PVCFIT 200P CP",
+        supplierSku: "26466",
+      }),
+    ],
+  );
+
+  for (const [id, quantity, unitCost] of [
+    ["mast-raceway", 10, 1.12886],
+    ["mast-weatherhead", 1, 15.70706],
+    ["mast-expansion-coupling", 1, 23.68549],
+    ["mast-straps", 3, 0.67005],
+    ["mast-couplings", 2, 0.84149],
+  ] as const) {
+    const line = result.assembly.find((candidate) => candidate.id === id);
+    assert.equal(line?.quantity, quantity);
+    assert.equal(line?.unitCost, unitCost);
+    assert.notEqual(line?.source, "Unresolved exact catalog selection");
+  }
+  assert.equal(
+    result.assembly.find((candidate) => candidate.id === "mast-raceway")
+      ?.extendedCost,
+    11.289,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        [
+          "mastRaceway",
+          "mastWeatherhead",
+          "mastExpansionCoupling",
+          "mastStrap",
+          "mastCoupling",
+        ].includes(String(warning.context.group)),
+    ),
+    false,
   );
 });
 
