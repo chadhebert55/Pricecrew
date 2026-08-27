@@ -215,14 +215,32 @@ export const createQuoteBodyJobInputsFivePlywoodQuantityMin = 0;
 
 export const createQuoteBodyJobInputsFiveStudsQuantityMin = 0;
 
+export const createQuoteBodyJobInputsFiveDuctSealQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFivePvcPrimerQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFivePvcGlueQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFiveAntiOxidantQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFiveElectricalTapeQuantityMin = 0;
+
 export const createQuoteBodyJobInputsFivePermitAllowanceMin = 0;
 
 export const createQuoteBodyJobInputsFiveInspectionAllowanceMin = 0;
+
+export const createQuoteBodyJobInputsFiveUtilityCoordinationAllowanceMin = 0;
 
 export const createQuoteBodyJobInputsFiveMiscellaneousAllowanceMin = 0;
 
 
 export const createQuoteBodyJobInputsFiveCrewHoursMin = 0;
+
+
+
+export const createQuoteBodyJobInputsFiveExistingBreakersItemQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFiveExistingOtherBreakerQuantityMin = 0;
 
 export const createQuoteBodyLaborOverrideMin = 0;
 export const createQuoteBodyLaborOverrideMax = 999999999.99;
@@ -258,7 +276,8 @@ export const CreateQuoteBody = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
   "gfciReceptacles": zod.number().min(createQuoteBodyJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(createQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
@@ -274,6 +293,7 @@ export const CreateQuoteBody = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -326,6 +346,7 @@ export const CreateQuoteBody = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -379,7 +400,7 @@ export const CreateQuoteBody = zod.object({
   "mastConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor']),
   "mastConductorQuantity": zod.number().min(createQuoteBodyJobInputsFiveMastConductorQuantityMin),
   "mastConductorFootage": zod.number().min(createQuoteBodyJobInputsFiveMastConductorFootageMin),
-  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
+  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum XHHW in raceway', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
   "serviceToPanelFootage": zod.number().min(createQuoteBodyJobInputsFiveServiceToPanelFootageMin),
   "groundBarQuantity": zod.number().min(createQuoteBodyJobInputsFiveGroundBarQuantityMin),
   "groundRodQuantity": zod.number().min(createQuoteBodyJobInputsFiveGroundRodQuantityMin),
@@ -396,12 +417,32 @@ export const CreateQuoteBody = zod.object({
   "receptaclePlateQuantity": zod.number().min(createQuoteBodyJobInputsFiveReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(createQuoteBodyJobInputsFivePlywoodQuantityMin),
   "studsQuantity": zod.number().min(createQuoteBodyJobInputsFiveStudsQuantityMin),
+  "ductSealQuantity": zod.number().min(createQuoteBodyJobInputsFiveDuctSealQuantityMin).optional(),
+  "pvcPrimerQuantity": zod.number().min(createQuoteBodyJobInputsFivePvcPrimerQuantityMin).optional(),
+  "pvcGlueQuantity": zod.number().min(createQuoteBodyJobInputsFivePvcGlueQuantityMin).optional(),
+  "antiOxidantQuantity": zod.number().min(createQuoteBodyJobInputsFiveAntiOxidantQuantityMin).optional(),
+  "electricalTapeQuantity": zod.number().min(createQuoteBodyJobInputsFiveElectricalTapeQuantityMin).optional(),
   "permitAllowance": zod.number().min(createQuoteBodyJobInputsFivePermitAllowanceMin),
   "inspectionAllowance": zod.number().min(createQuoteBodyJobInputsFiveInspectionAllowanceMin),
+  "utilityCoordinationAllowance": zod.number().min(createQuoteBodyJobInputsFiveUtilityCoordinationAllowanceMin).optional(),
   "miscellaneousAllowance": zod.number().min(createQuoteBodyJobInputsFiveMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
-  "crewHours": zod.number().min(createQuoteBodyJobInputsFiveCrewHoursMin),
-  "laborAdjustmentHours": zod.number(),
+  "crewHours": zod.number().min(createQuoteBodyJobInputsFiveCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
+  "relocationLaborHours": zod.number().optional(),
+  "accessDifficultyLaborHours": zod.number().optional(),
+  "groundingReworkLaborHours": zod.number().optional(),
+  "feederDistanceLaborHours": zod.number().optional(),
+  "serviceConditionLaborHours": zod.number().optional(),
+  "utilityCoordinationLaborHours": zod.number().optional(),
+  "generalLaborAdjustmentHours": zod.number().optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Legacy general labor adjustment retained for historical quote compatibility.'),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(createQuoteBodyJobInputsFiveExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(createQuoteBodyJobInputsFiveExistingOtherBreakerQuantityMin).optional(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 })]),
@@ -559,14 +600,32 @@ export const createQuoteResponseTwoJobInputsFivePlywoodQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsFiveStudsQuantityMin = 0;
 
+export const createQuoteResponseTwoJobInputsFiveDuctSealQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFivePvcGlueQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin = 0;
+
 export const createQuoteResponseTwoJobInputsFivePermitAllowanceMin = 0;
 
 export const createQuoteResponseTwoJobInputsFiveInspectionAllowanceMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin = 0;
 
 export const createQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin = 0;
 
 
 export const createQuoteResponseTwoJobInputsFiveCrewHoursMin = 0;
+
+
+
+export const createQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin = 0;
 
 
 
@@ -605,7 +664,8 @@ export const CreateQuoteResponse = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
   "gfciReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
@@ -621,6 +681,7 @@ export const CreateQuoteResponse = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -673,6 +734,7 @@ export const CreateQuoteResponse = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -726,7 +788,7 @@ export const CreateQuoteResponse = zod.object({
   "mastConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor']),
   "mastConductorQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveMastConductorQuantityMin),
   "mastConductorFootage": zod.number().min(createQuoteResponseTwoJobInputsFiveMastConductorFootageMin),
-  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
+  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum XHHW in raceway', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
   "serviceToPanelFootage": zod.number().min(createQuoteResponseTwoJobInputsFiveServiceToPanelFootageMin),
   "groundBarQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveGroundBarQuantityMin),
   "groundRodQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveGroundRodQuantityMin),
@@ -743,12 +805,32 @@ export const CreateQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(createQuoteResponseTwoJobInputsFivePlywoodQuantityMin),
   "studsQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveStudsQuantityMin),
+  "ductSealQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveDuctSealQuantityMin).optional(),
+  "pvcPrimerQuantity": zod.number().min(createQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin).optional(),
+  "pvcGlueQuantity": zod.number().min(createQuoteResponseTwoJobInputsFivePvcGlueQuantityMin).optional(),
+  "antiOxidantQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin).optional(),
+  "electricalTapeQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin).optional(),
   "permitAllowance": zod.number().min(createQuoteResponseTwoJobInputsFivePermitAllowanceMin),
   "inspectionAllowance": zod.number().min(createQuoteResponseTwoJobInputsFiveInspectionAllowanceMin),
+  "utilityCoordinationAllowance": zod.number().min(createQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin).optional(),
   "miscellaneousAllowance": zod.number().min(createQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
-  "crewHours": zod.number().min(createQuoteResponseTwoJobInputsFiveCrewHoursMin),
-  "laborAdjustmentHours": zod.number(),
+  "crewHours": zod.number().min(createQuoteResponseTwoJobInputsFiveCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
+  "relocationLaborHours": zod.number().optional(),
+  "accessDifficultyLaborHours": zod.number().optional(),
+  "groundingReworkLaborHours": zod.number().optional(),
+  "feederDistanceLaborHours": zod.number().optional(),
+  "serviceConditionLaborHours": zod.number().optional(),
+  "utilityCoordinationLaborHours": zod.number().optional(),
+  "generalLaborAdjustmentHours": zod.number().optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Legacy general labor adjustment retained for historical quote compatibility.'),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(createQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin).optional(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
@@ -942,14 +1024,32 @@ export const previewQuoteBodyJobInputsFivePlywoodQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsFiveStudsQuantityMin = 0;
 
+export const previewQuoteBodyJobInputsFiveDuctSealQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFivePvcPrimerQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFivePvcGlueQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFiveAntiOxidantQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFiveElectricalTapeQuantityMin = 0;
+
 export const previewQuoteBodyJobInputsFivePermitAllowanceMin = 0;
 
 export const previewQuoteBodyJobInputsFiveInspectionAllowanceMin = 0;
+
+export const previewQuoteBodyJobInputsFiveUtilityCoordinationAllowanceMin = 0;
 
 export const previewQuoteBodyJobInputsFiveMiscellaneousAllowanceMin = 0;
 
 
 export const previewQuoteBodyJobInputsFiveCrewHoursMin = 0;
+
+
+
+export const previewQuoteBodyJobInputsFiveExistingBreakersItemQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFiveExistingOtherBreakerQuantityMin = 0;
 
 export const previewQuoteBodyLaborOverrideMin = 0;
 export const previewQuoteBodyLaborOverrideMax = 999999999.99;
@@ -981,7 +1081,8 @@ export const PreviewQuoteBody = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
   "gfciReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
@@ -997,6 +1098,7 @@ export const PreviewQuoteBody = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1049,6 +1151,7 @@ export const PreviewQuoteBody = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1102,7 +1205,7 @@ export const PreviewQuoteBody = zod.object({
   "mastConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor']),
   "mastConductorQuantity": zod.number().min(previewQuoteBodyJobInputsFiveMastConductorQuantityMin),
   "mastConductorFootage": zod.number().min(previewQuoteBodyJobInputsFiveMastConductorFootageMin),
-  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
+  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum XHHW in raceway', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
   "serviceToPanelFootage": zod.number().min(previewQuoteBodyJobInputsFiveServiceToPanelFootageMin),
   "groundBarQuantity": zod.number().min(previewQuoteBodyJobInputsFiveGroundBarQuantityMin),
   "groundRodQuantity": zod.number().min(previewQuoteBodyJobInputsFiveGroundRodQuantityMin),
@@ -1119,12 +1222,32 @@ export const PreviewQuoteBody = zod.object({
   "receptaclePlateQuantity": zod.number().min(previewQuoteBodyJobInputsFiveReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(previewQuoteBodyJobInputsFivePlywoodQuantityMin),
   "studsQuantity": zod.number().min(previewQuoteBodyJobInputsFiveStudsQuantityMin),
+  "ductSealQuantity": zod.number().min(previewQuoteBodyJobInputsFiveDuctSealQuantityMin).optional(),
+  "pvcPrimerQuantity": zod.number().min(previewQuoteBodyJobInputsFivePvcPrimerQuantityMin).optional(),
+  "pvcGlueQuantity": zod.number().min(previewQuoteBodyJobInputsFivePvcGlueQuantityMin).optional(),
+  "antiOxidantQuantity": zod.number().min(previewQuoteBodyJobInputsFiveAntiOxidantQuantityMin).optional(),
+  "electricalTapeQuantity": zod.number().min(previewQuoteBodyJobInputsFiveElectricalTapeQuantityMin).optional(),
   "permitAllowance": zod.number().min(previewQuoteBodyJobInputsFivePermitAllowanceMin),
   "inspectionAllowance": zod.number().min(previewQuoteBodyJobInputsFiveInspectionAllowanceMin),
+  "utilityCoordinationAllowance": zod.number().min(previewQuoteBodyJobInputsFiveUtilityCoordinationAllowanceMin).optional(),
   "miscellaneousAllowance": zod.number().min(previewQuoteBodyJobInputsFiveMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
-  "crewHours": zod.number().min(previewQuoteBodyJobInputsFiveCrewHoursMin),
-  "laborAdjustmentHours": zod.number(),
+  "crewHours": zod.number().min(previewQuoteBodyJobInputsFiveCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
+  "relocationLaborHours": zod.number().optional(),
+  "accessDifficultyLaborHours": zod.number().optional(),
+  "groundingReworkLaborHours": zod.number().optional(),
+  "feederDistanceLaborHours": zod.number().optional(),
+  "serviceConditionLaborHours": zod.number().optional(),
+  "utilityCoordinationLaborHours": zod.number().optional(),
+  "generalLaborAdjustmentHours": zod.number().optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Legacy general labor adjustment retained for historical quote compatibility.'),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsFiveExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(previewQuoteBodyJobInputsFiveExistingOtherBreakerQuantityMin).optional(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 })]),
@@ -1337,14 +1460,32 @@ export const getQuoteResponseTwoJobInputsFivePlywoodQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveStudsQuantityMin = 0;
 
+export const getQuoteResponseTwoJobInputsFiveDuctSealQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFivePvcGlueQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin = 0;
+
 export const getQuoteResponseTwoJobInputsFivePermitAllowanceMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveInspectionAllowanceMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin = 0;
 
 
 export const getQuoteResponseTwoJobInputsFiveCrewHoursMin = 0;
+
+
+
+export const getQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin = 0;
 
 
 
@@ -1383,7 +1524,8 @@ export const GetQuoteResponse = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
   "gfciReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
@@ -1399,6 +1541,7 @@ export const GetQuoteResponse = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1451,6 +1594,7 @@ export const GetQuoteResponse = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1504,7 +1648,7 @@ export const GetQuoteResponse = zod.object({
   "mastConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor']),
   "mastConductorQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveMastConductorQuantityMin),
   "mastConductorFootage": zod.number().min(getQuoteResponseTwoJobInputsFiveMastConductorFootageMin),
-  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
+  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum XHHW in raceway', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
   "serviceToPanelFootage": zod.number().min(getQuoteResponseTwoJobInputsFiveServiceToPanelFootageMin),
   "groundBarQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveGroundBarQuantityMin),
   "groundRodQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveGroundRodQuantityMin),
@@ -1521,12 +1665,32 @@ export const GetQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(getQuoteResponseTwoJobInputsFivePlywoodQuantityMin),
   "studsQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveStudsQuantityMin),
+  "ductSealQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveDuctSealQuantityMin).optional(),
+  "pvcPrimerQuantity": zod.number().min(getQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin).optional(),
+  "pvcGlueQuantity": zod.number().min(getQuoteResponseTwoJobInputsFivePvcGlueQuantityMin).optional(),
+  "antiOxidantQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin).optional(),
+  "electricalTapeQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin).optional(),
   "permitAllowance": zod.number().min(getQuoteResponseTwoJobInputsFivePermitAllowanceMin),
   "inspectionAllowance": zod.number().min(getQuoteResponseTwoJobInputsFiveInspectionAllowanceMin),
+  "utilityCoordinationAllowance": zod.number().min(getQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin).optional(),
   "miscellaneousAllowance": zod.number().min(getQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
-  "crewHours": zod.number().min(getQuoteResponseTwoJobInputsFiveCrewHoursMin),
-  "laborAdjustmentHours": zod.number(),
+  "crewHours": zod.number().min(getQuoteResponseTwoJobInputsFiveCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
+  "relocationLaborHours": zod.number().optional(),
+  "accessDifficultyLaborHours": zod.number().optional(),
+  "groundingReworkLaborHours": zod.number().optional(),
+  "feederDistanceLaborHours": zod.number().optional(),
+  "serviceConditionLaborHours": zod.number().optional(),
+  "utilityCoordinationLaborHours": zod.number().optional(),
+  "generalLaborAdjustmentHours": zod.number().optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Legacy general labor adjustment retained for historical quote compatibility.'),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(getQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin).optional(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
@@ -1739,14 +1903,32 @@ export const updateQuoteResponseTwoJobInputsFivePlywoodQuantityMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFiveStudsQuantityMin = 0;
 
+export const updateQuoteResponseTwoJobInputsFiveDuctSealQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFivePvcGlueQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin = 0;
+
 export const updateQuoteResponseTwoJobInputsFivePermitAllowanceMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFiveInspectionAllowanceMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin = 0;
 
 export const updateQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin = 0;
 
 
 export const updateQuoteResponseTwoJobInputsFiveCrewHoursMin = 0;
+
+
+
+export const updateQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin = 0;
+
+export const updateQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin = 0;
 
 
 
@@ -1785,7 +1967,8 @@ export const UpdateQuoteResponse = zod.object({
   "panelModifications": zod.string(),
   "difficulty": zod.string(),
   "notes": zod.string(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
   "gfciReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(updateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
@@ -1801,6 +1984,7 @@ export const UpdateQuoteResponse = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1853,6 +2037,7 @@ export const UpdateQuoteResponse = zod.object({
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1906,7 +2091,7 @@ export const UpdateQuoteResponse = zod.object({
   "mastConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor']),
   "mastConductorQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveMastConductorQuantityMin),
   "mastConductorFootage": zod.number().min(updateQuoteResponseTwoJobInputsFiveMastConductorFootageMin),
-  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
+  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum XHHW in raceway', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
   "serviceToPanelFootage": zod.number().min(updateQuoteResponseTwoJobInputsFiveServiceToPanelFootageMin),
   "groundBarQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveGroundBarQuantityMin),
   "groundRodQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveGroundRodQuantityMin),
@@ -1923,12 +2108,32 @@ export const UpdateQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFivePlywoodQuantityMin),
   "studsQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveStudsQuantityMin),
+  "ductSealQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveDuctSealQuantityMin).optional(),
+  "pvcPrimerQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin).optional(),
+  "pvcGlueQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFivePvcGlueQuantityMin).optional(),
+  "antiOxidantQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin).optional(),
+  "electricalTapeQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin).optional(),
   "permitAllowance": zod.number().min(updateQuoteResponseTwoJobInputsFivePermitAllowanceMin),
   "inspectionAllowance": zod.number().min(updateQuoteResponseTwoJobInputsFiveInspectionAllowanceMin),
+  "utilityCoordinationAllowance": zod.number().min(updateQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin).optional(),
   "miscellaneousAllowance": zod.number().min(updateQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
-  "crewHours": zod.number().min(updateQuoteResponseTwoJobInputsFiveCrewHoursMin),
-  "laborAdjustmentHours": zod.number(),
+  "crewHours": zod.number().min(updateQuoteResponseTwoJobInputsFiveCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
+  "relocationLaborHours": zod.number().optional(),
+  "accessDifficultyLaborHours": zod.number().optional(),
+  "groundingReworkLaborHours": zod.number().optional(),
+  "feederDistanceLaborHours": zod.number().optional(),
+  "serviceConditionLaborHours": zod.number().optional(),
+  "utilityCoordinationLaborHours": zod.number().optional(),
+  "generalLaborAdjustmentHours": zod.number().optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Legacy general labor adjustment retained for historical quote compatibility.'),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(updateQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin).optional(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
@@ -2026,6 +2231,11 @@ export const UpdatePriceBookItemResponse = zod.object({
 /**
  * @summary Get company estimating settings
  */
+
+export const getSettingsResponseServiceUpgradeHoursPerPersonMin = 0;
+
+
+
 export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
   "laborRate": zod.number().describe('Legacy alias for residentialLaborSellRate.'),
@@ -2034,13 +2244,24 @@ export const GetSettingsResponse = zod.object({
   "loadedLaborCost": zod.number(),
   "materialMarkup": zod.number(),
   "targetMargin": zod.number(),
-  "defaultTaxRate": zod.number()
+  "defaultTaxRate": zod.number(),
+  "evLaborAdjustmentHours": zod.number(),
+  "bathroomLaborAdjustmentHours": zod.number(),
+  "kitchenLaborAdjustmentHours": zod.number(),
+  "recessedLightingLaborAdjustmentHours": zod.number(),
+  "serviceUpgradeCrewSize": zod.number().min(1),
+  "serviceUpgradeHoursPerPerson": zod.number().min(getSettingsResponseServiceUpgradeHoursPerPersonMin)
 })
 
 
 /**
  * @summary Update company estimating settings
  */
+
+export const updateSettingsBodyServiceUpgradeHoursPerPersonMin = 0;
+
+
+
 export const UpdateSettingsBody = zod.object({
   "companyName": zod.string().optional(),
   "laborRate": zod.number().optional().describe('Legacy alias for residentialLaborSellRate.'),
@@ -2049,8 +2270,19 @@ export const UpdateSettingsBody = zod.object({
   "loadedLaborCost": zod.number().optional(),
   "materialMarkup": zod.number().optional(),
   "targetMargin": zod.number().optional(),
-  "defaultTaxRate": zod.number().optional()
+  "defaultTaxRate": zod.number().optional(),
+  "evLaborAdjustmentHours": zod.number().optional(),
+  "bathroomLaborAdjustmentHours": zod.number().optional(),
+  "kitchenLaborAdjustmentHours": zod.number().optional(),
+  "recessedLightingLaborAdjustmentHours": zod.number().optional(),
+  "serviceUpgradeCrewSize": zod.number().min(1).optional(),
+  "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsBodyServiceUpgradeHoursPerPersonMin).optional()
 })
+
+
+export const updateSettingsResponseServiceUpgradeHoursPerPersonMin = 0;
+
+
 
 export const UpdateSettingsResponse = zod.object({
   "companyName": zod.string(),
@@ -2060,7 +2292,13 @@ export const UpdateSettingsResponse = zod.object({
   "loadedLaborCost": zod.number(),
   "materialMarkup": zod.number(),
   "targetMargin": zod.number(),
-  "defaultTaxRate": zod.number()
+  "defaultTaxRate": zod.number(),
+  "evLaborAdjustmentHours": zod.number(),
+  "bathroomLaborAdjustmentHours": zod.number(),
+  "kitchenLaborAdjustmentHours": zod.number(),
+  "recessedLightingLaborAdjustmentHours": zod.number(),
+  "serviceUpgradeCrewSize": zod.number().min(1),
+  "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsResponseServiceUpgradeHoursPerPersonMin)
 })
 
 

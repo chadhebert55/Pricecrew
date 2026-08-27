@@ -28,4 +28,6 @@ export interface EvChargerInputs {
   difficulty: string;
   notes: string;
   laborRateType?: LaborRateType;
+  /** Quote-level adjustment added to the detailed task labor calculation. */
+  laborAdjustmentHours?: number;
 }

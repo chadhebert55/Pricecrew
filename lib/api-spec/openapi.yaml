@@ -479,6 +479,9 @@ components:
           type: string
         laborRateType:
           $ref: "#/components/schemas/LaborRateType"
+        laborAdjustmentHours:
+          type: number
+          description: Quote-level adjustment added to the detailed task labor calculation.
     BathroomInputs:
       type: object
       required:
@@ -535,6 +538,9 @@ components:
           type: string
         laborRateType:
           $ref: "#/components/schemas/LaborRateType"
+        laborAdjustmentHours:
+          type: number
+          description: Quote-level adjustment added to the detailed task labor calculation.
         panelManufacturer:
           type: string
         breakerAmperage:
@@ -722,6 +728,9 @@ components:
           type: string
         laborRateType:
           $ref: "#/components/schemas/LaborRateType"
+        laborAdjustmentHours:
+          type: number
+          description: Quote-level adjustment added to the detailed task labor calculation.
         panelManufacturer:
           type: string
         breakerAmperage:
@@ -886,7 +895,6 @@ components:
         - miscellaneousAllowance
         - crewSize
         - crewHours
-        - laborAdjustmentHours
         - notes
       properties:
         serviceSize:
@@ -948,7 +956,7 @@ components:
           minimum: 0
         serviceToPanelConductor:
           type: string
-          enum: [1/0 aluminum SER, 1/0 copper alternative, 3/0 aluminum SER, 2/0 copper alternative, 4/0 aluminum SER, 4/0 copper alternative, Other configured conductor]
+          enum: [1/0 aluminum SER, 1/0 copper alternative, 3/0 aluminum SER, 2/0 copper alternative, 4/0 aluminum XHHW in raceway, 4/0 aluminum SER, 4/0 copper alternative, Other configured conductor]
         serviceToPanelFootage:
           type: number
           minimum: 0
@@ -997,10 +1005,28 @@ components:
         studsQuantity:
           type: number
           minimum: 0
+        ductSealQuantity:
+          type: number
+          minimum: 0
+        pvcPrimerQuantity:
+          type: number
+          minimum: 0
+        pvcGlueQuantity:
+          type: number
+          minimum: 0
+        antiOxidantQuantity:
+          type: number
+          minimum: 0
+        electricalTapeQuantity:
+          type: number
+          minimum: 0
         permitAllowance:
           type: number
           minimum: 0
         inspectionAllowance:
+          type: number
+          minimum: 0
+        utilityCoordinationAllowance:
           type: number
           minimum: 0
         miscellaneousAllowance:
@@ -1012,12 +1038,56 @@ components:
         crewHours:
           type: number
           minimum: 0
+          description: Hours per person; baseline person-hours equal crewSize multiplied by crewHours.
+        relocationLaborHours:
+          type: number
+        accessDifficultyLaborHours:
+          type: number
+        groundingReworkLaborHours:
+          type: number
+        feederDistanceLaborHours:
+          type: number
+        serviceConditionLaborHours:
+          type: number
+        utilityCoordinationLaborHours:
+          type: number
+        generalLaborAdjustmentHours:
+          type: number
         laborAdjustmentHours:
           type: number
+          deprecated: true
+          description: Legacy general labor adjustment retained for historical quote compatibility.
+        existingBreakers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExistingBreakerCount"
+        existingOtherBreakerQuantity:
+          type: number
+          minimum: 0
         laborRateType:
           $ref: "#/components/schemas/LaborRateType"
         notes:
           type: string
+    ExistingBreakerCount:
+      type: object
+      required:
+        - amperage
+        - poleCount
+        - protectionType
+        - quantity
+      properties:
+        amperage:
+          type: number
+          minimum: 1
+        poleCount:
+          type: number
+          minimum: 1
+        protectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        quantity:
+          type: number
+          minimum: 0
     AssemblyLine:
       type: object
       required:
@@ -1201,6 +1271,12 @@ components:
         - materialMarkup
         - targetMargin
         - defaultTaxRate
+        - evLaborAdjustmentHours
+        - bathroomLaborAdjustmentHours
+        - kitchenLaborAdjustmentHours
+        - recessedLightingLaborAdjustmentHours
+        - serviceUpgradeCrewSize
+        - serviceUpgradeHoursPerPerson
       properties:
         companyName:
           type: string
@@ -1220,6 +1296,20 @@ components:
           type: number
         defaultTaxRate:
           type: number
+        evLaborAdjustmentHours:
+          type: number
+        bathroomLaborAdjustmentHours:
+          type: number
+        kitchenLaborAdjustmentHours:
+          type: number
+        recessedLightingLaborAdjustmentHours:
+          type: number
+        serviceUpgradeCrewSize:
+          type: number
+          minimum: 1
+        serviceUpgradeHoursPerPerson:
+          type: number
+          minimum: 0
     CompanySettingsUpdate:
       type: object
       properties:
@@ -1241,3 +1331,17 @@ components:
           type: number
         defaultTaxRate:
           type: number
+        evLaborAdjustmentHours:
+          type: number
+        bathroomLaborAdjustmentHours:
+          type: number
+        kitchenLaborAdjustmentHours:
+          type: number
+        recessedLightingLaborAdjustmentHours:
+          type: number
+        serviceUpgradeCrewSize:
+          type: number
+          minimum: 1
+        serviceUpgradeHoursPerPerson:
+          type: number
+          minimum: 0

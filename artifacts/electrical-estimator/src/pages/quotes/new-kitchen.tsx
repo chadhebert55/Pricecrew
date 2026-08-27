@@ -2,6 +2,7 @@ import {
   type KitchenInputs,
   useCreateQuote,
   usePreviewQuote,
+  useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Button } from "@/components/ui/button"
@@ -49,6 +50,7 @@ const initialInputs: KitchenInputs = {
   panelManufacturer: "Siemens",
   recessedLightSize: "4-inch",
   cableType: "12/2 NM-B",
+  laborAdjustmentHours: 0,
 }
 
 function optionalAmount(value: string) {
@@ -61,6 +63,8 @@ export function NewKitchenQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useCreateQuote()
   const previewQuote = usePreviewQuote()
+  const { data: settings } = useGetSettings()
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
@@ -72,6 +76,16 @@ export function NewKitchenQuote() {
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<KitchenInputs>(initialInputs)
 
+  useEffect(() => {
+    if (settings && !settingsLoaded) {
+      setInputs((current) => ({
+        ...current,
+        laborAdjustmentHours: settings.kitchenLaborAdjustmentHours ?? 0,
+      }))
+      setSettingsLoaded(true)
+    }
+  }, [settings, settingsLoaded])
+
   const previewPayload = {
     module: "KITCHEN" as const,
     jobInputs: inputs,
@@ -82,6 +96,7 @@ export function NewKitchenQuote() {
   const previewIsCurrent = currentInputKey === previewedInputKey
 
   useEffect(() => {
+    if (!settingsLoaded) return
     const inputKey = JSON.stringify(previewPayload)
     const timeout = window.setTimeout(() => {
       previewQuote.mutate(
@@ -90,7 +105,7 @@ export function NewKitchenQuote() {
       )
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
 
   const setQuantity = (key: keyof KitchenInputs, value: string) => {
     setInputs((current) => ({
@@ -108,7 +123,7 @@ export function NewKitchenQuote() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent) return
     createQuote.mutate(
       {
         data: {
@@ -455,7 +470,12 @@ export function NewKitchenQuote() {
                     <Label htmlFor="kitchen-route">Common Wiring Route Length (FT)</Label>
                     <Input id="kitchen-route" type="number" min="0" value={inputs.routeLength} onChange={(event) => setQuantity("routeLength", event.target.value)} />
                   </div>
-                  <label className="flex items-center gap-3 rounded-lg border p-4 text-sm font-medium">
+                  <div className="space-y-2">
+                    <Label htmlFor="kitchen-labor-adj">Labor Adjustment (Hours)</Label>
+                    <Input id="kitchen-labor-adj" type="number" step="0.25" value={inputs.laborAdjustmentHours ?? 0} onChange={(event) => setInputs(c => ({...c, laborAdjustmentHours: parseFloat(event.target.value) || 0}))} />
+                    <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing. Does not change company defaults.</p>
+                  </div>
+                  <label className="flex items-center gap-3 rounded-lg border p-4 text-sm font-medium md:col-span-2">
                     <Checkbox checked={inputs.customerSuppliedFixtures} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFixtures: checked === true }))} />
                     Customer supplies decorative light fixtures
                   </label>
@@ -535,8 +555,8 @@ export function NewKitchenQuote() {
                   </div>
 
                   {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
-                  <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={createQuote.isPending || !previewIsCurrent || previewQuote.isError}>
-                    {createQuote.isPending ? "Submitting..." : !previewIsCurrent ? "Calculating..." : "Generate Kitchen Quote"}
+                  <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError}>
+                    {createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Kitchen Quote"}
                   </Button>
                 </CardContent>
               </Card>

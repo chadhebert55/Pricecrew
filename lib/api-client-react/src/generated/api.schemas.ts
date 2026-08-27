@@ -67,6 +67,8 @@ export interface EvChargerInputs {
   difficulty: string;
   notes: string;
   laborRateType?: LaborRateType;
+  /** Quote-level adjustment added to the detailed task labor calculation. */
+  laborAdjustmentHours?: number;
 }
 
 export type BathroomInputsCircuitOption = typeof BathroomInputsCircuitOption[keyof typeof BathroomInputsCircuitOption];
@@ -118,6 +120,8 @@ export interface BathroomInputs {
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;
+  /** Quote-level adjustment added to the detailed task labor calculation. */
+  laborAdjustmentHours?: number;
   panelManufacturer?: string;
   breakerAmperage?: number;
   breakerPoleCount?: number;
@@ -277,6 +281,8 @@ export interface KitchenInputs {
   customerSuppliedFixtures: boolean;
   notes: string;
   laborRateType?: LaborRateType;
+  /** Quote-level adjustment added to the detailed task labor calculation. */
+  laborAdjustmentHours?: number;
   panelManufacturer?: string;
   breakerAmperage?: number;
   breakerPoleCount?: number;
@@ -480,10 +486,31 @@ export const ServiceUpgradeInputsServiceToPanelConductor = {
   '1/0_copper_alternative': '1/0 copper alternative',
   '3/0_aluminum_SER': '3/0 aluminum SER',
   '2/0_copper_alternative': '2/0 copper alternative',
+  '4/0_aluminum_XHHW_in_raceway': '4/0 aluminum XHHW in raceway',
   '4/0_aluminum_SER': '4/0 aluminum SER',
   '4/0_copper_alternative': '4/0 copper alternative',
   Other_configured_conductor: 'Other configured conductor',
 } as const;
+
+export type ExistingBreakerCountProtectionType = typeof ExistingBreakerCountProtectionType[keyof typeof ExistingBreakerCountProtectionType];
+
+
+export const ExistingBreakerCountProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export interface ExistingBreakerCount {
+  /** @minimum 1 */
+  amperage: number;
+  /** @minimum 1 */
+  poleCount: number;
+  protectionType: ExistingBreakerCountProtectionType;
+  /** @minimum 0 */
+  quantity: number;
+}
 
 export interface ServiceUpgradeInputs {
   serviceSize: ServiceUpgradeInputsServiceSize;
@@ -551,16 +578,45 @@ export interface ServiceUpgradeInputs {
   /** @minimum 0 */
   studsQuantity: number;
   /** @minimum 0 */
+  ductSealQuantity?: number;
+  /** @minimum 0 */
+  pvcPrimerQuantity?: number;
+  /** @minimum 0 */
+  pvcGlueQuantity?: number;
+  /** @minimum 0 */
+  antiOxidantQuantity?: number;
+  /** @minimum 0 */
+  electricalTapeQuantity?: number;
+  /** @minimum 0 */
   permitAllowance: number;
   /** @minimum 0 */
   inspectionAllowance: number;
   /** @minimum 0 */
+  utilityCoordinationAllowance?: number;
+  /** @minimum 0 */
   miscellaneousAllowance: number;
   /** @minimum 1 */
   crewSize: number;
-  /** @minimum 0 */
+  /**
+     * Hours per person; baseline person-hours equal crewSize multiplied by crewHours.
+     * @minimum 0
+     */
   crewHours: number;
-  laborAdjustmentHours: number;
+  relocationLaborHours?: number;
+  accessDifficultyLaborHours?: number;
+  groundingReworkLaborHours?: number;
+  feederDistanceLaborHours?: number;
+  serviceConditionLaborHours?: number;
+  utilityCoordinationLaborHours?: number;
+  generalLaborAdjustmentHours?: number;
+  /**
+     * Legacy general labor adjustment retained for historical quote compatibility.
+     * @deprecated
+     */
+  laborAdjustmentHours?: number;
+  existingBreakers?: ExistingBreakerCount[];
+  /** @minimum 0 */
+  existingOtherBreakerQuantity?: number;
   laborRateType?: LaborRateType;
   notes: string;
 }
@@ -785,6 +841,14 @@ export interface CompanySettings {
   materialMarkup: number;
   targetMargin: number;
   defaultTaxRate: number;
+  evLaborAdjustmentHours: number;
+  bathroomLaborAdjustmentHours: number;
+  kitchenLaborAdjustmentHours: number;
+  recessedLightingLaborAdjustmentHours: number;
+  /** @minimum 1 */
+  serviceUpgradeCrewSize: number;
+  /** @minimum 0 */
+  serviceUpgradeHoursPerPerson: number;
 }
 
 export interface CompanySettingsUpdate {
@@ -800,6 +864,14 @@ export interface CompanySettingsUpdate {
   materialMarkup?: number;
   targetMargin?: number;
   defaultTaxRate?: number;
+  evLaborAdjustmentHours?: number;
+  bathroomLaborAdjustmentHours?: number;
+  kitchenLaborAdjustmentHours?: number;
+  recessedLightingLaborAdjustmentHours?: number;
+  /** @minimum 1 */
+  serviceUpgradeCrewSize?: number;
+  /** @minimum 0 */
+  serviceUpgradeHoursPerPerson?: number;
 }
 
 export type ListQuotesParams = {

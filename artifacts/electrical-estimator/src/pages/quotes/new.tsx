@@ -1,4 +1,4 @@
-import { type EvChargerInputs, useCreateQuote, usePreviewQuote } from "@workspace/api-client-react"
+import { type EvChargerInputs, useCreateQuote, usePreviewQuote, useGetSettings } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -27,6 +27,8 @@ export function NewQuote() {
   const [_, setLocation] = useLocation()
   const createQuote = useCreateQuote()
   const previewQuote = usePreviewQuote()
+  const { data: settings } = useGetSettings()
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   
   // Base details
@@ -57,12 +59,24 @@ export function NewQuote() {
     difficulty: "Standard",
     notes: "Trade default: 50A circuit, #8 wire. Future service upgrade ref: 3 x 4/0 XHHW for mast work.",
     laborRateType: "residential",
+    laborAdjustmentHours: 0,
   })
+
+  useEffect(() => {
+    if (settings && !settingsLoaded) {
+      setInputs(current => ({
+        ...current,
+        laborAdjustmentHours: settings.evLaborAdjustmentHours ?? 0,
+      }))
+      setSettingsLoaded(true)
+    }
+  }, [settings, settingsLoaded])
 
   const currentInputKey = JSON.stringify(inputs)
   const previewIsCurrent = previewedInputKey === currentInputKey
 
   useEffect(() => {
+    if (!settingsLoaded) return
     const inputKey = JSON.stringify(inputs)
     const timeout = window.setTimeout(() => {
       previewQuote.mutate({
@@ -76,11 +90,11 @@ export function NewQuote() {
     }, 250)
 
     return () => window.clearTimeout(timeout)
-  }, [inputs])
+  }, [inputs, settingsLoaded])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent) return
 
     createQuote.mutate({
       data: {
@@ -423,6 +437,16 @@ export function NewQuote() {
                         ]}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Labor Adjustment (Hours)</Label>
+                      <Input
+                        type="number"
+                        step="0.25"
+                        value={inputs.laborAdjustmentHours ?? 0}
+                        onChange={e => setInputs({...inputs, laborAdjustmentHours: parseFloat(e.target.value) || 0})}
+                      />
+                      <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing. Does not change company defaults.</p>
+                    </div>
                   </div>
                   <div className="space-y-2 pt-6">
                     <Label>Estimator Notes (Internal)</Label>
@@ -525,8 +549,8 @@ export function NewQuote() {
                     </p>
                   )}
 
-                  <Button type="submit" size="lg" disabled={createQuote.isPending || !previewIsCurrent || previewQuote.isError} className="w-full font-bold text-lg mt-4">
-                    {createQuote.isPending ? "Submitting..." : !previewIsCurrent ? "Calculating..." : "Generate Quote"}
+                  <Button type="submit" size="lg" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError} className="w-full font-bold text-lg mt-4">
+                    {createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Quote"}
                   </Button>
                 </CardContent>
               </Card>

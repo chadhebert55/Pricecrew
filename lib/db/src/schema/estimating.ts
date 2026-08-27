@@ -37,6 +37,7 @@ export type EvChargerInputRecord = {
   difficulty: string;
   notes: string;
   laborRateType?: LaborRateType;
+  laborAdjustmentHours?: number;
 };
 
 export type BathroomInputRecord = {
@@ -61,6 +62,7 @@ export type BathroomInputRecord = {
   gfciAmperage?: number;
   recessedLightSize?: RecessedLightSize;
   cableType?: CableType;
+  laborAdjustmentHours?: number;
 };
 
 export type KitchenInputRecord = {
@@ -114,6 +116,7 @@ export type KitchenInputRecord = {
   breakerProtectionType?: string;
   recessedLightSize?: RecessedLightSize;
   cableType?: CableType;
+  laborAdjustmentHours?: number;
 };
 
 export type RecessedLightingInputRecord = {
@@ -188,12 +191,32 @@ export type ServiceUpgradeInputRecord = {
   receptaclePlateQuantity: number;
   plywoodQuantity: number;
   studsQuantity: number;
+  ductSealQuantity?: number;
+  pvcPrimerQuantity?: number;
+  pvcGlueQuantity?: number;
+  antiOxidantQuantity?: number;
+  electricalTapeQuantity?: number;
   permitAllowance: number;
   inspectionAllowance: number;
+  utilityCoordinationAllowance?: number;
   miscellaneousAllowance: number;
   crewSize: number;
   crewHours: number;
-  laborAdjustmentHours: number;
+  relocationLaborHours?: number;
+  accessDifficultyLaborHours?: number;
+  groundingReworkLaborHours?: number;
+  feederDistanceLaborHours?: number;
+  serviceConditionLaborHours?: number;
+  utilityCoordinationLaborHours?: number;
+  generalLaborAdjustmentHours?: number;
+  laborAdjustmentHours?: number;
+  existingBreakers?: Array<{
+    amperage: number;
+    poleCount: number;
+    protectionType: string;
+    quantity: number;
+  }>;
+  existingOtherBreakerQuantity?: number;
   laborRateType?: LaborRateType;
   notes: string;
 };
@@ -316,6 +339,46 @@ export const companySettingsTable = pgTable(
     })
       .notNull()
       .default(0),
+    evLaborAdjustmentHours: numeric("ev_labor_adjustment_hours", {
+      precision: 8,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
+    bathroomLaborAdjustmentHours: numeric("bathroom_labor_adjustment_hours", {
+      precision: 8,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
+    kitchenLaborAdjustmentHours: numeric("kitchen_labor_adjustment_hours", {
+      precision: 8,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
+    recessedLightingLaborAdjustmentHours: numeric(
+      "recessed_lighting_labor_adjustment_hours",
+      { precision: 8, scale: 2, mode: "number" },
+    )
+      .notNull()
+      .default(0),
+    serviceUpgradeCrewSize: numeric("service_upgrade_crew_size", {
+      precision: 5,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(2),
+    serviceUpgradeHoursPerPerson: numeric(
+      "service_upgrade_hours_per_person",
+      { precision: 8, scale: 2, mode: "number" },
+    )
+      .notNull()
+      .default(16),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()

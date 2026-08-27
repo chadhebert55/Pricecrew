@@ -145,6 +145,12 @@ export async function seedEstimatorData(
       materialMarkup: 0.25,
       targetMargin: 0.4,
       defaultTaxRate: 0,
+      evLaborAdjustmentHours: 0,
+      bathroomLaborAdjustmentHours: 0,
+      kitchenLaborAdjustmentHours: 0,
+      recessedLightingLaborAdjustmentHours: 0,
+      serviceUpgradeCrewSize: 2,
+      serviceUpgradeHoursPerPerson: 16,
     });
   }
 
@@ -225,6 +231,15 @@ export async function seedEstimatorData(
   const sourceDate = "2026-08-25";
   const controlSourceDate = "2026-08-26";
   const additionalServiceItems: SeedPriceBookItem[] = [
+    ...([100, 150, 200] as const).map((amperage) => ({
+      category: "Equipment",
+      item: `${amperage}A meter-main with built-in outdoor disconnect`,
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    })),
     ...([100, 150] as const).map((amperage) => ({
       category: "Equipment",
       item: `${amperage}A outdoor meter/disconnect`,
@@ -288,6 +303,38 @@ export async function seedEstimatorData(
       sourceDate,
       isDefault: false,
     })),
+    ...(["Siemens", "Eaton", "Square D"] as const).flatMap((manufacturer) =>
+      ([
+        [15, 1, "Standard"],
+        [20, 1, "Standard"],
+        [30, 2, "Standard"],
+        [40, 2, "Standard"],
+        [50, 2, "Standard"],
+        [60, 2, "Standard"],
+        [15, 1, "AFCI"],
+        [20, 1, "AFCI"],
+        [15, 1, "GFCI"],
+        [20, 1, "GFCI"],
+        [15, 1, "Dual Function"],
+        [20, 1, "Dual Function"],
+        [30, 2, "GFCI"],
+        [40, 2, "GFCI"],
+        [50, 2, "GFCI"],
+        [60, 2, "GFCI"],
+      ] as const).map(([amperage, poleCount, protectionType]) => ({
+        category: "Protection",
+        item: `${manufacturer} ${amperage}A ${poleCount}-pole ${protectionType} breaker`,
+        unit: "ea",
+        unitCost: 0,
+        supplier: "Company default — set current cost",
+        manufacturer,
+        sourceDate,
+        amperage,
+        poleCount,
+        protectionType,
+        isDefault: false,
+      })),
+    ),
   ];
   const verifiedItems: SeedPriceBookItem[] = [
     ...additionalServiceItems,
@@ -778,15 +825,6 @@ export async function seedEstimatorData(
       isDefault: false,
     },
     {
-      category: "Protection",
-      item: "service upgrade surge protection",
-      unit: "ea",
-      unitCost: 0,
-      supplier: "Company default — set current cost",
-      sourceDate,
-      isDefault: false,
-    },
-    {
       category: "Raceway",
       item: "2-inch PVC mast raceway",
       unit: "ft",
@@ -1011,6 +1049,22 @@ export async function seedEstimatorData(
       sourceDate,
       isDefault: false,
     },
+    ...([
+      ["service duct seal", "ea"],
+      ["PVC primer", "ea"],
+      ["PVC glue", "ea"],
+      ["anti-oxidation compound", "ea"],
+      ["electrical tape", "roll"],
+      ["other existing-circuit breaker", "ea"],
+    ] as const).map(([item, unit]) => ({
+      category: "Normal Stock",
+      item,
+      unit,
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    })),
     {
       category: "Allowance",
       item: "service upgrade permit allowance",
@@ -1023,6 +1077,15 @@ export async function seedEstimatorData(
     {
       category: "Allowance",
       item: "service upgrade inspection allowance",
+      unit: "allowance",
+      unitCost: 0,
+      supplier: "Company default — local amount required",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Allowance",
+      item: "service upgrade utility coordination allowance",
       unit: "allowance",
       unitCost: 0,
       supplier: "Company default — local amount required",

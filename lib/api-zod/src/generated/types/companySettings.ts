@@ -19,4 +19,12 @@ export interface CompanySettings {
   materialMarkup: number;
   targetMargin: number;
   defaultTaxRate: number;
+  evLaborAdjustmentHours: number;
+  bathroomLaborAdjustmentHours: number;
+  kitchenLaborAdjustmentHours: number;
+  recessedLightingLaborAdjustmentHours: number;
+  /** @minimum 1 */
+  serviceUpgradeCrewSize: number;
+  /** @minimum 0 */
+  serviceUpgradeHoursPerPerson: number;
 }

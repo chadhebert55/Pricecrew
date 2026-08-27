@@ -356,6 +356,10 @@ function normalized(value: string) {
 function catalogSource(item: PriceBookItem) {
   const parts = [
     item.supplier,
+    item.manufacturer,
+    item.manufacturerPartNumber
+      ? `MPN ${item.manufacturerPartNumber}`
+      : null,
     item.supplierSku ? `SKU ${item.supplierSku}` : null,
     item.sourceDate,
   ].filter(Boolean);
@@ -724,9 +728,14 @@ export function calculateEvChargerEstimate(
   }
 
   const baseHours = 2 + routeLength / 30 + quantity * 0.5 + accessHours;
+  const laborAdjustmentHours = Number.isFinite(
+    Number(inputs.laborAdjustmentHours),
+  )
+    ? Number(inputs.laborAdjustmentHours)
+    : 0;
   return finalizeEstimate(
     assembly,
-    baseHours * difficultyMultiplier,
+    Math.max(0, baseHours * difficultyMultiplier + laborAdjustmentHours),
     settings,
     pricingWarnings,
     inputs.laborRateType,
@@ -935,11 +944,14 @@ export function calculateBathroomEstimate(
     (inputs.heatedFloorCircuit ? 3 : 0) +
     inputs.additionalSwitches * 0.5 +
     routeLength / 30 +
-    (/new/i.test(inputs.circuitOption) ? 3 : 0);
+    (/new/i.test(inputs.circuitOption) ? 3 : 0) +
+    (Number.isFinite(Number(inputs.laborAdjustmentHours))
+      ? Number(inputs.laborAdjustmentHours)
+      : 0);
 
   return finalizeEstimate(
     assembly,
-    laborHours,
+    Math.max(0, laborHours),
     settings,
     pricingWarnings,
     inputs.laborRateType,
@@ -1575,11 +1587,14 @@ export function calculateKitchenEstimate(
     microwaveBaseLaborHours +
     (usesSharedApplianceHomeRun
       ? applianceHomeRunFootage / 30
-      : legacyApplianceCableLaborHours);
+      : legacyApplianceCableLaborHours) +
+    (Number.isFinite(Number(inputs.laborAdjustmentHours))
+      ? Number(inputs.laborAdjustmentHours)
+      : 0);
 
   return finalizeEstimate(
     assembly,
-    laborHours,
+    Math.max(0, laborHours),
     settings,
     pricingWarnings,
     inputs.laborRateType,
@@ -1676,13 +1691,15 @@ export function calculateServiceUpgradeEstimate(
     inputs.meterDisconnectEquipment,
     1,
   );
-  addPricedItem(
-    "service-disconnect",
-    "Equipment",
-    inputs.serviceDisconnect,
-    inputs.serviceDisconnect,
-    1,
-  );
+  if (inputs.serviceDisconnect !== "Meter-main combination") {
+    addPricedItem(
+      "service-disconnect",
+      "Equipment",
+      inputs.serviceDisconnect,
+      inputs.serviceDisconnect,
+      1,
+    );
+  }
   addPricedItem(
     "service-panel",
     "Panel",
@@ -1691,11 +1708,26 @@ export function calculateServiceUpgradeEstimate(
     1,
   );
   if (inputs.surgeProtection !== "None") {
+    const selectedSurgeProtection = inputs.surgeProtection.trim();
+    const hasExactSelectedPrice = priceBook.some(
+      (item) =>
+        normalized(item.item) === normalized(selectedSurgeProtection) &&
+        Number(item.unitCost) > 0 &&
+        item.isDefault !== true,
+    );
+    const knownLegacyAlias = [
+      "whole home surge protection",
+      "service upgrade surge protection",
+    ].includes(normalized(selectedSurgeProtection));
+    const surgePriceKey =
+      hasExactSelectedPrice || !knownLegacyAlias
+        ? selectedSurgeProtection
+        : "Whole-home surge protection";
     addPricedItem(
       "service-surge-protection",
       "Protection",
-      "service upgrade surge protection",
-      inputs.surgeProtection,
+      surgePriceKey,
+      surgePriceKey,
       1,
     );
   }
@@ -1766,6 +1798,7 @@ export function calculateServiceUpgradeEstimate(
     "1/0 copper alternative": "1/0 copper service conductor alternative",
     "3/0 aluminum SER": "3/0 aluminum SER cable",
     "2/0 copper alternative": "2/0 copper service conductor alternative",
+    "4/0 aluminum XHHW in raceway": "4/0 aluminum XHHW conductor",
     "4/0 aluminum SER": "4/0 aluminum SER cable",
     "4/0 copper alternative": "4/0 copper service conductor alternative",
     "Other configured conductor": "other configured service conductor",
@@ -1779,11 +1812,25 @@ export function calculateServiceUpgradeEstimate(
     id: "service-to-panel-conductor",
     category: "Conductor",
     description: `${inputs.serviceToPanelConductor} from meter/disconnect to panel`,
-    quantity: safeNumber(inputs.serviceToPanelFootage),
+    quantity:
+      safeNumber(inputs.serviceToPanelFootage) *
+      (inputs.serviceToPanelConductor === "4/0 aluminum XHHW in raceway"
+        ? 3
+        : 1),
     unit: "ft",
     unitCost: serviceConductor.value,
     source: serviceConductor.source,
   });
+  if (inputs.serviceToPanelConductor === "4/0 aluminum XHHW in raceway") {
+    addPricedItem(
+      "service-to-panel-raceway",
+      "Raceway",
+      "2-inch PVC mast raceway",
+      "2-inch PVC raceway from meter-main to panel",
+      inputs.serviceToPanelFootage,
+      "ft",
+    );
+  }
   if (inputs.serviceToPanelConductor.includes("copper alternative")) {
     pricingWarnings.push(
       "A copper alternative is explicitly selected for meter/disconnect-to-panel wiring; confirm the configured conductor and company price-book value.",
@@ -1852,9 +1899,60 @@ export function calculateServiceUpgradeEstimate(
   addPricedItem("receptacle-plate", "Trim", "20A receptacle plate", "20A receptacle plate", inputs.receptaclePlateQuantity);
   addPricedItem("plywood-backing", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
   addPricedItem("studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
+  addPricedItem("duct-seal", "Normal Stock", "service duct seal", "Service / duct seal", inputs.ductSealQuantity ?? 0);
+  addPricedItem("pvc-primer", "Normal Stock", "PVC primer", "PVC primer", inputs.pvcPrimerQuantity ?? 0);
+  addPricedItem("pvc-glue", "Normal Stock", "PVC glue", "PVC glue", inputs.pvcGlueQuantity ?? 0);
+  addPricedItem("anti-oxidant", "Normal Stock", "anti-oxidation compound", "Anti-oxidation compound", inputs.antiOxidantQuantity ?? 0);
+  addPricedItem("electrical-tape", "Normal Stock", "electrical tape", "Electrical tape", inputs.electricalTapeQuantity ?? 0, "roll");
+  addLine(assembly, {
+    id: "panel-directory-labeling",
+    category: "Closeout",
+    description: "Prepare panel directory and complete final circuit labeling",
+    quantity: 1,
+    unit: "scope",
+    unitCost: 0,
+    source: "Included labor scope",
+  });
+
+  for (const [index, existingBreaker] of (inputs.existingBreakers ?? []).entries()) {
+    const quantity = safeNumber(existingBreaker.quantity);
+    if (quantity === 0) continue;
+    const resolved = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: Math.max(1, Number(existingBreaker.amperage) || 1),
+        poleCount: Math.max(1, Number(existingBreaker.poleCount) || 1),
+        protectionType: existingBreaker.protectionType,
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: `existing-breaker-${index}`,
+      category: "Existing Circuits",
+      description: `Replacement ${resolved.description}`,
+      quantity,
+      unit: "ea",
+      unitCost: resolved.value,
+      source: resolved.source,
+    });
+  }
+  addPricedItem(
+    "existing-breaker-other",
+    "Existing Circuits",
+    "other existing-circuit breaker",
+    "Other existing-circuit breaker — exact selection required",
+    inputs.existingOtherBreakerQuantity ?? 0,
+  );
 
   addAllowance("permit-allowance", "Permit", "service upgrade permit allowance", inputs.permitAllowance);
   addAllowance("inspection-allowance", "Inspection", "service upgrade inspection allowance", inputs.inspectionAllowance);
+  addAllowance(
+    "utility-coordination-allowance",
+    "Utility",
+    "service upgrade utility coordination allowance",
+    inputs.utilityCoordinationAllowance ?? 0,
+  );
   addAllowance("miscellaneous-allowance", "Miscellaneous", "service upgrade miscellaneous allowance", inputs.miscellaneousAllowance);
 
   pricingWarnings.push(
@@ -1867,10 +1965,23 @@ export function calculateServiceUpgradeEstimate(
   }
   const crewSize = Math.max(1, Number(inputs.crewSize) || 1);
   const crewHours = safeNumber(inputs.crewHours);
-  const laborAdjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
-    ? Number(inputs.laborAdjustmentHours)
-    : 0;
-  const personHours = Math.max(0, crewSize * crewHours + laborAdjustment);
+  const fieldConditionHours = [
+    inputs.relocationLaborHours,
+    inputs.accessDifficultyLaborHours,
+    inputs.groundingReworkLaborHours,
+    inputs.feederDistanceLaborHours,
+    inputs.serviceConditionLaborHours,
+    inputs.utilityCoordinationLaborHours,
+    inputs.generalLaborAdjustmentHours ?? inputs.laborAdjustmentHours,
+  ].reduce<number>(
+    (total, value) =>
+      total + (Number.isFinite(Number(value)) ? Number(value) : 0),
+    0,
+  );
+  const personHours = Math.max(
+    0,
+    crewSize * crewHours + fieldConditionHours,
+  );
 
   return finalizeEstimate(
     assembly,
@@ -2117,8 +2228,8 @@ export function calculateRecessedLightingEstimate(
     : /attic|open/i.test(inputs.accessDifficulty)
       ? 0
       : 0.5;
-  const laborHours =
-    (1.25 +
+  const taskLaborHours =
+    1.25 +
       fixtureQuantity * 0.85 +
       additionalLights * 0.65 +
       (isTraditionalThreeWay ? 1.25 : isSmartKit ? 1 : 0.5) +
@@ -2135,9 +2246,9 @@ export function calculateRecessedLightingEstimate(
           40
         : 0) +
       (isNewCircuit ? 2.5 : 0) +
-      accessHours +
-      laborAdjustmentHours) *
-    ceilingMultiplier;
+      accessHours;
+  const laborHours =
+    taskLaborHours * ceilingMultiplier + laborAdjustmentHours;
 
   return finalizeEstimate(
     assembly,

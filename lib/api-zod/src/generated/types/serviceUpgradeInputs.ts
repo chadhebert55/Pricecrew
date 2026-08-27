@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExistingBreakerCount } from './existingBreakerCount';
 import type { LaborRateType } from './laborRateType';
 import type { ServiceUpgradeInputsBreakerProtectionType } from './serviceUpgradeInputsBreakerProtectionType';
 import type { ServiceUpgradeInputsMastConductor } from './serviceUpgradeInputsMastConductor';
@@ -80,16 +81,45 @@ export interface ServiceUpgradeInputs {
   /** @minimum 0 */
   studsQuantity: number;
   /** @minimum 0 */
+  ductSealQuantity?: number;
+  /** @minimum 0 */
+  pvcPrimerQuantity?: number;
+  /** @minimum 0 */
+  pvcGlueQuantity?: number;
+  /** @minimum 0 */
+  antiOxidantQuantity?: number;
+  /** @minimum 0 */
+  electricalTapeQuantity?: number;
+  /** @minimum 0 */
   permitAllowance: number;
   /** @minimum 0 */
   inspectionAllowance: number;
   /** @minimum 0 */
+  utilityCoordinationAllowance?: number;
+  /** @minimum 0 */
   miscellaneousAllowance: number;
   /** @minimum 1 */
   crewSize: number;
-  /** @minimum 0 */
+  /**
+     * Hours per person; baseline person-hours equal crewSize multiplied by crewHours.
+     * @minimum 0
+     */
   crewHours: number;
-  laborAdjustmentHours: number;
+  relocationLaborHours?: number;
+  accessDifficultyLaborHours?: number;
+  groundingReworkLaborHours?: number;
+  feederDistanceLaborHours?: number;
+  serviceConditionLaborHours?: number;
+  utilityCoordinationLaborHours?: number;
+  generalLaborAdjustmentHours?: number;
+  /**
+     * Legacy general labor adjustment retained for historical quote compatibility.
+     * @deprecated
+     */
+  laborAdjustmentHours?: number;
+  existingBreakers?: ExistingBreakerCount[];
+  /** @minimum 0 */
+  existingOtherBreakerQuantity?: number;
   laborRateType?: LaborRateType;
   notes: string;
 }

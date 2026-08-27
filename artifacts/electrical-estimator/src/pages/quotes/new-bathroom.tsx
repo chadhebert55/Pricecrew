@@ -3,6 +3,7 @@ import {
   type BathroomInputs,
   useCreateQuote,
   usePreviewQuote,
+  useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,7 @@ const initialInputs: BathroomInputs = {
   gfciAmperage: 20,
   recessedLightSize: "4-inch",
   cableType: "12/2 NM-B",
+  laborAdjustmentHours: 0,
 }
 
 function optionalAmount(value: string) {
@@ -49,6 +51,8 @@ export function NewBathroomQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useCreateQuote()
   const previewQuote = usePreviewQuote()
+  const { data: settings } = useGetSettings()
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
@@ -60,6 +64,16 @@ export function NewBathroomQuote() {
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<BathroomInputs>(initialInputs)
 
+  useEffect(() => {
+    if (settings && !settingsLoaded) {
+      setInputs((current) => ({
+        ...current,
+        laborAdjustmentHours: settings.bathroomLaborAdjustmentHours ?? 0,
+      }))
+      setSettingsLoaded(true)
+    }
+  }, [settings, settingsLoaded])
+
   const previewPayload = {
     module: "BATHROOM" as const,
     jobInputs: inputs,
@@ -70,6 +84,7 @@ export function NewBathroomQuote() {
   const previewIsCurrent = currentInputKey === previewedInputKey
 
   useEffect(() => {
+    if (!settingsLoaded) return
     const inputKey = JSON.stringify(previewPayload)
     const timeout = window.setTimeout(() => {
       previewQuote.mutate(
@@ -78,7 +93,7 @@ export function NewBathroomQuote() {
       )
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
 
   const setQuantity = (key: keyof BathroomInputs, value: string) => {
     setInputs((current) => ({
@@ -89,7 +104,7 @@ export function NewBathroomQuote() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent) return
     createQuote.mutate(
       {
         data: {
@@ -276,7 +291,18 @@ export function NewBathroomQuote() {
                       onChange={(event) => setQuantity("routeLength", event.target.value)}
                     />
                   </div>
-                  <div className="space-y-4 rounded-lg border p-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bath-labor-adj">Labor Adjustment (Hours)</Label>
+                    <Input
+                      id="bath-labor-adj"
+                      type="number"
+                      step="0.25"
+                      value={inputs.laborAdjustmentHours ?? 0}
+                      onChange={(event) => setInputs(c => ({...c, laborAdjustmentHours: parseFloat(event.target.value) || 0}))}
+                    />
+                    <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing. Does not change company defaults.</p>
+                  </div>
+                  <div className="space-y-4 rounded-lg border p-4 md:col-span-2">
                     <label className="flex items-center gap-3 text-sm font-medium">
                       <Checkbox
                         checked={inputs.heatedFloorCircuit}
@@ -355,8 +381,8 @@ export function NewBathroomQuote() {
                   </div>
 
                   {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
-                  <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={createQuote.isPending || !previewIsCurrent || previewQuote.isError}>
-                    {createQuote.isPending ? "Submitting..." : !previewIsCurrent ? "Calculating..." : "Generate Bathroom Quote"}
+                  <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError}>
+                    {createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Bathroom Quote"}
                   </Button>
                 </CardContent>
               </Card>

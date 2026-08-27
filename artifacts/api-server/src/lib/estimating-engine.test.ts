@@ -143,12 +143,12 @@ const priceBook: PriceBookItem[] = [
 const serviceUpgradeInputs: ServiceUpgradeInputRecord = {
   serviceSize: "200A",
   serviceConfiguration: "Overhead mast",
-  serviceDisconnect: "Outdoor service disconnect",
+  serviceDisconnect: "Meter-main combination",
   panelManufacturer: "Siemens",
   breakerAmperage: 200,
   breakerPoleCount: 2,
   breakerProtectionType: "Standard",
-  meterDisconnectEquipment: "200A outdoor meter/disconnect",
+  meterDisconnectEquipment: "200A meter-main with built-in outdoor disconnect",
   surgeProtection: "Whole-home surge protection",
   includeOverheadMast: true,
   mastFootage: 10,
@@ -178,12 +178,26 @@ const serviceUpgradeInputs: ServiceUpgradeInputRecord = {
   receptaclePlateQuantity: 1,
   plywoodQuantity: 1,
   studsQuantity: 2,
+  ductSealQuantity: 1,
+  pvcPrimerQuantity: 1,
+  pvcGlueQuantity: 1,
+  antiOxidantQuantity: 1,
+  electricalTapeQuantity: 2,
   permitAllowance: 150,
   inspectionAllowance: 75,
+  utilityCoordinationAllowance: 0,
   miscellaneousAllowance: 100,
   crewSize: 2,
-  crewHours: 12,
-  laborAdjustmentHours: 0,
+  crewHours: 16,
+  relocationLaborHours: 0,
+  accessDifficultyLaborHours: 0,
+  groundingReworkLaborHours: 0,
+  feederDistanceLaborHours: 0,
+  serviceConditionLaborHours: 0,
+  utilityCoordinationLaborHours: 0,
+  generalLaborAdjustmentHours: 0,
+  existingBreakers: [],
+  existingOtherBreakerQuantity: 0,
   laborRateType: "residential",
   notes: "",
 };
@@ -192,6 +206,9 @@ const servicePriceBook: PriceBookItem[] = [
   catalogRow("100A outdoor meter/disconnect", 260),
   catalogRow("150A outdoor meter/disconnect", 340),
   catalogRow("200A outdoor meter/disconnect", 425),
+  catalogRow("100A meter-main with built-in outdoor disconnect", 360),
+  catalogRow("150A meter-main with built-in outdoor disconnect", 440),
+  catalogRow("200A meter-main with built-in outdoor disconnect", 525),
   catalogRow("Outdoor service disconnect", 280),
   catalogRow("Siemens 100A service panel", 220, { manufacturer: "Siemens" }),
   catalogRow("Siemens 150A service panel", 285, { manufacturer: "Siemens" }),
@@ -214,7 +231,12 @@ const servicePriceBook: PriceBookItem[] = [
     poleCount: 2,
     protectionType: "Standard",
   }),
-  catalogRow("service upgrade surge protection", 143),
+  catalogRow("Whole-home surge protection", 143),
+  catalogRow("Legacy custom surge device", 211, {
+    manufacturer: "Legacy Manufacturer",
+    manufacturerPartNumber: "LEGACY-SPD-1",
+    supplierSku: "LEGACY-211",
+  }),
   catalogRow("2-inch PVC mast raceway", 4.25),
   catalogRow("2-inch PVC weatherhead", 48),
   catalogRow("2-inch PVC hub", 18),
@@ -296,7 +318,7 @@ test("service upgrade preview and create validation reject unknown panel manufac
   );
 });
 
-test("default 200A overhead service upgrade exposes the complete assembly and 24 person-hours", () => {
+test("default integrated 200A service upgrade exposes the complete assembly and 32 person-hours", () => {
   const result = calculateServiceUpgradeEstimate(
     serviceUpgradeInputs,
     settings,
@@ -322,18 +344,38 @@ test("default 200A overhead service upgrade exposes the complete assembly and 24
   assert.equal(
     result.assembly.find((line) => line.id === "service-meter-disconnect")
       ?.unitCost,
-    425,
+    525,
   );
   assert.equal(
     result.pricing.pricingWarnings.some(
       (warning) =>
         typeof warning !== "string" &&
         warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
-        warning.context.itemKey === "200A outdoor meter/disconnect",
+        warning.context.itemKey ===
+          "200A meter-main with built-in outdoor disconnect",
     ),
     false,
   );
-  assert.equal(result.pricing.laborCost, 24 * settings.loadedLaborCost);
+  assert.equal(result.pricing.laborCost, 32 * settings.loadedLaborCost);
+  assert.equal(
+    result.assembly.some((line) => line.id === "service-disconnect"),
+    false,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-surge-protection")
+      ?.unitCost,
+    143,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id === "panel-directory-labeling"),
+    true,
+  );
+  assert.deepEqual(
+    ["duct-seal", "pvc-primer", "pvc-glue", "anti-oxidant", "electrical-tape"].map(
+      (id) => result.assembly.find((line) => line.id === id)?.quantity,
+    ),
+    [1, 1, 1, 1, 2],
+  );
   assert.equal(
     result.assembly.some((line) => line.id === "water-meter-bonding"),
     true,
@@ -341,6 +383,35 @@ test("default 200A overhead service upgrade exposes the complete assembly and 24
   assert.equal(
     result.assembly.some((line) => line.id === "plywood-backing"),
     true,
+  );
+});
+
+test("service upgrade preserves an exact custom surge selection and source metadata", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, surgeProtection: "Legacy custom surge device" },
+    settings,
+    servicePriceBook,
+  );
+  const surge = result.assembly.find(
+    (line) => line.id === "service-surge-protection",
+  );
+  assert.equal(surge?.description, "Legacy custom surge device");
+  assert.equal(surge?.unitCost, 211);
+  assert.equal(surge?.source.includes("Legacy Manufacturer"), true);
+  assert.equal(surge?.source.includes("MPN LEGACY-SPD-1"), true);
+  assert.equal(surge?.source.includes("SKU LEGACY-211"), true);
+});
+
+test("legacy generic surge labels fall forward to the verified canonical row", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, surgeProtection: "service upgrade surge protection" },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-surge-protection")
+      ?.unitCost,
+    143,
   );
 });
 
@@ -450,7 +521,13 @@ test("service upgrade conductor, quantity, footage, and labor choices remain exp
       groundRodQuantity: 3,
       crewSize: 3,
       crewHours: 9,
-      laborAdjustmentHours: 2,
+      relocationLaborHours: 0.5,
+      accessDifficultyLaborHours: 0.5,
+      groundingReworkLaborHours: 0.25,
+      feederDistanceLaborHours: 0.25,
+      serviceConditionLaborHours: 0.25,
+      utilityCoordinationLaborHours: 0.25,
+      generalLaborAdjustmentHours: 0,
     },
     settings,
     servicePriceBook,
@@ -475,6 +552,67 @@ test("service upgrade conductor, quantity, footage, and labor choices remain exp
       "SERVICE_UPGRADE_COPPER_ALTERNATIVE_REVIEW"),
     true,
   );
+});
+
+test("service upgrade XHHW feeder, breaker inventory, and field adders remain explicit", () => {
+  const breakerCatalog = catalogRow("Siemens Q120 20A standard breaker", 10.5, {
+    manufacturer: "Siemens",
+    amperage: 20,
+    poleCount: 1,
+    protectionType: "Standard",
+  });
+  const result = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      serviceToPanelConductor: "4/0 aluminum XHHW in raceway",
+      serviceToPanelFootage: 20,
+      relocationLaborHours: 1,
+      accessDifficultyLaborHours: 2,
+      generalLaborAdjustmentHours: -1,
+      existingBreakers: [
+        {
+          amperage: 20,
+          poleCount: 1,
+          protectionType: "Standard",
+          quantity: 3,
+        },
+      ],
+      existingOtherBreakerQuantity: 1,
+    },
+    settings,
+    [...servicePriceBook, breakerCatalog],
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-to-panel-conductor")
+      ?.quantity,
+    60,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-to-panel-raceway")
+      ?.quantity,
+    20,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "existing-breaker-0")?.quantity,
+    3,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "existing-breaker-other")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(result.pricing.laborCost, 34 * settings.loadedLaborCost);
+});
+
+test("service upgrade labor adders cannot produce negative labor cost", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, generalLaborAdjustmentHours: -10_000 },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(result.pricing.laborCost, 0);
+  assert.equal(result.pricing.laborSellAmount, 0);
 });
 
 test("service upgrade preserves contractor prices and never substitutes unresolved exact items", () => {

@@ -14,6 +14,7 @@ export const ServiceUpgradeInputsServiceToPanelConductor = {
   '1/0_copper_alternative': '1/0 copper alternative',
   '3/0_aluminum_SER': '3/0 aluminum SER',
   '2/0_copper_alternative': '2/0 copper alternative',
+  '4/0_aluminum_XHHW_in_raceway': '4/0 aluminum XHHW in raceway',
   '4/0_aluminum_SER': '4/0 aluminum SER',
   '4/0_copper_alternative': '4/0 copper alternative',
   Other_configured_conductor: 'Other configured conductor',

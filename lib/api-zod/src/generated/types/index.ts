@@ -16,6 +16,8 @@ export * from './companySettingsUpdate';
 export * from './dashboardSummary';
 export * from './estimatePreview';
 export * from './evChargerInputs';
+export * from './existingBreakerCount';
+export * from './existingBreakerCountProtectionType';
 export * from './healthStatus';
 export * from './kitchenInputs';
 export * from './kitchenInputsApplianceCircuitCableType';

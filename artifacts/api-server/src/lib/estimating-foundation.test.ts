@@ -235,6 +235,106 @@ test("all current builders return the shared structured warning shape", () => {
   }
 });
 
+test("task-based builders add quote labor adjustments exactly once", () => {
+  const adjustedEstimates = [
+    [
+      calculateEvChargerEstimate(evInputs, settings, [qf250a]),
+      calculateEvChargerEstimate(
+        { ...evInputs, laborAdjustmentHours: 2.5 },
+        settings,
+        [qf250a],
+      ),
+    ],
+    [
+      calculateBathroomEstimate(bathroomInputs, settings, []),
+      calculateBathroomEstimate(
+        { ...bathroomInputs, laborAdjustmentHours: 2.5 },
+        settings,
+        [],
+      ),
+    ],
+    [
+      calculateKitchenEstimate(kitchenInputs, settings, []),
+      calculateKitchenEstimate(
+        { ...kitchenInputs, laborAdjustmentHours: 2.5 },
+        settings,
+        [],
+      ),
+    ],
+    [
+      calculateRecessedLightingEstimate(recessedInputs, settings, []),
+      calculateRecessedLightingEstimate(
+        { ...recessedInputs, laborAdjustmentHours: 2.5 },
+        settings,
+        [],
+      ),
+    ],
+  ];
+
+  for (const [base, adjusted] of adjustedEstimates) {
+    assert.equal(
+      adjusted.pricing.laborCost - base.pricing.laborCost,
+      2.5 * settings.loadedLaborCost,
+    );
+  }
+});
+
+test("recessed lighting adjustment is not multiplied by ceiling difficulty", () => {
+  for (const ceilingHeight of [
+    "Standard 8-10 ft",
+    "High ceiling",
+    "Vaulted ceiling",
+  ]) {
+    const base = calculateRecessedLightingEstimate(
+      { ...recessedInputs, ceilingHeight, laborAdjustmentHours: 0 },
+      settings,
+      [],
+    );
+    const adjusted = calculateRecessedLightingEstimate(
+      { ...recessedInputs, ceilingHeight, laborAdjustmentHours: 2 },
+      settings,
+      [],
+    );
+    assert.ok(
+      Math.abs(
+        adjusted.pricing.laborCost -
+          base.pricing.laborCost -
+          2 * settings.loadedLaborCost,
+      ) < 0.000001,
+    );
+  }
+});
+
+test("negative labor adjustments cannot produce negative labor cost", () => {
+  const estimates = [
+    calculateEvChargerEstimate(
+      { ...evInputs, laborAdjustmentHours: -10_000 },
+      settings,
+      [qf250a],
+    ),
+    calculateBathroomEstimate(
+      { ...bathroomInputs, laborAdjustmentHours: -10_000 },
+      settings,
+      [],
+    ),
+    calculateKitchenEstimate(
+      { ...kitchenInputs, laborAdjustmentHours: -10_000 },
+      settings,
+      [],
+    ),
+    calculateRecessedLightingEstimate(
+      { ...recessedInputs, laborAdjustmentHours: -10_000 },
+      settings,
+      [],
+    ),
+  ];
+
+  for (const estimate of estimates) {
+    assert.equal(estimate.pricing.laborCost, 0);
+    assert.equal(estimate.pricing.laborSellAmount, 0);
+  }
+});
+
 test("legacy string snapshot warnings normalize without rewriting stored snapshots", () => {
   const normalized = normalizePricingWarnings([
     'No verified price is available for "legacy material".',

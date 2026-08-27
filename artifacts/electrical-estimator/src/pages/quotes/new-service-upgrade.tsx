@@ -1,7 +1,10 @@
 import {
   type ServiceUpgradeInputs,
+  type ExistingBreakerCount,
+  type ExistingBreakerCountProtectionType,
   useCreateQuote,
   usePreviewQuote,
+  useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Button } from "@/components/ui/button"
@@ -20,13 +23,13 @@ const selectClassName =
 const initialInputs: ServiceUpgradeInputs = {
   serviceSize: "200A",
   serviceConfiguration: "Overhead mast",
-  serviceDisconnect: "Outdoor service disconnect",
+  serviceDisconnect: "Meter-main combination",
   panelManufacturer: "Siemens",
   breakerAmperage: 200,
   breakerPoleCount: 2,
   breakerProtectionType: "Standard",
-  meterDisconnectEquipment: "200A outdoor meter/disconnect",
-  surgeProtection: "whole-home surge protection",
+  meterDisconnectEquipment: "200A meter-main with built-in outdoor disconnect",
+  surgeProtection: "Whole-home surge protection",
   includeOverheadMast: true,
   mastFootage: 10,
   weatherheadQuantity: 1,
@@ -38,7 +41,7 @@ const initialInputs: ServiceUpgradeInputs = {
   mastConductor: "4/0 aluminum XHHW conductor",
   mastConductorQuantity: 3,
   mastConductorFootage: 10,
-  serviceToPanelConductor: "4/0 aluminum SER",
+  serviceToPanelConductor: "4/0 aluminum XHHW in raceway",
   serviceToPanelFootage: 15,
   groundBarQuantity: 2,
   groundRodQuantity: 2,
@@ -50,17 +53,31 @@ const initialInputs: ServiceUpgradeInputs = {
   pvcThreeQuarterFittingsQuantity: 4,
   waterMeterBondingQuantity: 2,
   waterMeterBondingFootage: 20,
-  fourSquareBoxQuantity: 0,
-  receptacle20AQuantity: 0,
-  receptaclePlateQuantity: 0,
-  plywoodQuantity: 0,
-  studsQuantity: 0,
+  fourSquareBoxQuantity: 1,
+  receptacle20AQuantity: 1,
+  receptaclePlateQuantity: 1,
+  plywoodQuantity: 1,
+  studsQuantity: 2,
+  ductSealQuantity: 1,
+  pvcPrimerQuantity: 1,
+  pvcGlueQuantity: 1,
+  antiOxidantQuantity: 1,
+  electricalTapeQuantity: 2,
   permitAllowance: 0,
   inspectionAllowance: 0,
+  utilityCoordinationAllowance: 0,
   miscellaneousAllowance: 0,
   crewSize: 2,
-  crewHours: 12,
-  laborAdjustmentHours: 0,
+  crewHours: 16,
+  relocationLaborHours: 0,
+  accessDifficultyLaborHours: 0,
+  groundingReworkLaborHours: 0,
+  feederDistanceLaborHours: 0,
+  serviceConditionLaborHours: 0,
+  utilityCoordinationLaborHours: 0,
+  generalLaborAdjustmentHours: 0,
+  existingBreakers: [],
+  existingOtherBreakerQuantity: 0,
   laborRateType: "residential",
   notes: "",
 }
@@ -80,6 +97,8 @@ export function NewServiceUpgradeQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useCreateQuote()
   const previewQuote = usePreviewQuote()
+  const { data: settings } = useGetSettings()
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
@@ -91,6 +110,18 @@ export function NewServiceUpgradeQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<ServiceUpgradeInputs>(initialInputs)
+  const [existingBreakersState, setExistingBreakersState] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (settings && !settingsLoaded) {
+      setInputs((current) => ({
+        ...current,
+        crewSize: settings.serviceUpgradeCrewSize ?? 2,
+        crewHours: settings.serviceUpgradeHoursPerPerson ?? 16,
+      }))
+      setSettingsLoaded(true)
+    }
+  }, [settings, settingsLoaded])
 
   const previewPayload = {
     module: "SERVICE_UPGRADE" as const,
@@ -102,6 +133,7 @@ export function NewServiceUpgradeQuote() {
   const previewIsCurrent = currentInputKey === previewedInputKey
 
   useEffect(() => {
+    if (!settingsLoaded) return
     const inputKey = JSON.stringify(previewPayload)
     const timeout = window.setTimeout(() => {
       previewQuote.mutate(
@@ -110,7 +142,29 @@ export function NewServiceUpgradeQuote() {
       )
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
+
+  const handleExistingBreakerChange = (amperage: number, poleCount: number, protectionType: ExistingBreakerCountProtectionType, quantityStr: string) => {
+    const quantity = numberValue(quantityStr, 0)
+    const key = `${amperage}-${poleCount}-${protectionType}`
+    const newState = { ...existingBreakersState, [key]: quantity }
+    setExistingBreakersState(newState)
+
+    const existingBreakers: ExistingBreakerCount[] = []
+    Object.entries(newState).forEach(([k, qty]) => {
+      if (qty > 0) {
+        const [a, p, prot] = k.split('-')
+        existingBreakers.push({
+          amperage: Number(a),
+          poleCount: Number(p),
+          protectionType: prot as ExistingBreakerCountProtectionType,
+          quantity: qty,
+        })
+      }
+    })
+
+    setInputs(c => ({ ...c, existingBreakers }))
+  }
 
   const setNumber = (
     key: keyof ServiceUpgradeInputs,
@@ -124,19 +178,28 @@ export function NewServiceUpgradeQuote() {
     const defaults = {
       "100A": {
         breakerAmperage: 100,
-        meterDisconnectEquipment: "100A outdoor meter/disconnect",
+        meterDisconnectEquipment:
+          inputs.serviceDisconnect === "Meter-main combination"
+            ? "100A meter-main with built-in outdoor disconnect"
+            : "100A outdoor meter/disconnect",
         mastConductor: "1/0 aluminum XHHW conductor" as const,
         serviceToPanelConductor: "1/0 aluminum SER" as const,
       },
       "150A": {
         breakerAmperage: 150,
-        meterDisconnectEquipment: "150A outdoor meter/disconnect",
+        meterDisconnectEquipment:
+          inputs.serviceDisconnect === "Meter-main combination"
+            ? "150A meter-main with built-in outdoor disconnect"
+            : "150A outdoor meter/disconnect",
         mastConductor: "3/0 aluminum XHHW conductor" as const,
         serviceToPanelConductor: "3/0 aluminum SER" as const,
       },
       "200A": {
         breakerAmperage: 200,
-        meterDisconnectEquipment: "200A outdoor meter/disconnect",
+        meterDisconnectEquipment:
+          inputs.serviceDisconnect === "Meter-main combination"
+            ? "200A meter-main with built-in outdoor disconnect"
+            : "200A outdoor meter/disconnect",
         mastConductor: "4/0 aluminum XHHW conductor" as const,
         serviceToPanelConductor: "4/0 aluminum SER" as const,
       },
@@ -146,7 +209,7 @@ export function NewServiceUpgradeQuote() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent) return
     createQuote.mutate(
       {
         data: {
@@ -169,7 +232,14 @@ export function NewServiceUpgradeQuote() {
   
   const totalPersonHours = Math.max(
     0,
-    inputs.crewSize * inputs.crewHours + inputs.laborAdjustmentHours,
+    inputs.crewSize * inputs.crewHours +
+      (inputs.relocationLaborHours || 0) +
+      (inputs.accessDifficultyLaborHours || 0) +
+      (inputs.groundingReworkLaborHours || 0) +
+      (inputs.feederDistanceLaborHours || 0) +
+      (inputs.serviceConditionLaborHours || 0) +
+      (inputs.utilityCoordinationLaborHours || 0) +
+      (inputs.generalLaborAdjustmentHours ?? inputs.laborAdjustmentHours ?? 0),
   )
 
   return (
@@ -239,7 +309,22 @@ export function NewServiceUpgradeQuote() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="su-disconnect">Service Disconnect Location</Label>
-                      <select id="su-disconnect" className={selectClassName} value={inputs.serviceDisconnect} onChange={(e) => setInputs(c => ({ ...c, serviceDisconnect: e.target.value as ServiceUpgradeInputs["serviceDisconnect"] }))}>
+                      <select
+                        id="su-disconnect"
+                        className={selectClassName}
+                        value={inputs.serviceDisconnect}
+                        onChange={(e) => {
+                          const serviceDisconnect = e.target.value as ServiceUpgradeInputs["serviceDisconnect"]
+                          setInputs((current) => ({
+                            ...current,
+                            serviceDisconnect,
+                            meterDisconnectEquipment:
+                              serviceDisconnect === "Meter-main combination"
+                                ? `${current.serviceSize} meter-main with built-in outdoor disconnect`
+                                : `${current.serviceSize} outdoor meter/disconnect`,
+                          }))
+                        }}
+                      >
                         <option value="Outdoor service disconnect">Outdoor service disconnect</option>
                         <option value="Indoor main disconnect">Indoor main disconnect</option>
                         <option value="Meter-main combination">Meter-main combination</option>
@@ -345,6 +430,7 @@ export function NewServiceUpgradeQuote() {
                         <option value="1/0 copper alternative">1/0 copper alternative</option>
                         <option value="3/0 aluminum SER">3/0 aluminum SER</option>
                         <option value="2/0 copper alternative">2/0 copper alternative</option>
+                         <option value="4/0 aluminum XHHW in raceway">4/0 aluminum XHHW in raceway</option>
                         <option value="4/0 aluminum SER">4/0 aluminum SER</option>
                         <option value="4/0 copper alternative">4/0 copper alternative</option>
                         <option value="Other configured conductor">Other configured conductor</option>
@@ -426,6 +512,26 @@ export function NewServiceUpgradeQuote() {
                       <Label htmlFor="su-studs">Studs Qty</Label>
                       <Input id="su-studs" type="number" min="0" step="1" value={inputs.studsQuantity} onChange={(e) => setNumber("studsQuantity", e.target.value)} />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-duct-seal">Service / Duct Seal Qty</Label>
+                      <Input id="su-duct-seal" type="number" min="0" step="1" value={inputs.ductSealQuantity ?? 0} onChange={(e) => setNumber("ductSealQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-pvc-primer">PVC Primer Qty</Label>
+                      <Input id="su-pvc-primer" type="number" min="0" step="1" value={inputs.pvcPrimerQuantity ?? 0} onChange={(e) => setNumber("pvcPrimerQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-pvc-glue">PVC Glue Qty</Label>
+                      <Input id="su-pvc-glue" type="number" min="0" step="1" value={inputs.pvcGlueQuantity ?? 0} onChange={(e) => setNumber("pvcGlueQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-anti-oxidant">Anti-Oxidation Compound Qty</Label>
+                      <Input id="su-anti-oxidant" type="number" min="0" step="1" value={inputs.antiOxidantQuantity ?? 0} onChange={(e) => setNumber("antiOxidantQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-tape">Electrical Tape Qty</Label>
+                      <Input id="su-tape" type="number" min="0" step="1" value={inputs.electricalTapeQuantity ?? 0} onChange={(e) => setNumber("electricalTapeQuantity", e.target.value)} />
+                    </div>
                   </div>
                 </section>
 
@@ -444,6 +550,10 @@ export function NewServiceUpgradeQuote() {
                       <Label htmlFor="su-misc">Misc Allowance ($)</Label>
                       <Input id="su-misc" type="number" min="0" step="1" value={inputs.miscellaneousAllowance} onChange={(e) => setNumber("miscellaneousAllowance", e.target.value)} />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-util-coord">Utility Coordination Allowance ($)</Label>
+                      <Input id="su-util-coord" type="number" min="0" step="1" value={inputs.utilityCoordinationAllowance} onChange={(e) => setNumber("utilityCoordinationAllowance", e.target.value)} />
+                    </div>
                     
                     <div className="space-y-2 md:col-span-2 mt-4 pt-4 border-t border-border">
                       <Label htmlFor="su-labor-rate">Labor Sell Rate</Label>
@@ -458,21 +568,135 @@ export function NewServiceUpgradeQuote() {
                       <Input id="su-crew-size" type="number" min="1" step="1" value={inputs.crewSize} onChange={(e) => setNumber("crewSize", e.target.value, 1)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="su-crew-hours">Crew Hours</Label>
-                      <Input id="su-crew-hours" type="number" min="0" step="1" value={inputs.crewHours} onChange={(e) => setNumber("crewHours", e.target.value)} />
+                      <Label htmlFor="su-crew-hours">Hours Per Person</Label>
+                      <Input id="su-crew-hours" type="number" min="0" step="0.25" value={inputs.crewHours} onChange={(e) => setNumber("crewHours", e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="su-labor-adj">Labor Adjustment (Hours)</Label>
-                      <Input id="su-labor-adj" type="number" min="-100" step="0.5" value={inputs.laborAdjustmentHours} onChange={(e) => setInputs((c) => ({ ...c, laborAdjustmentHours: Number(e.target.value) || 0 }))} />
+                      <Label htmlFor="su-reloc-labor">Relocation Labor (hr)</Label>
+                      <Input id="su-reloc-labor" type="number" min="0" step="0.25" value={inputs.relocationLaborHours ?? 0} onChange={(e) => setNumber("relocationLaborHours", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-access-labor">Access Difficulty Labor (hr)</Label>
+                      <Input id="su-access-labor" type="number" min="0" step="0.25" value={inputs.accessDifficultyLaborHours ?? 0} onChange={(e) => setNumber("accessDifficultyLaborHours", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-gnd-labor">Grounding Rework Labor (hr)</Label>
+                      <Input id="su-gnd-labor" type="number" min="0" step="0.25" value={inputs.groundingReworkLaborHours ?? 0} onChange={(e) => setNumber("groundingReworkLaborHours", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-fdr-labor">Feeder Distance Labor (hr)</Label>
+                      <Input id="su-fdr-labor" type="number" min="0" step="0.25" value={inputs.feederDistanceLaborHours ?? 0} onChange={(e) => setNumber("feederDistanceLaborHours", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-cond-labor">Service Condition Labor (hr)</Label>
+                      <Input id="su-cond-labor" type="number" min="0" step="0.25" value={inputs.serviceConditionLaborHours ?? 0} onChange={(e) => setNumber("serviceConditionLaborHours", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-util-labor">Utility Coord Labor (hr)</Label>
+                      <Input id="su-util-labor" type="number" min="0" step="0.25" value={inputs.utilityCoordinationLaborHours ?? 0} onChange={(e) => setNumber("utilityCoordinationLaborHours", e.target.value)} />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="su-labor-adj">General Labor Adjustment (hr)</Label>
+                      <Input id="su-labor-adj" type="number" min="-100" step="0.5" value={inputs.generalLaborAdjustmentHours ?? 0} onChange={(e) => setInputs((c) => ({ ...c, generalLaborAdjustmentHours: Number(e.target.value) || 0 }))} />
+                      <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing. Does not change company defaults.</p>
                     </div>
                   </div>
                   
                   <div className="mt-4 rounded-lg border border-primary/25 bg-primary/5 p-4 text-sm flex items-center justify-between">
                     <div>
                       <span className="font-semibold text-primary block">Calculated Total Person-Hours</span>
-                      <span className="text-muted-foreground mt-0.5 block">({inputs.crewSize} crew &times; {inputs.crewHours} hours) + {inputs.laborAdjustmentHours} adj</span>
+                      <span className="text-muted-foreground mt-0.5 block">Baseline: {inputs.crewSize} crew &times; {inputs.crewHours} hours/person</span>
                     </div>
-                    <div className="text-2xl font-mono font-bold">{totalPersonHours}</div>
+                    <div className="text-2xl font-mono font-bold">
+                      {totalPersonHours}
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Existing Breaker Inventory</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Record existing breakers to transfer. This will generate material requirements for the new panel.</p>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-medium text-sm mb-3">1-Pole (120V)</h4>
+                      <div className="grid grid-cols-5 gap-3 text-xs text-center border-b pb-2">
+                        <div className="text-left font-semibold">Amperage</div>
+                        <div className="font-semibold">Standard</div>
+                        <div className="font-semibold">AFCI</div>
+                        <div className="font-semibold">GFCI</div>
+                        <div className="font-semibold">Dual Function</div>
+                      </div>
+
+                      {[15, 20].map(amp => (
+                        <div key={amp} className="grid grid-cols-5 gap-3 items-center py-2 border-b border-border/50">
+                          <div className="text-sm font-medium">{amp}A</div>
+                          {(["Standard", "AFCI", "GFCI", "Dual Function"] as ExistingBreakerCountProtectionType[]).map(prot => {
+                            const key = `${amp}-1-${prot}`
+                            return (
+                              <div key={prot}>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  className="h-8 text-center"
+                                  value={existingBreakersState[key] || ""}
+                                  onChange={e => handleExistingBreakerChange(amp, 1, prot, e.target.value)}
+                                  placeholder="0"
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-sm mb-3">2-Pole (240V)</h4>
+                      <div className="grid grid-cols-5 gap-3 text-xs text-center border-b pb-2">
+                        <div className="text-left font-semibold col-span-2">Amperage</div>
+                        <div className="font-semibold col-span-2">Standard</div>
+                        <div className="font-semibold">GFCI</div>
+                      </div>
+
+                      {[30, 40, 50, 60].map(amp => (
+                        <div key={amp} className="grid grid-cols-5 gap-3 items-center py-2 border-b border-border/50">
+                          <div className="text-sm font-medium col-span-2">{amp}A</div>
+                          <div className="col-span-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              className="h-8 text-center"
+                              value={existingBreakersState[`${amp}-2-Standard`] || ""}
+                              onChange={e => handleExistingBreakerChange(amp, 2, "Standard", e.target.value)}
+                              placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              type="number"
+                              min="0"
+                              className="h-8 text-center"
+                              value={existingBreakersState[`${amp}-2-GFCI`] || ""}
+                              onChange={e => handleExistingBreakerChange(amp, 2, "GFCI", e.target.value)}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 items-center max-w-sm pt-2">
+                      <Label htmlFor="su-other-breakers" className="text-sm font-medium">Other Breakers Qty</Label>
+                      <Input
+                        id="su-other-breakers"
+                        type="number"
+                        min="0"
+                        className="h-8"
+                        value={inputs.existingOtherBreakerQuantity || ""}
+                        onChange={e => setNumber("existingOtherBreakerQuantity", e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
                 </section>
 
@@ -534,8 +758,8 @@ export function NewServiceUpgradeQuote() {
                         <div className="mt-1 font-mono text-3xl font-bold text-primary">${pricing.finalSellingPrice.toFixed(2)}</div>
                       </div>
 
-                      <Button type="submit" className="w-full" size="lg" disabled={!previewIsCurrent || createQuote.isPending}>
-                        {createQuote.isPending ? "Creating Quote..." : "Create Quote Snapshot"}
+                      <Button type="submit" className="w-full" size="lg" disabled={!settingsLoaded || !previewIsCurrent || createQuote.isPending}>
+                        {createQuote.isPending ? "Creating Quote..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Create Quote Snapshot"}
                       </Button>
                       
                       {assembly.length > 0 && (

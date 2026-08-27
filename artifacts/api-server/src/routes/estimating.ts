@@ -619,6 +619,13 @@ router.get("/settings", async (_req, res): Promise<void> => {
       materialMarkup: settings.materialMarkup,
       targetMargin: settings.targetMargin,
       defaultTaxRate: settings.defaultTaxRate,
+      evLaborAdjustmentHours: settings.evLaborAdjustmentHours,
+      bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours,
+      kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours,
+      recessedLightingLaborAdjustmentHours:
+        settings.recessedLightingLaborAdjustmentHours,
+      serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize,
+      serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson,
     }),
   );
 });
@@ -655,6 +662,24 @@ router.patch("/settings", async (req, res): Promise<void> => {
       materialMarkup: parsed.data.materialMarkup ?? currentSettings.materialMarkup,
       targetMargin: parsed.data.targetMargin ?? currentSettings.targetMargin,
       defaultTaxRate: parsed.data.defaultTaxRate ?? currentSettings.defaultTaxRate,
+      evLaborAdjustmentHours:
+        parsed.data.evLaborAdjustmentHours ??
+        currentSettings.evLaborAdjustmentHours,
+      bathroomLaborAdjustmentHours:
+        parsed.data.bathroomLaborAdjustmentHours ??
+        currentSettings.bathroomLaborAdjustmentHours,
+      kitchenLaborAdjustmentHours:
+        parsed.data.kitchenLaborAdjustmentHours ??
+        currentSettings.kitchenLaborAdjustmentHours,
+      recessedLightingLaborAdjustmentHours:
+        parsed.data.recessedLightingLaborAdjustmentHours ??
+        currentSettings.recessedLightingLaborAdjustmentHours,
+      serviceUpgradeCrewSize:
+        parsed.data.serviceUpgradeCrewSize ??
+        currentSettings.serviceUpgradeCrewSize,
+      serviceUpgradeHoursPerPerson:
+        parsed.data.serviceUpgradeHoursPerPerson ??
+        currentSettings.serviceUpgradeHoursPerPerson,
     })
     .where(eq(companySettingsTable.id, currentSettings.id))
     .returning();
@@ -678,6 +703,13 @@ router.patch("/settings", async (req, res): Promise<void> => {
       materialMarkup: settings.materialMarkup,
       targetMargin: settings.targetMargin,
       defaultTaxRate: settings.defaultTaxRate,
+      evLaborAdjustmentHours: settings.evLaborAdjustmentHours,
+      bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours,
+      kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours,
+      recessedLightingLaborAdjustmentHours:
+        settings.recessedLightingLaborAdjustmentHours,
+      serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize,
+      serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson,
     }),
   );
 });

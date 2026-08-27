@@ -1,4 +1,9 @@
-import { useGetSettings, useUpdateSettings } from "@workspace/api-client-react"
+import {
+  getGetSettingsQueryKey,
+  useGetSettings,
+  useUpdateSettings,
+} from "@workspace/api-client-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -6,8 +11,15 @@ import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 
 export function Settings() {
+  const queryClient = useQueryClient()
   const { data: settings, isLoading } = useGetSettings()
-  const updateSettings = useUpdateSettings()
+  const updateSettings = useUpdateSettings({
+    mutation: {
+      onSuccess: (updatedSettings) => {
+        queryClient.setQueryData(getGetSettingsQueryKey(), updatedSettings)
+      },
+    },
+  })
   
   const [form, setForm] = useState({
     companyName: "",
@@ -16,7 +28,13 @@ export function Settings() {
     loadedLaborCost: "0",
     materialMarkup: "0",
     targetMargin: "0",
-    defaultTaxRate: "0"
+    defaultTaxRate: "0",
+    evLaborAdjustmentHours: "0",
+    bathroomLaborAdjustmentHours: "0",
+    kitchenLaborAdjustmentHours: "0",
+    recessedLightingLaborAdjustmentHours: "0",
+    serviceUpgradeCrewSize: "2",
+    serviceUpgradeHoursPerPerson: "16",
   })
 
   useEffect(() => {
@@ -29,6 +47,12 @@ export function Settings() {
         materialMarkup: (settings.materialMarkup * 100).toString(),
         targetMargin: (settings.targetMargin * 100).toString(),
         defaultTaxRate: (settings.defaultTaxRate * 100).toString(),
+        evLaborAdjustmentHours: settings.evLaborAdjustmentHours.toString(),
+        bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours.toString(),
+        kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours.toString(),
+        recessedLightingLaborAdjustmentHours: settings.recessedLightingLaborAdjustmentHours.toString(),
+        serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize.toString(),
+        serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson.toString(),
       })
     }
   }, [settings])
@@ -42,7 +66,13 @@ export function Settings() {
         loadedLaborCost: parseFloat(form.loadedLaborCost),
         materialMarkup: parseFloat(form.materialMarkup) / 100,
         targetMargin: parseFloat(form.targetMargin) / 100,
-        defaultTaxRate: parseFloat(form.defaultTaxRate) / 100
+        defaultTaxRate: parseFloat(form.defaultTaxRate) / 100,
+        evLaborAdjustmentHours: parseFloat(form.evLaborAdjustmentHours),
+        bathroomLaborAdjustmentHours: parseFloat(form.bathroomLaborAdjustmentHours),
+        kitchenLaborAdjustmentHours: parseFloat(form.kitchenLaborAdjustmentHours),
+        recessedLightingLaborAdjustmentHours: parseFloat(form.recessedLightingLaborAdjustmentHours),
+        serviceUpgradeCrewSize: parseInt(form.serviceUpgradeCrewSize, 10),
+        serviceUpgradeHoursPerPerson: parseFloat(form.serviceUpgradeHoursPerPerson),
       }
     })
   }
@@ -161,6 +191,79 @@ export function Settings() {
                 />
                 <span className="absolute right-3 top-2 text-muted-foreground">%</span>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Builder Labor Defaults</CardTitle>
+          <CardDescription>Independent labor assumptions copied into each new builder quote. Quote edits do not change these company defaults.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label>EV Charger Labor Adjustment (hr)</Label>
+              <Input
+                type="number"
+                step="0.25"
+                className="font-mono"
+                value={form.evLaborAdjustmentHours}
+                onChange={(e) => setForm(f => ({ ...f, evLaborAdjustmentHours: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Bathroom Labor Adjustment (hr)</Label>
+              <Input
+                type="number"
+                step="0.25"
+                className="font-mono"
+                value={form.bathroomLaborAdjustmentHours}
+                onChange={(e) => setForm(f => ({ ...f, bathroomLaborAdjustmentHours: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Kitchen Labor Adjustment (hr)</Label>
+              <Input
+                type="number"
+                step="0.25"
+                className="font-mono"
+                value={form.kitchenLaborAdjustmentHours}
+                onChange={(e) => setForm(f => ({ ...f, kitchenLaborAdjustmentHours: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Recessed Lighting Labor Adj. (hr)</Label>
+              <Input
+                type="number"
+                step="0.25"
+                className="font-mono"
+                value={form.recessedLightingLaborAdjustmentHours}
+                onChange={(e) => setForm(f => ({ ...f, recessedLightingLaborAdjustmentHours: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Service Upgrade Crew Size</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                className="font-mono"
+                value={form.serviceUpgradeCrewSize}
+                onChange={(e) => setForm(f => ({ ...f, serviceUpgradeCrewSize: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Service Upgrade Hours Per Person</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.25"
+                className="font-mono"
+                value={form.serviceUpgradeHoursPerPerson}
+                onChange={(e) => setForm(f => ({ ...f, serviceUpgradeHoursPerPerson: e.target.value }))}
+              />
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import {
   type RecessedLightingInputs,
   useCreateQuote,
   usePreviewQuote,
+  useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Button } from "@/components/ui/button"
@@ -72,6 +73,8 @@ export function NewRecessedLightingQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useCreateQuote()
   const previewQuote = usePreviewQuote()
+  const { data: settings } = useGetSettings()
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
@@ -82,6 +85,16 @@ export function NewRecessedLightingQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<RecessedLightingInputs>(initialInputs)
+
+  useEffect(() => {
+    if (settings && !settingsLoaded) {
+      setInputs((current) => ({
+        ...current,
+        laborAdjustmentHours: settings.recessedLightingLaborAdjustmentHours ?? 0,
+      }))
+      setSettingsLoaded(true)
+    }
+  }, [settings, settingsLoaded])
 
   const planning = useMemo(() => {
     if (inputs.roomLength <= 0 || inputs.roomWidth <= 0) {
@@ -106,6 +119,7 @@ export function NewRecessedLightingQuote() {
   const previewIsCurrent = currentInputKey === previewedInputKey
 
   useEffect(() => {
+    if (!settingsLoaded) return
     const inputKey = JSON.stringify(previewPayload)
     const timeout = window.setTimeout(() => {
       previewQuote.mutate(
@@ -114,7 +128,7 @@ export function NewRecessedLightingQuote() {
       )
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
 
   const setNumber = (
     key: keyof RecessedLightingInputs,
@@ -165,7 +179,7 @@ export function NewRecessedLightingQuote() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent) return
     createQuote.mutate(
       {
         data: {
@@ -449,7 +463,7 @@ export function NewRecessedLightingQuote() {
                     <div className="space-y-2">
                       <Label htmlFor="recessed-labor-adjustment">Labor Adjustment (Hours)</Label>
                       <Input id="recessed-labor-adjustment" type="number" min="-10" step="0.25" value={inputs.laborAdjustmentHours} onChange={(event) => setInputs((current) => ({ ...current, laborAdjustmentHours: Number(event.target.value) || 0 }))} />
-                      <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing.</p>
+                      <p className="text-xs text-muted-foreground">Adds or removes field-assessed labor before pricing. Does not change company defaults.</p>
                     </div>
                   </div>
                 </section>
@@ -528,8 +542,8 @@ export function NewRecessedLightingQuote() {
                   </div>
 
                   {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
-                  <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={createQuote.isPending || !previewIsCurrent || previewQuote.isError}>
-                    {createQuote.isPending ? "Submitting..." : !previewIsCurrent ? "Calculating..." : "Generate Recessed Lighting Quote"}
+                  <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError}>
+                    {createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Recessed Lighting Quote"}
                   </Button>
                 </CardContent>
               </Card>
