@@ -15,6 +15,17 @@ export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
 export type RecessedLightSize = "4-inch" | "6-inch";
 export type ServiceUpgradeServiceSize = "100A" | "150A" | "200A";
 export type ServiceUpgradePanelManufacturer = "Siemens" | "Eaton" | "Square D";
+export type PanelReplacementType =
+  | "Like-for-like panel replacement"
+  | "Subpanel addition";
+export type PanelReplacementPanelManufacturer = "Siemens" | "Eaton" | "Square D";
+export type PanelReplacementFeederConductor =
+  | "1/0 aluminum XHHW conductor"
+  | "3/0 aluminum XHHW conductor"
+  | "4/0 aluminum XHHW conductor"
+  | "1/0 copper service conductor alternative"
+  | "2/0 copper service conductor alternative"
+  | "Other configured feeder conductor";
 
 export type EvChargerInputRecord = {
   chargerQuantity: number;
@@ -221,12 +232,58 @@ export type ServiceUpgradeInputRecord = {
   notes: string;
 };
 
+export type PanelReplacementInputRecord = {
+  replacementType: PanelReplacementType;
+  panelManufacturer: PanelReplacementPanelManufacturer;
+  panelAmperage: 100 | 150 | 200;
+  panelSpaceCount: number;
+  breakerAmperage: number;
+  breakerPoleCount: number;
+  breakerProtectionType: string;
+  feederConductor: PanelReplacementFeederConductor;
+  feederLength: number;
+  feederConductorQuantity: number;
+  feederRacewayFootage: number;
+  feederRacewayFittingsQuantity: number;
+  groundBarQuantity: number;
+  groundRodQuantity: number;
+  groundingConductorFootage: number;
+  bondingConductorFootage: number;
+  existingBreakers?: Array<{
+    amperage: number;
+    poleCount: number;
+    protectionType: string;
+    quantity: number;
+  }>;
+  existingOtherBreakerQuantity?: number;
+  fillerPlateQuantity: number;
+  knockoutSealQuantity: number;
+  plywoodQuantity: number;
+  studsQuantity: number;
+  antiOxidantQuantity: number;
+  electricalTapeQuantity: number;
+  permitAllowance: number;
+  inspectionAllowance: number;
+  miscellaneousAllowance: number;
+  crewSize: number;
+  crewHours: number;
+  panelRemovalLaborHours?: number;
+  feederInstallationLaborHours?: number;
+  groundingLaborHours?: number;
+  accessDifficultyLaborHours?: number;
+  generalLaborAdjustmentHours?: number;
+  laborAdjustmentHours?: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+};
+
 export type QuoteJobInputsRecord =
   | EvChargerInputRecord
   | BathroomInputRecord
   | KitchenInputRecord
   | RecessedLightingInputRecord
-  | ServiceUpgradeInputRecord;
+  | ServiceUpgradeInputRecord
+  | PanelReplacementInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;

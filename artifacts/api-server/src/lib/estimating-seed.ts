@@ -336,8 +336,50 @@ export async function seedEstimatorData(
       })),
     ),
   ];
+  const additionalPanelReplacementItems: SeedPriceBookItem[] = [
+    ...(["Siemens", "Eaton", "Square D"] as const).flatMap((manufacturer) =>
+      ([100, 150, 200] as const).map((amperage) => ({
+        category: "Panel",
+        item: `${manufacturer} ${amperage}A panel replacement enclosure`,
+        unit: "ea",
+        unitCost: 0,
+        supplier: "Company default — set current cost",
+        manufacturer,
+        sourceDate,
+        isDefault: false,
+      })),
+    ),
+    ...(["Siemens", "Eaton", "Square D"] as const).map((manufacturer) => ({
+      category: "Panel",
+      item: `${manufacturer} panel filler plate`,
+      unit: "ea",
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      manufacturer,
+      sourceDate,
+      isDefault: false,
+    })),
+    ...[
+      ["Panel", "panel knockout seal", "ea"],
+      ["Raceway", "panel replacement feeder raceway", "ft"],
+      ["Raceway", "panel replacement feeder raceway fittings", "ea"],
+      ["Allowance", "panel replacement permit allowance", "allowance"],
+      ["Allowance", "panel replacement inspection allowance", "allowance"],
+      ["Allowance", "panel replacement miscellaneous allowance", "allowance"],
+      ["Conductor", "other configured feeder conductor", "ft"],
+    ].map(([category, item, unit]) => ({
+      category,
+      item,
+      unit,
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    })),
+  ];
   const verifiedItems: SeedPriceBookItem[] = [
     ...additionalServiceItems,
+    ...additionalPanelReplacementItems,
     {
       category: "Protection",
       item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",

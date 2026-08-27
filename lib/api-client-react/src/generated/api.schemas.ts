@@ -621,10 +621,130 @@ export interface ServiceUpgradeInputs {
   notes: string;
 }
 
+export type PanelReplacementInputsReplacementType = typeof PanelReplacementInputsReplacementType[keyof typeof PanelReplacementInputsReplacementType];
+
+
+export const PanelReplacementInputsReplacementType = {
+  'Like-for-like_panel_replacement': 'Like-for-like panel replacement',
+  Subpanel_addition: 'Subpanel addition',
+} as const;
+
+export type PanelReplacementInputsPanelManufacturer = typeof PanelReplacementInputsPanelManufacturer[keyof typeof PanelReplacementInputsPanelManufacturer];
+
+
+export const PanelReplacementInputsPanelManufacturer = {
+  Siemens: 'Siemens',
+  Eaton: 'Eaton',
+  Square_D: 'Square D',
+} as const;
+
+export type PanelReplacementInputsPanelAmperage = typeof PanelReplacementInputsPanelAmperage[keyof typeof PanelReplacementInputsPanelAmperage];
+
+
+export const PanelReplacementInputsPanelAmperage = {
+  NUMBER_100: 100,
+  NUMBER_150: 150,
+  NUMBER_200: 200,
+} as const;
+
+export type PanelReplacementInputsBreakerProtectionType = typeof PanelReplacementInputsBreakerProtectionType[keyof typeof PanelReplacementInputsBreakerProtectionType];
+
+
+export const PanelReplacementInputsBreakerProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type PanelReplacementInputsFeederConductor = typeof PanelReplacementInputsFeederConductor[keyof typeof PanelReplacementInputsFeederConductor];
+
+
+export const PanelReplacementInputsFeederConductor = {
+  '1/0_aluminum_XHHW_conductor': '1/0 aluminum XHHW conductor',
+  '3/0_aluminum_XHHW_conductor': '3/0 aluminum XHHW conductor',
+  '4/0_aluminum_XHHW_conductor': '4/0 aluminum XHHW conductor',
+  '1/0_copper_service_conductor_alternative': '1/0 copper service conductor alternative',
+  '2/0_copper_service_conductor_alternative': '2/0 copper service conductor alternative',
+  Other_configured_feeder_conductor: 'Other configured feeder conductor',
+} as const;
+
+export interface PanelReplacementInputs {
+  replacementType: PanelReplacementInputsReplacementType;
+  panelManufacturer: PanelReplacementInputsPanelManufacturer;
+  panelAmperage: PanelReplacementInputsPanelAmperage;
+  /** @minimum 1 */
+  panelSpaceCount: number;
+  /** @minimum 1 */
+  breakerAmperage: number;
+  /** @minimum 1 */
+  breakerPoleCount: number;
+  breakerProtectionType: PanelReplacementInputsBreakerProtectionType;
+  feederConductor: PanelReplacementInputsFeederConductor;
+  /** @minimum 0 */
+  feederLength: number;
+  /** @minimum 1 */
+  feederConductorQuantity: number;
+  /** @minimum 0 */
+  feederRacewayFootage: number;
+  /** @minimum 0 */
+  feederRacewayFittingsQuantity: number;
+  /** @minimum 0 */
+  groundBarQuantity: number;
+  /** @minimum 0 */
+  groundRodQuantity: number;
+  /** @minimum 0 */
+  groundingConductorFootage: number;
+  /** @minimum 0 */
+  bondingConductorFootage: number;
+  existingBreakers?: ExistingBreakerCount[];
+  /** @minimum 0 */
+  existingOtherBreakerQuantity?: number;
+  /** @minimum 0 */
+  fillerPlateQuantity: number;
+  /** @minimum 0 */
+  knockoutSealQuantity: number;
+  /** @minimum 0 */
+  plywoodQuantity: number;
+  /** @minimum 0 */
+  studsQuantity: number;
+  /** @minimum 0 */
+  antiOxidantQuantity: number;
+  /** @minimum 0 */
+  electricalTapeQuantity: number;
+  /** @minimum 0 */
+  permitAllowance: number;
+  /** @minimum 0 */
+  inspectionAllowance: number;
+  /** @minimum 0 */
+  miscellaneousAllowance: number;
+  /** @minimum 1 */
+  crewSize: number;
+  /** @minimum 0 */
+  crewHours: number;
+  /** @minimum 0 */
+  panelRemovalLaborHours?: number;
+  /** @minimum 0 */
+  feederInstallationLaborHours?: number;
+  /** @minimum 0 */
+  groundingLaborHours?: number;
+  /** @minimum 0 */
+  accessDifficultyLaborHours?: number;
+  /** @minimum 0 */
+  generalLaborAdjustmentHours?: number;
+  /**
+     * @deprecated
+     * @minimum 0
+     */
+  laborAdjustmentHours?: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+}
+
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -712,6 +832,7 @@ export const QuoteInputModule = {
   KITCHEN: 'KITCHEN',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
   SERVICE_UPGRADE: 'SERVICE_UPGRADE',
+  PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
 } as const;
 
 export interface QuoteInput {
@@ -722,7 +843,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -748,11 +869,12 @@ export const QuotePreviewInputModule = {
   KITCHEN: 'KITCHEN',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
   SERVICE_UPGRADE: 'SERVICE_UPGRADE',
+  PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
 } as const;
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99

@@ -32,6 +32,7 @@ import {
   type BathroomInputRecord,
   type EvChargerInputRecord,
   type KitchenInputRecord,
+  type PanelReplacementInputRecord,
   type PricingRecord,
   type QuoteJobInputsRecord,
   type RecessedLightingInputRecord,
@@ -42,6 +43,7 @@ import {
   calculateBathroomEstimate,
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
+  calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
   calculateServiceUpgradeEstimate,
   normalizePricingWarnings,
@@ -55,7 +57,8 @@ type EstimateModule =
   | "BATHROOM"
   | "KITCHEN"
   | "RECESSED_LIGHTING"
-  | "SERVICE_UPGRADE";
+  | "SERVICE_UPGRADE"
+  | "PANEL_REPLACEMENT";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -233,6 +236,9 @@ async function calculateEstimate(
   if (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs)) {
     return calculateServiceUpgradeEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs)) {
+    return calculatePanelReplacementEstimate(jobInputs, settings, priceBook);
+  }
   throw new Error(`Job inputs do not match module ${module}`);
 }
 
@@ -266,6 +272,12 @@ function isServiceUpgradeInput(
   return "serviceSize" in jobInputs && "crewHours" in jobInputs;
 }
 
+function isPanelReplacementInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is PanelReplacementInputRecord {
+  return "replacementType" in jobInputs && "feederConductor" in jobInputs;
+}
+
 function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -276,6 +288,7 @@ function moduleMatchesInputs(
     (module === "KITCHEN" && isKitchenInput(jobInputs)) ||
     (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs))
     || (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs))
+    || (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs))
   );
 }
 

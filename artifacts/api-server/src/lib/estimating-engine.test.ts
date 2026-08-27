@@ -3,6 +3,7 @@ import test from "node:test";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   calculateKitchenEstimate,
+  calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
   calculateServiceUpgradeEstimate,
   type EstimatingSettings,
@@ -10,6 +11,7 @@ import {
 } from "./estimating-engine";
 import type {
   KitchenInputRecord,
+  PanelReplacementInputRecord,
   RecessedLightingInputRecord,
   ServiceUpgradeInputRecord,
 } from "@workspace/db";
@@ -269,6 +271,245 @@ const servicePriceBook: PriceBookItem[] = [
   catalogRow("4x4x3/4 plywood", 55),
   catalogRow("2x4x8 stud", 6),
 ];
+
+const panelReplacementInputs: PanelReplacementInputRecord = {
+  replacementType: "Like-for-like panel replacement",
+  panelManufacturer: "Siemens",
+  panelAmperage: 200,
+  panelSpaceCount: 40,
+  breakerAmperage: 200,
+  breakerPoleCount: 2,
+  breakerProtectionType: "Standard",
+  feederConductor: "4/0 aluminum XHHW conductor",
+  feederLength: 15,
+  feederConductorQuantity: 3,
+  feederRacewayFootage: 15,
+  feederRacewayFittingsQuantity: 4,
+  groundBarQuantity: 2,
+  groundRodQuantity: 0,
+  groundingConductorFootage: 20,
+  bondingConductorFootage: 10,
+  existingBreakers: [],
+  existingOtherBreakerQuantity: 0,
+  fillerPlateQuantity: 2,
+  knockoutSealQuantity: 4,
+  plywoodQuantity: 1,
+  studsQuantity: 2,
+  antiOxidantQuantity: 1,
+  electricalTapeQuantity: 2,
+  permitAllowance: 125,
+  inspectionAllowance: 0,
+  miscellaneousAllowance: 75,
+  crewSize: 2,
+  crewHours: 10,
+  panelRemovalLaborHours: 2,
+  feederInstallationLaborHours: 1,
+  groundingLaborHours: 1,
+  accessDifficultyLaborHours: 0,
+  generalLaborAdjustmentHours: 0,
+  laborRateType: "residential",
+  notes: "",
+};
+
+const panelReplacementPriceBook: PriceBookItem[] = [
+  ...servicePriceBook,
+  catalogRow("Siemens 200A panel replacement enclosure", 480, {
+    manufacturer: "Siemens",
+  }),
+  catalogRow("Siemens panel filler plate", 3.5, {
+    manufacturer: "Siemens",
+  }),
+  catalogRow("panel knockout seal", 1.25),
+  catalogRow("panel replacement feeder raceway", 4.25),
+  catalogRow("panel replacement feeder raceway fittings", 8),
+  catalogRow("anti-oxidation compound", 12),
+  catalogRow("electrical tape", 4),
+];
+
+test("panel replacement preview and create accept the same immutable input shape", () => {
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "PANEL_REPLACEMENT",
+      jobInputs: panelReplacementInputs,
+      laborOverride: 1200,
+      sellingPriceOverride: 4900,
+    }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Panel customer",
+      projectName: "Panel replacement",
+      module: "PANEL_REPLACEMENT",
+      jobInputs: panelReplacementInputs,
+      proposalDescription: "Replace the selected electrical panel.",
+      laborOverride: 1200,
+      sellingPriceOverride: 4900,
+    }).success,
+    true,
+  );
+});
+
+test("panel replacement resolves exact panel, breaker, and compatible feeder rows", () => {
+  const result = calculatePanelReplacementEstimate(
+    panelReplacementInputs,
+    settings,
+    panelReplacementPriceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-panel")
+      ?.unitCost,
+    480,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-breaker")
+      ?.unitCost,
+    180,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-feeder")
+      ?.quantity,
+    45,
+  );
+  assert.equal(result.pricing.laborCost, 24 * settings.loadedLaborCost);
+});
+
+test("panel replacement never prices an incompatible feeder or generic breaker", () => {
+  const result = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      breakerProtectionType: "GFCI",
+      feederConductor: "1/0 aluminum XHHW conductor",
+    },
+    settings,
+    panelReplacementPriceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-breaker")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-feeder")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED",
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PANEL_REPLACEMENT_FEEDER_COMPATIBILITY_REVIEW",
+    ),
+    true,
+  );
+});
+
+test("panel replacement requires a complete supported panel, OCPD, and conductor tuple", () => {
+  const result = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      breakerAmperage: 150,
+      feederConductor: "3/0 aluminum XHHW conductor",
+      feederConductorQuantity: 4,
+    },
+    settings,
+    panelReplacementPriceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-breaker")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-replacement-feeder")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PANEL_REPLACEMENT_FEEDER_COMPATIBILITY_REVIEW",
+    ),
+    true,
+  );
+});
+
+test("panel replacement breaker inventory rejects unverified default rows", () => {
+  const result = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      existingBreakers: [
+        {
+          amperage: 20,
+          poleCount: 1,
+          protectionType: "AFCI",
+          quantity: 2,
+        },
+      ],
+    },
+    settings,
+    [
+      ...panelReplacementPriceBook,
+      catalogRow("Siemens 20A 1-pole AFCI breaker", 52, {
+        manufacturer: "Siemens",
+        amperage: 20,
+        poleCount: 1,
+        protectionType: "AFCI",
+        isDefault: true,
+      }),
+    ],
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "panel-existing-breaker-0")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED",
+    ),
+    true,
+  );
+});
+
+test("panel replacement preview and create reject negative task labor", () => {
+  const invalidInputs = {
+    ...panelReplacementInputs,
+    panelRemovalLaborHours: -1,
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "PANEL_REPLACEMENT",
+      jobInputs: invalidInputs,
+    }).success,
+    false,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Panel customer",
+      projectName: "Panel replacement",
+      module: "PANEL_REPLACEMENT",
+      jobInputs: invalidInputs,
+      proposalDescription: "Replace the selected electrical panel.",
+    }).success,
+    false,
+  );
+});
 
 test("service upgrade preview and create validation accept the same additive input snapshot", () => {
   assert.equal(

@@ -51,8 +51,8 @@ export function Builders() {
       title: "Panel Replacement",
       description: "Like-for-like panel swaps or sub-panel additions with AFCI/GFCI requirements.",
       icon: AlertTriangle,
-      status: "upcoming",
-      href: "/builders"
+      status: "live",
+      href: "/quotes/new/panel-replacement"
     }
   ]
 

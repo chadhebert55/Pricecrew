@@ -8,10 +8,11 @@
 import type { BathroomInputs } from './bathroomInputs';
 import type { EvChargerInputs } from './evChargerInputs';
 import type { KitchenInputs } from './kitchenInputs';
+import type { PanelReplacementInputs } from './panelReplacementInputs';
 import type { RecessedLightingInputs } from './recessedLightingInputs';
 import type { ServiceUpgradeInputs } from './serviceUpgradeInputs';
 
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | { [key: string]: unknown };

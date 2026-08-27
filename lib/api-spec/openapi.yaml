@@ -330,6 +330,7 @@ components:
             - KITCHEN
             - RECESSED_LIGHTING
             - SERVICE_UPGRADE
+            - PANEL_REPLACEMENT
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
@@ -337,6 +338,7 @@ components:
             - $ref: "#/components/schemas/KitchenInputs"
             - $ref: "#/components/schemas/RecessedLightingInputs"
             - $ref: "#/components/schemas/ServiceUpgradeInputs"
+            - $ref: "#/components/schemas/PanelReplacementInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -356,6 +358,7 @@ components:
         - $ref: "#/components/schemas/KitchenInputs"
         - $ref: "#/components/schemas/RecessedLightingInputs"
         - $ref: "#/components/schemas/ServiceUpgradeInputs"
+        - $ref: "#/components/schemas/PanelReplacementInputs"
         - type: object
           additionalProperties: true
     QuotePreviewInput:
@@ -372,6 +375,7 @@ components:
             - KITCHEN
             - RECESSED_LIGHTING
             - SERVICE_UPGRADE
+            - PANEL_REPLACEMENT
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
@@ -379,6 +383,7 @@ components:
             - $ref: "#/components/schemas/KitchenInputs"
             - $ref: "#/components/schemas/RecessedLightingInputs"
             - $ref: "#/components/schemas/ServiceUpgradeInputs"
+            - $ref: "#/components/schemas/PanelReplacementInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -1064,6 +1069,155 @@ components:
         existingOtherBreakerQuantity:
           type: number
           minimum: 0
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        notes:
+          type: string
+    PanelReplacementInputs:
+      type: object
+      required:
+        - replacementType
+        - panelManufacturer
+        - panelAmperage
+        - panelSpaceCount
+        - breakerAmperage
+        - breakerPoleCount
+        - breakerProtectionType
+        - feederConductor
+        - feederLength
+        - feederConductorQuantity
+        - feederRacewayFootage
+        - feederRacewayFittingsQuantity
+        - groundBarQuantity
+        - groundRodQuantity
+        - groundingConductorFootage
+        - bondingConductorFootage
+        - fillerPlateQuantity
+        - knockoutSealQuantity
+        - plywoodQuantity
+        - studsQuantity
+        - antiOxidantQuantity
+        - electricalTapeQuantity
+        - permitAllowance
+        - inspectionAllowance
+        - miscellaneousAllowance
+        - crewSize
+        - crewHours
+        - notes
+      properties:
+        replacementType:
+          type: string
+          enum: [Like-for-like panel replacement, Subpanel addition]
+        panelManufacturer:
+          type: string
+          enum: [Siemens, Eaton, Square D]
+        panelAmperage:
+          type: integer
+          enum: [100, 150, 200]
+        panelSpaceCount:
+          type: number
+          minimum: 1
+        breakerAmperage:
+          type: number
+          minimum: 1
+        breakerPoleCount:
+          type: number
+          minimum: 1
+        breakerProtectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        feederConductor:
+          type: string
+          enum:
+            - 1/0 aluminum XHHW conductor
+            - 3/0 aluminum XHHW conductor
+            - 4/0 aluminum XHHW conductor
+            - 1/0 copper service conductor alternative
+            - 2/0 copper service conductor alternative
+            - Other configured feeder conductor
+        feederLength:
+          type: number
+          minimum: 0
+        feederConductorQuantity:
+          type: number
+          minimum: 1
+        feederRacewayFootage:
+          type: number
+          minimum: 0
+        feederRacewayFittingsQuantity:
+          type: number
+          minimum: 0
+        groundBarQuantity:
+          type: number
+          minimum: 0
+        groundRodQuantity:
+          type: number
+          minimum: 0
+        groundingConductorFootage:
+          type: number
+          minimum: 0
+        bondingConductorFootage:
+          type: number
+          minimum: 0
+        existingBreakers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExistingBreakerCount"
+        existingOtherBreakerQuantity:
+          type: number
+          minimum: 0
+        fillerPlateQuantity:
+          type: number
+          minimum: 0
+        knockoutSealQuantity:
+          type: number
+          minimum: 0
+        plywoodQuantity:
+          type: number
+          minimum: 0
+        studsQuantity:
+          type: number
+          minimum: 0
+        antiOxidantQuantity:
+          type: number
+          minimum: 0
+        electricalTapeQuantity:
+          type: number
+          minimum: 0
+        permitAllowance:
+          type: number
+          minimum: 0
+        inspectionAllowance:
+          type: number
+          minimum: 0
+        miscellaneousAllowance:
+          type: number
+          minimum: 0
+        crewSize:
+          type: number
+          minimum: 1
+        crewHours:
+          type: number
+          minimum: 0
+        panelRemovalLaborHours:
+          type: number
+          minimum: 0
+        feederInstallationLaborHours:
+          type: number
+          minimum: 0
+        groundingLaborHours:
+          type: number
+          minimum: 0
+        accessDifficultyLaborHours:
+          type: number
+          minimum: 0
+        generalLaborAdjustmentHours:
+          type: number
+          minimum: 0
+        laborAdjustmentHours:
+          type: number
+          minimum: 0
+          deprecated: true
         laborRateType:
           $ref: "#/components/schemas/LaborRateType"
         notes:

@@ -13,7 +13,7 @@ import { seedEstimatorData } from "./estimating-seed";
 
 class RollbackFreshSeedTest extends Error {}
 
-test("fresh seed promotes verified EV pricing and inserts editable Service Upgrade rows without overwriting edits", async () => {
+test("fresh seed promotes verified pricing and inserts editable service and panel rows without overwriting edits", async () => {
   try {
     await db.transaction(async (transaction) => {
       await transaction.delete(quotesTable);
@@ -47,6 +47,14 @@ test("fresh seed promotes verified EV pricing and inserts editable Service Upgra
             ),
             true,
           );
+          assert.equal(
+            seededRows.some(
+              (row) =>
+                row.item ===
+                `${manufacturer} ${amperage}A panel replacement enclosure`,
+            ),
+            true,
+          );
           for (const protectionType of [
             "Standard",
             "GFCI",
@@ -68,7 +76,7 @@ test("fresh seed promotes verified EV pricing and inserts editable Service Upgra
       }
 
       const editableRow = seededRows.find(
-        (row) => row.item === "100A outdoor meter/disconnect",
+        (row) => row.item === "Siemens 200A panel replacement enclosure",
       );
       assert.ok(editableRow);
       await transaction

@@ -4,6 +4,7 @@ import type {
   EvChargerInputRecord,
   KitchenInputRecord,
   LaborRateType,
+  PanelReplacementInputRecord,
   PricingRecord,
   PricingWarningCategory,
   PricingWarningContext,
@@ -95,6 +96,33 @@ function warningMetadata(message: string): WarningMetadata {
       category: "planning",
       source: "service-upgrade-allowance",
       context: { rule: "local permit, inspection, or miscellaneous amount requires confirmation" },
+    };
+  }
+  if (message.startsWith("Panel Replacement allowance")) {
+    return {
+      code: "PANEL_REPLACEMENT_ALLOWANCE_REVIEW",
+      severity: "warning",
+      category: "planning",
+      source: "panel-replacement-allowance",
+      context: { rule: "local permit, inspection, or miscellaneous amount requires confirmation" },
+    };
+  }
+  if (message.includes("Panel Replacement assumptions")) {
+    return {
+      code: "PANEL_REPLACEMENT_FIELD_REVIEW",
+      severity: "warning",
+      category: "field-verification",
+      source: "panel-replacement-configuration",
+      context: { rule: "verify existing panel, feeder routing, working clearances, and field conditions" },
+    };
+  }
+  if (message.includes("does not meet the selected breaker amperage")) {
+    return {
+      code: "PANEL_REPLACEMENT_FEEDER_COMPATIBILITY_REVIEW",
+      severity: "error",
+      category: "compatibility",
+      source: "panel-replacement-feeder",
+      context: { rule: "selected feeder conductor must be explicitly compatible with the selected overcurrent protection" },
     };
   }
   if (message.includes("service configuration") || message.includes("field conditions")) {
@@ -1986,6 +2014,313 @@ export function calculateServiceUpgradeEstimate(
   return finalizeEstimate(
     assembly,
     personHours,
+    settings,
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+}
+
+export function calculatePanelReplacementEstimate(
+  inputs: PanelReplacementInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  const safeNumber = (value: number | undefined) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+
+  const addPricedItem = (
+    id: string,
+    category: string,
+    key: string,
+    description: string,
+    quantity: number,
+    unit = "ea",
+  ) => {
+    const safeQuantity = safeNumber(quantity);
+    if (safeQuantity === 0) return;
+    const price = unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit,
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  const addAllowance = (
+    id: string,
+    label: string,
+    key: string,
+    amount: number,
+  ) => {
+    const enteredAmount = safeNumber(amount);
+    const price =
+      enteredAmount > 0
+        ? {
+            value: enteredAmount,
+            source: "Contractor-entered configurable allowance",
+          }
+        : unitCost(key, priceBook, pricingWarnings);
+    if (price.value === 0) {
+      pricingWarnings.push(
+        `Panel Replacement allowance "${label}" is unresolved until a local amount is entered or a company price-book value is configured.`,
+      );
+    }
+    addLine(assembly, {
+      id,
+      category: "Allowance",
+      description: `${label} — configurable allowance`,
+      quantity: 1,
+      unit: "allowance",
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  const panelAmperage = Math.max(1, Number(inputs.panelAmperage) || 1);
+  const breakerAmperage = Math.max(1, Number(inputs.breakerAmperage) || 1);
+  const breakerPoleCount = Math.max(1, Number(inputs.breakerPoleCount) || 1);
+  const breakerMatchesPanel =
+    breakerAmperage === panelAmperage && breakerPoleCount === 2;
+  const breaker = resolveBreaker(
+    {
+      manufacturer: inputs.panelManufacturer,
+      amperage: breakerAmperage,
+      poleCount: breakerPoleCount,
+      protectionType: inputs.breakerProtectionType,
+    },
+    priceBook,
+    pricingWarnings,
+    true,
+  );
+  addLine(assembly, {
+    id: "panel-replacement-breaker",
+    category: "Protection",
+    description: breaker.description,
+    quantity: 1,
+    unit: "ea",
+    unitCost: breakerMatchesPanel ? breaker.value : 0,
+    source: breakerMatchesPanel
+      ? breaker.source
+      : "Unresolved panel/breaker compatibility — select a supported exact configuration",
+  });
+
+  addPricedItem(
+    "panel-replacement-panel",
+    "Panel",
+    `${inputs.panelManufacturer} ${panelAmperage}A panel replacement enclosure`,
+    `${inputs.panelManufacturer} ${panelAmperage}A ${inputs.panelSpaceCount}-space panel — ${inputs.replacementType}`,
+    1,
+  );
+  addPricedItem(
+    "panel-space-fillers",
+    "Panel",
+    `${inputs.panelManufacturer} panel filler plate`,
+    `${inputs.panelManufacturer} panel filler plates`,
+    inputs.fillerPlateQuantity,
+  );
+  addPricedItem(
+    "panel-knockout-seals",
+    "Panel",
+    "panel knockout seal",
+    "Panel knockout seals",
+    inputs.knockoutSealQuantity,
+  );
+
+  const feederKey = {
+    "1/0 aluminum XHHW conductor": "1/0 aluminum XHHW conductor",
+    "3/0 aluminum XHHW conductor": "3/0 aluminum XHHW conductor",
+    "4/0 aluminum XHHW conductor": "4/0 aluminum XHHW conductor",
+    "1/0 copper service conductor alternative":
+      "1/0 copper service conductor alternative",
+    "2/0 copper service conductor alternative":
+      "2/0 copper service conductor alternative",
+    "Other configured feeder conductor": "other configured feeder conductor",
+  }[inputs.feederConductor];
+  const compatibleFeederConductors: Record<number, string[]> = {
+    100: [
+      "1/0 aluminum XHHW conductor",
+      "1/0 copper service conductor alternative",
+    ],
+    150: [
+      "3/0 aluminum XHHW conductor",
+      "2/0 copper service conductor alternative",
+    ],
+    200: ["4/0 aluminum XHHW conductor"],
+  };
+  const feederIsCompatible =
+    breakerMatchesPanel &&
+    inputs.feederConductorQuantity === 3 &&
+    (compatibleFeederConductors[breakerAmperage]?.includes(
+      inputs.feederConductor,
+    ) ??
+      false);
+  const feederQuantity =
+    safeNumber(inputs.feederLength) * safeNumber(inputs.feederConductorQuantity);
+  if (!feederIsCompatible) {
+    pricingWarnings.push(
+      `The selected panel/breaker/feeder tuple (${panelAmperage}A panel, ${breakerAmperage}A ${breakerPoleCount}-pole breaker, ${inputs.feederConductorQuantity} × ${inputs.feederConductor}) does not meet the selected breaker amperage and supported configuration. No feeder conductor cost was substituted; confirm an exact compatible tuple before quoting.`,
+    );
+    addLine(assembly, {
+      id: "panel-replacement-feeder",
+      category: "Feeder",
+      description: `${inputs.feederConductor} feeder — unresolved compatibility`,
+      quantity: feederQuantity,
+      unit: "ft",
+      unitCost: 0,
+      source: "Unresolved feeder compatibility — select a supported conductor",
+    });
+  } else {
+    const feeder = unitCost(feederKey, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id: "panel-replacement-feeder",
+      category: "Feeder",
+      description: `${inputs.feederConductor} feeder`,
+      quantity: feederQuantity,
+      unit: "ft",
+      unitCost: feeder.value,
+      source: feeder.source,
+    });
+  }
+  addPricedItem(
+    "feeder-raceway",
+    "Raceway",
+    "panel replacement feeder raceway",
+    "Panel replacement feeder raceway",
+    inputs.feederRacewayFootage,
+    "ft",
+  );
+  addPricedItem(
+    "feeder-raceway-fittings",
+    "Raceway",
+    "panel replacement feeder raceway fittings",
+    "Panel replacement feeder raceway fittings",
+    inputs.feederRacewayFittingsQuantity,
+  );
+
+  addPricedItem("panel-ground-bars", "Grounding", "ground bar", "Ground bars", inputs.groundBarQuantity);
+  addPricedItem("panel-ground-rods", "Grounding", "ground rod", "Ground rods", inputs.groundRodQuantity);
+  addPricedItem(
+    "panel-grounding-conductor",
+    "Grounding",
+    "#8 solid grounding conductor",
+    "#8 solid grounding conductor",
+    inputs.groundingConductorFootage,
+    "ft",
+  );
+  addPricedItem(
+    "panel-bonding-conductor",
+    "Bonding",
+    "#4 green bonding conductor",
+    "#4 green bonding conductor",
+    inputs.bondingConductorFootage,
+    "ft",
+  );
+  addPricedItem("panel-plywood", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
+  addPricedItem("panel-studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
+  addPricedItem(
+    "panel-anti-oxidant",
+    "Normal Stock",
+    "anti-oxidation compound",
+    "Anti-oxidation compound",
+    inputs.antiOxidantQuantity,
+  );
+  addPricedItem(
+    "panel-electrical-tape",
+    "Normal Stock",
+    "electrical tape",
+    "Electrical tape",
+    inputs.electricalTapeQuantity,
+    "roll",
+  );
+
+  for (const [index, existingBreaker] of (inputs.existingBreakers ?? []).entries()) {
+    const quantity = safeNumber(existingBreaker.quantity);
+    if (quantity === 0) continue;
+    const resolved = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: Math.max(1, Number(existingBreaker.amperage) || 1),
+        poleCount: Math.max(1, Number(existingBreaker.poleCount) || 1),
+        protectionType: existingBreaker.protectionType,
+      },
+      priceBook,
+      pricingWarnings,
+      true,
+    );
+    addLine(assembly, {
+      id: `panel-existing-breaker-${index}`,
+      category: "Existing Circuits",
+      description: `Replacement ${resolved.description}`,
+      quantity,
+      unit: "ea",
+      unitCost: resolved.value,
+      source: resolved.source,
+    });
+  }
+  addPricedItem(
+    "panel-existing-breaker-other",
+    "Existing Circuits",
+    "other existing-circuit breaker",
+    "Other existing-circuit breaker — exact selection required",
+    inputs.existingOtherBreakerQuantity ?? 0,
+  );
+
+  addAllowance("panel-permit-allowance", "Permit", "panel replacement permit allowance", inputs.permitAllowance);
+  addAllowance(
+    "panel-inspection-allowance",
+    "Inspection",
+    "panel replacement inspection allowance",
+    inputs.inspectionAllowance,
+  );
+  addAllowance(
+    "panel-miscellaneous-allowance",
+    "Miscellaneous",
+    "panel replacement miscellaneous allowance",
+    inputs.miscellaneousAllowance,
+  );
+
+  assembly.push({
+    id: "panel-replacement-closeout",
+    category: "Closeout",
+    description: "Prepare panel directory and complete final circuit labeling",
+    quantity: 1,
+    unit: "scope",
+    unitCost: 0,
+    extendedCost: 0,
+    source: "Included labor scope",
+  });
+  pricingWarnings.push(
+    "Panel Replacement assumptions require field verification of the existing panel, feeder routing, working clearances, grounding, and circuit protection; selections are configurable estimating assumptions, not universal code requirements.",
+  );
+  if (!breakerMatchesPanel) {
+    pricingWarnings.push(
+      `Panel Replacement field verification is required because the selected ${breakerAmperage}A ${breakerPoleCount}-pole panel breaker does not match the supported ${panelAmperage}A, 2-pole panel configuration; breaker pricing remains unresolved.`,
+    );
+  }
+
+  const crewSize = Math.max(1, Number(inputs.crewSize) || 1);
+  const crewHours = safeNumber(inputs.crewHours);
+  const adjustmentHours = [
+    inputs.panelRemovalLaborHours,
+    inputs.feederInstallationLaborHours,
+    inputs.groundingLaborHours,
+    inputs.accessDifficultyLaborHours,
+    inputs.generalLaborAdjustmentHours ?? inputs.laborAdjustmentHours,
+  ].reduce<number>(
+    (total, value) =>
+      total + (Number.isFinite(Number(value)) ? Number(value) : 0),
+    0,
+  );
+
+  return finalizeEstimate(
+    assembly,
+    Math.max(0, crewSize * crewHours + adjustmentHours),
     settings,
     pricingWarnings,
     inputs.laborRateType,
