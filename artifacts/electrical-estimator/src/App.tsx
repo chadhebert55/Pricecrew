@@ -22,11 +22,13 @@ import { NewServiceUpgradeQuote } from '@/pages/quotes/new-service-upgrade';
 import { NewPanelReplacementQuote } from '@/pages/quotes/new-panel-replacement';
 import { NewServiceCallQuote } from '@/pages/quotes/new-service-call';
 import { NewTimeMaterialsQuote } from '@/pages/quotes/new-time-materials';
+import { NewCustomQuote } from '@/pages/quotes/new-custom';
 import { QuoteProposal } from '@/pages/quotes/proposal';
 import { QuoteDetail } from '@/pages/quotes/detail';
 import { Builders } from '@/pages/builders';
 import { PriceBook } from '@/pages/price-book';
 import { Customers } from '@/pages/customers';
+import { CustomerDetail } from '@/pages/customer-detail';
 import { Settings } from '@/pages/settings';
 
 const queryClient = new QueryClient({
@@ -53,11 +55,13 @@ function Router() {
           <Route path="/quotes/new/panel-replacement" component={NewPanelReplacementQuote} />
           <Route path="/quotes/new/service-call" component={NewServiceCallQuote} />
           <Route path="/quotes/new/time-materials" component={NewTimeMaterialsQuote} />
+          <Route path="/quotes/new/custom" component={NewCustomQuote} />
           <Route path="/quotes/:id" component={QuoteDetail} />
           <Route path="/proposals/:token" component={QuoteProposal} />
           <Route path="/builders" component={Builders} />
           <Route path="/price-book" component={PriceBook} />
           <Route path="/customers" component={Customers} />
+          <Route path="/customers/:id" component={CustomerDetail} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

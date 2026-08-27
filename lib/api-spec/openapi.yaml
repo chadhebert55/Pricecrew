@@ -14,6 +14,8 @@ tags:
     description: Estimating dashboard operations
   - name: quotes
     description: Quote and estimate operations
+  - name: customers
+    description: Company customer records and quote history
   - name: price-book
     description: Company price book operations
   - name: settings
@@ -44,6 +46,88 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      summary: List company customers
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomerSummary"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Create a company customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerInput"
+      responses:
+        "201":
+          description: Created customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerSummary"
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      summary: Get a customer and quote history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Customer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetail"
+        "404":
+          description: Customer not found
+    patch:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdate"
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerSummary"
+        "404":
+          description: Customer not found
   /quotes:
     get:
       operationId: listQuotes
@@ -267,6 +351,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QuoteSummary"
+    CustomerSummary:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - quoteCount
+        - totalQuoted
+        - latestQuoteAt
+        - createdAt
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        quoteCount:
+          type: number
+        totalQuoted:
+          type: number
+        latestQuoteAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    CustomerDetail:
+      allOf:
+        - $ref: "#/components/schemas/CustomerSummary"
+        - type: object
+          required:
+            - quotes
+          properties:
+            quotes:
+              type: array
+              items:
+                $ref: "#/components/schemas/QuoteSummary"
+    CustomerInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: ["string", "null"]
+    CustomerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: ["string", "null"]
     QuoteSummary:
       type: object
       required:
@@ -417,6 +556,7 @@ components:
             - PANEL_REPLACEMENT
             - SERVICE_CALL
             - TIME_MATERIALS
+            - CUSTOM
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
@@ -427,6 +567,7 @@ components:
             - $ref: "#/components/schemas/PanelReplacementInputs"
             - $ref: "#/components/schemas/ServiceCallInputs"
             - $ref: "#/components/schemas/TimeMaterialsInputs"
+            - $ref: "#/components/schemas/CustomInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -449,6 +590,7 @@ components:
         - $ref: "#/components/schemas/PanelReplacementInputs"
         - $ref: "#/components/schemas/ServiceCallInputs"
         - $ref: "#/components/schemas/TimeMaterialsInputs"
+        - $ref: "#/components/schemas/CustomInputs"
         - type: object
           additionalProperties: true
     QuotePreviewInput:
@@ -468,6 +610,7 @@ components:
             - PANEL_REPLACEMENT
             - SERVICE_CALL
             - TIME_MATERIALS
+            - CUSTOM
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
@@ -478,6 +621,7 @@ components:
             - $ref: "#/components/schemas/PanelReplacementInputs"
             - $ref: "#/components/schemas/ServiceCallInputs"
             - $ref: "#/components/schemas/TimeMaterialsInputs"
+            - $ref: "#/components/schemas/CustomInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -1462,6 +1606,72 @@ components:
           minimum: 0
           maximum: 99.99
           description: Target gross margin percentage.
+        miscellaneousMaterials:
+          type: array
+          items:
+            $ref: "#/components/schemas/MiscellaneousMaterialInput"
+        notes:
+          type: string
+    CustomMaterialInput:
+      type: object
+      required:
+        - id
+        - description
+        - quantity
+        - unit
+        - unitCost
+      properties:
+        id:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        quantity:
+          type: number
+          minimum: 0
+        unit:
+          type: string
+        unitCost:
+          type: number
+          minimum: 0
+    CustomInputs:
+      type: object
+      required:
+        - laborHours
+        - laborRateType
+        - laborSellRate
+        - loadedLaborCost
+        - materialMarkup
+        - targetMargin
+        - materials
+        - miscellaneousMaterials
+        - notes
+      properties:
+        laborHours:
+          type: number
+          minimum: 0
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        laborSellRate:
+          type: number
+          minimum: 0
+        loadedLaborCost:
+          type: number
+          minimum: 0
+        materialMarkup:
+          type: number
+          minimum: 0
+          maximum: 500
+          description: Material markup percentage.
+        targetMargin:
+          type: number
+          minimum: 0
+          maximum: 99.99
+          description: Target gross margin percentage.
+        materials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomMaterialInput"
         miscellaneousMaterials:
           type: array
           items:

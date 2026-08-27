@@ -9,6 +9,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export type LaborRateType = "residential" | "commercial";
 export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
@@ -332,6 +333,26 @@ export type TimeMaterialsInputRecord = {
   notes: string;
 };
 
+export type CustomMaterialInput = {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+};
+
+export type CustomInputRecord = {
+  laborHours: number;
+  laborRateType: LaborRateType;
+  laborSellRate: number;
+  loadedLaborCost: number;
+  materialMarkup: number;
+  targetMargin: number;
+  materials: CustomMaterialInput[];
+  miscellaneousMaterials: MiscellaneousMaterialInput[];
+  notes: string;
+};
+
 export type ExactCatalogPartSelectors = {
   meterDisconnect?: string;
   servicePanel?: string;
@@ -368,7 +389,8 @@ export type QuoteJobInputsRecord =
   | ServiceUpgradeInputRecord
   | PanelReplacementInputRecord
   | ServiceCallInputRecord
-  | TimeMaterialsInputRecord;
+  | TimeMaterialsInputRecord
+  | CustomInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;
@@ -546,17 +568,26 @@ export const companySettingsTable = pgTable(
   (table) => [uniqueIndex("company_settings_company_id_unique").on(table.companyId)],
 );
 
-export const customersTable = pgTable("customers", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id")
-    .notNull()
-    .references(() => companiesTable.id),
-  name: text("name").notNull(),
-  email: text("email"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const customersTable = pgTable(
+  "customers",
+  {
+    id: serial("id").primaryKey(),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companiesTable.id),
+    name: text("name").notNull(),
+    email: text("email"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("customers_company_normalized_email_unique").on(
+      table.companyId,
+      sql`lower(nullif(btrim(${table.email}), ''))`,
+    ),
+  ],
+);
 
 export const priceBookItemsTable = pgTable("price_book_items", {
   id: serial("id").primaryKey(),

@@ -1,11 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock } from "lucide-react"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes } from "lucide-react"
 import { Link } from "wouter"
 
 export function Builders() {
   const modules = [
+    {
+      id: "custom",
+      title: "Custom Items",
+      description: "Build reusable custom scopes with quote-local labor, material lines, allowances, markup, margin, and customer-safe proposals.",
+      icon: Shapes,
+      status: "live",
+      href: "/quotes/new/custom"
+    },
     {
       id: "service-call",
       title: "Service Call",

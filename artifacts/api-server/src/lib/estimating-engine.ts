@@ -1,6 +1,7 @@
 import type {
   AssemblyLineRecord,
   BathroomInputRecord,
+  CustomInputRecord,
   EvChargerInputRecord,
   KitchenInputRecord,
   LaborRateType,
@@ -717,7 +718,7 @@ function addMiscellaneousMaterialLines(
   assembly: AssemblyLineRecord[],
   pricingWarnings: string[],
   lines: Array<{ id: string; description: string; cost: number }>,
-  warningPrefix: "Service Call" | "Time & Materials",
+  warningPrefix: string,
 ) {
   lines.forEach((line, index) => {
     const description = line.description.trim();
@@ -3102,6 +3103,69 @@ export function calculateTimeMaterialsEstimate(
   pricingWarnings.push(
     "Time & Materials values are an authorization estimate. Confirm actual labor and material usage before invoicing.",
   );
+
+  return finalizeEstimate(
+    assembly,
+    laborHours,
+    configuredEstimateSettings(settings, inputs),
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+}
+
+export function calculateCustomEstimate(
+  inputs: CustomInputRecord,
+  settings: EstimatingSettings,
+  _priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+
+  inputs.materials.forEach((line, index) => {
+    const description = line.description.trim();
+    const quantity = Number.isFinite(Number(line.quantity))
+      ? Math.max(0, Number(line.quantity))
+      : 0;
+    const unitCost = Number.isFinite(Number(line.unitCost))
+      ? Math.max(0, Number(line.unitCost))
+      : 0;
+    if (!description && quantity === 0 && unitCost === 0) return;
+    if (!description) {
+      pricingWarnings.push(
+        `Custom material line ${index + 1} has no description. Confirm the material before sending the quote.`,
+      );
+    }
+    if (unitCost === 0) {
+      pricingWarnings.push(
+        `Custom material "${description || `line ${index + 1}`}" has zero cost and must be confirmed before sending the quote.`,
+      );
+    }
+    addLine(assembly, {
+      id: `custom-material-${line.id || index + 1}`,
+      category: "Materials",
+      description: description || `Custom material ${index + 1}`,
+      quantity,
+      unit: line.unit.trim() || "ea",
+      unitCost,
+      source: "Contractor-entered custom material",
+    });
+  });
+
+  addMiscellaneousMaterialLines(
+    assembly,
+    pricingWarnings,
+    inputs.miscellaneousMaterials,
+    "Custom",
+  );
+
+  const laborHours = Number.isFinite(Number(inputs.laborHours))
+    ? Math.max(0, Number(inputs.laborHours))
+    : 0;
+  if (laborHours === 0) {
+    pricingWarnings.push(
+      "Custom scope labor is zero. Enter labor hours before sending the quote.",
+    );
+  }
 
   return finalizeEstimate(
     assembly,

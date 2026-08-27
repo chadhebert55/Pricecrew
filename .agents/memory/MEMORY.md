@@ -5,3 +5,4 @@
 - [Price-book seed ownership](price-book-seed-ownership.md) — edits must clear default ownership; only untouched starter rows may be promoted to verified catalog data.
 - [Builder labor defaults](builder-labor-defaults.md) — company values seed quote-local assumptions; quote edits replace that copied value rather than stacking another delta.
 - [Catalog price normalization](catalog-price-normalization.md) — per-thousand wire prices require six-decimal storage and complete source metadata; ambiguous package units stay unresolved.
+- [Customer identity matching](customer-identity-matching.md) — email identity is company-scoped and DB-enforced; names alone may match only one email-less customer.

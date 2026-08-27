@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type {
   BathroomInputRecord,
+  CustomInputRecord,
   EvChargerInputRecord,
   KitchenInputRecord,
   PricingWarningRecord,
@@ -12,6 +13,7 @@ import type {
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   calculateBathroomEstimate,
+  calculateCustomEstimate,
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
   calculateRecessedLightingEstimate,
@@ -27,6 +29,7 @@ import {
   createProposalShareToken,
   hasBlockingPricingWarnings,
   MAX_OVERRIDE_VALUE,
+  matchCustomerForQuote,
   pricingForQuoteUpdate,
   parseProposalShareToken,
   validateOverrideValues,
@@ -627,6 +630,28 @@ const timeMaterialsInputs: TimeMaterialsInputRecord = {
   notes: "",
 };
 
+const customInputs: CustomInputRecord = {
+  laborHours: 4,
+  laborRateType: "commercial",
+  laborSellRate: 180,
+  loadedLaborCost: 70,
+  materialMarkup: 20,
+  targetMargin: 40,
+  materials: [
+    {
+      id: "fixture",
+      description: "Owner-selected decorative fixture",
+      quantity: 2,
+      unit: "ea",
+      unitCost: 25,
+    },
+  ],
+  miscellaneousMaterials: [
+    { id: "consumables", description: "Consumables allowance", cost: 10 },
+  ],
+  notes: "Internal custom scope note.",
+};
+
 test("Service Call uses verified device rows and visibly preserves unresolved materials", () => {
   const result = calculateServiceCallEstimate(serviceCallInputs, settings, [
     catalogRow("Pass & Seymour 3232-TRW 15A TR duplex receptacle", 1.25),
@@ -672,10 +697,24 @@ test("Time & Materials honors quote-local labor, loaded cost, markup, and margin
   expectStructuredWarnings(result.pricing.pricingWarnings);
 });
 
+test("Custom Items uses exact quote-local labor, materials, markup, and margin assumptions", () => {
+  const result = calculateCustomEstimate(customInputs, settings, []);
+  assert.equal(result.pricing.materialCost, 60);
+  assert.equal(result.pricing.laborCost, 280);
+  assert.equal(result.pricing.laborSellRate, 180);
+  assert.equal(result.pricing.laborSellAmount, 720);
+  assert.equal(result.pricing.materialMarkup, 0.2);
+  assert.equal(result.pricing.finalSellingPrice, 792);
+  assert.equal(result.assembly[0]?.description, "Owner-selected decorative fixture");
+  assert.equal(result.assembly[0]?.extendedCost, 50);
+  assert.deepEqual(result.pricing.pricingWarnings, []);
+});
+
 test("new builder preview and create contracts accept identical snapshots and reject invalid labor", () => {
   for (const [module, jobInputs] of [
     ["SERVICE_CALL", serviceCallInputs],
     ["TIME_MATERIALS", timeMaterialsInputs],
+    ["CUSTOM", customInputs],
   ] as const) {
     const preview = PreviewQuoteBody.safeParse({ module, jobInputs });
     const create = CreateQuoteBody.safeParse({
@@ -699,6 +738,62 @@ test("new builder preview and create contracts accept identical snapshots and re
     }).success,
     false,
   );
+});
+
+test("customer matching is email-first and never merges different emails that share a name", () => {
+  const customers = [
+    {
+      id: 1,
+      companyId: 1,
+      name: "Alex Smith",
+      email: "alex.one@example.com",
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+    },
+    {
+      id: 2,
+      companyId: 1,
+      name: "Alex Smith",
+      email: "alex.two@example.com",
+      createdAt: new Date("2026-01-02T00:00:00Z"),
+    },
+  ];
+
+  assert.equal(
+    matchCustomerForQuote(customers, {
+      name: "Alex Smith",
+      email: "ALEX.TWO@example.com",
+    })?.customer.id,
+    2,
+  );
+  assert.equal(
+    matchCustomerForQuote(customers, {
+      name: "Alex Smith",
+      email: "alex.three@example.com",
+    }),
+    null,
+  );
+  assert.equal(
+    matchCustomerForQuote(customers, { name: "Alex Smith", email: null }),
+    null,
+  );
+});
+
+test("customer matching safely adds an email to one unambiguous email-less record", () => {
+  const customers = [
+    {
+      id: 3,
+      companyId: 1,
+      name: "Jordan Lee",
+      email: null,
+      createdAt: new Date("2026-01-03T00:00:00Z"),
+    },
+  ];
+  const match = matchCustomerForQuote(customers, {
+    name: "  jordan   lee ",
+    email: "Jordan@example.com",
+  });
+  assert.equal(match?.customer.id, 3);
+  assert.equal(match?.shouldSetEmail, true);
 });
 
 test("zero-cost active T&M material lines produce a structured audit warning", () => {

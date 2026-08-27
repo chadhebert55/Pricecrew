@@ -1,9 +1,13 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import {
   CreateQuoteBody,
   CreateQuoteResponse,
+  CreateCustomerBody,
+  CreateCustomerResponse,
+  GetCustomerParams,
+  GetCustomerResponse,
   GetDashboardSummaryResponse,
   GetCustomerProposalParams,
   GetCustomerProposalResponse,
@@ -13,6 +17,8 @@ import {
   ListPriceBookItemsResponse,
   ListQuotesQueryParams,
   ListQuotesResponse,
+  ListCustomersQueryParams,
+  ListCustomersResponse,
   PreviewQuoteBody,
   PreviewQuoteResponse,
   UpdatePriceBookItemBody,
@@ -21,6 +27,9 @@ import {
   UpdateQuoteBody,
   UpdateQuoteParams,
   UpdateQuoteResponse,
+  UpdateCustomerBody,
+  UpdateCustomerParams,
+  UpdateCustomerResponse,
   UpdateSettingsBody,
   UpdateSettingsResponse,
 } from "@workspace/api-zod";
@@ -32,6 +41,7 @@ import {
   priceBookItemsTable,
   quotesTable,
   type BathroomInputRecord,
+  type CustomInputRecord,
   type EvChargerInputRecord,
   type KitchenInputRecord,
   type PanelReplacementInputRecord,
@@ -45,6 +55,7 @@ import {
 import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
   calculateBathroomEstimate,
+  calculateCustomEstimate,
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
   calculatePanelReplacementEstimate,
@@ -66,7 +77,8 @@ type EstimateModule =
   | "SERVICE_UPGRADE"
   | "PANEL_REPLACEMENT"
   | "SERVICE_CALL"
-  | "TIME_MATERIALS";
+  | "TIME_MATERIALS"
+  | "CUSTOM";
 
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
@@ -131,6 +143,150 @@ function serializeQuoteSummary(quote: typeof quotesTable.$inferSelect) {
     margin: quote.margin,
     updatedAt: quote.updatedAt.toISOString(),
   };
+}
+
+function normalizeCustomerName(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function normalizeCustomerEmail(value: string | null | undefined) {
+  const normalized = value?.trim().toLocaleLowerCase();
+  return normalized || null;
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  if ("code" in error && error.code === "23505") return true;
+  return "cause" in error && isUniqueConstraintError(error.cause);
+}
+
+async function customerByNormalizedEmail(email: string) {
+  const customers = await db
+    .select()
+    .from(customersTable)
+    .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+  return customers.find(
+    (customer) => normalizeCustomerEmail(customer.email) === email,
+  );
+}
+
+function serializeCustomerSummary(
+  customer: typeof customersTable.$inferSelect,
+  quotes: Array<typeof quotesTable.$inferSelect>,
+) {
+  const customerQuotes = quotes.filter((quote) => quote.customerId === customer.id);
+  const latestQuote = customerQuotes.reduce<typeof quotesTable.$inferSelect | null>(
+    (latest, quote) =>
+      !latest || quote.updatedAt > latest.updatedAt ? quote : latest,
+    null,
+  );
+
+  return {
+    id: customer.id,
+    name: customer.name,
+    email: customer.email,
+    quoteCount: customerQuotes.length,
+    totalQuoted: Number(
+      customerQuotes.reduce((sum, quote) => sum + quote.total, 0).toFixed(2),
+    ),
+    latestQuoteAt: latestQuote?.updatedAt.toISOString() ?? null,
+    createdAt: customer.createdAt.toISOString(),
+  };
+}
+
+export function matchCustomerForQuote(
+  customers: Array<typeof customersTable.$inferSelect>,
+  input: { name: string; email?: string | null },
+) {
+  const normalizedName = normalizeCustomerName(input.name);
+  const normalizedEmail = normalizeCustomerEmail(input.email);
+
+  if (normalizedEmail) {
+    const emailMatch = customers.find(
+      (customer) => normalizeCustomerEmail(customer.email) === normalizedEmail,
+    );
+    if (emailMatch) return { customer: emailMatch, shouldSetEmail: false };
+
+    const nameOnlyMatches = customers.filter(
+      (customer) =>
+        normalizeCustomerName(customer.name) === normalizedName &&
+        normalizeCustomerEmail(customer.email) === null,
+    );
+    if (nameOnlyMatches.length === 1) {
+      return { customer: nameOnlyMatches[0], shouldSetEmail: true };
+    }
+    return null;
+  }
+
+  const nameOnlyMatches = customers.filter(
+    (customer) =>
+      normalizeCustomerName(customer.name) === normalizedName &&
+      normalizeCustomerEmail(customer.email) === null,
+  );
+  return nameOnlyMatches.length === 1
+    ? { customer: nameOnlyMatches[0], shouldSetEmail: false }
+    : null;
+}
+
+async function findOrCreateCustomer(input: {
+  name: string;
+  email?: string | null;
+}) {
+  const name = input.name.trim().replace(/\s+/g, " ");
+  const email = normalizeCustomerEmail(input.email);
+  const customers = await db
+    .select()
+    .from(customersTable)
+    .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+  const match = matchCustomerForQuote(customers, { name, email });
+
+  if (match?.customer) {
+    if (match.shouldSetEmail && email) {
+      let updated: typeof customersTable.$inferSelect | undefined;
+      try {
+        [updated] = await db
+          .update(customersTable)
+          .set({ email })
+          .where(
+            and(
+              eq(customersTable.id, match.customer.id),
+              eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+              isNull(customersTable.email),
+            ),
+          )
+          .returning();
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          const concurrentEmailMatch = await customerByNormalizedEmail(email);
+          if (concurrentEmailMatch) return concurrentEmailMatch;
+        }
+        throw error;
+      }
+      if (updated) return updated;
+      const concurrentEmailMatch = await customerByNormalizedEmail(email);
+      if (concurrentEmailMatch) return concurrentEmailMatch;
+    }
+    if (!match.shouldSetEmail) return match.customer;
+  }
+
+  try {
+    const [customer] = await db
+      .insert(customersTable)
+      .values({
+        companyId: DEFAULT_COMPANY_ID,
+        name,
+        email,
+      })
+      .returning();
+    if (!customer) throw new Error("Unable to create customer");
+    return customer;
+  } catch (error) {
+    if (email && isUniqueConstraintError(error)) {
+      const concurrentEmailMatch = await customerByNormalizedEmail(email);
+      if (concurrentEmailMatch) return concurrentEmailMatch;
+    }
+    throw error;
+  }
 }
 
 function proposalSecret() {
@@ -342,6 +498,9 @@ async function calculateEstimate(
   if (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs)) {
     return calculateTimeMaterialsEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "CUSTOM" && isCustomInput(jobInputs)) {
+    return calculateCustomEstimate(jobInputs, settings, priceBook);
+  }
   throw new Error(`Job inputs do not match module ${module}`);
 }
 
@@ -393,6 +552,12 @@ function isTimeMaterialsInput(
   return "serviceType" in jobInputs && "laborSellRate" in jobInputs;
 }
 
+function isCustomInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is CustomInputRecord {
+  return "laborHours" in jobInputs && "materials" in jobInputs;
+}
+
 function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -406,6 +571,7 @@ function moduleMatchesInputs(
     || (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs))
     || (module === "SERVICE_CALL" && isServiceCallInput(jobInputs))
     || (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs))
+    || (module === "CUSTOM" && isCustomInput(jobInputs))
   );
 }
 
@@ -436,6 +602,218 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
   });
   req.log.info({ quoteCount: quotes.length }, "Loaded dashboard summary");
   res.json(data);
+});
+
+router.get("/customers", async (req, res): Promise<void> => {
+  await ensureEstimatorSeed();
+  const parsedQuery = ListCustomersQueryParams.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ error: parsedQuery.error.message });
+    return;
+  }
+
+  const [customers, quotes] = await Promise.all([
+    db
+      .select()
+      .from(customersTable)
+      .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID))
+      .orderBy(customersTable.name),
+    db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID)),
+  ]);
+  const search = parsedQuery.data.search?.trim().toLocaleLowerCase();
+  const filtered = search
+    ? customers.filter(
+        (customer) =>
+          customer.name.toLocaleLowerCase().includes(search) ||
+          customer.email?.toLocaleLowerCase().includes(search),
+      )
+    : customers;
+
+  res.json(
+    ListCustomersResponse.parse(
+      filtered.map((customer) => serializeCustomerSummary(customer, quotes)),
+    ),
+  );
+});
+
+router.post("/customers", async (req, res): Promise<void> => {
+  await ensureEstimatorSeed();
+  const parsed = CreateCustomerBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const email = normalizeCustomerEmail(parsed.data.email);
+  if (email) {
+    const customers = await db
+      .select()
+      .from(customersTable)
+      .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+    if (
+      customers.some(
+        (customer) => normalizeCustomerEmail(customer.email) === email,
+      )
+    ) {
+      res.status(409).json({ error: "A customer with this email already exists." });
+      return;
+    }
+  }
+
+  let customer: typeof customersTable.$inferSelect | undefined;
+  try {
+    [customer] = await db
+      .insert(customersTable)
+      .values({
+        companyId: DEFAULT_COMPANY_ID,
+        name: parsed.data.name.trim().replace(/\s+/g, " "),
+        email,
+      })
+      .returning();
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      res.status(409).json({ error: "A customer with this email already exists." });
+      return;
+    }
+    throw error;
+  }
+  if (!customer) throw new Error("Unable to create customer");
+
+  req.log.info({ customerId: customer.id }, "Created customer");
+  res
+    .status(201)
+    .json(CreateCustomerResponse.parse(serializeCustomerSummary(customer, [])));
+});
+
+router.get("/customers/:id", async (req, res): Promise<void> => {
+  await ensureEstimatorSeed();
+  const params = GetCustomerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [customer] = await db
+    .select()
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.id, params.data.id),
+        eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+      ),
+    );
+  if (!customer) {
+    res.status(404).json({ error: "Customer not found" });
+    return;
+  }
+
+  const quotes = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.customerId, customer.id),
+        eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+      ),
+    )
+    .orderBy(desc(quotesTable.updatedAt));
+
+  res.json(
+    GetCustomerResponse.parse({
+      ...serializeCustomerSummary(customer, quotes),
+      quotes: quotes.map(serializeQuoteSummary),
+    }),
+  );
+});
+
+router.patch("/customers/:id", async (req, res): Promise<void> => {
+  await ensureEstimatorSeed();
+  const params = UpdateCustomerParams.safeParse(req.params);
+  const parsed = UpdateCustomerBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.id, params.data.id),
+        eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+      ),
+    );
+  if (!existing) {
+    res.status(404).json({ error: "Customer not found" });
+    return;
+  }
+
+  const email =
+    "email" in parsed.data
+      ? normalizeCustomerEmail(parsed.data.email)
+      : existing.email;
+  if (email) {
+    const customers = await db
+      .select()
+      .from(customersTable)
+      .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+    const conflict = customers.find(
+      (customer) =>
+        customer.id !== existing.id &&
+        normalizeCustomerEmail(customer.email) === email,
+    );
+    if (conflict) {
+      res.status(409).json({ error: "A customer with this email already exists." });
+      return;
+    }
+  }
+
+  let customer: typeof customersTable.$inferSelect | undefined;
+  try {
+    [customer] = await db
+      .update(customersTable)
+      .set({
+        name:
+          parsed.data.name?.trim().replace(/\s+/g, " ") ?? existing.name,
+        email,
+      })
+      .where(
+        and(
+          eq(customersTable.id, existing.id),
+          eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+        ),
+      )
+      .returning();
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      res.status(409).json({ error: "A customer with this email already exists." });
+      return;
+    }
+    throw error;
+  }
+  if (!customer) throw new Error("Unable to update customer");
+
+  const quotes = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.customerId, customer.id),
+        eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+      ),
+    );
+  req.log.info({ customerId: customer.id }, "Updated customer");
+  res.json(
+    UpdateCustomerResponse.parse(serializeCustomerSummary(customer, quotes)),
+  );
 });
 
 router.get("/quotes", async (req, res): Promise<void> => {
@@ -489,25 +867,10 @@ router.post("/quotes", async (req, res): Promise<void> => {
     parsed.data.jobInputs,
   );
 
-  const existingCustomers = await db
-    .select()
-    .from(customersTable)
-    .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
-  const customer =
-    existingCustomers.find(
-      (candidate) =>
-        candidate.name.toLowerCase() === parsed.data.customerName.toLowerCase(),
-    ) ??
-    (
-      await db
-        .insert(customersTable)
-        .values({
-          companyId: DEFAULT_COMPANY_ID,
-          name: parsed.data.customerName,
-          email: parsed.data.customerEmail,
-        })
-        .returning()
-    )[0];
+  const customer = await findOrCreateCustomer({
+    name: parsed.data.customerName,
+    email: parsed.data.customerEmail,
+  });
 
   const pricing = withProfit(estimate.pricing, {
     laborOverride: parsed.data.laborOverride,

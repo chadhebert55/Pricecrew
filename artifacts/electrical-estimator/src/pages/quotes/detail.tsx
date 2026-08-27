@@ -187,7 +187,9 @@ export function QuoteDetail() {
                              ? "Service Call Builder"
                              : quote.module === "TIME_MATERIALS"
                                ? "Time & Materials Builder"
-                    : "EV Charger Builder"}.
+                               : quote.module === "CUSTOM"
+                                 ? "Custom Items Builder"
+                                 : "EV Charger Builder"}.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">

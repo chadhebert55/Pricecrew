@@ -38,6 +38,36 @@ export interface DashboardSummary {
   recentQuotes: QuoteSummary[];
 }
 
+export interface CustomerSummary {
+  id: number;
+  name: string;
+  /** @nullable */
+  email: string | null;
+  quoteCount: number;
+  totalQuoted: number;
+  /** @nullable */
+  latestQuoteAt: string | null;
+  createdAt: string;
+}
+
+export type CustomerDetail = CustomerSummary & {
+  quotes: QuoteSummary[];
+};
+
+export interface CustomerInput {
+  /** @minLength 1 */
+  name: string;
+  /** @nullable */
+  email?: string | null;
+}
+
+export interface CustomerUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @nullable */
+  email?: string | null;
+}
+
 export interface CustomerProposalLine {
   id: string;
   description: string;
@@ -897,10 +927,46 @@ export interface TimeMaterialsInputs {
   notes: string;
 }
 
+export interface CustomMaterialInput {
+  /** @minLength 1 */
+  id: string;
+  description: string;
+  /** @minimum 0 */
+  quantity: number;
+  unit: string;
+  /** @minimum 0 */
+  unitCost: number;
+}
+
+export interface CustomInputs {
+  /** @minimum 0 */
+  laborHours: number;
+  laborRateType: LaborRateType;
+  /** @minimum 0 */
+  laborSellRate: number;
+  /** @minimum 0 */
+  loadedLaborCost: number;
+  /**
+     * Material markup percentage.
+     * @minimum 0
+     * @maximum 500
+     */
+  materialMarkup: number;
+  /**
+     * Target gross margin percentage.
+     * @minimum 0
+     * @maximum 99.99
+     */
+  targetMargin: number;
+  materials: CustomMaterialInput[];
+  miscellaneousMaterials: MiscellaneousMaterialInput[];
+  notes: string;
+}
+
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -999,6 +1065,7 @@ export const QuoteInputModule = {
   PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
   SERVICE_CALL: 'SERVICE_CALL',
   TIME_MATERIALS: 'TIME_MATERIALS',
+  CUSTOM: 'CUSTOM',
 } as const;
 
 export interface QuoteInput {
@@ -1009,7 +1076,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -1038,11 +1105,12 @@ export const QuotePreviewInputModule = {
   PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
   SERVICE_CALL: 'SERVICE_CALL',
   TIME_MATERIALS: 'TIME_MATERIALS',
+  CUSTOM: 'CUSTOM',
 } as const;
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -1195,6 +1263,10 @@ export interface CompanySettingsUpdate {
   /** @minimum 0 */
   panelReplacementHoursPerPerson?: number;
 }
+
+export type ListCustomersParams = {
+search?: string;
+};
 
 export type ListQuotesParams = {
 status?: QuoteStatus;

@@ -41,6 +41,103 @@ export const GetDashboardSummaryResponse = zod.object({
 
 
 /**
+ * @summary List company customers
+ */
+export const ListCustomersQueryParams = zod.object({
+  "search": zod.coerce.string().optional()
+})
+
+export const ListCustomersResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string().nullable(),
+  "quoteCount": zod.number(),
+  "totalQuoted": zod.number(),
+  "latestQuoteAt": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
+
+
+/**
+ * @summary Create a company customer
+ */
+
+
+
+export const CreateCustomerBody = zod.object({
+  "name": zod.string().min(1),
+  "email": zod.string().nullish()
+})
+
+export const CreateCustomerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string().nullable(),
+  "quoteCount": zod.number(),
+  "totalQuoted": zod.number(),
+  "latestQuoteAt": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a customer and quote history
+ */
+export const GetCustomerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCustomerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string().nullable(),
+  "quoteCount": zod.number(),
+  "totalQuoted": zod.number(),
+  "latestQuoteAt": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "quotes": zod.array(zod.object({
+  "id": zod.number(),
+  "quoteNumber": zod.string(),
+  "customerName": zod.string(),
+  "projectName": zod.string(),
+  "module": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
+  "total": zod.number(),
+  "margin": zod.number(),
+  "updatedAt": zod.coerce.date()
+}))
+}))
+
+
+/**
+ * @summary Update a customer
+ */
+export const UpdateCustomerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdateCustomerBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "email": zod.string().nullish()
+})
+
+export const UpdateCustomerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string().nullable(),
+  "quoteCount": zod.number(),
+  "totalQuoted": zod.number(),
+  "latestQuoteAt": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List quotes
  */
 export const ListQuotesQueryParams = zod.object({
@@ -349,6 +446,26 @@ export const createQuoteBodyJobInputsEightTargetMarginMax = 99.99;
 
 export const createQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const createQuoteBodyJobInputsNineLaborHoursMin = 0;
+
+export const createQuoteBodyJobInputsNineLaborSellRateMin = 0;
+
+export const createQuoteBodyJobInputsNineLoadedLaborCostMin = 0;
+
+export const createQuoteBodyJobInputsNineMaterialMarkupMin = 0;
+export const createQuoteBodyJobInputsNineMaterialMarkupMax = 500;
+
+export const createQuoteBodyJobInputsNineTargetMarginMin = 0;
+export const createQuoteBodyJobInputsNineTargetMarginMax = 99.99;
+
+
+export const createQuoteBodyJobInputsNineMaterialsItemQuantityMin = 0;
+
+export const createQuoteBodyJobInputsNineMaterialsItemUnitCostMin = 0;
+
+
+export const createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
 export const createQuoteBodyLaborOverrideMin = 0;
 export const createQuoteBodyLaborOverrideMax = 999999999.99;
 
@@ -362,7 +479,7 @@ export const CreateQuoteBody = zod.object({
   "customerName": zod.string().min(1),
   "customerEmail": zod.string().nullish(),
   "projectName": zod.string().min(1),
-  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS']),
+  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS', 'CUSTOM']),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
@@ -685,6 +802,26 @@ export const CreateQuoteBody = zod.object({
   "cost": zod.number().min(createQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
+}),zod.object({
+  "laborHours": zod.number().min(createQuoteBodyJobInputsNineLaborHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(createQuoteBodyJobInputsNineLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(createQuoteBodyJobInputsNineLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(createQuoteBodyJobInputsNineMaterialMarkupMin).max(createQuoteBodyJobInputsNineMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(createQuoteBodyJobInputsNineTargetMarginMin).max(createQuoteBodyJobInputsNineTargetMarginMax).describe('Target gross margin percentage.'),
+  "materials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "quantity": zod.number().min(createQuoteBodyJobInputsNineMaterialsItemQuantityMin),
+  "unit": zod.string(),
+  "unitCost": zod.number().min(createQuoteBodyJobInputsNineMaterialsItemUnitCostMin)
+})),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
 })]),
   "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).max(createQuoteBodyLaborOverrideMax).nullish(),
   "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).max(createQuoteBodySellingPriceOverrideMax).nullish(),
@@ -973,6 +1110,26 @@ export const createQuoteResponseTwoJobInputsEightTargetMarginMax = 99.99;
 
 
 export const createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
+
+export const createQuoteResponseTwoJobInputsNineLaborHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsNineLaborSellRateMin = 0;
+
+export const createQuoteResponseTwoJobInputsNineLoadedLaborCostMin = 0;
+
+export const createQuoteResponseTwoJobInputsNineMaterialMarkupMin = 0;
+export const createQuoteResponseTwoJobInputsNineMaterialMarkupMax = 500;
+
+export const createQuoteResponseTwoJobInputsNineTargetMarginMin = 0;
+export const createQuoteResponseTwoJobInputsNineTargetMarginMax = 99.99;
+
+
+export const createQuoteResponseTwoJobInputsNineMaterialsItemQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin = 0;
+
+
+export const createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
 
 
 
@@ -1313,6 +1470,26 @@ export const CreateQuoteResponse = zod.object({
   "cost": zod.number().min(createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
+}),zod.object({
+  "laborHours": zod.number().min(createQuoteResponseTwoJobInputsNineLaborHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(createQuoteResponseTwoJobInputsNineLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(createQuoteResponseTwoJobInputsNineLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(createQuoteResponseTwoJobInputsNineMaterialMarkupMin).max(createQuoteResponseTwoJobInputsNineMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(createQuoteResponseTwoJobInputsNineTargetMarginMin).max(createQuoteResponseTwoJobInputsNineTargetMarginMax).describe('Target gross margin percentage.'),
+  "materials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsNineMaterialsItemQuantityMin),
+  "unit": zod.string(),
+  "unitCost": zod.number().min(createQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin)
+})),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -1638,6 +1815,26 @@ export const previewQuoteBodyJobInputsEightTargetMarginMax = 99.99;
 
 export const previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const previewQuoteBodyJobInputsNineLaborHoursMin = 0;
+
+export const previewQuoteBodyJobInputsNineLaborSellRateMin = 0;
+
+export const previewQuoteBodyJobInputsNineLoadedLaborCostMin = 0;
+
+export const previewQuoteBodyJobInputsNineMaterialMarkupMin = 0;
+export const previewQuoteBodyJobInputsNineMaterialMarkupMax = 500;
+
+export const previewQuoteBodyJobInputsNineTargetMarginMin = 0;
+export const previewQuoteBodyJobInputsNineTargetMarginMax = 99.99;
+
+
+export const previewQuoteBodyJobInputsNineMaterialsItemQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsNineMaterialsItemUnitCostMin = 0;
+
+
+export const previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
 export const previewQuoteBodyLaborOverrideMin = 0;
 export const previewQuoteBodyLaborOverrideMax = 999999999.99;
 
@@ -1647,7 +1844,7 @@ export const previewQuoteBodySellingPriceOverrideMax = 999999999.99;
 
 
 export const PreviewQuoteBody = zod.object({
-  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS']),
+  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS', 'CUSTOM']),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
@@ -1968,6 +2165,26 @@ export const PreviewQuoteBody = zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
   "cost": zod.number().min(previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
+}),zod.object({
+  "laborHours": zod.number().min(previewQuoteBodyJobInputsNineLaborHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(previewQuoteBodyJobInputsNineLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(previewQuoteBodyJobInputsNineLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(previewQuoteBodyJobInputsNineMaterialMarkupMin).max(previewQuoteBodyJobInputsNineMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(previewQuoteBodyJobInputsNineTargetMarginMin).max(previewQuoteBodyJobInputsNineTargetMarginMax).describe('Target gross margin percentage.'),
+  "materials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsNineMaterialsItemQuantityMin),
+  "unit": zod.string(),
+  "unitCost": zod.number().min(previewQuoteBodyJobInputsNineMaterialsItemUnitCostMin)
+})),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
 })]),
@@ -2344,6 +2561,26 @@ export const getQuoteResponseTwoJobInputsEightTargetMarginMax = 99.99;
 
 export const getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const getQuoteResponseTwoJobInputsNineLaborHoursMin = 0;
+
+export const getQuoteResponseTwoJobInputsNineLaborSellRateMin = 0;
+
+export const getQuoteResponseTwoJobInputsNineLoadedLaborCostMin = 0;
+
+export const getQuoteResponseTwoJobInputsNineMaterialMarkupMin = 0;
+export const getQuoteResponseTwoJobInputsNineMaterialMarkupMax = 500;
+
+export const getQuoteResponseTwoJobInputsNineTargetMarginMin = 0;
+export const getQuoteResponseTwoJobInputsNineTargetMarginMax = 99.99;
+
+
+export const getQuoteResponseTwoJobInputsNineMaterialsItemQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin = 0;
+
+
+export const getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
 
 
 
@@ -2681,6 +2918,26 @@ export const GetQuoteResponse = zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
   "cost": zod.number().min(getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
+}),zod.object({
+  "laborHours": zod.number().min(getQuoteResponseTwoJobInputsNineLaborHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(getQuoteResponseTwoJobInputsNineLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(getQuoteResponseTwoJobInputsNineLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(getQuoteResponseTwoJobInputsNineMaterialMarkupMin).max(getQuoteResponseTwoJobInputsNineMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(getQuoteResponseTwoJobInputsNineTargetMarginMin).max(getQuoteResponseTwoJobInputsNineTargetMarginMax).describe('Target gross margin percentage.'),
+  "materials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsNineMaterialsItemQuantityMin),
+  "unit": zod.string(),
+  "unitCost": zod.number().min(getQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin)
+})),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
@@ -3027,6 +3284,26 @@ export const updateQuoteResponseOneTwoJobInputsEightTargetMarginMax = 99.99;
 
 export const updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsNineLaborHoursMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsNineLaborSellRateMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsNineLoadedLaborCostMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsNineMaterialMarkupMin = 0;
+export const updateQuoteResponseOneTwoJobInputsNineMaterialMarkupMax = 500;
+
+export const updateQuoteResponseOneTwoJobInputsNineTargetMarginMin = 0;
+export const updateQuoteResponseOneTwoJobInputsNineTargetMarginMax = 99.99;
+
+
+export const updateQuoteResponseOneTwoJobInputsNineMaterialsItemQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsNineMaterialsItemUnitCostMin = 0;
+
+
+export const updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
 
 
 
@@ -3364,6 +3641,26 @@ export const UpdateQuoteResponse = zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
   "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
+}),zod.object({
+  "laborHours": zod.number().min(updateQuoteResponseOneTwoJobInputsNineLaborHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(updateQuoteResponseOneTwoJobInputsNineLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(updateQuoteResponseOneTwoJobInputsNineLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMaterialMarkupMin).max(updateQuoteResponseOneTwoJobInputsNineMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(updateQuoteResponseOneTwoJobInputsNineTargetMarginMin).max(updateQuoteResponseOneTwoJobInputsNineTargetMarginMax).describe('Target gross margin percentage.'),
+  "materials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMaterialsItemQuantityMin),
+  "unit": zod.string(),
+  "unitCost": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMaterialsItemUnitCostMin)
+})),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
