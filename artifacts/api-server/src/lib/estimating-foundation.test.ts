@@ -39,6 +39,7 @@ const catalogRow = (
   unitCost: number,
   fields: Partial<PriceBookItem> = {},
 ): PriceBookItem => ({
+  category: "Other",
   item,
   unitCost,
   supplier: "Northeast Electrical",

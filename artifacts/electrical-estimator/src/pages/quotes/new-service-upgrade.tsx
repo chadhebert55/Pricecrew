@@ -20,6 +20,37 @@ import { useLocation } from "wouter"
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
 
+type ExactCatalogPartKey = keyof NonNullable<ServiceUpgradeInputs["exactCatalogParts"]>
+
+const exactCatalogOptions = {
+  meterDisconnect: [{ value: "Siemens MC0816B1200 200A meter-load-center — SKU 132873", label: "Siemens MC0816B1200 200A meter-load-center — SKU 132873" }],
+  servicePanel: [{ value: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", label: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511" }],
+  mastRaceway: [{ value: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", label: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891" }],
+  mastWeatherhead: [{ value: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902", label: "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902" }],
+  mastHub: [{ value: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", label: "Siemens ECHS200 2-inch load-center rain hub — SKU 26750" }],
+  mastLb: [{ value: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807", label: "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807" }],
+  mastNinety: [{ value: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745", label: "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745" }],
+  mastCoupling: [{ value: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466", label: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466" }],
+  serviceToPanelRaceway: [{ value: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", label: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891" }],
+  serviceToPanelConductor: [
+    "28551", "79651", "1266468", "239663", "300640",
+  ].map((sku) => ({ value: `Wia 4/0 aluminum SER — SKU ${sku}`, label: `Wia 4/0 aluminum SER — SKU ${sku}` })),
+  groundBar: [
+    { value: "GE TGK12 12-hole ground bar — SKU 17742", label: "GE TGK12 12-hole ground bar — SKU 17742" },
+    { value: "Siemens ECGB20 20-position ground bar — SKU 35113", label: "Siemens ECGB20 20-position ground bar — SKU 35113" },
+    { value: "Square D PK3GTA1 ground bar — SKU 86163", label: "Square D PK3GTA1 ground bar — SKU 86163" },
+  ],
+  groundRod: [{ value: "Erico 615880 5/8x8ft copper ground rod — SKU 160523", label: "Erico 615880 5/8x8ft copper ground rod — SKU 160523" }],
+  acornClamp: [{ value: "Erico CP58 5/8 ground rod clamp — SKU 31589", label: "Erico CP58 5/8 ground rod clamp — SKU 31589" }],
+  groundingRaceway: [{ value: "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871", label: "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871" }],
+  groundingRacewayFitting: [{ value: "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952", label: "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952" }],
+  ductSeal: [{ value: "AGP DS1 1lb duct seal — SKU 1009903", label: "AGP DS1 1lb duct seal — SKU 1009903" }],
+  pvcPrimer: [{ value: "PVCFIT clear quart primer — 100-count confirmed package — SKU 152609", label: "PVCFIT clear quart primer — 100-count confirmed package — SKU 152609" }],
+  pvcGlue: [{ value: "PVCFIT clear quart cement — 100-count confirmed package — SKU 152791", label: "PVCFIT clear quart cement — 100-count confirmed package — SKU 152791" }],
+  antiOxidant: [{ value: "Ideal 30-026 4oz anti-oxidant — SKU 32650", label: "Ideal 30-026 4oz anti-oxidant — SKU 32650" }],
+  electricalTape: [{ value: "3M 69 3/4x66ft electrical tape — SKU 21719", label: "3M 69 3/4x66ft electrical tape — SKU 21719" }],
+} satisfies Partial<Record<ExactCatalogPartKey, { value: string; label: string }[]>>
+
 const initialInputs: ServiceUpgradeInputs = {
   serviceSize: "200A",
   serviceConfiguration: "Overhead mast",
@@ -174,6 +205,34 @@ export function NewServiceUpgradeQuote() {
     setInputs((current) => ({ ...current, [key]: numberValue(value, minimum) }))
   }
 
+  const setExactCatalogPart = (key: ExactCatalogPartKey, value: string) => {
+    setInputs(({ exactCatalogParts, ...current }) => {
+      const next = { ...(exactCatalogParts ?? {}) }
+      if (value) next[key] = value
+      else delete next[key]
+      return Object.keys(next).length > 0 ? { ...current, exactCatalogParts: next } : current
+    })
+  }
+
+  const exactCatalogSelect = (
+    id: string,
+    key: keyof typeof exactCatalogOptions,
+    options = exactCatalogOptions[key],
+  ) => (
+    <div className="space-y-2">
+      <Label htmlFor={id}>Exact catalog item (optional)</Label>
+      <select
+        id={id}
+        className={selectClassName}
+        value={options.some((option) => option.value === inputs.exactCatalogParts?.[key]) ? inputs.exactCatalogParts?.[key] : ""}
+        onChange={(e) => setExactCatalogPart(key, e.target.value)}
+      >
+        <option value="">Company price-book key / unresolved</option>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </div>
+  )
+
   const setServiceSize = (serviceSize: ServiceUpgradeInputs["serviceSize"]) => {
     const defaults = {
       "100A": {
@@ -204,7 +263,14 @@ export function NewServiceUpgradeQuote() {
         serviceToPanelConductor: "4/0 aluminum SER" as const,
       },
     }[serviceSize]
-    setInputs((current) => ({ ...current, serviceSize, ...defaults }))
+    setInputs(({ exactCatalogParts, ...current }) => {
+      const next = { ...(exactCatalogParts ?? {}) }
+      delete next.servicePanel
+      delete next.serviceToPanelConductor
+      delete next.serviceToPanelRaceway
+      delete next.meterDisconnect
+      return { ...current, serviceSize, ...defaults, ...(Object.keys(next).length > 0 ? { exactCatalogParts: next } : {}) }
+    })
   }
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -315,14 +381,19 @@ export function NewServiceUpgradeQuote() {
                         value={inputs.serviceDisconnect}
                         onChange={(e) => {
                           const serviceDisconnect = e.target.value as ServiceUpgradeInputs["serviceDisconnect"]
-                          setInputs((current) => ({
-                            ...current,
-                            serviceDisconnect,
-                            meterDisconnectEquipment:
-                              serviceDisconnect === "Meter-main combination"
-                                ? `${current.serviceSize} meter-main with built-in outdoor disconnect`
-                                : `${current.serviceSize} outdoor meter/disconnect`,
-                          }))
+                          setInputs(({ exactCatalogParts, ...current }) => {
+                            const next = { ...(exactCatalogParts ?? {}) }
+                            delete next.meterDisconnect
+                            return {
+                              ...current,
+                              serviceDisconnect,
+                              meterDisconnectEquipment:
+                                serviceDisconnect === "Meter-main combination"
+                                  ? `${current.serviceSize} meter-main with built-in outdoor disconnect`
+                                  : `${current.serviceSize} outdoor meter/disconnect`,
+                              ...(Object.keys(next).length > 0 ? { exactCatalogParts: next } : {}),
+                            }
+                          })
                         }}
                       >
                         <option value="Outdoor service disconnect">Outdoor service disconnect</option>
@@ -332,7 +403,14 @@ export function NewServiceUpgradeQuote() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="su-panel-mfr">Panel Manufacturer</Label>
-                      <select id="su-panel-mfr" className={selectClassName} value={inputs.panelManufacturer} onChange={(e) => setInputs(c => ({ ...c, panelManufacturer: e.target.value as ServiceUpgradeInputs["panelManufacturer"] }))}>
+                      <select id="su-panel-mfr" className={selectClassName} value={inputs.panelManufacturer} onChange={(e) => setInputs(c => {
+                        const exactCatalogParts = { ...(c.exactCatalogParts ?? {}) }
+                        delete exactCatalogParts.servicePanel
+                        delete exactCatalogParts.groundBar
+                         delete exactCatalogParts.meterDisconnect
+                         delete exactCatalogParts.mastHub
+                        return { ...c, panelManufacturer: e.target.value as ServiceUpgradeInputs["panelManufacturer"], ...(Object.keys(exactCatalogParts).length > 0 ? { exactCatalogParts } : { exactCatalogParts: undefined }) }
+                      })}>
                         <option value="Siemens">Siemens</option>
                         <option value="Eaton">Eaton</option>
                         <option value="Square D">Square D</option>
@@ -359,6 +437,22 @@ export function NewServiceUpgradeQuote() {
                       <Label htmlFor="su-meter-eq">Meter Disconnect Equipment</Label>
                       <Input id="su-meter-eq" value={inputs.meterDisconnectEquipment} onChange={(e) => setInputs(c => ({ ...c, meterDisconnectEquipment: e.target.value }))} />
                     </div>
+                    {exactCatalogSelect(
+                      "su-meter-exact",
+                      "meterDisconnect",
+                       inputs.serviceSize === "200A" &&
+                         inputs.serviceDisconnect === "Meter-main combination" &&
+                         inputs.panelManufacturer === "Siemens"
+                        ? exactCatalogOptions.meterDisconnect
+                        : [],
+                    )}
+                    {exactCatalogSelect(
+                      "su-panel-exact",
+                      "servicePanel",
+                      inputs.serviceSize === "100A" && inputs.panelManufacturer === "Square D"
+                        ? exactCatalogOptions.servicePanel
+                        : [],
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="su-surge">Surge Protection</Label>
                       <Input id="su-surge" value={inputs.surgeProtection} onChange={(e) => setInputs(c => ({ ...c, surgeProtection: e.target.value }))} />
@@ -381,26 +475,38 @@ export function NewServiceUpgradeQuote() {
                           <Label htmlFor="su-mast-ft">Mast Footage (FT)</Label>
                           <Input id="su-mast-ft" type="number" min="0" step="1" value={inputs.mastFootage} onChange={(e) => setNumber("mastFootage", e.target.value)} />
                         </div>
+                        {exactCatalogSelect("su-mast-raceway-exact", "mastRaceway")}
                         <div className="space-y-2">
                           <Label htmlFor="su-weatherhead">Weatherhead Qty</Label>
                           <Input id="su-weatherhead" type="number" min="0" step="1" value={inputs.weatherheadQuantity} onChange={(e) => setNumber("weatherheadQuantity", e.target.value)} />
                         </div>
+                        {exactCatalogSelect("su-weatherhead-exact", "mastWeatherhead")}
                         <div className="space-y-2">
                           <Label htmlFor="su-hub">Hub Qty</Label>
                           <Input id="su-hub" type="number" min="0" step="1" value={inputs.hubQuantity} onChange={(e) => setNumber("hubQuantity", e.target.value)} />
                         </div>
+                        {exactCatalogSelect(
+                          "su-hub-exact",
+                          "mastHub",
+                          inputs.panelManufacturer === "Siemens"
+                            ? exactCatalogOptions.mastHub
+                            : [],
+                        )}
                         <div className="space-y-2">
                           <Label htmlFor="su-lb">LB Qty</Label>
                           <Input id="su-lb" type="number" min="0" step="1" value={inputs.lbQuantity} onChange={(e) => setNumber("lbQuantity", e.target.value)} />
                         </div>
+                        {exactCatalogSelect("su-lb-exact", "mastLb")}
                         <div className="space-y-2">
                           <Label htmlFor="su-90">90-Degree Qty</Label>
                           <Input id="su-90" type="number" min="0" step="1" value={inputs.ninetyQuantity} onChange={(e) => setNumber("ninetyQuantity", e.target.value)} />
                         </div>
+                        {exactCatalogSelect("su-90-exact", "mastNinety")}
                         <div className="space-y-2">
                           <Label htmlFor="su-coupling">Coupling Qty</Label>
                           <Input id="su-coupling" type="number" min="0" step="1" value={inputs.couplingQuantity} onChange={(e) => setNumber("couplingQuantity", e.target.value)} />
                         </div>
+                        {exactCatalogSelect("su-coupling-exact", "mastCoupling")}
                         <div className="space-y-2">
                           <Label htmlFor="su-mast-parts">Mast Related Parts Qty</Label>
                           <Input id="su-mast-parts" type="number" min="0" step="1" value={inputs.mastRelatedPartsQuantity} onChange={(e) => setNumber("mastRelatedPartsQuantity", e.target.value)} />
@@ -425,7 +531,12 @@ export function NewServiceUpgradeQuote() {
                     )}
                     <div className="space-y-2">
                       <Label htmlFor="su-ser-cond">Service-to-Panel Conductor</Label>
-                      <select id="su-ser-cond" className={selectClassName} value={inputs.serviceToPanelConductor} onChange={(e) => setInputs(c => ({ ...c, serviceToPanelConductor: e.target.value as ServiceUpgradeInputs["serviceToPanelConductor"] }))}>
+                      <select id="su-ser-cond" className={selectClassName} value={inputs.serviceToPanelConductor} onChange={(e) => setInputs(({ exactCatalogParts, ...current }) => {
+                        const next = { ...(exactCatalogParts ?? {}) }
+                        delete next.serviceToPanelConductor
+                         delete next.serviceToPanelRaceway
+                         return { ...current, serviceToPanelConductor: e.target.value as ServiceUpgradeInputs["serviceToPanelConductor"], ...(Object.keys(next).length > 0 ? { exactCatalogParts: next } : {}) }
+                      })}>
                         <option value="1/0 aluminum SER">1/0 aluminum SER</option>
                         <option value="1/0 copper alternative">1/0 copper alternative</option>
                         <option value="3/0 aluminum SER">3/0 aluminum SER</option>
@@ -436,6 +547,8 @@ export function NewServiceUpgradeQuote() {
                         <option value="Other configured conductor">Other configured conductor</option>
                       </select>
                     </div>
+                    {inputs.serviceToPanelConductor === "4/0 aluminum SER" && exactCatalogSelect("su-ser-exact", "serviceToPanelConductor")}
+                    {inputs.serviceToPanelConductor === "4/0 aluminum XHHW in raceway" && exactCatalogSelect("su-service-raceway-exact", "serviceToPanelRaceway")}
                     <div className="space-y-2">
                       <Label htmlFor="su-ser-ft">Service-to-Panel Footage (FT)</Label>
                       <Input id="su-ser-ft" type="number" min="0" step="1" value={inputs.serviceToPanelFootage} onChange={(e) => setNumber("serviceToPanelFootage", e.target.value)} />
@@ -450,14 +563,23 @@ export function NewServiceUpgradeQuote() {
                       <Label htmlFor="su-ground-bar">Ground Bar Qty</Label>
                       <Input id="su-ground-bar" type="number" min="0" step="1" value={inputs.groundBarQuantity} onChange={(e) => setNumber("groundBarQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect(
+                      "su-ground-bar-exact",
+                      "groundBar",
+                      exactCatalogOptions.groundBar.filter((option) =>
+                        option.value.startsWith("GE ") || option.value.startsWith(`${inputs.panelManufacturer} `),
+                      ),
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="su-ground-rod">Ground Rod Qty</Label>
                       <Input id="su-ground-rod" type="number" min="0" step="1" value={inputs.groundRodQuantity} onChange={(e) => setNumber("groundRodQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-ground-rod-exact", "groundRod")}
                     <div className="space-y-2">
                       <Label htmlFor="su-acorn">Acorn Clamp Qty</Label>
                       <Input id="su-acorn" type="number" min="0" step="1" value={inputs.acornClampQuantity} onChange={(e) => setNumber("acornClampQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-acorn-exact", "acornClamp")}
                     <div className="space-y-2">
                       <Label htmlFor="su-intersystem">Intersystem Bonding Qty</Label>
                       <Input id="su-intersystem" type="number" min="0" step="1" value={inputs.intersystemBondingQuantity} onChange={(e) => setNumber("intersystemBondingQuantity", e.target.value)} />
@@ -474,10 +596,12 @@ export function NewServiceUpgradeQuote() {
                       <Label htmlFor="su-pvc-ft">3/4" PVC Footage (FT)</Label>
                       <Input id="su-pvc-ft" type="number" min="0" step="1" value={inputs.pvcThreeQuarterFootage} onChange={(e) => setNumber("pvcThreeQuarterFootage", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-grounding-raceway-exact", "groundingRaceway")}
                     <div className="space-y-2">
                       <Label htmlFor="su-pvc-fittings">3/4" PVC Fittings Qty</Label>
                       <Input id="su-pvc-fittings" type="number" min="0" step="1" value={inputs.pvcThreeQuarterFittingsQuantity} onChange={(e) => setNumber("pvcThreeQuarterFittingsQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-grounding-raceway-fitting-exact", "groundingRacewayFitting")}
                     <div className="space-y-2">
                       <Label htmlFor="su-water-bond-qty">Water Meter Bonding Qty</Label>
                       <Input id="su-water-bond-qty" type="number" min="0" step="1" value={inputs.waterMeterBondingQuantity} onChange={(e) => setNumber("waterMeterBondingQuantity", e.target.value)} />
@@ -516,22 +640,27 @@ export function NewServiceUpgradeQuote() {
                       <Label htmlFor="su-duct-seal">Service / Duct Seal Qty</Label>
                       <Input id="su-duct-seal" type="number" min="0" step="1" value={inputs.ductSealQuantity ?? 0} onChange={(e) => setNumber("ductSealQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-duct-seal-exact", "ductSeal")}
                     <div className="space-y-2">
                       <Label htmlFor="su-pvc-primer">PVC Primer Qty</Label>
                       <Input id="su-pvc-primer" type="number" min="0" step="1" value={inputs.pvcPrimerQuantity ?? 0} onChange={(e) => setNumber("pvcPrimerQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-pvc-primer-exact", "pvcPrimer")}
                     <div className="space-y-2">
                       <Label htmlFor="su-pvc-glue">PVC Glue Qty</Label>
                       <Input id="su-pvc-glue" type="number" min="0" step="1" value={inputs.pvcGlueQuantity ?? 0} onChange={(e) => setNumber("pvcGlueQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-pvc-glue-exact", "pvcGlue")}
                     <div className="space-y-2">
                       <Label htmlFor="su-anti-oxidant">Anti-Oxidation Compound Qty</Label>
                       <Input id="su-anti-oxidant" type="number" min="0" step="1" value={inputs.antiOxidantQuantity ?? 0} onChange={(e) => setNumber("antiOxidantQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-anti-oxidant-exact", "antiOxidant")}
                     <div className="space-y-2">
                       <Label htmlFor="su-tape">Electrical Tape Qty</Label>
                       <Input id="su-tape" type="number" min="0" step="1" value={inputs.electricalTapeQuantity ?? 0} onChange={(e) => setNumber("electricalTapeQuantity", e.target.value)} />
                     </div>
+                    {exactCatalogSelect("su-tape-exact", "electricalTape")}
                   </div>
                 </section>
 

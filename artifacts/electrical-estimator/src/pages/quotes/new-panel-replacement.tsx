@@ -19,6 +19,29 @@ import { useLocation } from "wouter"
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
 
+const exactCatalogItems = {
+  panelProduct: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511",
+  siemensGroundBar: "Siemens ECGB20 20-position ground bar — SKU 35113",
+  universalGroundBar: "GE TGK12 12-hole ground bar — SKU 17742",
+  squareDGroundBar: "Square D PK3GTA1 ground bar — SKU 86163",
+  groundRod: "Erico 615880 5/8x8ft copper ground rod — SKU 160523",
+  feederRaceway: "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891",
+  feederRacewayFitting: "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466",
+  antiOxidant: "Ideal 30-026 4oz anti-oxidant — SKU 32650",
+  electricalTape: "3M 69 3/4x66ft electrical tape — SKU 21719",
+} as const
+
+type ExactCatalogPartKey = keyof NonNullable<PanelReplacementInputs["exactCatalogParts"]>
+
+function isCompatiblePanelProduct(inputs: Pick<PanelReplacementInputs, "panelManufacturer" | "panelAmperage" | "panelSpaceCount">, item: string) {
+  return (
+    item === exactCatalogItems.panelProduct &&
+    inputs.panelManufacturer === "Square D" &&
+    inputs.panelAmperage === 100 &&
+    inputs.panelSpaceCount === 6
+  )
+}
+
 const initialInputs: PanelReplacementInputs = {
   replacementType: "Like-for-like panel replacement",
   panelManufacturer: "Siemens",
@@ -162,6 +185,59 @@ export function NewPanelReplacementQuote() {
     setInputs((current) => ({ ...current, [key]: numberValue(value, minimum) }))
   }
 
+  const setExactCatalogPart = (key: ExactCatalogPartKey, value: string) => {
+    setInputs((current) => {
+      const exactCatalogParts = { ...(current.exactCatalogParts ?? {}) }
+      if (value) {
+        exactCatalogParts[key] = value
+      } else {
+        delete exactCatalogParts[key]
+      }
+      const { exactCatalogParts: _previousExactCatalogParts, ...remainingInputs } = current
+      return Object.keys(exactCatalogParts).length > 0
+        ? { ...remainingInputs, exactCatalogParts }
+        : remainingInputs
+    })
+  }
+
+  const reconcilePanelSelections = (
+    changes: Pick<PanelReplacementInputs, "panelManufacturer"> &
+      Partial<Pick<PanelReplacementInputs, "panelAmperage" | "panelSpaceCount" | "breakerAmperage" | "feederConductor">>,
+  ) => {
+    setInputs((current) => {
+      const next = { ...current, ...changes }
+      const exactCatalogParts = { ...(next.exactCatalogParts ?? {}) }
+      if (
+        exactCatalogParts.panelProduct &&
+        !isCompatiblePanelProduct(next, exactCatalogParts.panelProduct)
+      ) {
+        delete exactCatalogParts.panelProduct
+      }
+      if (changes.panelManufacturer) {
+        delete exactCatalogParts.groundBar
+      }
+      return { ...next, exactCatalogParts }
+    })
+  }
+
+  const setPanelManufacturer = (panelManufacturer: PanelReplacementInputs["panelManufacturer"]) => {
+    reconcilePanelSelections({ panelManufacturer })
+  }
+
+  const setPanelSpaceCount = (value: string) => {
+    setInputs((current) => {
+      const panelSpaceCount = numberValue(value, 1)
+      const exactCatalogParts = { ...(current.exactCatalogParts ?? {}) }
+      if (
+        exactCatalogParts.panelProduct &&
+        !isCompatiblePanelProduct({ ...current, panelSpaceCount }, exactCatalogParts.panelProduct)
+      ) {
+        delete exactCatalogParts.panelProduct
+      }
+      return { ...current, panelSpaceCount, exactCatalogParts }
+    })
+  }
+
   const setPanelAmperage = (panelAmperage: PanelReplacementInputs["panelAmperage"]) => {
     const defaults = {
       100: {
@@ -177,7 +253,17 @@ export function NewPanelReplacementQuote() {
         feederConductor: "4/0 aluminum XHHW conductor" as const,
       },
     }[panelAmperage]
-    setInputs((current) => ({ ...current, panelAmperage, ...defaults }))
+    setInputs((current) => {
+      const next = { ...current, panelAmperage, ...defaults }
+      const exactCatalogParts = { ...(next.exactCatalogParts ?? {}) }
+      if (
+        exactCatalogParts.panelProduct &&
+        !isCompatiblePanelProduct(next, exactCatalogParts.panelProduct)
+      ) {
+        delete exactCatalogParts.panelProduct
+      }
+      return { ...next, exactCatalogParts }
+    })
   }
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -271,7 +357,7 @@ export function NewPanelReplacementQuote() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="pr-mfr">Panel Manufacturer</Label>
-                       <select id="pr-mfr" data-testid="select-panel-mfr" className={selectClassName} value={inputs.panelManufacturer} onChange={(e) => setInputs(c => ({ ...c, panelManufacturer: e.target.value as PanelReplacementInputs["panelManufacturer"] }))}>
+                       <select id="pr-mfr" data-testid="select-panel-mfr" className={selectClassName} value={inputs.panelManufacturer} onChange={(e) => setPanelManufacturer(e.target.value as PanelReplacementInputs["panelManufacturer"])}>
                         <option value="Siemens">Siemens</option>
                         <option value="Eaton">Eaton</option>
                         <option value="Square D">Square D</option>
@@ -287,7 +373,16 @@ export function NewPanelReplacementQuote() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="pr-spaces">Panel Space Count</Label>
-                      <Input id="pr-spaces" data-testid="input-panel-spaces" type="number" min="1" step="1" value={inputs.panelSpaceCount} onChange={(e) => setNumber("panelSpaceCount", e.target.value, 1)} />
+                      <Input id="pr-spaces" data-testid="input-panel-spaces" type="number" min="1" step="1" value={inputs.panelSpaceCount} onChange={(e) => setPanelSpaceCount(e.target.value)} />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="pr-panel-product">Exact Panel Product</Label>
+                      <select id="pr-panel-product" data-testid="select-panel-product" className={selectClassName} value={inputs.exactCatalogParts?.panelProduct ?? ""} onChange={(e) => setExactCatalogPart("panelProduct", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        {isCompatiblePanelProduct(inputs, exactCatalogItems.panelProduct) && (
+                          <option value={exactCatalogItems.panelProduct}>{exactCatalogItems.panelProduct}</option>
+                        )}
+                      </select>
                     </div>
                   </div>
                 </section>
@@ -345,6 +440,20 @@ export function NewPanelReplacementQuote() {
                       <Label htmlFor="pr-rw-fit">Raceway Fittings Qty</Label>
                       <Input id="pr-rw-fit" data-testid="input-rw-fit" type="number" min="0" step="1" value={inputs.feederRacewayFittingsQuantity} onChange={(e) => setNumber("feederRacewayFittingsQuantity", e.target.value)} />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pr-rw-product">Exact Raceway</Label>
+                      <select id="pr-rw-product" data-testid="select-feeder-raceway-product" className={selectClassName} value={inputs.exactCatalogParts?.feederRaceway ?? ""} onChange={(e) => setExactCatalogPart("feederRaceway", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        <option value={exactCatalogItems.feederRaceway}>{exactCatalogItems.feederRaceway}</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pr-rw-fitting-product">Exact Raceway Fitting</Label>
+                      <select id="pr-rw-fitting-product" data-testid="select-feeder-raceway-fitting-product" className={selectClassName} value={inputs.exactCatalogParts?.feederRacewayFitting ?? ""} onChange={(e) => setExactCatalogPart("feederRacewayFitting", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        <option value={exactCatalogItems.feederRacewayFitting}>{exactCatalogItems.feederRacewayFitting}</option>
+                      </select>
+                    </div>
                   </div>
                 </section>
 
@@ -358,6 +467,22 @@ export function NewPanelReplacementQuote() {
                     <div className="space-y-2">
                       <Label htmlFor="pr-g-rod">Ground Rod Qty</Label>
                       <Input id="pr-g-rod" data-testid="input-g-rod" type="number" min="0" step="1" value={inputs.groundRodQuantity} onChange={(e) => setNumber("groundRodQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pr-g-bar-product">Exact Ground Bar</Label>
+                      <select id="pr-g-bar-product" data-testid="select-ground-bar-product" className={selectClassName} value={inputs.exactCatalogParts?.groundBar ?? ""} onChange={(e) => setExactCatalogPart("groundBar", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        <option value={exactCatalogItems.universalGroundBar}>{exactCatalogItems.universalGroundBar}</option>
+                        {inputs.panelManufacturer === "Siemens" && <option value={exactCatalogItems.siemensGroundBar}>{exactCatalogItems.siemensGroundBar}</option>}
+                        {inputs.panelManufacturer === "Square D" && <option value={exactCatalogItems.squareDGroundBar}>{exactCatalogItems.squareDGroundBar}</option>}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pr-g-rod-product">Exact Ground Rod</Label>
+                      <select id="pr-g-rod-product" data-testid="select-ground-rod-product" className={selectClassName} value={inputs.exactCatalogParts?.groundRod ?? ""} onChange={(e) => setExactCatalogPart("groundRod", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        <option value={exactCatalogItems.groundRod}>{exactCatalogItems.groundRod}</option>
+                      </select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="pr-g-c-ft">Grounding Conductor (FT)</Label>
@@ -434,8 +559,22 @@ export function NewPanelReplacementQuote() {
                       <Input id="pr-anti-ox" data-testid="input-anti-ox" type="number" min="0" step="1" value={inputs.antiOxidantQuantity} onChange={(e) => setNumber("antiOxidantQuantity", e.target.value)} />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="pr-anti-ox-product">Exact Anti-Oxidant</Label>
+                      <select id="pr-anti-ox-product" data-testid="select-anti-oxidant-product" className={selectClassName} value={inputs.exactCatalogParts?.antiOxidant ?? ""} onChange={(e) => setExactCatalogPart("antiOxidant", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        <option value={exactCatalogItems.antiOxidant}>{exactCatalogItems.antiOxidant}</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="pr-tape">Electrical Tape Qty</Label>
                       <Input id="pr-tape" data-testid="input-tape" type="number" min="0" step="1" value={inputs.electricalTapeQuantity} onChange={(e) => setNumber("electricalTapeQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pr-tape-product">Exact Electrical Tape</Label>
+                      <select id="pr-tape-product" data-testid="select-electrical-tape-product" className={selectClassName} value={inputs.exactCatalogParts?.electricalTape ?? ""} onChange={(e) => setExactCatalogPart("electricalTape", e.target.value)}>
+                        <option value="">Company price-book key / unresolved</option>
+                        <option value={exactCatalogItems.electricalTape}>{exactCatalogItems.electricalTape}</option>
+                      </select>
                     </div>
                   </div>
                 </section>

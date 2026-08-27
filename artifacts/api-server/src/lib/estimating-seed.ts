@@ -380,6 +380,41 @@ export async function seedEstimatorData(
     })),
   ];
   let verifiedItems: SeedPriceBookItem[] = [
+    ...[
+      ["Equipment", "Siemens MC0816B1200 200A meter-load-center — SKU 132873", "ea", 523.989, "Siemens", "MC0816B1200", "132873", 200, "78364351070"],
+      ["Panel", "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511", "ea", 151.625, "Square D", "HOM612L100R", "79511", 100, "78590106120"],
+      ["Conductor", "Wia 4/0 aluminum SER — SKU 28551", "ft", 4.419839, "Wia.", "WIA. SER 4/0-4/", "28551", undefined, "98012058495"],
+      ["Conductor", "Wia 4/0 aluminum SER — SKU 79651", "ft", 8.826428, "Wia.", "WIA. SER 4/0-4/", "79651", undefined, "980120S0029"],
+      ["Conductor", "Wia 4/0 aluminum SER — SKU 1266468", "ft", 3.30776, "Wia.", "WIA. SER 4/0-4/", "1266468", undefined, "980120S4953"],
+      ["Conductor", "Wia 4/0 aluminum SER — SKU 239663", "ft", 5.050638, "Wia.", "WIA. SER 4/0-4/", "239663", undefined, "98012058496"],
+      ["Conductor", "Wia 4/0 aluminum SER — SKU 300640", "ft", 4.419839, "Wia.", "WIA. SER 4/0-4/", "300640", undefined, "98012058499"],
+      ["Grounding", "GE TGK12 12-hole ground bar — SKU 17742", "ea", 25.929, "GE", "TGK12", "17742", undefined, "78316415846"],
+      ["Grounding", "Siemens ECGB20 20-position ground bar — SKU 35113", "ea", 20.733, "Siemens", "ECGB20", "35113", undefined, "78364345239"],
+      ["Grounding", "Square D PK3GTA1 ground bar — SKU 86163", "ea", 17.669, "Square D", "PK3GTA1", "86163", undefined, "78590115693"],
+      ["Grounding", "Erico 615880 5/8x8ft copper ground rod — SKU 160523", "ea", 25.313, "Erico", "615880", "160523", undefined, "78285630609"],
+      ["Grounding", "Erico CP58 5/8 ground rod clamp — SKU 31589", "ea", 6.092, "Erico", "CP58", "31589", undefined, "78285630703"],
+      ["Raceway", "Siemens ECHS200 2-inch load-center rain hub — SKU 26750", "ea", 11.954, "Siemens", "ECHS200", "26750", undefined, "78364345512"],
+      ["Raceway", "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", "ft", 1.12886, "PVCFIT", undefined, "8891", undefined, "98006006026"],
+      ["Raceway", "PVCFIT 2-inch weatherhead — 100-count confirmed package — SKU 512902", "ea", 15.70706, "PVCFIT", undefined, "512902", undefined, "98006006613"],
+      ["Raceway", "PVCFIT 2-inch LB — 100-count confirmed package — SKU 25807", "ea", 16.62609, "PVCFIT", undefined, "25807", undefined, "98006006546"],
+      ["Raceway", "PVCFIT 2-inch 90 Sch40 elbow — 100-count confirmed package — SKU 18745", "ea", 5.1391, "PVCFIT", undefined, "18745", undefined, "98006006046"],
+      ["Raceway", "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466", "ea", 0.84149, "PVCFIT", undefined, "26466", undefined, "98006006106"],
+      ["Raceway", "PVC 3/4-inch Sch40 conduit — 100-foot confirmed package — SKU 9871", "ft", 0.36399, "PVC", undefined, "9871", undefined, "98006006002"],
+      ["Raceway", "Ocal CPL3/4-G 3/4-inch coupling — SKU 30952", "ea", 22.144, "Ocal", "CPL3/4-G", "30952", undefined, "70450836255"],
+      ["Normal Stock", "AGP DS1 1lb duct seal — SKU 1009903", "ea", 3.801, "AGP", "DS1", "1009903", undefined, "78073020001"],
+      ["Normal Stock", "PVCFIT clear quart primer — 100-count confirmed package — SKU 152609", "ea", 18.82768, "PVCFIT", undefined, "152609", undefined, "98006022982"],
+      ["Normal Stock", "PVCFIT clear quart cement — 100-count confirmed package — SKU 152791", "ea", 20.41201, "PVCFIT", undefined, "152791", undefined, "980060S0191"],
+      ["Normal Stock", "Ideal 30-026 4oz anti-oxidant — SKU 32650", "ea", 14.55, "Ideal", "30-026", "32650", undefined, "78325030026"],
+      ["Normal Stock", "3M 69 3/4x66ft electrical tape — SKU 21719", "ea", 34.908, "3M", "69", "21719", undefined, "05400709910"],
+    ].map<SeedPriceBookItem>(([category, item, unit, unitCost, manufacturer, manufacturerPartNumber, supplierSku, amperage, upc]) => ({
+      category: String(category), item: String(item), unit: String(unit), unitCost: Number(unitCost),
+      supplier: "Northeast Electrical", manufacturer: String(manufacturer),
+      manufacturerPartNumber: manufacturerPartNumber ? String(manufacturerPartNumber) : undefined,
+      supplierSku: supplierSku ? String(supplierSku) : undefined,
+      upc: upc ? String(upc) : undefined,
+      amperage: typeof amperage === "number" ? amperage : undefined,
+      sourceDate, isDefault: false,
+    })),
     ...additionalServiceItems,
     ...additionalPanelReplacementItems,
     {
@@ -1348,6 +1383,11 @@ export async function seedEstimatorData(
   // UPCs are transcribed from the uploaded Northeast Electrical Supplier Catalog.
   // Keep this keyed to the supplier SKU so seed metadata stays tied to its source.
   const northeastUpcs: Record<string, string> = {
+    "132873": "78364351070", "79511": "78590106120",
+    "28551": "98012058495", "79651": "980120S0029", "1266468": "980120S4953", "239663": "98012058496", "300640": "98012058499",
+    "17742": "78316415846", "35113": "78364345239", "86163": "78590115693", "160523": "78285630609", "31589": "78285630703",
+    "26750": "78364345512", "8891": "98006006026", "512902": "98006006613", "25807": "98006006546", "18745": "98006006046", "26466": "98006006106",
+    "9871": "98006006002", "30952": "70450836255", "1009903": "78073020001", "152609": "98006022982", "152791": "980060S0191", "32650": "78325030026", "21719": "05400709910",
     "1101170": "88762121675",
     "243085": "78500724027",
     "1003404": "78500703646",

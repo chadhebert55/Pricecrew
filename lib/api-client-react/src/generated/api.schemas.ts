@@ -435,6 +435,35 @@ export interface RecessedLightingInputs {
   cableType: RecessedLightingInputsCableType;
 }
 
+/**
+ * Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.
+ */
+export interface ExactCatalogPartSelectors {
+  meterDisconnect?: string;
+  servicePanel?: string;
+  mastRaceway?: string;
+  mastWeatherhead?: string;
+  mastHub?: string;
+  mastLb?: string;
+  mastNinety?: string;
+  mastCoupling?: string;
+  serviceToPanelConductor?: string;
+  serviceToPanelRaceway?: string;
+  groundBar?: string;
+  groundRod?: string;
+  acornClamp?: string;
+  groundingRaceway?: string;
+  groundingRacewayFitting?: string;
+  feederRaceway?: string;
+  feederRacewayFitting?: string;
+  ductSeal?: string;
+  pvcPrimer?: string;
+  pvcGlue?: string;
+  antiOxidant?: string;
+  electricalTape?: string;
+  panelProduct?: string;
+}
+
 export type ServiceUpgradeInputsServiceSize = typeof ServiceUpgradeInputsServiceSize[keyof typeof ServiceUpgradeInputsServiceSize];
 
 
@@ -525,6 +554,7 @@ export interface ExistingBreakerCount {
 }
 
 export interface ServiceUpgradeInputs {
+  exactCatalogParts?: ExactCatalogPartSelectors;
   serviceSize: ServiceUpgradeInputsServiceSize;
   serviceConfiguration: ServiceUpgradeInputsServiceConfiguration;
   serviceDisconnect: ServiceUpgradeInputsServiceDisconnect;
@@ -682,6 +712,7 @@ export const PanelReplacementInputsFeederConductor = {
 } as const;
 
 export interface PanelReplacementInputs {
+  exactCatalogParts?: ExactCatalogPartSelectors;
   replacementType: PanelReplacementInputsReplacementType;
   panelManufacturer: PanelReplacementInputsPanelManufacturer;
   panelAmperage: PanelReplacementInputsPanelAmperage;

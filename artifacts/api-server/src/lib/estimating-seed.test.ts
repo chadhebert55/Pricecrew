@@ -65,6 +65,21 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.unit, "ft");
         assert.equal(row?.sourceDate, "2026-08-25");
       }
+      for (const [item, unitCost, unit, supplierSku, upc] of [
+        ["Siemens MC0816B1200 200A meter-load-center — SKU 132873", 523.989, "ea", "132873", "78364351070"],
+        ["Wia 4/0 aluminum SER — SKU 1266468", 3.30776, "ft", "1266468", "980120S4953"],
+        ["Erico 615880 5/8x8ft copper ground rod — SKU 160523", 25.313, "ea", "160523", "78285630609"],
+        ["PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891", 1.12886, "ft", "8891", "98006006026"],
+        ["AGP DS1 1lb duct seal — SKU 1009903", 3.801, "ea", "1009903", "78073020001"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, unitCost);
+        assert.equal(row?.unit, unit);
+        assert.equal(row?.supplier, "Northeast Electrical");
+        assert.equal(row?.supplierSku, supplierSku);
+        assert.equal(row?.upc, upc);
+        assert.equal(row?.sourceDate, "2026-08-25");
+      }
 
       for (const [item, unitCost, supplierSku, manufacturerPartNumber] of [
         ["Siemens Q115 15A 1-pole standard breaker", 8.673, "17237", "ITE Q115"],
@@ -155,6 +170,28 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         .where(eq(priceBookItemsTable.id, editableRow.id));
       assert.equal(preserved?.unitCost, 999);
       assert.equal(preserved?.isDefault, false);
+
+      const exactCatalogRow = seededRows.find(
+        (row) => row.item === "Wia 4/0 aluminum SER — SKU 1266468",
+      );
+      assert.ok(exactCatalogRow);
+      await transaction
+        .update(priceBookItemsTable)
+        .set({
+          unitCost: 7.654321,
+          supplier: "Contractor SER supplier",
+          upc: "contractor-stock-reference",
+          isDefault: false,
+        })
+        .where(eq(priceBookItemsTable.id, exactCatalogRow.id));
+      await seedEstimatorData(transaction as unknown as typeof db);
+      const [preservedExactCatalogRow] = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.id, exactCatalogRow.id));
+      assert.equal(preservedExactCatalogRow?.unitCost, 7.654321);
+      assert.equal(preservedExactCatalogRow?.supplier, "Contractor SER supplier");
+      assert.equal(preservedExactCatalogRow?.upc, "contractor-stock-reference");
 
       throw new RollbackFreshSeedTest();
     });

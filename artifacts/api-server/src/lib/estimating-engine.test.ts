@@ -29,6 +29,7 @@ const catalogRow = (
   unitCost: number,
   fields: Partial<PriceBookItem> = {},
 ): PriceBookItem => ({
+  category: "Other",
   item,
   unitCost,
   supplier: "Verified supplier",
@@ -374,6 +375,163 @@ test("panel replacement resolves exact panel, breaker, and compatible feeder row
     45,
   );
   assert.equal(result.pricing.laborCost, 24 * settings.loadedLaborCost);
+});
+
+test("panel exact selections enforce product role, manufacturer, amperage, and space compatibility", () => {
+  const exactPanel =
+    "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511";
+  const exactRaceway =
+    "PVCFIT 2-inch Sch40 PVC conduit — 100-foot confirmed package — SKU 8891";
+  const exactFitting =
+    "PVCFIT 2-inch coupling — 100-count confirmed package — SKU 26466";
+  const exactGroundBar = "Square D PK3GTA1 ground bar — SKU 86163";
+  const exactPriceBook = [
+    ...panelReplacementPriceBook,
+    catalogRow(exactPanel, 151.625, {
+      category: "Panel",
+      manufacturer: "Square D",
+      amperage: 100,
+    }),
+    catalogRow(
+      "Square D QO130L100 100A 30-space load center — SKU TEST-30",
+      225,
+      {
+        category: "Panel",
+        manufacturer: "Square D",
+        amperage: 100,
+      },
+    ),
+    catalogRow(exactRaceway, 1.12886, { category: "Raceway" }),
+    catalogRow(exactFitting, 0.84149, { category: "Raceway" }),
+    catalogRow(exactGroundBar, 17.669, {
+      category: "Grounding",
+      manufacturer: "Square D",
+    }),
+    catalogRow("Square D 100A 2-pole standard breaker", 95, {
+      manufacturer: "Square D",
+      amperage: 100,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+  ];
+  const compatible = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      panelManufacturer: "Square D",
+      panelAmperage: 100,
+      panelSpaceCount: 6,
+      breakerAmperage: 100,
+      feederConductor: "1/0 aluminum XHHW conductor",
+      exactCatalogParts: {
+        panelProduct: exactPanel,
+        feederRaceway: exactRaceway,
+        feederRacewayFitting: exactFitting,
+        groundBar: exactGroundBar,
+      },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    compatible.assembly.find((line) => line.id === "panel-replacement-panel")
+      ?.unitCost,
+    151.625,
+  );
+  assert.equal(
+    compatible.assembly.find((line) => line.id === "feeder-raceway")?.unitCost,
+    1.12886,
+  );
+  assert.equal(
+    compatible.assembly.find((line) => line.id === "feeder-raceway-fittings")
+      ?.unitCost,
+    0.84149,
+  );
+  assert.equal(
+    compatible.assembly.find((line) => line.id === "panel-ground-bars")
+      ?.unitCost,
+    17.669,
+  );
+
+  const incompatibleSpace = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      panelManufacturer: "Square D",
+      panelAmperage: 100,
+      panelSpaceCount: 12,
+      breakerAmperage: 100,
+      feederConductor: "1/0 aluminum XHHW conductor",
+      exactCatalogParts: { panelProduct: exactPanel },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    incompatibleSpace.assembly.find(
+      (line) => line.id === "panel-replacement-panel",
+    )?.unitCost,
+    0,
+  );
+  assert.equal(
+    incompatibleSpace.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
+        warning.context.group === "panelProduct",
+    ),
+    true,
+  );
+
+  const incompatibleThirtySpace = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      panelManufacturer: "Square D",
+      panelAmperage: 100,
+      panelSpaceCount: 12,
+      breakerAmperage: 100,
+      feederConductor: "1/0 aluminum XHHW conductor",
+      exactCatalogParts: {
+        panelProduct:
+          "Square D QO130L100 100A 30-space load center — SKU TEST-30",
+      },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    incompatibleThirtySpace.assembly.find(
+      (line) => line.id === "panel-replacement-panel",
+    )?.unitCost,
+    0,
+  );
+
+  const incompatibleGroundBarRole = calculatePanelReplacementEstimate(
+    {
+      ...panelReplacementInputs,
+      panelManufacturer: "Square D",
+      panelAmperage: 100,
+      panelSpaceCount: 6,
+      breakerAmperage: 100,
+      feederConductor: "1/0 aluminum XHHW conductor",
+      exactCatalogParts: { groundBar: exactPanel },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    incompatibleGroundBarRole.assembly.find(
+      (line) => line.id === "panel-ground-bars",
+    )?.unitCost,
+    0,
+  );
+  assert.equal(
+    incompatibleGroundBarRole.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
+        warning.context.group === "groundBar",
+    ),
+    true,
+  );
 });
 
 test("panel replacement labor uses quote-local crew size and hours", () => {
@@ -910,6 +1068,189 @@ test("service upgrade preserves contractor prices and never substitutes unresolv
       (warning) =>
         typeof warning !== "string" &&
         warning.code === "PRICE_BOOK_ITEM_UNRESOLVED",
+    ),
+    true,
+  );
+});
+
+test("service exact catalog selectors resolve only the named compatible canonical row and omission retains legacy keys", () => {
+  const exactSer = "Northeast 4/0 aluminum SER 1000 ft reel";
+  const result = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      exactCatalogParts: { serviceToPanelConductor: exactSer },
+    },
+    settings,
+    [
+      ...servicePriceBook,
+      catalogRow(exactSer, 9.75, {
+        category: "Conductor",
+        supplier: "Northeast Electrical",
+        supplierSku: "SER-4-0-1000",
+      }),
+    ],
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "service-to-panel-conductor")?.unitCost,
+    9.75,
+  );
+  const incompatible = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      exactCatalogParts: { serviceToPanelConductor: "Northeast 3/0 aluminum SER" },
+    },
+    settings,
+    [
+      ...servicePriceBook,
+      catalogRow("Northeast 3/0 aluminum SER", 7, {
+        category: "Conductor",
+      }),
+    ],
+  );
+  assert.equal(
+    incompatible.assembly.find((line) => line.id === "service-to-panel-conductor")?.unitCost,
+    0,
+  );
+  assert.equal(
+    incompatible.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
+        warning.context.group === "serviceToPanelConductor",
+    ),
+    true,
+  );
+  const legacy = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, exactCatalogParts: undefined },
+    settings,
+    servicePriceBook,
+  );
+  assert.equal(
+    legacy.assembly.find((line) => line.id === "service-to-panel-conductor")?.unitCost,
+    8.5,
+  );
+});
+
+test("service exact equipment and raceway selectors enforce compatibility and remain line-specific", () => {
+  const meter =
+    "Siemens MC0816B1200 200A meter-load-center — SKU 132873";
+  const mastRaceway = "PVCFIT 2-inch Sch40 PVC conduit — SKU MAST";
+  const feederRaceway = "PVCFIT 2-inch Sch40 PVC conduit — SKU FEEDER";
+  const exactPriceBook = [
+    ...servicePriceBook,
+    catalogRow(meter, 523.989, {
+      category: "Equipment",
+      manufacturer: "Siemens",
+      amperage: 200,
+    }),
+    catalogRow(mastRaceway, 1.25, { category: "Raceway" }),
+    catalogRow(feederRaceway, 2.75, { category: "Raceway" }),
+    catalogRow("Siemens ECHS200 2-inch load-center rain hub — SKU 26750", 11.954, {
+      category: "Raceway",
+      manufacturer: "Siemens",
+    }),
+  ];
+  const independentRaceways = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      serviceToPanelConductor: "4/0 aluminum XHHW in raceway",
+      exactCatalogParts: {
+        meterDisconnect: meter,
+        mastRaceway,
+        serviceToPanelRaceway: feederRaceway,
+      },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    independentRaceways.assembly.find((line) => line.id === "mast-raceway")
+      ?.unitCost,
+    1.25,
+  );
+  assert.equal(
+    independentRaceways.assembly.find(
+      (line) => line.id === "service-to-panel-raceway",
+    )?.unitCost,
+    2.75,
+  );
+
+  const incompatibleMeter = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      serviceSize: "150A",
+      breakerAmperage: 150,
+      meterDisconnectEquipment:
+        "150A meter-main with built-in outdoor disconnect",
+      mastConductor: "3/0 aluminum XHHW conductor",
+      serviceToPanelConductor: "3/0 aluminum SER",
+      exactCatalogParts: { meterDisconnect: meter },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    incompatibleMeter.assembly.find(
+      (line) => line.id === "service-meter-disconnect",
+    )?.unitCost,
+    0,
+  );
+  assert.equal(
+    incompatibleMeter.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
+        warning.context.group === "meterDisconnect",
+    ),
+    true,
+  );
+
+  const incompatibleHub = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      panelManufacturer: "Square D",
+      exactCatalogParts: {
+        mastHub:
+          "Siemens ECHS200 2-inch load-center rain hub — SKU 26750",
+      },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    incompatibleHub.assembly.find((line) => line.id === "mast-hub")?.unitCost,
+    0,
+  );
+  assert.equal(
+    incompatibleHub.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
+        warning.context.group === "mastHub",
+    ),
+    true,
+  );
+
+  const incompatibleServicePanelRole = calculateServiceUpgradeEstimate(
+    {
+      ...serviceUpgradeInputs,
+      exactCatalogParts: { servicePanel: meter },
+    },
+    settings,
+    exactPriceBook,
+  );
+  assert.equal(
+    incompatibleServicePanelRole.assembly.find(
+      (line) => line.id === "service-panel",
+    )?.unitCost,
+    0,
+  );
+  assert.equal(
+    incompatibleServicePanelRole.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
+        warning.context.group === "servicePanel",
     ),
     true,
   );

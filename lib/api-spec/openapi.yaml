@@ -910,6 +910,8 @@ components:
         - crewHours
         - notes
       properties:
+        exactCatalogParts:
+          $ref: "#/components/schemas/ExactCatalogPartSelectors"
         serviceSize:
           type: string
           enum: [100A, 150A, 200A]
@@ -1113,6 +1115,8 @@ components:
         - crewHours
         - notes
       properties:
+        exactCatalogParts:
+          $ref: "#/components/schemas/ExactCatalogPartSelectors"
         replacementType:
           type: string
           enum: [Like-for-like panel replacement, Subpanel addition]
@@ -1230,6 +1234,33 @@ components:
           $ref: "#/components/schemas/LaborRateType"
         notes:
           type: string
+    ExactCatalogPartSelectors:
+      type: object
+      description: Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.
+      properties:
+        meterDisconnect: { type: string }
+        servicePanel: { type: string }
+        mastRaceway: { type: string }
+        mastWeatherhead: { type: string }
+        mastHub: { type: string }
+        mastLb: { type: string }
+        mastNinety: { type: string }
+        mastCoupling: { type: string }
+        serviceToPanelConductor: { type: string }
+        serviceToPanelRaceway: { type: string }
+        groundBar: { type: string }
+        groundRod: { type: string }
+        acornClamp: { type: string }
+        groundingRaceway: { type: string }
+        groundingRacewayFitting: { type: string }
+        feederRaceway: { type: string }
+        feederRacewayFitting: { type: string }
+        ductSeal: { type: string }
+        pvcPrimer: { type: string }
+        pvcGlue: { type: string }
+        antiOxidant: { type: string }
+        electricalTape: { type: string }
+        panelProduct: { type: string }
     ExistingBreakerCount:
       type: object
       required:

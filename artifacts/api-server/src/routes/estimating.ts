@@ -206,6 +206,7 @@ async function calculateEstimate(
   const settings = await companySettings();
   const priceBook = await db
     .select({
+      category: priceBookItemsTable.category,
       item: priceBookItemsTable.item,
       unitCost: priceBookItemsTable.unitCost,
       supplier: priceBookItemsTable.supplier,

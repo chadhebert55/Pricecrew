@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExactCatalogPartSelectors } from './exactCatalogPartSelectors';
 import type { ExistingBreakerCount } from './existingBreakerCount';
 import type { LaborRateType } from './laborRateType';
 import type { ServiceUpgradeInputsBreakerProtectionType } from './serviceUpgradeInputsBreakerProtectionType';
@@ -16,6 +17,7 @@ import type { ServiceUpgradeInputsServiceSize } from './serviceUpgradeInputsServ
 import type { ServiceUpgradeInputsServiceToPanelConductor } from './serviceUpgradeInputsServiceToPanelConductor';
 
 export interface ServiceUpgradeInputs {
+  exactCatalogParts?: ExactCatalogPartSelectors;
   serviceSize: ServiceUpgradeInputsServiceSize;
   serviceConfiguration: ServiceUpgradeInputsServiceConfiguration;
   serviceDisconnect: ServiceUpgradeInputsServiceDisconnect;

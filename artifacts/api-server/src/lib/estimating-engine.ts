@@ -15,6 +15,7 @@ import type {
 } from "@workspace/db";
 
 export type PriceBookItem = {
+  category: string;
   item: string;
   unitCost: number;
   supplier: string | null;
@@ -65,6 +66,20 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Exact catalog selection")) {
+    const match =
+      message.match(/"([^"]+)" for (\w+)/) ??
+      message.match(/"([^"]+)" is incompatible.* for (\w+)/);
+    return {
+      code: message.includes("incompatible")
+        ? "EXACT_CATALOG_SELECTION_INCOMPATIBLE"
+        : "EXACT_CATALOG_SELECTION_UNSUPPORTED",
+      severity: "error",
+      category: message.includes("incompatible") ? "compatibility" : "missing-price",
+      source: "exact-catalog-selection",
+      context: { item: match?.[1] ?? null, group: match?.[2] ?? null },
+    };
+  }
   if (message.startsWith("No verified price is available")) {
     return {
       code: "PRICE_BOOK_ITEM_UNRESOLVED",
@@ -383,6 +398,20 @@ function normalized(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function itemHasTerms(item: PriceBookItem, ...terms: string[]) {
+  const name = normalized(item.item);
+  return terms.every((term) => name.includes(normalized(term)));
+}
+
+function itemInCategory(item: PriceBookItem, category: string) {
+  return normalized(item.category) === normalized(category);
+}
+
+function catalogSpaceCount(item: PriceBookItem) {
+  const match = normalized(item.item).match(/\b(\d+)\s+space\b/);
+  return match ? Number(match[1]) : null;
+}
+
 function catalogSource(item: PriceBookItem) {
   const parts = [
     item.supplier,
@@ -419,6 +448,39 @@ function unitCost(
     value: 0,
     source: "Unresolved — no verified catalog price",
   };
+}
+
+type ExactCatalogPartSelector = keyof NonNullable<
+  ServiceUpgradeInputRecord["exactCatalogParts"]
+>;
+
+function exactCatalogCost(
+  selection: string | undefined,
+  selector: ExactCatalogPartSelector,
+  priceBook: PriceBookItem[],
+  pricingWarnings: string[],
+  compatible: (item: PriceBookItem) => boolean = () => true,
+) {
+  if (!selection?.trim()) return null;
+  const selected = priceBook.find(
+    (item) =>
+      normalized(item.item) === normalized(selection) &&
+      !item.isDefault &&
+      !normalized(item.item).startsWith("unverified "),
+  );
+  if (!selected || !Number.isFinite(selected.unitCost) || selected.unitCost <= 0) {
+    pricingWarnings.push(
+      `Exact catalog selection "${selection}" for ${selector} is unavailable or unpriced. No generic catalog row was substituted.`,
+    );
+    return { value: 0, source: "Unresolved exact catalog selection" };
+  }
+  if (!compatible(selected)) {
+    pricingWarnings.push(
+      `Exact catalog selection "${selection}" is incompatible with the selected configuration for ${selector}. No generic catalog row was substituted.`,
+    );
+    return { value: 0, source: "Unresolved incompatible exact catalog selection" };
+  }
+  return { value: selected.unitCost, source: catalogSource(selected) };
 }
 
 function addLine(
@@ -1703,6 +1765,28 @@ export function calculateServiceUpgradeEstimate(
       source: price.source,
     });
   };
+  const addExactOrLegacy = (
+    id: string,
+    category: string,
+    selector: ExactCatalogPartSelector,
+    legacyKey: string,
+    description: string,
+    quantity: number,
+    unit = "ea",
+    compatible?: (item: PriceBookItem) => boolean,
+  ) => {
+    const safeQuantity = safeNumber(quantity);
+    if (safeQuantity === 0) return;
+    const price =
+      exactCatalogCost(
+        inputs.exactCatalogParts?.[selector],
+        selector,
+        priceBook,
+        pricingWarnings,
+        compatible,
+      ) ?? unitCost(legacyKey, priceBook, pricingWarnings);
+    addLine(assembly, { id, category, description, quantity: safeQuantity, unit, unitCost: price.value, source: price.source });
+  };
 
   const addAllowance = (
     id: string,
@@ -1755,12 +1839,20 @@ export function calculateServiceUpgradeEstimate(
     source: breaker.source,
   });
 
-  addPricedItem(
+  addExactOrLegacy(
     "service-meter-disconnect",
     "Equipment",
+    "meterDisconnect",
     inputs.meterDisconnectEquipment,
     inputs.meterDisconnectEquipment,
     1,
+    "ea",
+    (item) =>
+      inputs.serviceDisconnect === "Meter-main combination" &&
+      itemInCategory(item, "Equipment") &&
+      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
+      item.amperage === Number.parseInt(inputs.serviceSize, 10) &&
+      itemHasTerms(item, "meter"),
   );
   if (inputs.serviceDisconnect !== "Meter-main combination") {
     addPricedItem(
@@ -1771,12 +1863,19 @@ export function calculateServiceUpgradeEstimate(
       1,
     );
   }
-  addPricedItem(
+  addExactOrLegacy(
     "service-panel",
     "Panel",
+    "servicePanel",
     `${inputs.panelManufacturer} ${inputs.serviceSize} service panel`,
     `${inputs.panelManufacturer} ${inputs.serviceSize} service panel`,
     1,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Panel") &&
+      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
+      item.amperage === Number.parseInt(inputs.serviceSize, 10) &&
+      (itemHasTerms(item, "panel") || itemHasTerms(item, "load center")),
   );
   if (inputs.surgeProtection !== "None") {
     const selectedSurgeProtection = inputs.surgeProtection.trim();
@@ -1804,48 +1903,79 @@ export function calculateServiceUpgradeEstimate(
   }
 
   if (inputs.includeOverheadMast) {
-    addPricedItem(
+    addExactOrLegacy(
       "mast-raceway",
       "Raceway",
+      "mastRaceway",
       "2-inch PVC mast raceway",
       "2-inch PVC mast raceway",
       inputs.mastFootage,
       "ft",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "conduit"),
     );
-    addPricedItem(
+    addExactOrLegacy(
       "mast-weatherhead",
       "Raceway",
+      "mastWeatherhead",
       "2-inch PVC weatherhead",
       "2-inch PVC weatherhead",
       inputs.weatherheadQuantity,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "weatherhead"),
     );
-    addPricedItem(
+    addExactOrLegacy(
       "mast-hub",
       "Raceway",
+      "mastHub",
       "2-inch PVC hub",
       "2-inch PVC hub",
       inputs.hubQuantity,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "hub") &&
+        normalized(item.manufacturer ?? "") ===
+          normalized(inputs.panelManufacturer),
     );
-    addPricedItem(
+    addExactOrLegacy(
       "mast-lb",
       "Raceway",
+      "mastLb",
       "2-inch PVC LB",
       "2-inch PVC LB",
       inputs.lbQuantity,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "lb"),
     );
-    addPricedItem(
+    addExactOrLegacy(
       "mast-90",
       "Raceway",
+      "mastNinety",
       "2-inch PVC 90",
       "2-inch PVC 90",
       inputs.ninetyQuantity,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "90"),
     );
-    addPricedItem(
+    addExactOrLegacy(
       "mast-couplings",
       "Raceway",
+      "mastCoupling",
       "2-inch PVC coupling",
       "2-inch PVC couplings",
       inputs.couplingQuantity,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "coupling"),
     );
     addPricedItem(
       "mast-related-parts",
@@ -1874,11 +2004,27 @@ export function calculateServiceUpgradeEstimate(
     "4/0 copper alternative": "4/0 copper service conductor alternative",
     "Other configured conductor": "other configured service conductor",
   }[inputs.serviceToPanelConductor] ?? "other configured service conductor";
-  const serviceConductor = unitCost(
-    serviceConductorKey,
-    priceBook,
-    pricingWarnings,
-  );
+  const serviceConductor =
+    inputs.serviceToPanelConductor === "4/0 aluminum SER"
+      ? exactCatalogCost(
+          inputs.exactCatalogParts?.serviceToPanelConductor,
+          "serviceToPanelConductor",
+          priceBook,
+          pricingWarnings,
+          (item) =>
+            itemInCategory(item, "Conductor") &&
+            normalized(item.item).includes("4 0") &&
+            normalized(item.item).includes("ser"),
+        ) ?? unitCost(serviceConductorKey, priceBook, pricingWarnings)
+      : inputs.exactCatalogParts?.serviceToPanelConductor
+        ? exactCatalogCost(
+            inputs.exactCatalogParts.serviceToPanelConductor,
+            "serviceToPanelConductor",
+            priceBook,
+            pricingWarnings,
+            () => false,
+          )!
+      : unitCost(serviceConductorKey, priceBook, pricingWarnings);
   addLine(assembly, {
     id: "service-to-panel-conductor",
     category: "Conductor",
@@ -1893,13 +2039,17 @@ export function calculateServiceUpgradeEstimate(
     source: serviceConductor.source,
   });
   if (inputs.serviceToPanelConductor === "4/0 aluminum XHHW in raceway") {
-    addPricedItem(
+    addExactOrLegacy(
       "service-to-panel-raceway",
       "Raceway",
+      "serviceToPanelRaceway",
       "2-inch PVC mast raceway",
       "2-inch PVC raceway from meter-main to panel",
       inputs.serviceToPanelFootage,
       "ft",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "2 inch", "conduit"),
     );
   }
   if (inputs.serviceToPanelConductor.includes("copper alternative")) {
@@ -1908,9 +2058,9 @@ export function calculateServiceUpgradeEstimate(
     );
   }
 
-  addPricedItem("ground-bars", "Grounding", "ground bar", "Ground bars", inputs.groundBarQuantity);
-  addPricedItem("ground-rods", "Grounding", "ground rod", "Ground rods", inputs.groundRodQuantity);
-  addPricedItem("acorn-clamps", "Grounding", "acorn clamp", "Acorn clamps", inputs.acornClampQuantity);
+  addExactOrLegacy("ground-bars", "Grounding", "groundBar", "ground bar", "Ground bars", inputs.groundBarQuantity, "ea", (item) => itemInCategory(item, "Grounding") && itemHasTerms(item, "ground bar") && (normalized(item.manufacturer ?? "") === "ge" || !["siemens", "square d"].includes(normalized(item.manufacturer ?? "")) || normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer)));
+  addExactOrLegacy("ground-rods", "Grounding", "groundRod", "ground rod", "Ground rods", inputs.groundRodQuantity, "ea", (item) => itemInCategory(item, "Grounding") && normalized(item.item).includes("ground") && normalized(item.item).includes("rod") && normalized(item.item).includes("5 8"));
+  addExactOrLegacy("acorn-clamps", "Grounding", "acornClamp", "acorn clamp", "Acorn clamps", inputs.acornClampQuantity, "ea", (item) => itemInCategory(item, "Grounding") && (normalized(item.item).includes("acorn") || normalized(item.item).includes("rod clamp")) && normalized(item.item).includes("5 8"));
   addPricedItem(
     "intersystem-bonding",
     "Bonding",
@@ -1934,20 +2084,29 @@ export function calculateServiceUpgradeEstimate(
     inputs.bondingConductorFootage,
     "ft",
   );
-  addPricedItem(
+  addExactOrLegacy(
     "grounding-pvc",
     "Raceway",
+    "groundingRaceway",
     "3/4-inch PVC raceway",
     "3/4-inch PVC / raceway",
     inputs.pvcThreeQuarterFootage,
     "ft",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "3 4", "conduit"),
   );
-  addPricedItem(
+  addExactOrLegacy(
     "grounding-pvc-fittings",
     "Raceway",
+    "groundingRacewayFitting",
     "3/4-inch PVC fittings",
     "3/4-inch PVC fittings",
     inputs.pvcThreeQuarterFittingsQuantity,
+      "ea",
+      (item) =>
+        itemInCategory(item, "Raceway") &&
+        itemHasTerms(item, "3 4", "coupling"),
   );
   addPricedItem(
     "water-meter-bonding",
@@ -1970,11 +2129,11 @@ export function calculateServiceUpgradeEstimate(
   addPricedItem("receptacle-plate", "Trim", "20A receptacle plate", "20A receptacle plate", inputs.receptaclePlateQuantity);
   addPricedItem("plywood-backing", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
   addPricedItem("studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
-  addPricedItem("duct-seal", "Normal Stock", "service duct seal", "Service / duct seal", inputs.ductSealQuantity ?? 0);
-  addPricedItem("pvc-primer", "Normal Stock", "PVC primer", "PVC primer", inputs.pvcPrimerQuantity ?? 0);
-  addPricedItem("pvc-glue", "Normal Stock", "PVC glue", "PVC glue", inputs.pvcGlueQuantity ?? 0);
-  addPricedItem("anti-oxidant", "Normal Stock", "anti-oxidation compound", "Anti-oxidation compound", inputs.antiOxidantQuantity ?? 0);
-  addPricedItem("electrical-tape", "Normal Stock", "electrical tape", "Electrical tape", inputs.electricalTapeQuantity ?? 0, "roll");
+  addExactOrLegacy("duct-seal", "Normal Stock", "ductSeal", "service duct seal", "Service / duct seal", inputs.ductSealQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "duct seal"));
+  addExactOrLegacy("pvc-primer", "Normal Stock", "pvcPrimer", "PVC primer", "PVC primer", inputs.pvcPrimerQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "primer"));
+  addExactOrLegacy("pvc-glue", "Normal Stock", "pvcGlue", "PVC glue", "PVC glue", inputs.pvcGlueQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "cement"));
+  addExactOrLegacy("anti-oxidant", "Normal Stock", "antiOxidant", "anti-oxidation compound", "Anti-oxidation compound", inputs.antiOxidantQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "anti oxidant"));
+  addExactOrLegacy("electrical-tape", "Normal Stock", "electricalTape", "electrical tape", "Electrical tape", inputs.electricalTapeQuantity ?? 0, "roll", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "electrical tape"));
   addLine(assembly, {
     id: "panel-directory-labeling",
     category: "Closeout",
@@ -2094,6 +2253,23 @@ export function calculatePanelReplacementEstimate(
       source: price.source,
     });
   };
+  const addExactOrLegacy = (
+    id: string,
+    category: string,
+    selector: ExactCatalogPartSelector,
+    legacyKey: string,
+    description: string,
+    quantity: number,
+    unit = "ea",
+    compatible?: (item: PriceBookItem) => boolean,
+  ) => {
+    const safeQuantity = safeNumber(quantity);
+    if (safeQuantity === 0) return;
+    const price =
+      exactCatalogCost(inputs.exactCatalogParts?.[selector], selector, priceBook, pricingWarnings, compatible) ??
+      unitCost(legacyKey, priceBook, pricingWarnings);
+    addLine(assembly, { id, category, description, quantity: safeQuantity, unit, unitCost: price.value, source: price.source });
+  };
 
   const addAllowance = (
     id: string,
@@ -2153,12 +2329,20 @@ export function calculatePanelReplacementEstimate(
       : "Unresolved panel/breaker compatibility — select a supported exact configuration",
   });
 
-  addPricedItem(
+  addExactOrLegacy(
     "panel-replacement-panel",
     "Panel",
+    "panelProduct",
     `${inputs.panelManufacturer} ${panelAmperage}A panel replacement enclosure`,
     `${inputs.panelManufacturer} ${panelAmperage}A ${inputs.panelSpaceCount}-space panel — ${inputs.replacementType}`,
     1,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Panel") &&
+      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
+      item.amperage === panelAmperage &&
+      catalogSpaceCount(item) === inputs.panelSpaceCount &&
+      (itemHasTerms(item, "panel") || itemHasTerms(item, "load center")),
   );
   addPricedItem(
     "panel-space-fillers",
@@ -2230,24 +2414,33 @@ export function calculatePanelReplacementEstimate(
       source: feeder.source,
     });
   }
-  addPricedItem(
+  addExactOrLegacy(
     "feeder-raceway",
     "Raceway",
+    "feederRaceway",
     "panel replacement feeder raceway",
     "Panel replacement feeder raceway",
     inputs.feederRacewayFootage,
     "ft",
+    (item) =>
+      itemInCategory(item, "Raceway") &&
+      itemHasTerms(item, "2 inch", "conduit"),
   );
-  addPricedItem(
+  addExactOrLegacy(
     "feeder-raceway-fittings",
     "Raceway",
+    "feederRacewayFitting",
     "panel replacement feeder raceway fittings",
     "Panel replacement feeder raceway fittings",
     inputs.feederRacewayFittingsQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Raceway") &&
+      itemHasTerms(item, "2 inch", "coupling"),
   );
 
-  addPricedItem("panel-ground-bars", "Grounding", "ground bar", "Ground bars", inputs.groundBarQuantity);
-  addPricedItem("panel-ground-rods", "Grounding", "ground rod", "Ground rods", inputs.groundRodQuantity);
+  addExactOrLegacy("panel-ground-bars", "Grounding", "groundBar", "ground bar", "Ground bars", inputs.groundBarQuantity, "ea", (item) => itemInCategory(item, "Grounding") && itemHasTerms(item, "ground bar") && (normalized(item.manufacturer ?? "") === "ge" || !["siemens", "square d"].includes(normalized(item.manufacturer ?? "")) || normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer)));
+  addExactOrLegacy("panel-ground-rods", "Grounding", "groundRod", "ground rod", "Ground rods", inputs.groundRodQuantity, "ea", (item) => itemInCategory(item, "Grounding") && normalized(item.item).includes("ground") && normalized(item.item).includes("rod") && normalized(item.item).includes("5 8"));
   addPricedItem(
     "panel-grounding-conductor",
     "Grounding",
@@ -2266,20 +2459,29 @@ export function calculatePanelReplacementEstimate(
   );
   addPricedItem("panel-plywood", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
   addPricedItem("panel-studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
-  addPricedItem(
+  addExactOrLegacy(
     "panel-anti-oxidant",
     "Normal Stock",
+    "antiOxidant",
     "anti-oxidation compound",
     "Anti-oxidation compound",
     inputs.antiOxidantQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Normal Stock") &&
+      itemHasTerms(item, "anti oxidant"),
   );
-  addPricedItem(
+  addExactOrLegacy(
     "panel-electrical-tape",
     "Normal Stock",
+    "electricalTape",
     "electrical tape",
     "Electrical tape",
     inputs.electricalTapeQuantity,
     "roll",
+    (item) =>
+      itemInCategory(item, "Normal Stock") &&
+      itemHasTerms(item, "electrical tape"),
   );
 
   for (const [index, existingBreaker] of (inputs.existingBreakers ?? []).entries()) {

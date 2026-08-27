@@ -167,6 +167,11 @@ export type RecessedLightingInputRecord = {
 };
 
 export type ServiceUpgradeInputRecord = {
+  /**
+   * Optional canonical price-book item names.  These deliberately remain
+   * strings (rather than price-book ids) so a saved quote is portable.
+   */
+  exactCatalogParts?: ExactCatalogPartSelectors;
   serviceSize: ServiceUpgradeServiceSize;
   serviceConfiguration: string;
   serviceDisconnect: string;
@@ -235,6 +240,7 @@ export type ServiceUpgradeInputRecord = {
 };
 
 export type PanelReplacementInputRecord = {
+  exactCatalogParts?: ExactCatalogPartSelectors;
   replacementType: PanelReplacementType;
   panelManufacturer: PanelReplacementPanelManufacturer;
   panelAmperage: 100 | 150 | 200;
@@ -277,6 +283,32 @@ export type PanelReplacementInputRecord = {
   laborAdjustmentHours?: number;
   laborRateType?: LaborRateType;
   notes: string;
+};
+
+export type ExactCatalogPartSelectors = {
+  meterDisconnect?: string;
+  servicePanel?: string;
+  mastRaceway?: string;
+  mastWeatherhead?: string;
+  mastHub?: string;
+  mastLb?: string;
+  mastNinety?: string;
+  mastCoupling?: string;
+  serviceToPanelConductor?: string;
+  serviceToPanelRaceway?: string;
+  groundBar?: string;
+  groundRod?: string;
+  acornClamp?: string;
+  groundingRaceway?: string;
+  groundingRacewayFitting?: string;
+  feederRaceway?: string;
+  feederRacewayFitting?: string;
+  ductSeal?: string;
+  pvcPrimer?: string;
+  pvcGlue?: string;
+  antiOxidant?: string;
+  electricalTape?: string;
+  panelProduct?: string;
 };
 
 export type QuoteJobInputsRecord =

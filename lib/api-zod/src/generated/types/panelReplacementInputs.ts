@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExactCatalogPartSelectors } from './exactCatalogPartSelectors';
 import type { ExistingBreakerCount } from './existingBreakerCount';
 import type { LaborRateType } from './laborRateType';
 import type { PanelReplacementInputsBreakerProtectionType } from './panelReplacementInputsBreakerProtectionType';
@@ -14,6 +15,7 @@ import type { PanelReplacementInputsPanelManufacturer } from './panelReplacement
 import type { PanelReplacementInputsReplacementType } from './panelReplacementInputsReplacementType';
 
 export interface PanelReplacementInputs {
+  exactCatalogParts?: ExactCatalogPartSelectors;
   replacementType: PanelReplacementInputsReplacementType;
   panelManufacturer: PanelReplacementInputsPanelManufacturer;
   panelAmperage: PanelReplacementInputsPanelAmperage;

@@ -19,6 +19,7 @@ export * from './dashboardSummary';
 export * from './estimatePreview';
 export * from './evChargerInputs';
 export * from './evChargerInputsCableType';
+export * from './exactCatalogPartSelectors';
 export * from './existingBreakerCount';
 export * from './existingBreakerCountProtectionType';
 export * from './healthStatus';

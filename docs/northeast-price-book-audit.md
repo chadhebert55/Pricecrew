@@ -7,7 +7,7 @@ Catalog price date: 2026-08-25
 
 - Reviewed every material key requested by the six active builders: EV Charger, Bathroom, Kitchen, Recessed Lighting, Service Upgrade, and Panel Replacement.
 - Accepted only exact product rows or confidently mapped wire families from the Northeast `Material Database`, `Material Options`, and `Supplier Catalog` sheets.
-- Converted catalog `m` wire pricing to dollars per foot only where the product family and size were explicit. No `c` pricing was normalized because package quantities were not unambiguous.
+- Converted catalog `m` wire pricing to dollars per foot only where the product family and size were explicit. A selected exact supplier SKU can also normalize an `m` 4/0 SER variant per thousand feet; no `c` pricing is normalized unless its canonical selector label explicitly states a 100-unit or 100-foot package.
 - Retained supplier, manufacturer, manufacturer part number, Northeast SKU, UPC, unit, and source date where the workbook supplied them.
 - Left uncertain products at zero cost. The estimator emits a structured, visible unresolved-price warning instead of silently substituting a generic product.
 - Seed reconciliation updates only recognized untouched starter rows. Contractor-edited rows are preserved.
@@ -76,6 +76,17 @@ Unresolved: Juno fixture rows without an exact workbook model, retail-pack switc
 Mapped: selected 1/0, 3/0, and 4/0 aluminum XHHW rows; selected 1/0 and 3/0 aluminum SER rows; exact breaker tuples where present.
 
 Unresolved: 4/0 SER because workbook variants diverge materially; copper service alternatives; meter-main/panel/disconnect equipment; mast, weatherhead, hub, LB, elbows, couplings, and PVC sold under ambiguous `c` units; grounding/bonding products without selected dimensions; permits, utility coordination, labeling, normal stock, and generic field allowances.
+
+Service Upgrade and Panel Replacement snapshots may optionally carry
+`exactCatalogParts` canonical item strings on a per-line basis (for example
+`meterDisconnect`, `servicePanel`/`panelProduct`, `serviceToPanelConductor`,
+`groundRod`, `mastRaceway`, `feederRaceway`, `ductSeal`, `pvcPrimer`, and
+`electricalTape`). A selector is never shared by sibling assembly lines.
+The estimator uses an exact selector only when that exact current price-book item is
+priced and compatible; it does not fall back to a generic row. Equipment and panels
+are checked against selected service size and manufacturer, and rod/clamp selections
+are checked against their hardware family. Omitted selectors retain legacy item-key
+resolution for historical snapshots.
 
 ### Panel Replacement
 
