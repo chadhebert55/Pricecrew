@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import type { Server } from "node:http";
 import test from "node:test";
 import type {
   BathroomInputRecord,
@@ -10,7 +12,14 @@ import type {
   ServiceCallInputRecord,
   TimeMaterialsInputRecord,
 } from "@workspace/db";
+import {
+  customersTable,
+  db,
+  quotesTable,
+} from "@workspace/db";
+import { and, eq, inArray, like, or } from "drizzle-orm";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
+import app from "../app";
 import {
   calculateBathroomEstimate,
   calculateCustomEstimate,
@@ -708,6 +717,254 @@ test("Custom Items uses exact quote-local labor, materials, markup, and margin a
   assert.equal(result.assembly[0]?.description, "Owner-selected decorative fixture");
   assert.equal(result.assembly[0]?.extendedCost, 50);
   assert.deepEqual(result.pricing.pricingWarnings, []);
+});
+
+type QuoteRequest = {
+  customerName: string;
+  customerEmail?: string | null;
+  projectName: string;
+  proposalDescription: string;
+  module: "SERVICE_CALL";
+  jobInputs: ServiceCallInputRecord;
+};
+
+type CreatedQuote = {
+  id: number;
+  customerName: string;
+  customerEmail: string | null;
+};
+
+async function startTestServer() {
+  const server = await new Promise<Server>((resolve, reject) => {
+    const candidate = app.listen(0, () => resolve(candidate));
+    candidate.once("error", reject);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    server.close();
+    throw new Error("Test server did not expose a TCP address");
+  }
+  return {
+    server,
+    baseUrl: `http://127.0.0.1:${address.port}`,
+  };
+}
+
+async function closeTestServer(server: Server) {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+}
+
+async function postQuote(baseUrl: string, input: QuoteRequest) {
+  const response = await fetch(`${baseUrl}/api/quotes`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json()) as Partial<CreatedQuote> & {
+    error?: string;
+  };
+  assert.equal(
+    response.status,
+    201,
+    `Expected quote creation to succeed: ${JSON.stringify(body)}`,
+  );
+  assert.equal(typeof body.id, "number");
+  return body as CreatedQuote;
+}
+
+async function cleanupCustomerTest(marker: string, email: string) {
+  const customers = await db
+    .select({ id: customersTable.id })
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.companyId, 1),
+        or(
+          like(customersTable.name, `${marker}%`),
+          eq(customersTable.email, email),
+        ),
+      ),
+    );
+  const customerIds = customers.map((customer) => customer.id);
+  if (customerIds.length === 0) return;
+
+  await db
+    .delete(quotesTable)
+    .where(inArray(quotesTable.customerId, customerIds));
+  await db
+    .delete(customersTable)
+    .where(inArray(customersTable.id, customerIds));
+}
+
+test("simultaneous same-email quotes share one persisted customer", async () => {
+  const marker = `Concurrent same-email ${randomUUID()}`;
+  const email = `${randomUUID()}@example.com`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const input = {
+      customerName: marker,
+      customerEmail: `  ${email.toUpperCase()} `,
+      projectName: `${marker} project`,
+      proposalDescription: "Concurrent customer identity regression",
+      module: "SERVICE_CALL" as const,
+      jobInputs: serviceCallInputs,
+    };
+    const created = await Promise.all([
+      postQuote(baseUrl, { ...input, projectName: `${marker} project one` }),
+      postQuote(baseUrl, { ...input, projectName: `${marker} project two` }),
+    ]);
+
+    const quotes = await db
+      .select()
+      .from(quotesTable)
+      .where(inArray(quotesTable.id, created.map((quote) => quote.id)));
+    assert.equal(quotes.length, 2);
+    assert.equal(quotes[0]?.customerId, quotes[1]?.customerId);
+
+    const customers = await db
+      .select()
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.companyId, 1),
+          eq(customersTable.email, email),
+        ),
+      );
+    assert.equal(customers.length, 1);
+    assert.equal(quotes[0]?.customerId, customers[0]?.id);
+  } finally {
+    await closeTestServer(server);
+    await cleanupCustomerTest(marker, email);
+  }
+});
+
+test("simultaneous email claims converge on one customer without rewriting historical quotes", async () => {
+  const marker = `Concurrent email claim ${randomUUID()}`;
+  const email = `${randomUUID()}@example.com`;
+  const firstName = `${marker} first`;
+  const secondName = `${marker} second`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const historical = await Promise.all([
+      postQuote(baseUrl, {
+        customerName: firstName,
+        customerEmail: null,
+        projectName: `${marker} historical one`,
+        proposalDescription: "Historical quote one",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+      postQuote(baseUrl, {
+        customerName: secondName,
+        customerEmail: null,
+        projectName: `${marker} historical two`,
+        proposalDescription: "Historical quote two",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+    ]);
+    const historicalBefore = (
+      await db
+        .select()
+        .from(quotesTable)
+        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+    ).sort((left, right) => left.id - right.id);
+    assert.equal(historicalBefore.length, 2);
+    assert.equal(
+      historicalBefore.every((quote) => quote.customerEmail === null),
+      true,
+    );
+
+    const existingCustomers = await db
+      .select()
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.companyId, 1),
+          or(
+            eq(customersTable.name, firstName),
+            eq(customersTable.name, secondName),
+          ),
+        ),
+      );
+    assert.equal(existingCustomers.length, 2);
+    assert.equal(
+      existingCustomers.every((customer) => customer.email === null),
+      true,
+    );
+
+    const claimed = await Promise.all([
+      postQuote(baseUrl, {
+        customerName: firstName,
+        customerEmail: email,
+        projectName: `${marker} claimed one`,
+        proposalDescription: "Concurrent email claim one",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+      postQuote(baseUrl, {
+        customerName: secondName,
+        customerEmail: email,
+        projectName: `${marker} claimed two`,
+        proposalDescription: "Concurrent email claim two",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+    ]);
+
+    const claimedQuotes = await db
+      .select()
+      .from(quotesTable)
+      .where(inArray(quotesTable.id, claimed.map((quote) => quote.id)));
+    assert.equal(claimedQuotes.length, 2);
+    assert.equal(claimedQuotes[0]?.customerId, claimedQuotes[1]?.customerId);
+
+    const customersAfter = await db
+      .select()
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.companyId, 1),
+          or(
+            eq(customersTable.name, firstName),
+            eq(customersTable.name, secondName),
+            eq(customersTable.email, email),
+          ),
+        ),
+      );
+    assert.equal(customersAfter.length, 2);
+    assert.equal(
+      customersAfter.filter((customer) => customer.email === email).length,
+      1,
+    );
+    assert.equal(
+      customersAfter.filter((customer) => customer.email === null).length,
+      1,
+    );
+    const winningCustomer = customersAfter.find(
+      (customer) => customer.email === email,
+    );
+    assert.equal(winningCustomer !== undefined, true);
+    assert.equal(
+      claimedQuotes.every((quote) => quote.customerId === winningCustomer?.id),
+      true,
+    );
+
+    const historicalAfter = (
+      await db
+        .select()
+        .from(quotesTable)
+        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+    ).sort((left, right) => left.id - right.id);
+    assert.deepEqual(historicalAfter, historicalBefore);
+  } finally {
+    await closeTestServer(server);
+    await cleanupCustomerTest(marker, email);
+  }
 });
 
 test("new builder preview and create contracts accept identical snapshots and reject invalid labor", () => {
