@@ -1030,10 +1030,176 @@ export interface CustomInputs {
   notes: string;
 }
 
+export type NewHouseInputsRecessedLightSize = typeof NewHouseInputsRecessedLightSize[keyof typeof NewHouseInputsRecessedLightSize];
+
+
+export const NewHouseInputsRecessedLightSize = {
+  '4-inch': '4-inch',
+  '6-inch': '6-inch',
+} as const;
+
+export type NewHouseInputsFanSupply = typeof NewHouseInputsFanSupply[keyof typeof NewHouseInputsFanSupply];
+
+
+export const NewHouseInputsFanSupply = {
+  Contractor_supplied: 'Contractor supplied',
+  'Builder_/_GC_supplied': 'Builder / GC supplied',
+  Customer_supplied: 'Customer supplied',
+} as const;
+
+export type NewHouseInputsPanelManufacturer = typeof NewHouseInputsPanelManufacturer[keyof typeof NewHouseInputsPanelManufacturer];
+
+
+export const NewHouseInputsPanelManufacturer = {
+  Siemens: 'Siemens',
+  Eaton: 'Eaton',
+  Square_D: 'Square D',
+} as const;
+
+export type NewHouseInputsBranchCircuitAmperage = typeof NewHouseInputsBranchCircuitAmperage[keyof typeof NewHouseInputsBranchCircuitAmperage];
+
+
+export const NewHouseInputsBranchCircuitAmperage = {
+  NUMBER_15: 15,
+  NUMBER_20: 20,
+} as const;
+
+export type NewHouseInputsBranchCircuitPoleCount = typeof NewHouseInputsBranchCircuitPoleCount[keyof typeof NewHouseInputsBranchCircuitPoleCount];
+
+
+export const NewHouseInputsBranchCircuitPoleCount = {
+  NUMBER_1: 1,
+} as const;
+
+export type NewHouseInputsBranchCircuitProtectionType = typeof NewHouseInputsBranchCircuitProtectionType[keyof typeof NewHouseInputsBranchCircuitProtectionType];
+
+
+export const NewHouseInputsBranchCircuitProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type NewHouseInputsBranchCircuitCableType = typeof NewHouseInputsBranchCircuitCableType[keyof typeof NewHouseInputsBranchCircuitCableType];
+
+
+export const NewHouseInputsBranchCircuitCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
+
+export type NewHouseInputsEquipmentCircuitAmperage = typeof NewHouseInputsEquipmentCircuitAmperage[keyof typeof NewHouseInputsEquipmentCircuitAmperage];
+
+
+export const NewHouseInputsEquipmentCircuitAmperage = {
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_40: 40,
+} as const;
+
+export type NewHouseInputsEquipmentCircuitPoleCount = typeof NewHouseInputsEquipmentCircuitPoleCount[keyof typeof NewHouseInputsEquipmentCircuitPoleCount];
+
+
+export const NewHouseInputsEquipmentCircuitPoleCount = {
+  NUMBER_2: 2,
+} as const;
+
+export type NewHouseInputsEquipmentCircuitProtectionType = typeof NewHouseInputsEquipmentCircuitProtectionType[keyof typeof NewHouseInputsEquipmentCircuitProtectionType];
+
+
+export const NewHouseInputsEquipmentCircuitProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type NewHouseInputsEquipmentCircuitCableType = typeof NewHouseInputsEquipmentCircuitCableType[keyof typeof NewHouseInputsEquipmentCircuitCableType];
+
+
+export const NewHouseInputsEquipmentCircuitCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '10/2_NM-B': '10/2 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+} as const;
+
+export interface NewHouseInputs {
+  /** @minimum 1 */
+  finishedSquareFootage: number;
+  /** @minimum 1 */
+  floorCount: number;
+  /** @minimum 0 */
+  garageSquareFootage: number;
+  /** @minimum 0 */
+  basementSquareFootage: number;
+  basementFinished: boolean;
+  /** @minimum 0 */
+  outletQuantity: number;
+  /** @minimum 0 */
+  switchQuantity: number;
+  /** @minimum 0 */
+  dimmerQuantity: number;
+  /** @minimum 0 */
+  recessedLightQuantity: number;
+  recessedLightSize: NewHouseInputsRecessedLightSize;
+  /** @minimum 0 */
+  fanQuantity: number;
+  fanSupply: NewHouseInputsFanSupply;
+  /** @minimum 0 */
+  fanMaterialUnitCostOverride?: number;
+  panelManufacturer: NewHouseInputsPanelManufacturer;
+  /** @minimum 0 */
+  smokeCoQuantity: number;
+  /** @minimum 0 */
+  bathroomQuantity: number;
+  /** @minimum 0 */
+  kitchenApplianceCircuitQuantity: number;
+  /** @minimum 0 */
+  laundryCircuitQuantity: number;
+  /** @minimum 0 */
+  exteriorReceptacleQuantity: number;
+  /** @minimum 0 */
+  exteriorLightingQuantity: number;
+  /** @minimum 0 */
+  garageReceptacleQuantity: number;
+  /** @minimum 0 */
+  garageCircuitQuantity: number;
+  /** @minimum 0 */
+  servicePanelAllowance: number;
+  /** @minimum 0 */
+  hvacEquipmentCircuitQuantity: number;
+  /** @minimum 0 */
+  miniSplitCircuitQuantity: number;
+  /** @minimum 0 */
+  commonBranchCircuitQuantity: number;
+  /** @minimum 0 */
+  branchCircuitFootage: number;
+  branchCircuitAmperage: NewHouseInputsBranchCircuitAmperage;
+  branchCircuitPoleCount: NewHouseInputsBranchCircuitPoleCount;
+  branchCircuitProtectionType: NewHouseInputsBranchCircuitProtectionType;
+  branchCircuitCableType: NewHouseInputsBranchCircuitCableType;
+  /** @minimum 0 */
+  equipmentCircuitFootage: number;
+  equipmentCircuitAmperage: NewHouseInputsEquipmentCircuitAmperage;
+  equipmentCircuitPoleCount: NewHouseInputsEquipmentCircuitPoleCount;
+  equipmentCircuitProtectionType: NewHouseInputsEquipmentCircuitProtectionType;
+  equipmentCircuitCableType: NewHouseInputsEquipmentCircuitCableType;
+  /** @minimum 1 */
+  crewSize: number;
+  /** @minimum 0 */
+  crewHours: number;
+  /** @minimum 0 */
+  laborAdjustmentHours: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+}
+
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -1141,6 +1307,7 @@ export const QuoteInputModule = {
   SERVICE_CALL: 'SERVICE_CALL',
   TIME_MATERIALS: 'TIME_MATERIALS',
   CUSTOM: 'CUSTOM',
+  NEW_HOUSE: 'NEW_HOUSE',
 } as const;
 
 export interface QuoteInput {
@@ -1161,7 +1328,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -1191,11 +1358,12 @@ export const QuotePreviewInputModule = {
   SERVICE_CALL: 'SERVICE_CALL',
   TIME_MATERIALS: 'TIME_MATERIALS',
   CUSTOM: 'CUSTOM',
+  NEW_HOUSE: 'NEW_HOUSE',
 } as const;
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -1356,6 +1524,12 @@ export interface CompanySettings {
      * @maximum 99.99
      */
   customTargetMargin: number;
+  /** @minimum 1 */
+  newHouseCrewSize: number;
+  /** @minimum 0 */
+  newHouseHoursPerPerson: number;
+  /** @minimum 0 */
+  newHouseLaborAdjustmentHours: number;
   /** @nullable */
   contactPhone?: string | null;
   /** @nullable */
@@ -1444,6 +1618,12 @@ export interface CompanySettingsUpdate {
      * @maximum 99.99
      */
   customTargetMargin?: number;
+  /** @minimum 1 */
+  newHouseCrewSize?: number;
+  /** @minimum 0 */
+  newHouseHoursPerPerson?: number;
+  /** @minimum 0 */
+  newHouseLaborAdjustmentHours?: number;
   /** @nullable */
   contactPhone?: string | null;
   /** @nullable */

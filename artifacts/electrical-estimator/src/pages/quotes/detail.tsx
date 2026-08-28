@@ -232,7 +232,9 @@ export function QuoteDetail() {
                                ? "Time & Materials Builder"
                                : quote.module === "CUSTOM"
                                  ? "Custom Items Builder"
-                                 : "EV Charger Builder"}.
+                                  : quote.module === "NEW_HOUSE"
+                                    ? "New House Builder"
+                                    : "EV Charger Builder"}.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">

@@ -63,13 +63,23 @@ if (!existsSync(generatedClient)) {
     'Bundle-size check requires the committed generated API client. Run pnpm run codegen first.',
   );
 } else {
-  const build = await run('pnpm', ['run', 'build'], {
+  const build = await run(
+    'flock',
+    [
+      '-s',
+      '/tmp/electrical-estimator-codegen.lock',
+      'pnpm',
+      'run',
+      'build',
+    ],
+    {
     cwd: estimatorDirectory,
     env: {
       ...process.env,
       BUNDLE_CHECK_OUTPUT_DIR: checkOutputDirectory,
     },
-  });
+    },
+  );
 
   if (build.exitCode !== 0) {
     fail(

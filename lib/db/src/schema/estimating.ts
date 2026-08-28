@@ -15,6 +15,10 @@ import { sql } from "drizzle-orm";
 
 export type LaborRateType = "residential" | "commercial";
 export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
+export type NewHouseCircuitCableType =
+  | CableType
+  | "10/2 NM-B"
+  | "8/2 NM-B";
 export type EvCableType = "8/3 NM-B" | "8/2 NM-B" | "6/3 NM-B" | "8/2 SER";
 export type RecessedLightSize = "4-inch" | "6-inch";
 export type ServiceUpgradeServiceSize = "100A" | "150A" | "200A";
@@ -367,6 +371,55 @@ export type CustomInputRecord = {
   notes: string;
 };
 
+export type NewHouseFixtureSupply =
+  | "Contractor supplied"
+  | "Builder / GC supplied"
+  | "Customer supplied";
+
+export type NewHouseInputRecord = {
+  finishedSquareFootage: number;
+  floorCount: number;
+  garageSquareFootage: number;
+  basementSquareFootage: number;
+  basementFinished: boolean;
+  outletQuantity: number;
+  switchQuantity: number;
+  dimmerQuantity: number;
+  recessedLightQuantity: number;
+  recessedLightSize: RecessedLightSize;
+  fanQuantity: number;
+  fanSupply: NewHouseFixtureSupply;
+  fanMaterialUnitCostOverride?: number;
+  panelManufacturer: "Siemens" | "Eaton" | "Square D";
+  smokeCoQuantity: number;
+  bathroomQuantity: number;
+  kitchenApplianceCircuitQuantity: number;
+  laundryCircuitQuantity: number;
+  exteriorReceptacleQuantity: number;
+  exteriorLightingQuantity: number;
+  garageReceptacleQuantity: number;
+  garageCircuitQuantity: number;
+  servicePanelAllowance: number;
+  hvacEquipmentCircuitQuantity: number;
+  miniSplitCircuitQuantity: number;
+  commonBranchCircuitQuantity: number;
+  branchCircuitFootage: number;
+  branchCircuitAmperage: number;
+  branchCircuitPoleCount: number;
+  branchCircuitProtectionType: string;
+  branchCircuitCableType: NewHouseCircuitCableType;
+  equipmentCircuitFootage: number;
+  equipmentCircuitAmperage: number;
+  equipmentCircuitPoleCount: number;
+  equipmentCircuitProtectionType: string;
+  equipmentCircuitCableType: NewHouseCircuitCableType;
+  crewSize: number;
+  crewHours: number;
+  laborAdjustmentHours: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+};
+
 export type ExactCatalogPartSelectors = {
   meterDisconnect?: string;
   servicePanel?: string;
@@ -404,7 +457,8 @@ export type QuoteJobInputsRecord =
   | PanelReplacementInputRecord
   | ServiceCallInputRecord
   | TimeMaterialsInputRecord
-  | CustomInputRecord;
+  | CustomInputRecord
+  | NewHouseInputRecord;
 
 export type AssemblyLineRecord = {
   id: string;
@@ -617,6 +671,9 @@ export const companySettingsTable = pgTable(
     customLoadedLaborCost: numeric("custom_loaded_labor_cost", { precision: 10, scale: 2, mode: "number" }).notNull().default(65),
     customMaterialMarkup: numeric("custom_material_markup", { precision: 6, scale: 4, mode: "number" }).notNull().default(0.25),
     customTargetMargin: numeric("custom_target_margin", { precision: 6, scale: 4, mode: "number" }).notNull().default(0.4),
+    newHouseCrewSize: integer("new_house_crew_size").notNull().default(2),
+    newHouseHoursPerPerson: numeric("new_house_hours_per_person", { precision: 8, scale: 2, mode: "number" }).notNull().default(80),
+    newHouseLaborAdjustmentHours: numeric("new_house_labor_adjustment_hours", { precision: 8, scale: 2, mode: "number" }).notNull().default(0),
     contactPhone: text("contact_phone"),
     contactEmail: text("contact_email"),
     contactAddress: text("contact_address"),

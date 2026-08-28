@@ -66,6 +66,9 @@ export function Settings() {
     customLoadedLaborCost: "0",
     customMaterialMarkup: "0",
     customTargetMargin: "0",
+    newHouseCrewSize: "2",
+    newHouseHoursPerPerson: "80",
+    newHouseLaborAdjustmentHours: "0",
     contactPhone: "",
     contactEmail: "",
     contactAddress: "",
@@ -108,6 +111,9 @@ export function Settings() {
         customLoadedLaborCost: settings.customLoadedLaborCost.toString(),
         customMaterialMarkup: settings.customMaterialMarkup.toString(),
         customTargetMargin: settings.customTargetMargin.toString(),
+        newHouseCrewSize: settings.newHouseCrewSize.toString(),
+        newHouseHoursPerPerson: settings.newHouseHoursPerPerson.toString(),
+        newHouseLaborAdjustmentHours: settings.newHouseLaborAdjustmentHours.toString(),
         contactPhone: settings.contactPhone ?? "",
         contactEmail: settings.contactEmail ?? "",
         contactAddress: settings.contactAddress ?? "",
@@ -152,6 +158,9 @@ export function Settings() {
         customLoadedLaborCost: parseFloat(form.customLoadedLaborCost),
         customMaterialMarkup: parseFloat(form.customMaterialMarkup),
         customTargetMargin: parseFloat(form.customTargetMargin),
+        newHouseCrewSize: parseInt(form.newHouseCrewSize, 10),
+        newHouseHoursPerPerson: parseFloat(form.newHouseHoursPerPerson),
+        newHouseLaborAdjustmentHours: parseFloat(form.newHouseLaborAdjustmentHours),
         contactPhone: form.contactPhone || null,
         contactEmail: form.contactEmail || null,
         contactAddress: form.contactAddress || null,
@@ -411,6 +420,10 @@ export function Settings() {
             <NumberField label="Loaded Labor Cost ($/hr)" testId="input-custom-loaded-cost" value={form.customLoadedLaborCost} onChange={(value) => setForm(f => ({ ...f, customLoadedLaborCost: value }))} min="0" />
             <NumberField label="Material Markup (%)" testId="input-custom-markup" value={form.customMaterialMarkup} onChange={(value) => setForm(f => ({ ...f, customMaterialMarkup: value }))} min="0" />
             <NumberField label="Target Margin (%)" testId="input-custom-margin" value={form.customTargetMargin} onChange={(value) => setForm(f => ({ ...f, customTargetMargin: value }))} min="0" />
+            <div className="col-span-2 pt-3"><h3 className="font-semibold">New House Defaults</h3><p className="text-sm text-muted-foreground">Copied into new New House quotes. Scope quantities and footage remain quote-specific.</p></div>
+            <NumberField label="Crew Size" testId="input-new-house-crew-size" value={form.newHouseCrewSize} onChange={(value) => setForm(f => ({ ...f, newHouseCrewSize: value }))} min="1" step="1" />
+            <NumberField label="Hours Per Person" testId="input-new-house-hours" value={form.newHouseHoursPerPerson} onChange={(value) => setForm(f => ({ ...f, newHouseHoursPerPerson: value }))} min="0" />
+            <NumberField label="Labor Adjustment (hr)" testId="input-new-house-labor-adjustment" value={form.newHouseLaborAdjustmentHours} onChange={(value) => setForm(f => ({ ...f, newHouseLaborAdjustmentHours: value }))} min="0" />
           </div>
 
           <div className="pt-4 flex justify-end">

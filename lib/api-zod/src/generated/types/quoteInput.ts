@@ -9,6 +9,7 @@ import type { BathroomInputs } from './bathroomInputs';
 import type { CustomInputs } from './customInputs';
 import type { EvChargerInputs } from './evChargerInputs';
 import type { KitchenInputs } from './kitchenInputs';
+import type { NewHouseInputs } from './newHouseInputs';
 import type { PanelReplacementInputs } from './panelReplacementInputs';
 import type { QuoteInputModule } from './quoteInputModule';
 import type { RecessedLightingInputs } from './recessedLightingInputs';
@@ -34,7 +35,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99

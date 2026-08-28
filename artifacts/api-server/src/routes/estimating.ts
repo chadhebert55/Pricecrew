@@ -46,6 +46,7 @@ import {
   type CustomInputRecord,
   type EvChargerInputRecord,
   type KitchenInputRecord,
+  type NewHouseInputRecord,
   type PanelReplacementInputRecord,
   type PricingRecord,
   type QuoteJobInputsRecord,
@@ -65,6 +66,7 @@ import {
   calculateCustomEstimate,
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
+  calculateNewHouseEstimate,
   calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
   calculateServiceCallEstimate,
@@ -94,7 +96,8 @@ type EstimateModule =
   | "PANEL_REPLACEMENT"
   | "SERVICE_CALL"
   | "TIME_MATERIALS"
-  | "CUSTOM";
+  | "CUSTOM"
+  | "NEW_HOUSE";
 
 export function normalizeEstimateModule(value: string): EstimateModule | null {
   const key = value.trim().toUpperCase().replace(/&/g, "AND").replace(/[^A-Z0-9]/g, "");
@@ -118,6 +121,8 @@ export function normalizeEstimateModule(value: string): EstimateModule | null {
     CUSTOM: "CUSTOM",
     CUSTOMBUILDER: "CUSTOM",
     CUSTOMITEMS: "CUSTOM",
+    NEWHOUSE: "NEW_HOUSE",
+    NEWHOUSEBUILDER: "NEW_HOUSE",
     CUSTOMITEMSBUILDER: "CUSTOM",
   };
   return aliases[key] ?? null;
@@ -603,6 +608,9 @@ async function calculateEstimate(
   if (module === "CUSTOM" && isCustomInput(jobInputs)) {
     return calculateCustomEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "NEW_HOUSE" && isNewHouseInput(jobInputs)) {
+    return calculateNewHouseEstimate(jobInputs, settings, priceBook);
+  }
   throw new Error(`Job inputs do not match module ${module}`);
 }
 
@@ -660,6 +668,15 @@ function isCustomInput(
   return "laborHours" in jobInputs && "materials" in jobInputs;
 }
 
+function isNewHouseInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is NewHouseInputRecord {
+  return (
+    "finishedSquareFootage" in jobInputs &&
+    "commonBranchCircuitQuantity" in jobInputs
+  );
+}
+
 function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -674,6 +691,7 @@ function moduleMatchesInputs(
     || (module === "SERVICE_CALL" && isServiceCallInput(jobInputs))
     || (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs))
     || (module === "CUSTOM" && isCustomInput(jobInputs))
+    || (module === "NEW_HOUSE" && isNewHouseInput(jobInputs))
   );
 }
 
@@ -1438,6 +1456,9 @@ router.get("/settings", async (req, res): Promise<void> => {
       customLoadedLaborCost: settings.customLoadedLaborCost,
       customMaterialMarkup: settings.customMaterialMarkup * 100,
       customTargetMargin: settings.customTargetMargin * 100,
+      newHouseCrewSize: settings.newHouseCrewSize,
+      newHouseHoursPerPerson: settings.newHouseHoursPerPerson,
+      newHouseLaborAdjustmentHours: settings.newHouseLaborAdjustmentHours,
       contactPhone: settings.contactPhone,
       contactEmail: settings.contactEmail,
       contactAddress: settings.contactAddress,
@@ -1522,6 +1543,9 @@ router.patch("/settings", async (req, res): Promise<void> => {
       customLoadedLaborCost: parsed.data.customLoadedLaborCost ?? currentSettings.customLoadedLaborCost,
       customMaterialMarkup: parsed.data.customMaterialMarkup === undefined ? currentSettings.customMaterialMarkup : normalizePercentageSetting(parsed.data.customMaterialMarkup),
       customTargetMargin: parsed.data.customTargetMargin === undefined ? currentSettings.customTargetMargin : normalizePercentageSetting(parsed.data.customTargetMargin),
+      newHouseCrewSize: parsed.data.newHouseCrewSize ?? currentSettings.newHouseCrewSize,
+      newHouseHoursPerPerson: parsed.data.newHouseHoursPerPerson ?? currentSettings.newHouseHoursPerPerson,
+      newHouseLaborAdjustmentHours: parsed.data.newHouseLaborAdjustmentHours ?? currentSettings.newHouseLaborAdjustmentHours,
       contactPhone: "contactPhone" in parsed.data ? parsed.data.contactPhone : currentSettings.contactPhone,
       contactEmail: "contactEmail" in parsed.data ? parsed.data.contactEmail : currentSettings.contactEmail,
       contactAddress: "contactAddress" in parsed.data ? parsed.data.contactAddress : currentSettings.contactAddress,
@@ -1576,6 +1600,9 @@ router.patch("/settings", async (req, res): Promise<void> => {
       customLoadedLaborCost: settings.customLoadedLaborCost,
       customMaterialMarkup: settings.customMaterialMarkup * 100,
       customTargetMargin: settings.customTargetMargin * 100,
+      newHouseCrewSize: settings.newHouseCrewSize,
+      newHouseHoursPerPerson: settings.newHouseHoursPerPerson,
+      newHouseLaborAdjustmentHours: settings.newHouseLaborAdjustmentHours,
       contactPhone: settings.contactPhone,
       contactEmail: settings.contactEmail,
       contactAddress: settings.contactAddress,

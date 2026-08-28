@@ -76,6 +76,12 @@ export interface CompanySettingsUpdate {
      * @maximum 99.99
      */
   customTargetMargin?: number;
+  /** @minimum 1 */
+  newHouseCrewSize?: number;
+  /** @minimum 0 */
+  newHouseHoursPerPerson?: number;
+  /** @minimum 0 */
+  newHouseLaborAdjustmentHours?: number;
   /** @nullable */
   contactPhone?: string | null;
   /** @nullable */

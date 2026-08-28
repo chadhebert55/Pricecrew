@@ -625,6 +625,7 @@ components:
             - SERVICE_CALL
             - TIME_MATERIALS
             - CUSTOM
+            - NEW_HOUSE
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
@@ -636,6 +637,7 @@ components:
             - $ref: "#/components/schemas/ServiceCallInputs"
             - $ref: "#/components/schemas/TimeMaterialsInputs"
             - $ref: "#/components/schemas/CustomInputs"
+            - $ref: "#/components/schemas/NewHouseInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -659,6 +661,7 @@ components:
         - $ref: "#/components/schemas/ServiceCallInputs"
         - $ref: "#/components/schemas/TimeMaterialsInputs"
         - $ref: "#/components/schemas/CustomInputs"
+        - $ref: "#/components/schemas/NewHouseInputs"
         - type: object
           additionalProperties: true
     QuotePreviewInput:
@@ -679,6 +682,7 @@ components:
             - SERVICE_CALL
             - TIME_MATERIALS
             - CUSTOM
+            - NEW_HOUSE
         jobInputs:
           oneOf:
             - $ref: "#/components/schemas/EvChargerInputs"
@@ -690,6 +694,7 @@ components:
             - $ref: "#/components/schemas/ServiceCallInputs"
             - $ref: "#/components/schemas/TimeMaterialsInputs"
             - $ref: "#/components/schemas/CustomInputs"
+            - $ref: "#/components/schemas/NewHouseInputs"
         laborOverride:
           type: ["number", "null"]
           minimum: 0
@@ -1778,6 +1783,105 @@ components:
             $ref: "#/components/schemas/MiscellaneousMaterialInput"
         notes:
           type: string
+    NewHouseInputs:
+      type: object
+      required:
+        - finishedSquareFootage
+        - floorCount
+        - garageSquareFootage
+        - basementSquareFootage
+        - basementFinished
+        - outletQuantity
+        - switchQuantity
+        - dimmerQuantity
+        - recessedLightQuantity
+        - recessedLightSize
+        - fanQuantity
+        - fanSupply
+        - panelManufacturer
+        - smokeCoQuantity
+        - bathroomQuantity
+        - kitchenApplianceCircuitQuantity
+        - laundryCircuitQuantity
+        - exteriorReceptacleQuantity
+        - exteriorLightingQuantity
+        - garageReceptacleQuantity
+        - garageCircuitQuantity
+        - servicePanelAllowance
+        - hvacEquipmentCircuitQuantity
+        - miniSplitCircuitQuantity
+        - commonBranchCircuitQuantity
+        - branchCircuitFootage
+        - branchCircuitAmperage
+        - branchCircuitPoleCount
+        - branchCircuitProtectionType
+        - branchCircuitCableType
+        - equipmentCircuitFootage
+        - equipmentCircuitAmperage
+        - equipmentCircuitPoleCount
+        - equipmentCircuitProtectionType
+        - equipmentCircuitCableType
+        - crewSize
+        - crewHours
+        - laborAdjustmentHours
+        - notes
+      properties:
+        finishedSquareFootage: { type: number, minimum: 1 }
+        floorCount: { type: number, minimum: 1, multipleOf: 1 }
+        garageSquareFootage: { type: number, minimum: 0 }
+        basementSquareFootage: { type: number, minimum: 0 }
+        basementFinished: { type: boolean }
+        outletQuantity: { type: number, minimum: 0 }
+        switchQuantity: { type: number, minimum: 0 }
+        dimmerQuantity: { type: number, minimum: 0 }
+        recessedLightQuantity: { type: number, minimum: 0 }
+        recessedLightSize:
+          type: string
+          enum: [4-inch, 6-inch]
+        fanQuantity: { type: number, minimum: 0 }
+        fanSupply:
+          type: string
+          enum: [Contractor supplied, Builder / GC supplied, Customer supplied]
+        fanMaterialUnitCostOverride: { type: number, minimum: 0 }
+        panelManufacturer:
+          type: string
+          enum: [Siemens, Eaton, Square D]
+        smokeCoQuantity: { type: number, minimum: 0 }
+        bathroomQuantity: { type: number, minimum: 0 }
+        kitchenApplianceCircuitQuantity: { type: number, minimum: 0 }
+        laundryCircuitQuantity: { type: number, minimum: 0 }
+        exteriorReceptacleQuantity: { type: number, minimum: 0 }
+        exteriorLightingQuantity: { type: number, minimum: 0 }
+        garageReceptacleQuantity: { type: number, minimum: 0 }
+        garageCircuitQuantity: { type: number, minimum: 0 }
+        servicePanelAllowance: { type: number, minimum: 0 }
+        hvacEquipmentCircuitQuantity: { type: number, minimum: 0 }
+        miniSplitCircuitQuantity: { type: number, minimum: 0 }
+        commonBranchCircuitQuantity: { type: number, minimum: 0 }
+        branchCircuitFootage: { type: number, minimum: 0 }
+        branchCircuitAmperage: { type: number, enum: [15, 20] }
+        branchCircuitPoleCount: { type: number, enum: [1] }
+        branchCircuitProtectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        branchCircuitCableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+        equipmentCircuitFootage: { type: number, minimum: 0 }
+        equipmentCircuitAmperage: { type: number, enum: [20, 30, 40] }
+        equipmentCircuitPoleCount: { type: number, enum: [2] }
+        equipmentCircuitProtectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        equipmentCircuitCableType:
+          type: string
+          enum: [12/2 NM-B, 10/2 NM-B, 8/2 NM-B]
+        crewSize: { type: number, minimum: 1, multipleOf: 1 }
+        crewHours: { type: number, minimum: 0 }
+        laborAdjustmentHours: { type: number, minimum: 0 }
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        notes: { type: string }
     ExactCatalogPartSelectors:
       type: object
       description: Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.
@@ -2050,6 +2154,9 @@ components:
         - customLoadedLaborCost
         - customMaterialMarkup
         - customTargetMargin
+        - newHouseCrewSize
+        - newHouseHoursPerPerson
+        - newHouseLaborAdjustmentHours
         - proposalAccentColor
         - proposalTerms
       properties:
@@ -2114,6 +2221,9 @@ components:
         customLoadedLaborCost: { type: number, minimum: 0 }
         customMaterialMarkup: { type: number, minimum: 0, maximum: 500 }
         customTargetMargin: { type: number, minimum: 0, maximum: 99.99 }
+        newHouseCrewSize: { type: number, minimum: 1, multipleOf: 1 }
+        newHouseHoursPerPerson: { type: number, minimum: 0 }
+        newHouseLaborAdjustmentHours: { type: number, minimum: 0 }
         contactPhone: { type: ["string", "null"] }
         contactEmail: { type: ["string", "null"] }
         contactAddress: { type: ["string", "null"] }
@@ -2183,6 +2293,9 @@ components:
         customLoadedLaborCost: { type: number, minimum: 0 }
         customMaterialMarkup: { type: number, minimum: 0, maximum: 500 }
         customTargetMargin: { type: number, minimum: 0, maximum: 99.99 }
+        newHouseCrewSize: { type: number, minimum: 1, multipleOf: 1 }
+        newHouseHoursPerPerson: { type: number, minimum: 0 }
+        newHouseLaborAdjustmentHours: { type: number, minimum: 0 }
         contactPhone: { type: ["string", "null"] }
         contactEmail: { type: ["string", "null"] }
         contactAddress: { type: ["string", "null"] }

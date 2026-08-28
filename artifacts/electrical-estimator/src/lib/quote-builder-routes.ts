@@ -19,6 +19,8 @@ const routesByModuleKey: Record<string, string> = {
   CUSTOMBUILDER: "/quotes/new/custom",
   CUSTOMITEMS: "/quotes/new/custom",
   CUSTOMITEMSBUILDER: "/quotes/new/custom",
+  NEWHOUSE: "/quotes/new/new-house",
+  NEWHOUSEBUILDER: "/quotes/new/new-house",
 }
 
 const canonicalModulesByKey: Record<string, string> = {
@@ -32,6 +34,7 @@ const canonicalModulesByKey: Record<string, string> = {
   TIMEANDMATERIALS: "TIME_MATERIALS", TIMEANDMATERIALSBUILDER: "TIME_MATERIALS",
   CUSTOM: "CUSTOM", CUSTOMBUILDER: "CUSTOM",
   CUSTOMITEMS: "CUSTOM", CUSTOMITEMSBUILDER: "CUSTOM",
+  NEWHOUSE: "NEW_HOUSE", NEWHOUSEBUILDER: "NEW_HOUSE",
 }
 
 function moduleKey(module: string) {

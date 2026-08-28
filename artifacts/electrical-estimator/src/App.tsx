@@ -65,6 +65,9 @@ const NewTimeMaterialsQuote = lazy(() =>
 const NewCustomQuote = lazy(() =>
   import('@/pages/quotes/new-custom').then(({ NewCustomQuote }) => ({ default: NewCustomQuote })),
 );
+const NewHouseQuote = lazy(() =>
+  import('@/pages/quotes/new-house').then(({ NewHouseQuote }) => ({ default: NewHouseQuote })),
+);
 const QuoteProposal = lazy(() =>
   import('@/pages/quotes/proposal').then(({ QuoteProposal }) => ({ default: QuoteProposal })),
 );
@@ -181,6 +184,7 @@ function PrivateRouter() {
             <Route path="/quotes/new/service-call" component={NewServiceCallQuote} />
             <Route path="/quotes/new/time-materials" component={NewTimeMaterialsQuote} />
             <Route path="/quotes/new/custom" component={NewCustomQuote} />
+            <Route path="/quotes/new/new-house" component={NewHouseQuote} />
             <Route path="/quotes/:id" component={QuoteDetail} />
             <Route path="/builders" component={Builders} />
             <Route path="/price-book" component={PriceBook} />

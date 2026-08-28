@@ -485,6 +485,59 @@ export const createQuoteBodyJobInputsNineMaterialsItemUnitCostMin = 0;
 
 export const createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
 
+
+export const createQuoteBodyJobInputsOnezeroFloorCountMultipleOf = 1;
+
+export const createQuoteBodyJobInputsOnezeroGarageSquareFootageMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroBasementSquareFootageMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroOutletQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroSwitchQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroDimmerQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroRecessedLightQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroFanQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroFanMaterialUnitCostOverrideMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroSmokeCoQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroBathroomQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroKitchenApplianceCircuitQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroLaundryCircuitQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroExteriorReceptacleQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroExteriorLightingQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroGarageReceptacleQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroGarageCircuitQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroServicePanelAllowanceMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroHvacEquipmentCircuitQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroMiniSplitCircuitQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroCommonBranchCircuitQuantityMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroBranchCircuitFootageMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroEquipmentCircuitFootageMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroCrewSizeMultipleOf = 1;
+
+export const createQuoteBodyJobInputsOnezeroCrewHoursMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroLaborAdjustmentHoursMin = 0;
+
 export const createQuoteBodyLaborOverrideMin = 0;
 export const createQuoteBodyLaborOverrideMax = 999999999.99;
 
@@ -500,7 +553,7 @@ export const CreateQuoteBody = zod.object({
   "customerName": zod.string().min(1),
   "customerEmail": zod.string().nullish(),
   "projectName": zod.string().min(1),
-  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS', 'CUSTOM']),
+  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS', 'CUSTOM', 'NEW_HOUSE']),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
@@ -851,6 +904,48 @@ export const CreateQuoteBody = zod.object({
   "cost": zod.number().min(createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
+}),zod.object({
+  "finishedSquareFootage": zod.number().min(1),
+  "floorCount": zod.number().min(1).multipleOf(createQuoteBodyJobInputsOnezeroFloorCountMultipleOf),
+  "garageSquareFootage": zod.number().min(createQuoteBodyJobInputsOnezeroGarageSquareFootageMin),
+  "basementSquareFootage": zod.number().min(createQuoteBodyJobInputsOnezeroBasementSquareFootageMin),
+  "basementFinished": zod.boolean(),
+  "outletQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroOutletQuantityMin),
+  "switchQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroSwitchQuantityMin),
+  "dimmerQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroDimmerQuantityMin),
+  "recessedLightQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroRecessedLightQuantityMin),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']),
+  "fanQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroFanQuantityMin),
+  "fanSupply": zod.enum(['Contractor supplied', 'Builder / GC supplied', 'Customer supplied']),
+  "fanMaterialUnitCostOverride": zod.number().min(createQuoteBodyJobInputsOnezeroFanMaterialUnitCostOverrideMin).optional(),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "smokeCoQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroSmokeCoQuantityMin),
+  "bathroomQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroBathroomQuantityMin),
+  "kitchenApplianceCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroKitchenApplianceCircuitQuantityMin),
+  "laundryCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroLaundryCircuitQuantityMin),
+  "exteriorReceptacleQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroExteriorReceptacleQuantityMin),
+  "exteriorLightingQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroExteriorLightingQuantityMin),
+  "garageReceptacleQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroGarageReceptacleQuantityMin),
+  "garageCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroGarageCircuitQuantityMin),
+  "servicePanelAllowance": zod.number().min(createQuoteBodyJobInputsOnezeroServicePanelAllowanceMin),
+  "hvacEquipmentCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroHvacEquipmentCircuitQuantityMin),
+  "miniSplitCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroMiniSplitCircuitQuantityMin),
+  "commonBranchCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOnezeroCommonBranchCircuitQuantityMin),
+  "branchCircuitFootage": zod.number().min(createQuoteBodyJobInputsOnezeroBranchCircuitFootageMin),
+  "branchCircuitAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "branchCircuitPoleCount": zod.literal(1),
+  "branchCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "branchCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "equipmentCircuitFootage": zod.number().min(createQuoteBodyJobInputsOnezeroEquipmentCircuitFootageMin),
+  "equipmentCircuitAmperage": zod.union([zod.literal(20),zod.literal(30),zod.literal(40)]),
+  "equipmentCircuitPoleCount": zod.literal(2),
+  "equipmentCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "equipmentCircuitCableType": zod.enum(['12/2 NM-B', '10/2 NM-B', '8/2 NM-B']),
+  "crewSize": zod.number().min(1).multipleOf(createQuoteBodyJobInputsOnezeroCrewSizeMultipleOf),
+  "crewHours": zod.number().min(createQuoteBodyJobInputsOnezeroCrewHoursMin),
+  "laborAdjustmentHours": zod.number().min(createQuoteBodyJobInputsOnezeroLaborAdjustmentHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "notes": zod.string()
 })]),
   "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).max(createQuoteBodyLaborOverrideMax).nullish(),
   "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).max(createQuoteBodySellingPriceOverrideMax).nullish(),
@@ -1173,6 +1268,59 @@ export const createQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin = 0;
 
 
 export const createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+
+export const createQuoteResponseTwoJobInputsOnezeroFloorCountMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsOnezeroGarageSquareFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroBasementSquareFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroOutletQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroSwitchQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroDimmerQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroRecessedLightQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroFanQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroSmokeCoQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroBathroomQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroLaundryCircuitQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroExteriorReceptacleQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroExteriorLightingQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroGarageReceptacleQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroGarageCircuitQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroServicePanelAllowanceMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroMiniSplitCircuitQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroCommonBranchCircuitQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroBranchCircuitFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroEquipmentCircuitFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroCrewSizeMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsOnezeroCrewHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroLaborAdjustmentHoursMin = 0;
 
 
 
@@ -1542,6 +1690,48 @@ export const CreateQuoteResponse = zod.object({
   "cost": zod.number().min(createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
+}),zod.object({
+  "finishedSquareFootage": zod.number().min(1),
+  "floorCount": zod.number().min(1).multipleOf(createQuoteResponseTwoJobInputsOnezeroFloorCountMultipleOf),
+  "garageSquareFootage": zod.number().min(createQuoteResponseTwoJobInputsOnezeroGarageSquareFootageMin),
+  "basementSquareFootage": zod.number().min(createQuoteResponseTwoJobInputsOnezeroBasementSquareFootageMin),
+  "basementFinished": zod.boolean(),
+  "outletQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroOutletQuantityMin),
+  "switchQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroSwitchQuantityMin),
+  "dimmerQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroDimmerQuantityMin),
+  "recessedLightQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroRecessedLightQuantityMin),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']),
+  "fanQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroFanQuantityMin),
+  "fanSupply": zod.enum(['Contractor supplied', 'Builder / GC supplied', 'Customer supplied']),
+  "fanMaterialUnitCostOverride": zod.number().min(createQuoteResponseTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin).optional(),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "smokeCoQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroSmokeCoQuantityMin),
+  "bathroomQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroBathroomQuantityMin),
+  "kitchenApplianceCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin),
+  "laundryCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroLaundryCircuitQuantityMin),
+  "exteriorReceptacleQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroExteriorReceptacleQuantityMin),
+  "exteriorLightingQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroExteriorLightingQuantityMin),
+  "garageReceptacleQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroGarageReceptacleQuantityMin),
+  "garageCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroGarageCircuitQuantityMin),
+  "servicePanelAllowance": zod.number().min(createQuoteResponseTwoJobInputsOnezeroServicePanelAllowanceMin),
+  "hvacEquipmentCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin),
+  "miniSplitCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroMiniSplitCircuitQuantityMin),
+  "commonBranchCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroCommonBranchCircuitQuantityMin),
+  "branchCircuitFootage": zod.number().min(createQuoteResponseTwoJobInputsOnezeroBranchCircuitFootageMin),
+  "branchCircuitAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "branchCircuitPoleCount": zod.literal(1),
+  "branchCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "branchCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "equipmentCircuitFootage": zod.number().min(createQuoteResponseTwoJobInputsOnezeroEquipmentCircuitFootageMin),
+  "equipmentCircuitAmperage": zod.union([zod.literal(20),zod.literal(30),zod.literal(40)]),
+  "equipmentCircuitPoleCount": zod.literal(2),
+  "equipmentCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "equipmentCircuitCableType": zod.enum(['12/2 NM-B', '10/2 NM-B', '8/2 NM-B']),
+  "crewSize": zod.number().min(1).multipleOf(createQuoteResponseTwoJobInputsOnezeroCrewSizeMultipleOf),
+  "crewHours": zod.number().min(createQuoteResponseTwoJobInputsOnezeroCrewHoursMin),
+  "laborAdjustmentHours": zod.number().min(createQuoteResponseTwoJobInputsOnezeroLaborAdjustmentHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -1903,6 +2093,59 @@ export const previewQuoteBodyJobInputsNineMaterialsItemUnitCostMin = 0;
 
 export const previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
 
+
+export const previewQuoteBodyJobInputsOnezeroFloorCountMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsOnezeroGarageSquareFootageMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroBasementSquareFootageMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroOutletQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroSwitchQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroDimmerQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroRecessedLightQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroFanQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroFanMaterialUnitCostOverrideMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroSmokeCoQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroBathroomQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroKitchenApplianceCircuitQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroLaundryCircuitQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroExteriorReceptacleQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroExteriorLightingQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroGarageReceptacleQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroGarageCircuitQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroServicePanelAllowanceMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroHvacEquipmentCircuitQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroMiniSplitCircuitQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroCommonBranchCircuitQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroBranchCircuitFootageMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroEquipmentCircuitFootageMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroCrewSizeMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsOnezeroCrewHoursMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroLaborAdjustmentHoursMin = 0;
+
 export const previewQuoteBodyLaborOverrideMin = 0;
 export const previewQuoteBodyLaborOverrideMax = 999999999.99;
 
@@ -1912,7 +2155,7 @@ export const previewQuoteBodySellingPriceOverrideMax = 999999999.99;
 
 
 export const PreviewQuoteBody = zod.object({
-  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS', 'CUSTOM']),
+  "module": zod.enum(['EV_CHARGER', 'BATHROOM', 'KITCHEN', 'RECESSED_LIGHTING', 'SERVICE_UPGRADE', 'PANEL_REPLACEMENT', 'SERVICE_CALL', 'TIME_MATERIALS', 'CUSTOM', 'NEW_HOUSE']),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
   "chargerOutputAmps": zod.number(),
@@ -2262,6 +2505,48 @@ export const PreviewQuoteBody = zod.object({
   "description": zod.string(),
   "cost": zod.number().min(previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
+  "notes": zod.string()
+}),zod.object({
+  "finishedSquareFootage": zod.number().min(1),
+  "floorCount": zod.number().min(1).multipleOf(previewQuoteBodyJobInputsOnezeroFloorCountMultipleOf),
+  "garageSquareFootage": zod.number().min(previewQuoteBodyJobInputsOnezeroGarageSquareFootageMin),
+  "basementSquareFootage": zod.number().min(previewQuoteBodyJobInputsOnezeroBasementSquareFootageMin),
+  "basementFinished": zod.boolean(),
+  "outletQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroOutletQuantityMin),
+  "switchQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroSwitchQuantityMin),
+  "dimmerQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroDimmerQuantityMin),
+  "recessedLightQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroRecessedLightQuantityMin),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']),
+  "fanQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroFanQuantityMin),
+  "fanSupply": zod.enum(['Contractor supplied', 'Builder / GC supplied', 'Customer supplied']),
+  "fanMaterialUnitCostOverride": zod.number().min(previewQuoteBodyJobInputsOnezeroFanMaterialUnitCostOverrideMin).optional(),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "smokeCoQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroSmokeCoQuantityMin),
+  "bathroomQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroBathroomQuantityMin),
+  "kitchenApplianceCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroKitchenApplianceCircuitQuantityMin),
+  "laundryCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroLaundryCircuitQuantityMin),
+  "exteriorReceptacleQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroExteriorReceptacleQuantityMin),
+  "exteriorLightingQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroExteriorLightingQuantityMin),
+  "garageReceptacleQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroGarageReceptacleQuantityMin),
+  "garageCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroGarageCircuitQuantityMin),
+  "servicePanelAllowance": zod.number().min(previewQuoteBodyJobInputsOnezeroServicePanelAllowanceMin),
+  "hvacEquipmentCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroHvacEquipmentCircuitQuantityMin),
+  "miniSplitCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroMiniSplitCircuitQuantityMin),
+  "commonBranchCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOnezeroCommonBranchCircuitQuantityMin),
+  "branchCircuitFootage": zod.number().min(previewQuoteBodyJobInputsOnezeroBranchCircuitFootageMin),
+  "branchCircuitAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "branchCircuitPoleCount": zod.literal(1),
+  "branchCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "branchCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "equipmentCircuitFootage": zod.number().min(previewQuoteBodyJobInputsOnezeroEquipmentCircuitFootageMin),
+  "equipmentCircuitAmperage": zod.union([zod.literal(20),zod.literal(30),zod.literal(40)]),
+  "equipmentCircuitPoleCount": zod.literal(2),
+  "equipmentCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "equipmentCircuitCableType": zod.enum(['12/2 NM-B', '10/2 NM-B', '8/2 NM-B']),
+  "crewSize": zod.number().min(1).multipleOf(previewQuoteBodyJobInputsOnezeroCrewSizeMultipleOf),
+  "crewHours": zod.number().min(previewQuoteBodyJobInputsOnezeroCrewHoursMin),
+  "laborAdjustmentHours": zod.number().min(previewQuoteBodyJobInputsOnezeroLaborAdjustmentHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 })]),
   "laborOverride": zod.number().min(previewQuoteBodyLaborOverrideMin).max(previewQuoteBodyLaborOverrideMax).nullish(),
@@ -2678,6 +2963,59 @@ export const getQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin = 0;
 export const getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
 
 
+export const getQuoteResponseTwoJobInputsOnezeroFloorCountMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsOnezeroGarageSquareFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroBasementSquareFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroOutletQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroSwitchQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroDimmerQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroRecessedLightQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroFanQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroSmokeCoQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroBathroomQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroLaundryCircuitQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroExteriorReceptacleQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroExteriorLightingQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroGarageReceptacleQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroGarageCircuitQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroServicePanelAllowanceMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroMiniSplitCircuitQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroCommonBranchCircuitQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroBranchCircuitFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroEquipmentCircuitFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroCrewSizeMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsOnezeroCrewHoursMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroLaborAdjustmentHoursMin = 0;
+
+
 
 
 
@@ -3044,6 +3382,48 @@ export const GetQuoteResponse = zod.object({
   "description": zod.string(),
   "cost": zod.number().min(getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
+  "notes": zod.string()
+}),zod.object({
+  "finishedSquareFootage": zod.number().min(1),
+  "floorCount": zod.number().min(1).multipleOf(getQuoteResponseTwoJobInputsOnezeroFloorCountMultipleOf),
+  "garageSquareFootage": zod.number().min(getQuoteResponseTwoJobInputsOnezeroGarageSquareFootageMin),
+  "basementSquareFootage": zod.number().min(getQuoteResponseTwoJobInputsOnezeroBasementSquareFootageMin),
+  "basementFinished": zod.boolean(),
+  "outletQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroOutletQuantityMin),
+  "switchQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroSwitchQuantityMin),
+  "dimmerQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroDimmerQuantityMin),
+  "recessedLightQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroRecessedLightQuantityMin),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']),
+  "fanQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroFanQuantityMin),
+  "fanSupply": zod.enum(['Contractor supplied', 'Builder / GC supplied', 'Customer supplied']),
+  "fanMaterialUnitCostOverride": zod.number().min(getQuoteResponseTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin).optional(),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "smokeCoQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroSmokeCoQuantityMin),
+  "bathroomQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroBathroomQuantityMin),
+  "kitchenApplianceCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin),
+  "laundryCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroLaundryCircuitQuantityMin),
+  "exteriorReceptacleQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroExteriorReceptacleQuantityMin),
+  "exteriorLightingQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroExteriorLightingQuantityMin),
+  "garageReceptacleQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroGarageReceptacleQuantityMin),
+  "garageCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroGarageCircuitQuantityMin),
+  "servicePanelAllowance": zod.number().min(getQuoteResponseTwoJobInputsOnezeroServicePanelAllowanceMin),
+  "hvacEquipmentCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin),
+  "miniSplitCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroMiniSplitCircuitQuantityMin),
+  "commonBranchCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroCommonBranchCircuitQuantityMin),
+  "branchCircuitFootage": zod.number().min(getQuoteResponseTwoJobInputsOnezeroBranchCircuitFootageMin),
+  "branchCircuitAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "branchCircuitPoleCount": zod.literal(1),
+  "branchCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "branchCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "equipmentCircuitFootage": zod.number().min(getQuoteResponseTwoJobInputsOnezeroEquipmentCircuitFootageMin),
+  "equipmentCircuitAmperage": zod.union([zod.literal(20),zod.literal(30),zod.literal(40)]),
+  "equipmentCircuitPoleCount": zod.literal(2),
+  "equipmentCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "equipmentCircuitCableType": zod.enum(['12/2 NM-B', '10/2 NM-B', '8/2 NM-B']),
+  "crewSize": zod.number().min(1).multipleOf(getQuoteResponseTwoJobInputsOnezeroCrewSizeMultipleOf),
+  "crewHours": zod.number().min(getQuoteResponseTwoJobInputsOnezeroCrewHoursMin),
+  "laborAdjustmentHours": zod.number().min(getQuoteResponseTwoJobInputsOnezeroLaborAdjustmentHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
   "assembly": zod.array(zod.object({
@@ -3426,6 +3806,59 @@ export const updateQuoteResponseOneTwoJobInputsNineMaterialsItemUnitCostMin = 0;
 export const updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
 
 
+export const updateQuoteResponseOneTwoJobInputsOnezeroFloorCountMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroGarageSquareFootageMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroBasementSquareFootageMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroOutletQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroSwitchQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroDimmerQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroRecessedLightQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroFanQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroSmokeCoQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroBathroomQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroLaundryCircuitQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroExteriorReceptacleQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroExteriorLightingQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroGarageReceptacleQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroGarageCircuitQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroServicePanelAllowanceMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroMiniSplitCircuitQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroCommonBranchCircuitQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroBranchCircuitFootageMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroEquipmentCircuitFootageMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroCrewSizeMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroCrewHoursMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroLaborAdjustmentHoursMin = 0;
+
+
 
 
 
@@ -3792,6 +4225,48 @@ export const UpdateQuoteResponse = zod.object({
   "description": zod.string(),
   "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
+  "notes": zod.string()
+}),zod.object({
+  "finishedSquareFootage": zod.number().min(1),
+  "floorCount": zod.number().min(1).multipleOf(updateQuoteResponseOneTwoJobInputsOnezeroFloorCountMultipleOf),
+  "garageSquareFootage": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroGarageSquareFootageMin),
+  "basementSquareFootage": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroBasementSquareFootageMin),
+  "basementFinished": zod.boolean(),
+  "outletQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroOutletQuantityMin),
+  "switchQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroSwitchQuantityMin),
+  "dimmerQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroDimmerQuantityMin),
+  "recessedLightQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroRecessedLightQuantityMin),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']),
+  "fanQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroFanQuantityMin),
+  "fanSupply": zod.enum(['Contractor supplied', 'Builder / GC supplied', 'Customer supplied']),
+  "fanMaterialUnitCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin).optional(),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "smokeCoQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroSmokeCoQuantityMin),
+  "bathroomQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroBathroomQuantityMin),
+  "kitchenApplianceCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin),
+  "laundryCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroLaundryCircuitQuantityMin),
+  "exteriorReceptacleQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroExteriorReceptacleQuantityMin),
+  "exteriorLightingQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroExteriorLightingQuantityMin),
+  "garageReceptacleQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroGarageReceptacleQuantityMin),
+  "garageCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroGarageCircuitQuantityMin),
+  "servicePanelAllowance": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroServicePanelAllowanceMin),
+  "hvacEquipmentCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin),
+  "miniSplitCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroMiniSplitCircuitQuantityMin),
+  "commonBranchCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroCommonBranchCircuitQuantityMin),
+  "branchCircuitFootage": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroBranchCircuitFootageMin),
+  "branchCircuitAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "branchCircuitPoleCount": zod.literal(1),
+  "branchCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "branchCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "equipmentCircuitFootage": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroEquipmentCircuitFootageMin),
+  "equipmentCircuitAmperage": zod.union([zod.literal(20),zod.literal(30),zod.literal(40)]),
+  "equipmentCircuitPoleCount": zod.literal(2),
+  "equipmentCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "equipmentCircuitCableType": zod.enum(['12/2 NM-B', '10/2 NM-B', '8/2 NM-B']),
+  "crewSize": zod.number().min(1).multipleOf(updateQuoteResponseOneTwoJobInputsOnezeroCrewSizeMultipleOf),
+  "crewHours": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroCrewHoursMin),
+  "laborAdjustmentHours": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroLaborAdjustmentHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
   "assembly": zod.array(zod.object({
@@ -4161,6 +4636,59 @@ export const duplicateQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin = 0;
 export const duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
 
 
+export const duplicateQuoteResponseTwoJobInputsOnezeroFloorCountMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroGarageSquareFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroBasementSquareFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroOutletQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroSwitchQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroDimmerQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroRecessedLightQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroFanQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroSmokeCoQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroBathroomQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroLaundryCircuitQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroExteriorReceptacleQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroExteriorLightingQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroGarageReceptacleQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroGarageCircuitQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroServicePanelAllowanceMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroMiniSplitCircuitQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroCommonBranchCircuitQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroBranchCircuitFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroEquipmentCircuitFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroCrewSizeMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroCrewHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroLaborAdjustmentHoursMin = 0;
+
+
 
 
 
@@ -4528,6 +5056,48 @@ export const DuplicateQuoteResponse = zod.object({
   "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
 })),
   "notes": zod.string()
+}),zod.object({
+  "finishedSquareFootage": zod.number().min(1),
+  "floorCount": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoJobInputsOnezeroFloorCountMultipleOf),
+  "garageSquareFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroGarageSquareFootageMin),
+  "basementSquareFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroBasementSquareFootageMin),
+  "basementFinished": zod.boolean(),
+  "outletQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroOutletQuantityMin),
+  "switchQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroSwitchQuantityMin),
+  "dimmerQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroDimmerQuantityMin),
+  "recessedLightQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroRecessedLightQuantityMin),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']),
+  "fanQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroFanQuantityMin),
+  "fanSupply": zod.enum(['Contractor supplied', 'Builder / GC supplied', 'Customer supplied']),
+  "fanMaterialUnitCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroFanMaterialUnitCostOverrideMin).optional(),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "smokeCoQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroSmokeCoQuantityMin),
+  "bathroomQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroBathroomQuantityMin),
+  "kitchenApplianceCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroKitchenApplianceCircuitQuantityMin),
+  "laundryCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroLaundryCircuitQuantityMin),
+  "exteriorReceptacleQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroExteriorReceptacleQuantityMin),
+  "exteriorLightingQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroExteriorLightingQuantityMin),
+  "garageReceptacleQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroGarageReceptacleQuantityMin),
+  "garageCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroGarageCircuitQuantityMin),
+  "servicePanelAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroServicePanelAllowanceMin),
+  "hvacEquipmentCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroHvacEquipmentCircuitQuantityMin),
+  "miniSplitCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroMiniSplitCircuitQuantityMin),
+  "commonBranchCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroCommonBranchCircuitQuantityMin),
+  "branchCircuitFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroBranchCircuitFootageMin),
+  "branchCircuitAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "branchCircuitPoleCount": zod.literal(1),
+  "branchCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "branchCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "equipmentCircuitFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroEquipmentCircuitFootageMin),
+  "equipmentCircuitAmperage": zod.union([zod.literal(20),zod.literal(30),zod.literal(40)]),
+  "equipmentCircuitPoleCount": zod.literal(2),
+  "equipmentCircuitProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "equipmentCircuitCableType": zod.enum(['12/2 NM-B', '10/2 NM-B', '8/2 NM-B']),
+  "crewSize": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoJobInputsOnezeroCrewSizeMultipleOf),
+  "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroCrewHoursMin),
+  "laborAdjustmentHours": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroLaborAdjustmentHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "notes": zod.string()
 }),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
   "assembly": zod.array(zod.object({
   "id": zod.string(),
@@ -4670,6 +5240,12 @@ export const getSettingsResponseCustomMaterialMarkupMax = 500;
 export const getSettingsResponseCustomTargetMarginMin = 0;
 export const getSettingsResponseCustomTargetMarginMax = 99.99;
 
+export const getSettingsResponseNewHouseCrewSizeMultipleOf = 1;
+
+export const getSettingsResponseNewHouseHoursPerPersonMin = 0;
+
+export const getSettingsResponseNewHouseLaborAdjustmentHoursMin = 0;
+
 
 
 export const GetSettingsResponse = zod.object({
@@ -4706,6 +5282,9 @@ export const GetSettingsResponse = zod.object({
   "customLoadedLaborCost": zod.number().min(getSettingsResponseCustomLoadedLaborCostMin),
   "customMaterialMarkup": zod.number().min(getSettingsResponseCustomMaterialMarkupMin).max(getSettingsResponseCustomMaterialMarkupMax),
   "customTargetMargin": zod.number().min(getSettingsResponseCustomTargetMarginMin).max(getSettingsResponseCustomTargetMarginMax),
+  "newHouseCrewSize": zod.number().min(1).multipleOf(getSettingsResponseNewHouseCrewSizeMultipleOf),
+  "newHouseHoursPerPerson": zod.number().min(getSettingsResponseNewHouseHoursPerPersonMin),
+  "newHouseLaborAdjustmentHours": zod.number().min(getSettingsResponseNewHouseLaborAdjustmentHoursMin),
   "contactPhone": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactAddress": zod.string().nullish(),
@@ -4752,6 +5331,12 @@ export const updateSettingsBodyCustomMaterialMarkupMax = 500;
 export const updateSettingsBodyCustomTargetMarginMin = 0;
 export const updateSettingsBodyCustomTargetMarginMax = 99.99;
 
+export const updateSettingsBodyNewHouseCrewSizeMultipleOf = 1;
+
+export const updateSettingsBodyNewHouseHoursPerPersonMin = 0;
+
+export const updateSettingsBodyNewHouseLaborAdjustmentHoursMin = 0;
+
 
 
 export const UpdateSettingsBody = zod.object({
@@ -4788,6 +5373,9 @@ export const UpdateSettingsBody = zod.object({
   "customLoadedLaborCost": zod.number().min(updateSettingsBodyCustomLoadedLaborCostMin).optional(),
   "customMaterialMarkup": zod.number().min(updateSettingsBodyCustomMaterialMarkupMin).max(updateSettingsBodyCustomMaterialMarkupMax).optional(),
   "customTargetMargin": zod.number().min(updateSettingsBodyCustomTargetMarginMin).max(updateSettingsBodyCustomTargetMarginMax).optional(),
+  "newHouseCrewSize": zod.number().min(1).multipleOf(updateSettingsBodyNewHouseCrewSizeMultipleOf).optional(),
+  "newHouseHoursPerPerson": zod.number().min(updateSettingsBodyNewHouseHoursPerPersonMin).optional(),
+  "newHouseLaborAdjustmentHours": zod.number().min(updateSettingsBodyNewHouseLaborAdjustmentHoursMin).optional(),
   "contactPhone": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactAddress": zod.string().nullish(),
@@ -4830,6 +5418,12 @@ export const updateSettingsResponseCustomMaterialMarkupMax = 500;
 export const updateSettingsResponseCustomTargetMarginMin = 0;
 export const updateSettingsResponseCustomTargetMarginMax = 99.99;
 
+export const updateSettingsResponseNewHouseCrewSizeMultipleOf = 1;
+
+export const updateSettingsResponseNewHouseHoursPerPersonMin = 0;
+
+export const updateSettingsResponseNewHouseLaborAdjustmentHoursMin = 0;
+
 
 
 export const UpdateSettingsResponse = zod.object({
@@ -4866,6 +5460,9 @@ export const UpdateSettingsResponse = zod.object({
   "customLoadedLaborCost": zod.number().min(updateSettingsResponseCustomLoadedLaborCostMin),
   "customMaterialMarkup": zod.number().min(updateSettingsResponseCustomMaterialMarkupMin).max(updateSettingsResponseCustomMaterialMarkupMax),
   "customTargetMargin": zod.number().min(updateSettingsResponseCustomTargetMarginMin).max(updateSettingsResponseCustomTargetMarginMax),
+  "newHouseCrewSize": zod.number().min(1).multipleOf(updateSettingsResponseNewHouseCrewSizeMultipleOf),
+  "newHouseHoursPerPerson": zod.number().min(updateSettingsResponseNewHouseHoursPerPersonMin),
+  "newHouseLaborAdjustmentHours": zod.number().min(updateSettingsResponseNewHouseLaborAdjustmentHoursMin),
   "contactPhone": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactAddress": zod.string().nullish(),

@@ -6,6 +6,7 @@ import {
   auditPriceBookItem,
   calculateBathroomEstimate,
   calculateKitchenEstimate,
+  calculateNewHouseEstimate,
   calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
   calculateServiceUpgradeEstimate,
@@ -15,6 +16,7 @@ import {
 import type {
   BathroomInputRecord,
   KitchenInputRecord,
+  NewHouseInputRecord,
   PanelReplacementInputRecord,
   RecessedLightingInputRecord,
   ServiceUpgradeInputRecord,
@@ -2696,5 +2698,286 @@ test("contractor-edited kitchen circuit and four-way prices flow into estimates"
     result.assembly.find((line) => line.id === "kitchen-four-way-switches")
       ?.unitCost,
     18,
+  );
+});
+
+const newHouseInputs: NewHouseInputRecord = {
+  finishedSquareFootage: 2000,
+  floorCount: 2,
+  garageSquareFootage: 400,
+  basementSquareFootage: 800,
+  basementFinished: false,
+  outletQuantity: 40,
+  switchQuantity: 20,
+  dimmerQuantity: 4,
+  recessedLightQuantity: 12,
+  recessedLightSize: "4-inch",
+  fanQuantity: 2,
+  fanSupply: "Contractor supplied",
+  panelManufacturer: "Siemens",
+  smokeCoQuantity: 0,
+  bathroomQuantity: 0,
+  kitchenApplianceCircuitQuantity: 4,
+  laundryCircuitQuantity: 1,
+  exteriorReceptacleQuantity: 2,
+  exteriorLightingQuantity: 3,
+  garageReceptacleQuantity: 4,
+  garageCircuitQuantity: 1,
+  servicePanelAllowance: 3500,
+  hvacEquipmentCircuitQuantity: 0,
+  miniSplitCircuitQuantity: 0,
+  commonBranchCircuitQuantity: 12,
+  branchCircuitFootage: 900,
+  branchCircuitAmperage: 20,
+  branchCircuitPoleCount: 1,
+  branchCircuitProtectionType: "Standard",
+  branchCircuitCableType: "12/2 NM-B",
+  equipmentCircuitFootage: 0,
+  equipmentCircuitAmperage: 30,
+  equipmentCircuitPoleCount: 2,
+  equipmentCircuitProtectionType: "Standard",
+  equipmentCircuitCableType: "10/2 NM-B",
+  crewSize: 2,
+  crewHours: 80,
+  laborAdjustmentHours: 4,
+  laborRateType: "residential",
+  notes: "",
+};
+
+const newHousePriceBook: PriceBookItem[] = [
+  ...priceBook,
+  catalogRow(
+    "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",
+    1.85,
+  ),
+  catalogRow(
+    "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",
+    30.28,
+  ),
+];
+
+test("New House uses editable quantities, footage, allowances, and exact catalog pricing", () => {
+  const result = calculateNewHouseEstimate(
+    newHouseInputs,
+    settings,
+    newHousePriceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-outlets")?.quantity,
+    40,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-switches")?.unitCost,
+    1.85,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-branch-cable")
+      ?.quantity,
+    16200,
+  );
+  assert.equal(
+    result.assembly.find(
+      (line) => line.id === "new-house-service-panel-allowance",
+    )?.extendedCost,
+    3500,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-branch-breakers")
+      ?.quantity,
+    18,
+  );
+  assert.equal(result.pricing.calculatedSellingPrice > 0, true);
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "NEW_HOUSE_SCOPE_REVIEW",
+    ),
+    true,
+  );
+});
+
+test("New House characteristics scale calculated task labor without creating a flat square-foot price", () => {
+  const smaller = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      finishedSquareFootage: 1200,
+      floorCount: 1,
+      garageSquareFootage: 0,
+      basementSquareFootage: 0,
+      crewSize: 1,
+      crewHours: 0,
+      laborAdjustmentHours: 0,
+    },
+    settings,
+    newHousePriceBook,
+  );
+  const larger = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      finishedSquareFootage: 3000,
+      floorCount: 3,
+      basementFinished: true,
+      crewSize: 1,
+      crewHours: 0,
+      laborAdjustmentHours: 0,
+    },
+    settings,
+    newHousePriceBook,
+  );
+
+  assert.equal(larger.pricing.laborCost > smaller.pricing.laborCost, true);
+  assert.equal(
+    larger.assembly.find(
+      (line) => line.id === "new-house-service-panel-allowance",
+    )?.extendedCost,
+    smaller.assembly.find(
+      (line) => line.id === "new-house-service-panel-allowance",
+    )?.extendedCost,
+  );
+});
+
+test("New House preserves unresolved material warnings and excludes owner-supplied fixture cost", () => {
+  const result = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      fanSupply: "Customer supplied",
+      smokeCoQuantity: 4,
+      branchCircuitFootage: 0,
+    },
+    settings,
+    newHousePriceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-fans")?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "standard smoke/CO detector",
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.message.includes("branch circuit footage is zero"),
+    ),
+    true,
+  );
+});
+
+test("New House refuses to price under-ampacity circuit cable selections", () => {
+  const result = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      branchCircuitAmperage: 20,
+      branchCircuitCableType: "14/2 NM-B",
+      hvacEquipmentCircuitQuantity: 1,
+      equipmentCircuitAmperage: 30,
+      equipmentCircuitCableType: "12/2 NM-B",
+    },
+    settings,
+    newHousePriceBook,
+  );
+
+  assert.equal(
+    result.assembly.some((line) => line.id === "new-house-branch-cable"),
+    false,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id === "new-house-equipment-cable"),
+    false,
+  );
+  assert.ok(
+    result.pricing.pricingWarnings.filter(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.severity === "error" &&
+        warning.message.includes("incompatible"),
+    ).length >= 1,
+  );
+});
+
+test("New House compatibility remains blocking when selected circuit footage is zero", () => {
+  const result = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      branchCircuitAmperage: 20,
+      branchCircuitCableType: "14/2 NM-B",
+      branchCircuitFootage: 0,
+      hvacEquipmentCircuitQuantity: 1,
+      equipmentCircuitAmperage: 30,
+      equipmentCircuitCableType: "12/2 NM-B",
+      equipmentCircuitFootage: 0,
+    },
+    settings,
+    newHousePriceBook,
+  );
+
+  assert.equal(
+    result.pricing.pricingWarnings.filter(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "NEW_HOUSE_COMPATIBILITY_REVIEW" &&
+        warning.severity === "error",
+    ).length,
+    2,
+  );
+});
+
+test("New House never substitutes exhaust fans for ceiling fans or omits exterior-lighting materials", () => {
+  const result = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      fanSupply: "Contractor supplied",
+      fanMaterialUnitCostOverride: undefined,
+      fanQuantity: 2,
+      exteriorLightingQuantity: 3,
+    },
+    settings,
+    newHousePriceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-fans")?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "new-house-exterior-lighting")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.assembly.some(
+      (line) =>
+        line.id === "new-house-fans" &&
+        line.source.includes("Panasonic"),
+    ),
+    false,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "standard ceiling fan",
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "standard exterior light fixture",
+    ),
+    true,
   );
 });

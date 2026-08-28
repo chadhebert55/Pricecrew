@@ -5,7 +5,7 @@ import { canonicalQuoteModule } from "@/lib/quote-builder-routes"
 type RevisionModule =
   | "EV_CHARGER" | "BATHROOM" | "KITCHEN" | "RECESSED_LIGHTING"
   | "SERVICE_UPGRADE" | "PANEL_REPLACEMENT" | "SERVICE_CALL"
-  | "TIME_MATERIALS" | "CUSTOM"
+  | "TIME_MATERIALS" | "CUSTOM" | "NEW_HOUSE"
 
 type RevisionSetters<T> = {
   setCustomerName: (value: string) => void

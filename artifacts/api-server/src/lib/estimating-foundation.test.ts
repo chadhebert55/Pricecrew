@@ -7,6 +7,7 @@ import type {
   CustomInputRecord,
   EvChargerInputRecord,
   KitchenInputRecord,
+  NewHouseInputRecord,
   PricingWarningRecord,
   RecessedLightingInputRecord,
   ServiceCallInputRecord,
@@ -19,7 +20,11 @@ import {
   quotesTable,
 } from "@workspace/db";
 import { and, eq, inArray, like, or } from "drizzle-orm";
-import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
+import {
+  CreateQuoteBody,
+  PreviewQuoteBody,
+  UpdateSettingsBody,
+} from "@workspace/api-zod";
 import app from "../app";
 import {
   calculateBathroomEstimate,
@@ -667,6 +672,49 @@ const customInputs: CustomInputRecord = {
   notes: "Internal custom scope note.",
 };
 
+const newHouseInputs: NewHouseInputRecord = {
+  finishedSquareFootage: 2200,
+  floorCount: 2,
+  garageSquareFootage: 420,
+  basementSquareFootage: 0,
+  basementFinished: false,
+  outletQuantity: 42,
+  switchQuantity: 20,
+  dimmerQuantity: 4,
+  recessedLightQuantity: 12,
+  recessedLightSize: "4-inch",
+  fanQuantity: 2,
+  fanSupply: "Builder / GC supplied",
+  panelManufacturer: "Siemens",
+  smokeCoQuantity: 5,
+  bathroomQuantity: 2,
+  kitchenApplianceCircuitQuantity: 5,
+  laundryCircuitQuantity: 2,
+  exteriorReceptacleQuantity: 3,
+  exteriorLightingQuantity: 4,
+  garageReceptacleQuantity: 4,
+  garageCircuitQuantity: 1,
+  servicePanelAllowance: 3500,
+  hvacEquipmentCircuitQuantity: 1,
+  miniSplitCircuitQuantity: 0,
+  commonBranchCircuitQuantity: 12,
+  branchCircuitFootage: 900,
+  branchCircuitAmperage: 20,
+  branchCircuitPoleCount: 1,
+  branchCircuitProtectionType: "Dual Function",
+  branchCircuitCableType: "12/2 NM-B",
+  equipmentCircuitFootage: 80,
+  equipmentCircuitAmperage: 30,
+  equipmentCircuitPoleCount: 2,
+  equipmentCircuitProtectionType: "Standard",
+  equipmentCircuitCableType: "10/2 NM-B",
+  crewSize: 2,
+  crewHours: 80,
+  laborAdjustmentHours: 0,
+  laborRateType: "residential",
+  notes: "",
+};
+
 test("Service Call uses verified device rows and visibly preserves unresolved materials", () => {
   const result = calculateServiceCallEstimate(serviceCallInputs, settings, [
     catalogRow("Pass & Seymour 3232-TRW 15A TR duplex receptacle", 1.25),
@@ -747,6 +795,7 @@ test("module aliases include canonical and seeded historical builder labels", ()
   assert.equal(normalizeEstimateModule("EV_CHARGER"), "EV_CHARGER");
   assert.equal(normalizeEstimateModule("EV Charger Builder"), "EV_CHARGER");
   assert.equal(normalizeEstimateModule("Time & Materials"), "TIME_MATERIALS");
+  assert.equal(normalizeEstimateModule("New House Builder"), "NEW_HOUSE");
   assert.equal(normalizeEstimateModule("unknown legacy calculator"), null);
 });
 
@@ -1157,6 +1206,7 @@ test("new builder preview and create contracts accept identical snapshots and re
     ["SERVICE_CALL", serviceCallInputs],
     ["TIME_MATERIALS", timeMaterialsInputs],
     ["CUSTOM", customInputs],
+    ["NEW_HOUSE", newHouseInputs],
   ] as const) {
     const preview = PreviewQuoteBody.safeParse({ module, jobInputs });
     const create = CreateQuoteBody.safeParse({
@@ -1179,6 +1229,31 @@ test("new builder preview and create contracts accept identical snapshots and re
       jobInputs: { ...timeMaterialsInputs, crewHours: -1 },
     }).success,
     false,
+  );
+});
+
+test("New House settings require an integer crew size and hydrate valid fresh quote inputs", () => {
+  assert.equal(
+    UpdateSettingsBody.safeParse({ newHouseCrewSize: 1.5 }).success,
+    false,
+  );
+  const updatedSettings = UpdateSettingsBody.safeParse({
+    newHouseCrewSize: 3,
+    newHouseHoursPerPerson: 72,
+    newHouseLaborAdjustmentHours: 4,
+  });
+  assert.equal(updatedSettings.success, true);
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseInputs,
+        crewSize: 3,
+        crewHours: 72,
+        laborAdjustmentHours: 4,
+      },
+    }).success,
+    true,
   );
 });
 

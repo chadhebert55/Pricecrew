@@ -5,6 +5,7 @@ import type {
   EvChargerInputRecord,
   KitchenInputRecord,
   LaborRateType,
+  NewHouseInputRecord,
   PanelReplacementInputRecord,
   PricingRecord,
   PricingWarningCategory,
@@ -51,6 +52,9 @@ export type EstimatingSettings = {
   materialMarkup: number;
   targetMargin: number;
   evDefaultCableType?: string;
+  newHouseCrewSize?: number;
+  newHouseHoursPerPerson?: number;
+  newHouseLaborAdjustmentHours?: number;
 };
 
 type EstimateResult = {
@@ -80,6 +84,28 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("New House")) {
+    const isCompatibilityError = message.includes("incompatible");
+    const isMissingPrice =
+      message.includes("unresolved") || message.includes("zero cost");
+    return {
+      code: isCompatibilityError
+        ? "NEW_HOUSE_COMPATIBILITY_REVIEW"
+        : isMissingPrice
+          ? "NEW_HOUSE_PRICE_REVIEW"
+          : "NEW_HOUSE_SCOPE_REVIEW",
+      severity: isCompatibilityError || isMissingPrice ? "error" : "warning",
+      category: isCompatibilityError
+        ? "compatibility"
+        : isMissingPrice
+          ? "missing-price"
+          : "planning",
+      source: "new-house-builder",
+      context: {
+        rule: "confirm new-house allowances, supply responsibility, and field conditions",
+      },
+    };
+  }
   if (message.startsWith("Service Call")) {
     return {
       code: "SERVICE_CALL_FIELD_REVIEW",
@@ -460,6 +486,7 @@ const BUILDER_NAMES = [
   "Recessed Lighting",
   "Service Upgrade",
   "Panel Replacement",
+  "New House",
 ] as const;
 
 const EXACT_SELECTOR_SKU_BUILDERS: Record<
@@ -631,6 +658,13 @@ export function auditPriceBookItem(
       name.includes("bonding") ||
       name.includes("duct seal"),
   );
+  addBuilderIf(
+    builders,
+    "New House",
+    name.includes("new house") ||
+      name.includes("smoke co") ||
+      name.includes("smoke carbon monoxide"),
+  );
 
   if (category === "protection" && name.includes("breaker")) {
     if (name.includes("50a") && name.includes("2 pole")) {
@@ -643,6 +677,13 @@ export function auditPriceBookItem(
       builders.add("Bathroom");
       builders.add("Kitchen");
       builders.add("Recessed Lighting");
+      builders.add("New House");
+    }
+    if (
+      (name.includes("20a") || name.includes("30a") || name.includes("40a")) &&
+      name.includes("2 pole")
+    ) {
+      builders.add("New House");
     }
     if (
       (name.includes("100a") ||
@@ -663,6 +704,10 @@ export function auditPriceBookItem(
       builders.add("Bathroom");
       builders.add("Kitchen");
       builders.add("Recessed Lighting");
+      builders.add("New House");
+    }
+    if (name.includes("10 2 nm b") || name.includes("8 2 nm b")) {
+      builders.add("New House");
     }
     if (
       name.includes("8 3 nm b") ||
@@ -699,6 +744,7 @@ export function auditPriceBookItem(
     ) {
       builders.add("Bathroom");
       builders.add("Kitchen");
+      builders.add("New House");
     }
   }
   if (category === "normal stock") {
@@ -3634,6 +3680,345 @@ export function calculateCustomEstimate(
     assembly,
     laborHours,
     configuredEstimateSettings(settings, inputs),
+    pricingWarnings,
+    inputs.laborRateType,
+  );
+}
+
+export function calculateNewHouseEstimate(
+  inputs: NewHouseInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  const quantity = (value: number | undefined) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+  const amount = (value: number | undefined) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+
+  const addCatalogLine = (
+    id: string,
+    category: string,
+    description: string,
+    key: string,
+    selectedQuantity: number,
+  ) => {
+    const lineQuantity = quantity(selectedQuantity);
+    if (lineQuantity === 0) return;
+    const price = unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: lineQuantity,
+      unit: "ea",
+      unitCost: price.value,
+      source: price.source,
+    });
+  };
+
+  addCatalogLine(
+    "new-house-outlets",
+    "Devices",
+    "General-purpose tamper-resistant receptacles",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    inputs.outletQuantity,
+  );
+  addCatalogLine(
+    "new-house-switches",
+    "Controls",
+    "Single-pole switches",
+    "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",
+    inputs.switchQuantity,
+  );
+  addCatalogLine(
+    "new-house-dimmers",
+    "Controls",
+    "LED-compatible dimmers",
+    "Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",
+    inputs.dimmerQuantity,
+  );
+  addCatalogLine(
+    "new-house-recessed-lights",
+    "Lighting",
+    `${inputs.recessedLightSize} recessed light fixtures`,
+    inputs.recessedLightSize === "4-inch"
+      ? JUNO_WF4_VERIFIED
+      : JUNO_WF6_VERIFIED,
+    inputs.recessedLightQuantity,
+  );
+
+  const fanQuantity = quantity(inputs.fanQuantity);
+  if (fanQuantity > 0) {
+    if (inputs.fanSupply === "Contractor supplied") {
+      if (inputs.fanMaterialUnitCostOverride !== undefined) {
+        const fanCost = amount(inputs.fanMaterialUnitCostOverride);
+        if (fanCost === 0) {
+          pricingWarnings.push(
+            "New House contractor-supplied fan has a zero-cost override and is unresolved. Enter a confirmed unit cost before sending the quote.",
+          );
+        }
+        addLine(assembly, {
+          id: "new-house-fans",
+          category: "Fixtures",
+          description: "Ceiling fan fixtures",
+          quantity: fanQuantity,
+          unit: "ea",
+          unitCost: fanCost,
+          source: "Quote-local unit cost override",
+        });
+      } else {
+        addCatalogLine(
+          "new-house-fans",
+          "Fixtures",
+          "Ceiling fan fixtures",
+          "standard ceiling fan",
+          fanQuantity,
+        );
+      }
+    } else {
+      addLine(assembly, {
+        id: "new-house-fans",
+        category: "Fixtures",
+        description: `Ceiling fan fixtures — ${inputs.fanSupply.toLowerCase()}`,
+        quantity: fanQuantity,
+        unit: "ea",
+        unitCost: 0,
+        source: "Included labor scope",
+      });
+      pricingWarnings.push(
+        `New House ceiling fan fixtures are ${inputs.fanSupply.toLowerCase()} and excluded from contractor material cost. Confirm supply responsibility and final fixture specifications.`,
+      );
+    }
+  }
+
+  addCatalogLine(
+    "new-house-smoke-co",
+    "Life Safety",
+    "Smoke / carbon-monoxide combination devices",
+    "standard smoke/CO detector",
+    inputs.smokeCoQuantity,
+  );
+  addCatalogLine(
+    "new-house-bathroom-gfci",
+    "Devices",
+    "Bathroom GFCI receptacle allowances",
+    "Pass & Seymour 1597-TRWRW 15A TR self-test GFCI",
+    inputs.bathroomQuantity,
+  );
+  addCatalogLine(
+    "new-house-exterior-receptacles",
+    "Devices",
+    "Exterior weather-resistant receptacles",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    inputs.exteriorReceptacleQuantity,
+  );
+  addCatalogLine(
+    "new-house-exterior-lighting",
+    "Lighting",
+    "Exterior lighting fixture allowances",
+    "standard exterior light fixture",
+    inputs.exteriorLightingQuantity,
+  );
+  addCatalogLine(
+    "new-house-garage-receptacles",
+    "Devices",
+    "Garage tamper-resistant receptacles",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    inputs.garageReceptacleQuantity,
+  );
+
+  const branchCircuitCount =
+    quantity(inputs.commonBranchCircuitQuantity) +
+    quantity(inputs.kitchenApplianceCircuitQuantity) +
+    quantity(inputs.laundryCircuitQuantity) +
+    quantity(inputs.garageCircuitQuantity);
+  const equipmentCircuitCount =
+    quantity(inputs.hvacEquipmentCircuitQuantity) +
+    quantity(inputs.miniSplitCircuitQuantity);
+
+  if (branchCircuitCount > 0) {
+    const averageBranchFootage = quantity(inputs.branchCircuitFootage);
+    const branchFootage = averageBranchFootage * branchCircuitCount;
+    const branchCableIsCompatible =
+      inputs.branchCircuitAmperage === 15 ||
+      inputs.branchCircuitCableType === "12/2 NM-B";
+    if (!branchCableIsCompatible) {
+      pricingWarnings.push(
+        `New House branch-circuit cable is incompatible: ${inputs.branchCircuitCableType} cannot be priced for the selected ${inputs.branchCircuitAmperage}A circuit. Select 12/2 NM-B before sending the quote.`,
+      );
+    }
+    if (branchFootage === 0) {
+      pricingWarnings.push(
+        "New House branch circuit footage is zero while branch circuits are selected. Add average home-run footage per circuit before sending the quote.",
+      );
+    } else if (branchCableIsCompatible) {
+      const cable = unitCost(
+        `${inputs.branchCircuitCableType} cable`,
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: "new-house-branch-cable",
+        category: "Wire",
+        description: `${inputs.branchCircuitCableType} branch-circuit home runs (${averageBranchFootage} ft average × ${branchCircuitCount} circuits)`,
+        quantity: branchFootage,
+        unit: "ft",
+        unitCost: cable.value,
+        source: cable.source,
+      });
+    }
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: inputs.branchCircuitAmperage,
+        poleCount: inputs.branchCircuitPoleCount,
+        protectionType: inputs.branchCircuitProtectionType,
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "new-house-branch-breakers",
+      category: "Protection",
+      description: `${inputs.branchCircuitAmperage}A branch-circuit breakers — ${inputs.branchCircuitProtectionType}`,
+      quantity: branchCircuitCount,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
+  }
+
+  if (equipmentCircuitCount > 0) {
+    const averageEquipmentFootage = quantity(inputs.equipmentCircuitFootage);
+    const equipmentFootage =
+      averageEquipmentFootage * equipmentCircuitCount;
+    const compatibleEquipmentCable: Record<number, string> = {
+      20: "12/2 NM-B",
+      30: "10/2 NM-B",
+      40: "8/2 NM-B",
+    };
+    const requiredEquipmentCable =
+      compatibleEquipmentCable[inputs.equipmentCircuitAmperage];
+    const equipmentCableIsCompatible =
+      Boolean(requiredEquipmentCable) &&
+      inputs.equipmentCircuitCableType === requiredEquipmentCable;
+    if (!equipmentCableIsCompatible) {
+      pricingWarnings.push(
+        `New House equipment-circuit cable is incompatible: ${inputs.equipmentCircuitCableType} cannot be priced for the selected ${inputs.equipmentCircuitAmperage}A circuit. Select ${requiredEquipmentCable ?? "a supported cable"} before sending the quote.`,
+      );
+    }
+    if (equipmentFootage === 0) {
+      pricingWarnings.push(
+        "New House equipment-circuit footage is zero while HVAC or mini-split circuits are selected. Add average home-run footage per circuit before sending the quote.",
+      );
+    } else if (equipmentCableIsCompatible) {
+      const cable = unitCost(
+        `${inputs.equipmentCircuitCableType} cable`,
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: "new-house-equipment-cable",
+        category: "Wire",
+        description: `${inputs.equipmentCircuitCableType} HVAC / equipment home runs (${averageEquipmentFootage} ft average × ${equipmentCircuitCount} circuits)`,
+        quantity: equipmentFootage,
+        unit: "ft",
+        unitCost: cable.value,
+        source: cable.source,
+      });
+    }
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: inputs.equipmentCircuitAmperage,
+        poleCount: inputs.equipmentCircuitPoleCount,
+        protectionType: inputs.equipmentCircuitProtectionType,
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "new-house-equipment-breakers",
+      category: "Protection",
+      description: `${inputs.equipmentCircuitAmperage}A equipment breakers — ${inputs.equipmentCircuitProtectionType}`,
+      quantity: equipmentCircuitCount,
+      unit: "ea",
+      unitCost: breaker.value,
+      source: breaker.source,
+    });
+  }
+
+  const servicePanelAllowance = amount(inputs.servicePanelAllowance);
+  if (servicePanelAllowance > 0) {
+    addLine(assembly, {
+      id: "new-house-service-panel-allowance",
+      category: "Allowances",
+      description: "Service and panel equipment allowance",
+      quantity: 1,
+      unit: "allowance",
+      unitCost: servicePanelAllowance,
+      source: "Contractor-entered New House allowance",
+    });
+  }
+
+  const floorMultiplier =
+    1 + Math.max(0, quantity(inputs.floorCount) - 1) * 0.06;
+  const basementMultiplier =
+    quantity(inputs.basementSquareFootage) > 0
+      ? inputs.basementFinished
+        ? 1.12
+        : 1.06
+      : 1;
+  const garageMultiplier =
+    quantity(inputs.garageSquareFootage) > 0 ? 1.04 : 1;
+  const squareFootageMultiplier = Math.min(
+    1.5,
+    Math.max(0.75, quantity(inputs.finishedSquareFootage) / 2000),
+  );
+  const characteristicMultiplier =
+    squareFootageMultiplier *
+    floorMultiplier *
+    basementMultiplier *
+    garageMultiplier;
+  const scopeLaborHours =
+    quantity(inputs.outletQuantity) * 0.25 +
+    quantity(inputs.switchQuantity) * 0.3 +
+    quantity(inputs.dimmerQuantity) * 0.5 +
+    quantity(inputs.recessedLightQuantity) * 0.4 +
+    fanQuantity * 1.25 +
+    quantity(inputs.smokeCoQuantity) * 0.25 +
+    quantity(inputs.bathroomQuantity) * 0.75 +
+    quantity(inputs.kitchenApplianceCircuitQuantity) * 1.25 +
+    quantity(inputs.laundryCircuitQuantity) * 1 +
+    quantity(inputs.exteriorReceptacleQuantity) * 0.4 +
+    quantity(inputs.exteriorLightingQuantity) * 0.75 +
+    quantity(inputs.garageReceptacleQuantity) * 0.4 +
+    quantity(inputs.garageCircuitQuantity) * 1.25 +
+    quantity(inputs.hvacEquipmentCircuitQuantity) * 1.5 +
+    quantity(inputs.miniSplitCircuitQuantity) * 2 +
+    quantity(inputs.commonBranchCircuitQuantity) * 1;
+  const crewLaborHours =
+    quantity(inputs.crewSize) * quantity(inputs.crewHours);
+  const laborHours =
+    crewLaborHours +
+    scopeLaborHours * characteristicMultiplier +
+    amount(inputs.laborAdjustmentHours);
+
+  pricingWarnings.push(
+    `New House allowances use ${Math.round(quantity(inputs.finishedSquareFootage)).toLocaleString()} finished sq. ft., ${Math.round(quantity(inputs.floorCount))} floor(s), and the selected garage/basement characteristics. Pricing is calculated from editable quantities, footage, materials, and task labor—not a flat price per square foot.`,
+  );
+  if (laborHours === 0) {
+    pricingWarnings.push(
+      "New House labor is zero. Enter crew hours or labor adjustments before sending the quote.",
+    );
+  }
+
+  return finalizeEstimate(
+    assembly,
+    laborHours,
+    settings,
     pricingWarnings,
     inputs.laborRateType,
   );

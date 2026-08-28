@@ -1,11 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes } from "lucide-react"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes, House } from "lucide-react"
 import { Link } from "wouter"
 
 export function Builders() {
   const modules = [
+    {
+      id: "new-house",
+      title: "New House",
+      description: "Build complete new-home electrical allowances from editable quantities, circuit footage, equipment, fixture responsibility, and crew labor.",
+      icon: House,
+      status: "live",
+      href: "/quotes/new/new-house"
+    },
     {
       id: "custom",
       title: "Custom Items",

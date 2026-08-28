@@ -19,4 +19,5 @@ export const QuotePreviewInputModule = {
   SERVICE_CALL: 'SERVICE_CALL',
   TIME_MATERIALS: 'TIME_MATERIALS',
   CUSTOM: 'CUSTOM',
+  NEW_HOUSE: 'NEW_HOUSE',
 } as const;
