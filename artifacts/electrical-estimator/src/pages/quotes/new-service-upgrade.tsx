@@ -2,7 +2,6 @@ import {
   type ServiceUpgradeInputs,
   type ExistingBreakerCount,
   type ExistingBreakerCountProtectionType,
-  useCreateQuote,
   usePreviewQuote,
   useGetSettings,
 } from "@workspace/api-client-react"
@@ -17,6 +16,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calculator, Info, Construction, TriangleAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { CustomerPicker } from "@/components/customer-picker"
+import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
+import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -165,7 +167,7 @@ function numberValue(value: string, minimum = 0) {
 
 export function NewServiceUpgradeQuote() {
   const [, setLocation] = useLocation()
-  const createQuote = useCreateQuote()
+  const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
   const { data: settings } = useGetSettings()
   const [settingsLoaded, setSettingsLoaded] = useState(false)
@@ -173,6 +175,7 @@ export function NewServiceUpgradeQuote() {
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+  const [customerId, setCustomerId] = useState<number | undefined>()
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
     "Provide labor and listed materials to perform a service upgrade, including necessary mast, conductors, metering equipment, main panel, and required grounding/bonding as specified. Final layout and routing are subject to field verification."
@@ -181,9 +184,17 @@ export function NewServiceUpgradeQuote() {
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<ServiceUpgradeInputs>(initialInputs)
   const [existingBreakersState, setExistingBreakersState] = useState<Record<string, number>>({})
+  const revision = useQuoteRevisionPrefill("SERVICE_UPGRADE", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
+  useEffect(() => {
+    if (!revision.source) return
+    const sourceInputs = revision.source.jobInputs as ServiceUpgradeInputs
+    setExistingBreakersState(Object.fromEntries((sourceInputs.existingBreakers ?? []).map((breaker) => [
+      `${breaker.amperage}-${breaker.poleCount}-${breaker.protectionType}`, breaker.quantity,
+    ])))
+  }, [revision.source])
 
   useEffect(() => {
-    if (settings && !settingsLoaded) {
+    if (settings && !settingsLoaded && !revision.isRevision) {
       setInputs((current) => ({
         ...current,
         crewSize: settings.serviceUpgradeCrewSize ?? 2,
@@ -315,6 +326,8 @@ export function NewServiceUpgradeQuote() {
     createQuote.mutate(
       {
         data: {
+          customerId,
+          sourceQuoteId: revision.sourceQuoteId,
           customerName,
           customerEmail: customerEmail || null,
           projectName,
@@ -359,13 +372,14 @@ export function NewServiceUpgradeQuote() {
             <Card className="border-t-4 border-t-secondary">
               <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <CustomerPicker idPrefix="su" customerId={customerId} customerName={customerName} customerEmail={customerEmail} onCustomerIdChange={setCustomerId} onCustomerNameChange={setCustomerName} onCustomerEmailChange={setCustomerEmail} />
                 <div className="space-y-2">
                   <Label htmlFor="su-customer">Customer Name *</Label>
-                  <Input id="su-customer" required value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                  <Input id="su-customer" required value={customerName} onChange={(e) => { setCustomerId(undefined); setCustomerName(e.target.value) }} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="su-email">Customer Email</Label>
-                  <Input id="su-email" type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
+                  <Input id="su-email" type="email" value={customerEmail} onChange={(e) => { setCustomerId(undefined); setCustomerEmail(e.target.value) }} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="su-project">Project Name *</Label>

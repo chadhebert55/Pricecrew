@@ -11,11 +11,19 @@ import type { QuoteJobInputsSnapshot } from './quoteJobInputsSnapshot';
 import type { QuoteSummary } from './quoteSummary';
 
 export type Quote = QuoteSummary & ({
+  /**
+     * Authenticated contractor-only customer identity used when revising a quote.
+     * @nullable
+     */
+  customerId?: number | null;
   /** @nullable */
   customerEmail: string | null;
   jobInputs: QuoteJobInputsSnapshot;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;
+  /** @nullable */
+  sourceQuoteId?: number | null;
+  revisionNumber?: number;
   createdAt: Date;
 });

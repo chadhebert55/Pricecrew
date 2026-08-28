@@ -11,7 +11,14 @@ export interface DashboardSummary {
   totalQuotes: number;
   draftQuotes: number;
   readyQuotes: number;
+  /**
+     * Compatibility total of all non-demo quotes.
+     * @deprecated
+     */
   totalQuoted: number;
+  draftPipelineValue?: number;
+  readyProposalValue?: number;
   averageMargin: number;
+  averageMarginQuoteSet: string;
   recentQuotes: QuoteSummary[];
 }

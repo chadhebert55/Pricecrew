@@ -24,8 +24,11 @@ export const GetDashboardSummaryResponse = zod.object({
   "totalQuotes": zod.number(),
   "draftQuotes": zod.number(),
   "readyQuotes": zod.number(),
-  "totalQuoted": zod.number(),
+  "totalQuoted": zod.number().describe('Compatibility total of all non-demo quotes.'),
+  "draftPipelineValue": zod.number().optional(),
+  "readyProposalValue": zod.number().optional(),
   "averageMargin": zod.number(),
+  "averageMarginQuoteSet": zod.string(),
   "recentQuotes": zod.array(zod.object({
   "id": zod.number(),
   "quoteNumber": zod.string(),
@@ -161,6 +164,8 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
 /**
  * @summary Create a quote from an estimate
  */
+
+
 
 
 export const createQuoteBodyJobInputsOneRouteLengthMin = 0;
@@ -490,6 +495,8 @@ export const createQuoteBodySellingPriceOverrideMax = 999999999.99;
 
 
 export const CreateQuoteBody = zod.object({
+  "customerId": zod.number().min(1).optional().describe('Existing customer ID, validated against the authenticated company.'),
+  "sourceQuoteId": zod.number().min(1).optional().describe('Optional immutable source quote ID. The server verifies company and module ownership and creates a new revision.'),
   "customerName": zod.string().min(1),
   "customerEmail": zod.string().nullish(),
   "projectName": zod.string().min(1),
@@ -1183,6 +1190,7 @@ export const CreateQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
@@ -1569,6 +1577,8 @@ export const CreateQuoteResponse = zod.object({
 }))
 })),
   "proposalDescription": zod.string(),
+  "sourceQuoteId": zod.number().nullish(),
+  "revisionNumber": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }))
 
@@ -2319,10 +2329,8 @@ export const GetCustomerProposalParams = zod.object({
 })
 
 export const GetCustomerProposalResponse = zod.object({
-  "id": zod.number(),
   "quoteNumber": zod.string(),
   "customerName": zod.string(),
-  "customerEmail": zod.string().nullable(),
   "projectName": zod.string(),
   "status": zod.enum(['draft', 'ready']),
   "proposalDescription": zod.string(),
@@ -2333,7 +2341,15 @@ export const GetCustomerProposalResponse = zod.object({
   "description": zod.string(),
   "quantity": zod.number(),
   "unit": zod.string()
-}))
+})),
+  "company": zod.object({
+  "displayName": zod.string(),
+  "contactPhone": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactAddress": zod.string().nullish(),
+  "accentColor": zod.string()
+}),
+  "terms": zod.string()
 })
 
 
@@ -2677,6 +2693,7 @@ export const GetQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
@@ -3063,6 +3080,8 @@ export const GetQuoteResponse = zod.object({
 }))
 })),
   "proposalDescription": zod.string(),
+  "sourceQuoteId": zod.number().nullish(),
+  "revisionNumber": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }))
 
@@ -3422,6 +3441,7 @@ export const UpdateQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
   "chargerQuantity": zod.number(),
@@ -3808,9 +3828,744 @@ export const UpdateQuoteResponse = zod.object({
 }))
 })),
   "proposalDescription": zod.string(),
+  "sourceQuoteId": zod.number().nullish(),
+  "revisionNumber": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })).and(zod.object({
   "proposalShareToken": zod.string().nullable().describe('Rotating signed token issued only for ready customer proposals.')
+}))
+
+
+/**
+ * @summary Create an immutable draft revision from a quote snapshot
+ */
+export const DuplicateQuoteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const duplicateQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoVanityLightsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoRecessedLightsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoExhaustFansMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoFanLightsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoExhaustFanMaterialCostOverrideMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoFanLightMaterialCostOverrideMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitCableFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeDisposalCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSinkLightsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeIslandPendantsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeUndercabinetLightingMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeRecessedLightsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeThreeWayOptionsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeFourWayLocationsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeFourWayCableFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeDimmersMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeMicrowaveCircuitsMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 0;
+
+
+export const duplicateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourRoomLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourRoomWidthMin = 0;
+
+
+export const duplicateQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourWireRunLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourAdditionalSwitchesMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourAdditionalLightsMin = 0;
+
+
+
+
+export const duplicateQuoteResponseTwoJobInputsFiveMastFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveMastStrapQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveHubQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveLbQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveNinetyQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveCouplingQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveMastRelatedPartsQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveMastConductorQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveMastConductorFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveServiceToPanelFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveGroundBarQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveGroundRodQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveAcornClampQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveIntersystemBondingQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveGroundingConductorFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveBondingConductorFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFivePvcThreeQuarterFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFivePvcThreeQuarterFittingsQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveWaterMeterBondingQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveWaterMeterBondingFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveFourSquareBoxQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveReceptacle20AQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveReceptaclePlateQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFivePlywoodQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveStudsQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveDuctSealQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFivePvcGlueQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFivePermitAllowanceMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveInspectionAllowanceMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin = 0;
+
+
+export const duplicateQuoteResponseTwoJobInputsFiveCrewHoursMin = 0;
+
+
+
+export const duplicateQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin = 0;
+
+
+
+
+export const duplicateQuoteResponseTwoJobInputsSixFeederLengthMin = 0;
+
+
+export const duplicateQuoteResponseTwoJobInputsSixFeederRacewayFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixFeederRacewayFittingsQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixGroundBarQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixGroundRodQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixGroundingConductorFootageMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixBondingConductorFootageMin = 0;
+
+
+
+export const duplicateQuoteResponseTwoJobInputsSixExistingBreakersItemQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixExistingOtherBreakerQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixFillerPlateQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixKnockoutSealQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixPlywoodQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixStudsQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixAntiOxidantQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixElectricalTapeQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixPermitAllowanceMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixInspectionAllowanceMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixMiscellaneousAllowanceMin = 0;
+
+
+export const duplicateQuoteResponseTwoJobInputsSixCrewHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixPanelRemovalLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixFeederInstallationLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixGroundingLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixAccessDifficultyLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixGeneralLaborAdjustmentHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSixLaborAdjustmentHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSevenVisitQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsSevenReceptacleReplacementQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSevenReceptacleReplacementQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsSevenTrReceptacleReplacementQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSevenTrReceptacleReplacementQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsSevenSwitchReplacementQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSevenSwitchReplacementQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsSevenGfciReplacementQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSevenGfciReplacementQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsSevenCrewSizeMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsSevenCrewHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsSevenMaterialMarkupMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSevenMaterialMarkupMax = 500;
+
+export const duplicateQuoteResponseTwoJobInputsSevenTargetMarginMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSevenTargetMarginMax = 99.99;
+
+
+export const duplicateQuoteResponseTwoJobInputsSevenMiscellaneousMaterialsItemCostMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsEightCrewSizeMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsEightCrewHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsEightLaborSellRateMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsEightLoadedLaborCostMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsEightMaterialMarkupMin = 0;
+export const duplicateQuoteResponseTwoJobInputsEightMaterialMarkupMax = 500;
+
+export const duplicateQuoteResponseTwoJobInputsEightTargetMarginMin = 0;
+export const duplicateQuoteResponseTwoJobInputsEightTargetMarginMax = 99.99;
+
+
+export const duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsNineLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsNineLaborSellRateMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsNineLoadedLaborCostMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsNineMaterialMarkupMin = 0;
+export const duplicateQuoteResponseTwoJobInputsNineMaterialMarkupMax = 500;
+
+export const duplicateQuoteResponseTwoJobInputsNineTargetMarginMin = 0;
+export const duplicateQuoteResponseTwoJobInputsNineTargetMarginMax = 99.99;
+
+
+export const duplicateQuoteResponseTwoJobInputsNineMaterialsItemQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin = 0;
+
+
+export const duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+
+
+
+
+
+export const DuplicateQuoteResponse = zod.object({
+  "id": zod.number(),
+  "quoteNumber": zod.string(),
+  "customerName": zod.string(),
+  "projectName": zod.string(),
+  "module": zod.string(),
+  "status": zod.enum(['draft', 'ready']),
+  "total": zod.number(),
+  "margin": zod.number(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
+  "customerEmail": zod.string().nullable(),
+  "jobInputs": zod.union([zod.object({
+  "chargerQuantity": zod.number(),
+  "chargerOutputAmps": zod.number(),
+  "circuitAmps": zod.string(),
+  "chargerSupply": zod.string(),
+  "connection": zod.string(),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsOneRouteLengthMin),
+  "wiringMethod": zod.string(),
+  "cableType": zod.enum(['8/3 NM-B', '8/2 NM-B', '6/3 NM-B', '8/2 SER']).optional(),
+  "location": zod.string(),
+  "panelManufacturer": zod.string(),
+  "panelSpace": zod.string(),
+  "breakerRequirement": zod.string(),
+  "access": zod.string(),
+  "permit": zod.string(),
+  "loadManagement": zod.string(),
+  "disconnect": zod.string(),
+  "surgeProtection": zod.string(),
+  "panelModifications": zod.string(),
+  "difficulty": zod.string(),
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
+}),zod.object({
+  "gfciReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
+  "additionalReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
+  "vanityLights": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoVanityLightsMin),
+  "recessedLights": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoRecessedLightsMin),
+  "exhaustFans": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoExhaustFansMin),
+  "fanLights": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoFanLightsMin),
+  "fanLightHeatUnits": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin),
+  "heatedFloorCircuit": zod.boolean(),
+  "additionalSwitches": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoRouteLengthMin).optional(),
+  "circuitOption": zod.enum(['New dedicated circuit', 'Reuse existing circuit']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "exhaustFanMaterialCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoExhaustFanMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.'),
+  "fanLightMaterialCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoFanLightMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light combination.'),
+  "fanLightHeatMaterialCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light\/heat combination.'),
+  "newCircuitCableFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoNewCircuitCableFootageMin).optional().describe('Dedicated 14\/2 NM-B footage for the optional new 15A bathroom circuit.'),
+  "newCircuitMaterialsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin).optional().describe('Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.'),
+  "newCircuitMaterialsUnitCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the new 15A circuit material package.'),
+  "newCircuitLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin).optional().describe('Labor hours for the optional new 15A bathroom circuit.'),
+  "newCircuitBreakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']).optional().describe('Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.'),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "gfciAmperage": zod.number().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}),zod.object({
+  "refrigeratorCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
+  "dishwasherCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
+  "disposalCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
+  "gasRangeCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeGasRangeCircuitsMin),
+  "electricRangeCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeElectricRangeCircuitsMin),
+  "countertopReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeCountertopReceptaclesMin),
+  "sinkLights": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSinkLightsMin),
+  "islandPendants": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeIslandPendantsMin),
+  "undercabinetLighting": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeUndercabinetLightingMin),
+  "recessedLights": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeRecessedLightsMin),
+  "threeWayOptions": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeThreeWayOptionsMin),
+  "fourWayLocations": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeFourWayLocationsMin).optional(),
+  "fourWayCableFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeFourWayCableFootageMin).optional(),
+  "fourWayLaborHoursPerLocation": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeFourWayLaborHoursPerLocationMin).optional(),
+  "dimmers": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeDimmersMin),
+  "usbReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeUsbReceptaclesMin),
+  "additionalDedicatedCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeAdditionalDedicatedCircuitsMin),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeRouteLengthMin),
+  "includeLightingCircuit": zod.boolean().optional(),
+  "lightingCircuitAmperage": zod.literal(15).optional(),
+  "lightingCircuitFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeLightingCircuitFootageMin).optional(),
+  "lightingCircuitLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeLightingCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuit1": zod.boolean().optional(),
+  "smallApplianceCircuit1Footage": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1FootageMin).optional(),
+  "smallApplianceCircuit1LaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit1LaborHoursMin).optional(),
+  "smallApplianceCircuit2": zod.boolean().optional(),
+  "smallApplianceCircuit2Footage": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2FootageMin).optional(),
+  "smallApplianceCircuit2LaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuit2LaborHoursMin).optional(),
+  "microwaveCircuit": zod.boolean().optional(),
+  "microwaveCircuitFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeMicrowaveCircuitFootageMin).optional(),
+  "microwaveCircuitLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeMicrowaveCircuitLaborHoursMin).optional(),
+  "smallApplianceCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSmallApplianceCircuitsMin).optional().describe('Quantity of small-appliance circuits using the shared home run.'),
+  "microwaveCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeMicrowaveCircuitsMin).optional().describe('Quantity of microwave circuits using the shared home run.'),
+  "applianceHomeRun12_2Length": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin).optional().describe('Shared 12\/2 home-run distance from the appliance area back to the panel.'),
+  "applianceCircuitAmperage": zod.number().min(1).optional(),
+  "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
+  "applianceCircuitProtectionType": zod.string().optional(),
+  "breaker15AQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
+  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker20AQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
+  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "customerSuppliedFixtures": zod.boolean(),
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "panelManufacturer": zod.string().optional(),
+  "breakerAmperage": zod.number().optional(),
+  "breakerPoleCount": zod.number().optional(),
+  "breakerProtectionType": zod.string().optional(),
+  "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}),zod.object({
+  "roomLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFourRoomLengthMin),
+  "roomWidth": zod.number().min(duplicateQuoteResponseTwoJobInputsFourRoomWidthMin),
+  "fixtureQuantity": zod.number().min(1),
+  "fixtureSize": zod.enum(['4-inch', '6-inch']),
+  "wiringOption": zod.enum(['Existing switch leg / lighting box', 'New wiring from source']),
+  "circuitOption": zod.enum(['Reuse existing circuit', 'New dedicated circuit']),
+  "switchType": zod.enum(['Single-pole', '3-way']),
+  "switchingMethod": zod.enum(['single-pole', 'traditional-3-way', 'smart-3-way', 'Single-pole', 'Traditional 3-way', 'Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote']).optional().describe('Explicit switching choice for new recessed-lighting quotes. Omit for legacy clients.'),
+  "traditionalThreeWayFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFourTraditionalThreeWayFootageMin).optional().describe('Contractor-entered 14\/3 NM-B footage for traditional 3-way switching.'),
+  "dimmerSelection": zod.enum(['No dimmer', 'Include dimmer']),
+  "customerSuppliedFixtures": zod.boolean(),
+  "ceilingHeight": zod.enum(['Standard 8-10 ft', 'High 11-14 ft', 'Vaulted 15+ ft']),
+  "accessDifficulty": zod.enum(['Attic access', 'Limited / blind access', 'Open ceiling', 'Difficult access']),
+  "laborAdjustmentHours": zod.number(),
+  "wireRunLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFourWireRunLengthMin),
+  "wiringAllowanceFeet": zod.number().min(duplicateQuoteResponseTwoJobInputsFourWiringAllowanceFeetMin),
+  "additionalSwitches": zod.number().min(duplicateQuoteResponseTwoJobInputsFourAdditionalSwitchesMin),
+  "additionalLights": zod.number().min(duplicateQuoteResponseTwoJobInputsFourAdditionalLightsMin),
+  "notes": zod.string(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "panelManufacturer": zod.string(),
+  "breakerAmperage": zod.union([zod.literal(15),zod.literal(20)]),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.string(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B'])
+}),zod.object({
+  "exactCatalogParts": zod.object({
+  "meterDisconnect": zod.string().optional(),
+  "servicePanel": zod.string().optional(),
+  "mastRaceway": zod.string().optional(),
+  "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
+  "mastHub": zod.string().optional(),
+  "mastLb": zod.string().optional(),
+  "mastNinety": zod.string().optional(),
+  "mastCoupling": zod.string().optional(),
+  "serviceToPanelConductor": zod.string().optional(),
+  "serviceToPanelRaceway": zod.string().optional(),
+  "groundBar": zod.string().optional(),
+  "groundRod": zod.string().optional(),
+  "acornClamp": zod.string().optional(),
+  "groundingRaceway": zod.string().optional(),
+  "groundingRacewayFitting": zod.string().optional(),
+  "feederRaceway": zod.string().optional(),
+  "feederRacewayFitting": zod.string().optional(),
+  "ductSeal": zod.string().optional(),
+  "pvcPrimer": zod.string().optional(),
+  "pvcGlue": zod.string().optional(),
+  "antiOxidant": zod.string().optional(),
+  "electricalTape": zod.string().optional(),
+  "panelProduct": zod.string().optional()
+}).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "serviceSize": zod.enum(['100A', '150A', '200A']),
+  "serviceConfiguration": zod.enum(['Overhead mast', 'Underground service', 'Other configured arrangement']),
+  "serviceDisconnect": zod.enum(['Outdoor service disconnect', 'Indoor main disconnect', 'Meter-main combination']),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "breakerAmperage": zod.number().min(1),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "meterDisconnectEquipment": zod.string(),
+  "surgeProtection": zod.string(),
+  "includeOverheadMast": zod.boolean(),
+  "mastFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMastFootageMin),
+  "weatherheadQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveWeatherheadQuantityMin),
+  "mastExpansionCouplingQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMastExpansionCouplingQuantityMin).optional(),
+  "mastStrapQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMastStrapQuantityMin).optional(),
+  "hubQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveHubQuantityMin),
+  "lbQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveLbQuantityMin),
+  "ninetyQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveNinetyQuantityMin),
+  "couplingQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveCouplingQuantityMin),
+  "mastRelatedPartsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMastRelatedPartsQuantityMin),
+  "mastConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor']),
+  "mastConductorQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMastConductorQuantityMin),
+  "mastConductorFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMastConductorFootageMin),
+  "serviceToPanelConductor": zod.enum(['1/0 aluminum SER', '1/0 copper alternative', '3/0 aluminum SER', '2/0 copper alternative', '4/0 aluminum XHHW in raceway', '4/0 aluminum SER', '4/0 copper alternative', 'Other configured conductor']),
+  "serviceToPanelFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveServiceToPanelFootageMin),
+  "groundBarQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveGroundBarQuantityMin),
+  "groundRodQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveGroundRodQuantityMin),
+  "acornClampQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveAcornClampQuantityMin),
+  "intersystemBondingQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveIntersystemBondingQuantityMin),
+  "groundingConductorFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveGroundingConductorFootageMin),
+  "bondingConductorFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveBondingConductorFootageMin),
+  "pvcThreeQuarterFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFivePvcThreeQuarterFootageMin),
+  "pvcThreeQuarterFittingsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFivePvcThreeQuarterFittingsQuantityMin),
+  "waterMeterBondingQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveWaterMeterBondingQuantityMin),
+  "waterMeterBondingFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveWaterMeterBondingFootageMin),
+  "fourSquareBoxQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveFourSquareBoxQuantityMin),
+  "receptacle20AQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveReceptacle20AQuantityMin),
+  "receptaclePlateQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveReceptaclePlateQuantityMin),
+  "plywoodQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFivePlywoodQuantityMin),
+  "studsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveStudsQuantityMin),
+  "ductSealQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveDuctSealQuantityMin).optional(),
+  "pvcPrimerQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFivePvcPrimerQuantityMin).optional(),
+  "pvcGlueQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFivePvcGlueQuantityMin).optional(),
+  "antiOxidantQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveAntiOxidantQuantityMin).optional(),
+  "electricalTapeQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveElectricalTapeQuantityMin).optional(),
+  "permitAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsFivePermitAllowanceMin),
+  "inspectionAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveInspectionAllowanceMin),
+  "utilityCoordinationAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveUtilityCoordinationAllowanceMin).optional(),
+  "miscellaneousAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveMiscellaneousAllowanceMin),
+  "crewSize": zod.number().min(1),
+  "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
+  "relocationLaborHours": zod.number().optional(),
+  "accessDifficultyLaborHours": zod.number().optional(),
+  "groundingReworkLaborHours": zod.number().optional(),
+  "feederDistanceLaborHours": zod.number().optional(),
+  "serviceConditionLaborHours": zod.number().optional(),
+  "utilityCoordinationLaborHours": zod.number().optional(),
+  "generalLaborAdjustmentHours": zod.number().optional(),
+  "laborAdjustmentHours": zod.number().optional().describe('Legacy general labor adjustment retained for historical quote compatibility.'),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveExistingOtherBreakerQuantityMin).optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "notes": zod.string()
+}),zod.object({
+  "exactCatalogParts": zod.object({
+  "meterDisconnect": zod.string().optional(),
+  "servicePanel": zod.string().optional(),
+  "mastRaceway": zod.string().optional(),
+  "mastWeatherhead": zod.string().optional(),
+  "mastExpansionCoupling": zod.string().optional(),
+  "mastStrap": zod.string().optional(),
+  "mastHub": zod.string().optional(),
+  "mastLb": zod.string().optional(),
+  "mastNinety": zod.string().optional(),
+  "mastCoupling": zod.string().optional(),
+  "serviceToPanelConductor": zod.string().optional(),
+  "serviceToPanelRaceway": zod.string().optional(),
+  "groundBar": zod.string().optional(),
+  "groundRod": zod.string().optional(),
+  "acornClamp": zod.string().optional(),
+  "groundingRaceway": zod.string().optional(),
+  "groundingRacewayFitting": zod.string().optional(),
+  "feederRaceway": zod.string().optional(),
+  "feederRacewayFitting": zod.string().optional(),
+  "ductSeal": zod.string().optional(),
+  "pvcPrimer": zod.string().optional(),
+  "pvcGlue": zod.string().optional(),
+  "antiOxidant": zod.string().optional(),
+  "electricalTape": zod.string().optional(),
+  "panelProduct": zod.string().optional()
+}).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
+  "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
+  "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),
+  "panelSpaceCount": zod.number().min(1),
+  "breakerAmperage": zod.number().min(1),
+  "breakerPoleCount": zod.number().min(1),
+  "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "feederConductor": zod.enum(['1/0 aluminum XHHW conductor', '3/0 aluminum XHHW conductor', '4/0 aluminum XHHW conductor', '1/0 copper service conductor alternative', '2/0 copper service conductor alternative', 'Other configured feeder conductor']),
+  "feederLength": zod.number().min(duplicateQuoteResponseTwoJobInputsSixFeederLengthMin),
+  "feederConductorQuantity": zod.number().min(1),
+  "feederRacewayFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsSixFeederRacewayFootageMin),
+  "feederRacewayFittingsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixFeederRacewayFittingsQuantityMin),
+  "groundBarQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixGroundBarQuantityMin),
+  "groundRodQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixGroundRodQuantityMin),
+  "groundingConductorFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsSixGroundingConductorFootageMin),
+  "bondingConductorFootage": zod.number().min(duplicateQuoteResponseTwoJobInputsSixBondingConductorFootageMin),
+  "existingBreakers": zod.array(zod.object({
+  "amperage": zod.number().min(1),
+  "poleCount": zod.number().min(1),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixExistingBreakersItemQuantityMin)
+})).optional(),
+  "existingOtherBreakerQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixExistingOtherBreakerQuantityMin).optional(),
+  "fillerPlateQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixFillerPlateQuantityMin),
+  "knockoutSealQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixKnockoutSealQuantityMin),
+  "plywoodQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPlywoodQuantityMin),
+  "studsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixStudsQuantityMin),
+  "antiOxidantQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixAntiOxidantQuantityMin),
+  "electricalTapeQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixElectricalTapeQuantityMin),
+  "permitAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPermitAllowanceMin),
+  "inspectionAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixInspectionAllowanceMin),
+  "miscellaneousAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixMiscellaneousAllowanceMin),
+  "crewSize": zod.number().min(1),
+  "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixCrewHoursMin),
+  "panelRemovalLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPanelRemovalLaborHoursMin).optional(),
+  "feederInstallationLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixFeederInstallationLaborHoursMin).optional(),
+  "groundingLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixGroundingLaborHoursMin).optional(),
+  "accessDifficultyLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixAccessDifficultyLaborHoursMin).optional(),
+  "generalLaborAdjustmentHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixGeneralLaborAdjustmentHoursMin).optional(),
+  "laborAdjustmentHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixLaborAdjustmentHoursMin).optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "notes": zod.string()
+}),zod.object({
+  "serviceType": zod.enum(['Diagnostic service call', 'Residential standard service visit', 'Commercial standard service visit']),
+  "visitQuantity": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoJobInputsSevenVisitQuantityMultipleOf),
+  "receptacleReplacementQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenReceptacleReplacementQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsSevenReceptacleReplacementQuantityMultipleOf),
+  "trReceptacleReplacementQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenTrReceptacleReplacementQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsSevenTrReceptacleReplacementQuantityMultipleOf),
+  "switchReplacementQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenSwitchReplacementQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsSevenSwitchReplacementQuantityMultipleOf),
+  "gfciReplacementQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenGfciReplacementQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsSevenGfciReplacementQuantityMultipleOf),
+  "crewSize": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoJobInputsSevenCrewSizeMultipleOf),
+  "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenCrewHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "materialMarkup": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenMaterialMarkupMin).max(duplicateQuoteResponseTwoJobInputsSevenMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenTargetMarginMin).max(duplicateQuoteResponseTwoJobInputsSevenTargetMarginMax).describe('Target gross margin percentage.'),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsSevenMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
+}),zod.object({
+  "serviceType": zod.enum(['General time and materials', 'Residential time and materials', 'Commercial time and materials']),
+  "crewSize": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoJobInputsEightCrewSizeMultipleOf),
+  "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsEightCrewHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(duplicateQuoteResponseTwoJobInputsEightLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(duplicateQuoteResponseTwoJobInputsEightLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(duplicateQuoteResponseTwoJobInputsEightMaterialMarkupMin).max(duplicateQuoteResponseTwoJobInputsEightMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(duplicateQuoteResponseTwoJobInputsEightTargetMarginMin).max(duplicateQuoteResponseTwoJobInputsEightTargetMarginMax).describe('Target gross margin percentage.'),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
+}),zod.object({
+  "laborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsNineLaborHoursMin),
+  "laborRateType": zod.enum(['residential', 'commercial']),
+  "laborSellRate": zod.number().min(duplicateQuoteResponseTwoJobInputsNineLaborSellRateMin),
+  "loadedLaborCost": zod.number().min(duplicateQuoteResponseTwoJobInputsNineLoadedLaborCostMin),
+  "materialMarkup": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMaterialMarkupMin).max(duplicateQuoteResponseTwoJobInputsNineMaterialMarkupMax).describe('Material markup percentage.'),
+  "targetMargin": zod.number().min(duplicateQuoteResponseTwoJobInputsNineTargetMarginMin).max(duplicateQuoteResponseTwoJobInputsNineTargetMarginMax).describe('Target gross margin percentage.'),
+  "materials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMaterialsItemQuantityMin),
+  "unit": zod.string(),
+  "unitCost": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMaterialsItemUnitCostMin)
+})),
+  "miscellaneousMaterials": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "description": zod.string(),
+  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
+})),
+  "notes": zod.string()
+}),zod.record(zod.string(), zod.unknown())]).describe('Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.'),
+  "assembly": zod.array(zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "extendedCost": zod.number(),
+  "source": zod.string()
+})),
+  "pricing": zod.object({
+  "materialCost": zod.number(),
+  "laborCost": zod.number(),
+  "materialMarkup": zod.number(),
+  "calculatedSellingPrice": zod.number(),
+  "finalSellingPrice": zod.number(),
+  "laborOverride": zod.number().nullable(),
+  "sellingPriceOverride": zod.number().nullable(),
+  "laborSellRate": zod.number().optional(),
+  "laborSellAmount": zod.number().optional(),
+  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+}).and(zod.object({
+  "grossProfit": zod.number(),
+  "grossMargin": zod.number(),
+  "pricingWarnings": zod.array(zod.object({
+  "code": zod.string().min(1),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "category": zod.enum(['missing-price', 'rule', 'field-verification', 'planning', 'compatibility', 'legacy']),
+  "source": zod.string().min(1),
+  "message": zod.string().min(1),
+  "context": zod.record(zod.string(), zod.unknown())
+}))
+})),
+  "proposalDescription": zod.string(),
+  "sourceQuoteId": zod.number().nullish(),
+  "revisionNumber": zod.number().optional(),
+  "createdAt": zod.coerce.date()
 }))
 
 
@@ -3888,6 +4643,35 @@ export const getSettingsResponsePanelReplacementHoursPerPersonMin = 0;
 
 
 
+export const getSettingsResponseServiceCallHoursPerVisitMin = 0;
+
+
+export const getSettingsResponseTimeMaterialsHoursMin = 0;
+
+export const getSettingsResponseTimeMaterialsLaborSellRateMin = 0;
+
+export const getSettingsResponseTimeMaterialsLoadedLaborCostMin = 0;
+
+export const getSettingsResponseTimeMaterialsMaterialMarkupMin = 0;
+export const getSettingsResponseTimeMaterialsMaterialMarkupMax = 500;
+
+export const getSettingsResponseTimeMaterialsTargetMarginMin = 0;
+export const getSettingsResponseTimeMaterialsTargetMarginMax = 99.99;
+
+export const getSettingsResponseCustomLaborHoursMin = 0;
+
+export const getSettingsResponseCustomLaborSellRateMin = 0;
+
+export const getSettingsResponseCustomLoadedLaborCostMin = 0;
+
+export const getSettingsResponseCustomMaterialMarkupMin = 0;
+export const getSettingsResponseCustomMaterialMarkupMax = 500;
+
+export const getSettingsResponseCustomTargetMarginMin = 0;
+export const getSettingsResponseCustomTargetMarginMax = 99.99;
+
+
+
 export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
   "laborRate": zod.number().describe('Legacy alias for residentialLaborSellRate.'),
@@ -3905,7 +4689,28 @@ export const GetSettingsResponse = zod.object({
   "serviceUpgradeCrewSize": zod.number().min(1),
   "serviceUpgradeHoursPerPerson": zod.number().min(getSettingsResponseServiceUpgradeHoursPerPersonMin),
   "panelReplacementCrewSize": zod.number().min(1),
-  "panelReplacementHoursPerPerson": zod.number().min(getSettingsResponsePanelReplacementHoursPerPersonMin)
+  "panelReplacementHoursPerPerson": zod.number().min(getSettingsResponsePanelReplacementHoursPerPersonMin),
+  "serviceCallVisitQuantity": zod.number().min(1),
+  "serviceCallCrewSize": zod.number().min(1),
+  "serviceCallHoursPerVisit": zod.number().min(getSettingsResponseServiceCallHoursPerVisitMin),
+  "timeMaterialsCrewSize": zod.number().min(1),
+  "timeMaterialsHours": zod.number().min(getSettingsResponseTimeMaterialsHoursMin),
+  "timeMaterialsLaborRateType": zod.enum(['residential', 'commercial']),
+  "timeMaterialsLaborSellRate": zod.number().min(getSettingsResponseTimeMaterialsLaborSellRateMin),
+  "timeMaterialsLoadedLaborCost": zod.number().min(getSettingsResponseTimeMaterialsLoadedLaborCostMin),
+  "timeMaterialsMaterialMarkup": zod.number().min(getSettingsResponseTimeMaterialsMaterialMarkupMin).max(getSettingsResponseTimeMaterialsMaterialMarkupMax),
+  "timeMaterialsTargetMargin": zod.number().min(getSettingsResponseTimeMaterialsTargetMarginMin).max(getSettingsResponseTimeMaterialsTargetMarginMax),
+  "customLaborHours": zod.number().min(getSettingsResponseCustomLaborHoursMin),
+  "customLaborRateType": zod.enum(['residential', 'commercial']),
+  "customLaborSellRate": zod.number().min(getSettingsResponseCustomLaborSellRateMin),
+  "customLoadedLaborCost": zod.number().min(getSettingsResponseCustomLoadedLaborCostMin),
+  "customMaterialMarkup": zod.number().min(getSettingsResponseCustomMaterialMarkupMin).max(getSettingsResponseCustomMaterialMarkupMax),
+  "customTargetMargin": zod.number().min(getSettingsResponseCustomTargetMarginMin).max(getSettingsResponseCustomTargetMarginMax),
+  "contactPhone": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactAddress": zod.string().nullish(),
+  "proposalAccentColor": zod.string(),
+  "proposalTerms": zod.string()
 })
 
 
@@ -3917,6 +4722,35 @@ export const updateSettingsBodyServiceUpgradeHoursPerPersonMin = 0;
 
 
 export const updateSettingsBodyPanelReplacementHoursPerPersonMin = 0;
+
+
+
+export const updateSettingsBodyServiceCallHoursPerVisitMin = 0;
+
+
+export const updateSettingsBodyTimeMaterialsHoursMin = 0;
+
+export const updateSettingsBodyTimeMaterialsLaborSellRateMin = 0;
+
+export const updateSettingsBodyTimeMaterialsLoadedLaborCostMin = 0;
+
+export const updateSettingsBodyTimeMaterialsMaterialMarkupMin = 0;
+export const updateSettingsBodyTimeMaterialsMaterialMarkupMax = 500;
+
+export const updateSettingsBodyTimeMaterialsTargetMarginMin = 0;
+export const updateSettingsBodyTimeMaterialsTargetMarginMax = 99.99;
+
+export const updateSettingsBodyCustomLaborHoursMin = 0;
+
+export const updateSettingsBodyCustomLaborSellRateMin = 0;
+
+export const updateSettingsBodyCustomLoadedLaborCostMin = 0;
+
+export const updateSettingsBodyCustomMaterialMarkupMin = 0;
+export const updateSettingsBodyCustomMaterialMarkupMax = 500;
+
+export const updateSettingsBodyCustomTargetMarginMin = 0;
+export const updateSettingsBodyCustomTargetMarginMax = 99.99;
 
 
 
@@ -3937,7 +4771,28 @@ export const UpdateSettingsBody = zod.object({
   "serviceUpgradeCrewSize": zod.number().min(1).optional(),
   "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsBodyServiceUpgradeHoursPerPersonMin).optional(),
   "panelReplacementCrewSize": zod.number().min(1).optional(),
-  "panelReplacementHoursPerPerson": zod.number().min(updateSettingsBodyPanelReplacementHoursPerPersonMin).optional()
+  "panelReplacementHoursPerPerson": zod.number().min(updateSettingsBodyPanelReplacementHoursPerPersonMin).optional(),
+  "serviceCallVisitQuantity": zod.number().min(1).optional(),
+  "serviceCallCrewSize": zod.number().min(1).optional(),
+  "serviceCallHoursPerVisit": zod.number().min(updateSettingsBodyServiceCallHoursPerVisitMin).optional(),
+  "timeMaterialsCrewSize": zod.number().min(1).optional(),
+  "timeMaterialsHours": zod.number().min(updateSettingsBodyTimeMaterialsHoursMin).optional(),
+  "timeMaterialsLaborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "timeMaterialsLaborSellRate": zod.number().min(updateSettingsBodyTimeMaterialsLaborSellRateMin).optional(),
+  "timeMaterialsLoadedLaborCost": zod.number().min(updateSettingsBodyTimeMaterialsLoadedLaborCostMin).optional(),
+  "timeMaterialsMaterialMarkup": zod.number().min(updateSettingsBodyTimeMaterialsMaterialMarkupMin).max(updateSettingsBodyTimeMaterialsMaterialMarkupMax).optional(),
+  "timeMaterialsTargetMargin": zod.number().min(updateSettingsBodyTimeMaterialsTargetMarginMin).max(updateSettingsBodyTimeMaterialsTargetMarginMax).optional(),
+  "customLaborHours": zod.number().min(updateSettingsBodyCustomLaborHoursMin).optional(),
+  "customLaborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "customLaborSellRate": zod.number().min(updateSettingsBodyCustomLaborSellRateMin).optional(),
+  "customLoadedLaborCost": zod.number().min(updateSettingsBodyCustomLoadedLaborCostMin).optional(),
+  "customMaterialMarkup": zod.number().min(updateSettingsBodyCustomMaterialMarkupMin).max(updateSettingsBodyCustomMaterialMarkupMax).optional(),
+  "customTargetMargin": zod.number().min(updateSettingsBodyCustomTargetMarginMin).max(updateSettingsBodyCustomTargetMarginMax).optional(),
+  "contactPhone": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactAddress": zod.string().nullish(),
+  "proposalAccentColor": zod.string().optional(),
+  "proposalTerms": zod.string().optional()
 })
 
 
@@ -3945,6 +4800,35 @@ export const updateSettingsResponseServiceUpgradeHoursPerPersonMin = 0;
 
 
 export const updateSettingsResponsePanelReplacementHoursPerPersonMin = 0;
+
+
+
+export const updateSettingsResponseServiceCallHoursPerVisitMin = 0;
+
+
+export const updateSettingsResponseTimeMaterialsHoursMin = 0;
+
+export const updateSettingsResponseTimeMaterialsLaborSellRateMin = 0;
+
+export const updateSettingsResponseTimeMaterialsLoadedLaborCostMin = 0;
+
+export const updateSettingsResponseTimeMaterialsMaterialMarkupMin = 0;
+export const updateSettingsResponseTimeMaterialsMaterialMarkupMax = 500;
+
+export const updateSettingsResponseTimeMaterialsTargetMarginMin = 0;
+export const updateSettingsResponseTimeMaterialsTargetMarginMax = 99.99;
+
+export const updateSettingsResponseCustomLaborHoursMin = 0;
+
+export const updateSettingsResponseCustomLaborSellRateMin = 0;
+
+export const updateSettingsResponseCustomLoadedLaborCostMin = 0;
+
+export const updateSettingsResponseCustomMaterialMarkupMin = 0;
+export const updateSettingsResponseCustomMaterialMarkupMax = 500;
+
+export const updateSettingsResponseCustomTargetMarginMin = 0;
+export const updateSettingsResponseCustomTargetMarginMax = 99.99;
 
 
 
@@ -3965,7 +4849,28 @@ export const UpdateSettingsResponse = zod.object({
   "serviceUpgradeCrewSize": zod.number().min(1),
   "serviceUpgradeHoursPerPerson": zod.number().min(updateSettingsResponseServiceUpgradeHoursPerPersonMin),
   "panelReplacementCrewSize": zod.number().min(1),
-  "panelReplacementHoursPerPerson": zod.number().min(updateSettingsResponsePanelReplacementHoursPerPersonMin)
+  "panelReplacementHoursPerPerson": zod.number().min(updateSettingsResponsePanelReplacementHoursPerPersonMin),
+  "serviceCallVisitQuantity": zod.number().min(1),
+  "serviceCallCrewSize": zod.number().min(1),
+  "serviceCallHoursPerVisit": zod.number().min(updateSettingsResponseServiceCallHoursPerVisitMin),
+  "timeMaterialsCrewSize": zod.number().min(1),
+  "timeMaterialsHours": zod.number().min(updateSettingsResponseTimeMaterialsHoursMin),
+  "timeMaterialsLaborRateType": zod.enum(['residential', 'commercial']),
+  "timeMaterialsLaborSellRate": zod.number().min(updateSettingsResponseTimeMaterialsLaborSellRateMin),
+  "timeMaterialsLoadedLaborCost": zod.number().min(updateSettingsResponseTimeMaterialsLoadedLaborCostMin),
+  "timeMaterialsMaterialMarkup": zod.number().min(updateSettingsResponseTimeMaterialsMaterialMarkupMin).max(updateSettingsResponseTimeMaterialsMaterialMarkupMax),
+  "timeMaterialsTargetMargin": zod.number().min(updateSettingsResponseTimeMaterialsTargetMarginMin).max(updateSettingsResponseTimeMaterialsTargetMarginMax),
+  "customLaborHours": zod.number().min(updateSettingsResponseCustomLaborHoursMin),
+  "customLaborRateType": zod.enum(['residential', 'commercial']),
+  "customLaborSellRate": zod.number().min(updateSettingsResponseCustomLaborSellRateMin),
+  "customLoadedLaborCost": zod.number().min(updateSettingsResponseCustomLoadedLaborCostMin),
+  "customMaterialMarkup": zod.number().min(updateSettingsResponseCustomMaterialMarkupMin).max(updateSettingsResponseCustomMaterialMarkupMax),
+  "customTargetMargin": zod.number().min(updateSettingsResponseCustomTargetMarginMin).max(updateSettingsResponseCustomTargetMarginMax),
+  "contactPhone": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactAddress": zod.string().nullish(),
+  "proposalAccentColor": zod.string(),
+  "proposalTerms": zod.string()
 })
 
 

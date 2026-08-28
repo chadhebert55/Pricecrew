@@ -1,6 +1,5 @@
 import {
   type ServiceCallInputs,
-  useCreateQuote,
   usePreviewQuote,
   useGetSettings,
 } from "@workspace/api-client-react"
@@ -14,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calculator, Info, TriangleAlert, Wrench, Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { CustomerPicker } from "@/components/customer-picker"
+import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
+import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 
 const initialInputs: ServiceCallInputs = {
   serviceType: "Residential standard service visit",
@@ -39,7 +41,7 @@ function optionalAmount(value: string) {
 
 export function NewServiceCallQuote() {
   const [, setLocation] = useLocation()
-  const createQuote = useCreateQuote()
+  const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
   const { data: settings } = useGetSettings()
   const [settingsLoaded, setSettingsLoaded] = useState(false)
@@ -47,6 +49,7 @@ export function NewServiceCallQuote() {
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+  const [customerId, setCustomerId] = useState<number | undefined>()
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
     "Provide diagnostic troubleshooting and standard repair services per customer request. Labor and incidental materials included. Final scope and routing are subject to field verification."
@@ -54,6 +57,7 @@ export function NewServiceCallQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<ServiceCallInputs>(initialInputs)
+  const revision = useQuoteRevisionPrefill("SERVICE_CALL", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
   const deviceLaborHours =
     inputs.receptacleReplacementQuantity * 0.5 +
     inputs.trReceptacleReplacementQuantity * 0.5 +
@@ -63,9 +67,12 @@ export function NewServiceCallQuote() {
     inputs.visitQuantity * inputs.crewSize * inputs.crewHours + deviceLaborHours
 
   useEffect(() => {
-    if (settings && !settingsLoaded) {
+    if (settings && !settingsLoaded && !revision.isRevision) {
       setInputs((current) => ({
         ...current,
+        visitQuantity: settings.serviceCallVisitQuantity,
+        crewSize: settings.serviceCallCrewSize,
+        crewHours: settings.serviceCallHoursPerVisit,
         materialMarkup: settings.materialMarkup * 100,
         targetMargin: settings.targetMargin * 100,
       }))
@@ -146,6 +153,8 @@ export function NewServiceCallQuote() {
     createQuote.mutate(
       {
         data: {
+          customerId,
+          sourceQuoteId: revision.sourceQuoteId,
           customerName,
           customerEmail: customerEmail || null,
           projectName,
@@ -176,13 +185,14 @@ export function NewServiceCallQuote() {
             <Card className="border-t-4 border-t-secondary">
               <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <CustomerPicker idPrefix="sc" customerId={customerId} customerName={customerName} customerEmail={customerEmail} onCustomerIdChange={setCustomerId} onCustomerNameChange={setCustomerName} onCustomerEmailChange={setCustomerEmail} />
                 <div className="space-y-2">
                   <Label htmlFor="sc-customer">Customer Name *</Label>
-                  <Input id="sc-customer" required value={customerName} onChange={(event) => setCustomerName(event.target.value)} />
+                  <Input id="sc-customer" required value={customerName} onChange={(event) => { setCustomerId(undefined); setCustomerName(event.target.value) }} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sc-email">Customer Email</Label>
-                  <Input id="sc-email" type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+                  <Input id="sc-email" type="email" value={customerEmail} onChange={(event) => { setCustomerId(undefined); setCustomerEmail(event.target.value) }} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="sc-project">Project Name *</Label>

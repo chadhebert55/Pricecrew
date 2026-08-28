@@ -33,8 +33,15 @@ export interface DashboardSummary {
   totalQuotes: number;
   draftQuotes: number;
   readyQuotes: number;
+  /**
+     * Compatibility total of all non-demo quotes.
+     * @deprecated
+     */
   totalQuoted: number;
+  draftPipelineValue?: number;
+  readyProposalValue?: number;
   averageMargin: number;
+  averageMarginQuoteSet: string;
   recentQuotes: QuoteSummary[];
 }
 
@@ -75,18 +82,28 @@ export interface CustomerProposalLine {
   unit: string;
 }
 
+export interface ProposalCompanyPresentation {
+  displayName: string;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactAddress?: string | null;
+  accentColor: string;
+}
+
 export interface CustomerProposal {
-  id: number;
   quoteNumber: string;
   customerName: string;
-  /** @nullable */
-  customerEmail: string | null;
   projectName: string;
   status: QuoteStatus;
   proposalDescription: string;
   createdAt: string;
   finalSellingPrice: number;
   scope: CustomerProposalLine[];
+  company: ProposalCompanyPresentation;
+  terms: string;
 }
 
 export type EvChargerInputsCableType = typeof EvChargerInputsCableType[keyof typeof EvChargerInputsCableType];
@@ -1086,12 +1103,20 @@ export type PricingSummary = PricingInput & {
 };
 
 export type Quote = QuoteSummary & ({
+  /**
+     * Authenticated contractor-only customer identity used when revising a quote.
+     * @nullable
+     */
+  customerId?: number | null;
   /** @nullable */
   customerEmail: string | null;
   jobInputs: QuoteJobInputsSnapshot;
   assembly: AssemblyLine[];
   pricing: PricingSummary;
   proposalDescription: string;
+  /** @nullable */
+  sourceQuoteId?: number | null;
+  revisionNumber?: number;
   createdAt: string;
 });
 
@@ -1119,6 +1144,16 @@ export const QuoteInputModule = {
 } as const;
 
 export interface QuoteInput {
+  /**
+     * Existing customer ID, validated against the authenticated company.
+     * @minimum 1
+     */
+  customerId?: number;
+  /**
+     * Optional immutable source quote ID. The server verifies company and module ownership and creates a new revision.
+     * @minimum 1
+     */
+  sourceQuoteId?: number;
   /** @minLength 1 */
   customerName: string;
   /** @nullable */
@@ -1279,6 +1314,56 @@ export interface CompanySettings {
   panelReplacementCrewSize: number;
   /** @minimum 0 */
   panelReplacementHoursPerPerson: number;
+  /** @minimum 1 */
+  serviceCallVisitQuantity: number;
+  /** @minimum 1 */
+  serviceCallCrewSize: number;
+  /** @minimum 0 */
+  serviceCallHoursPerVisit: number;
+  /** @minimum 1 */
+  timeMaterialsCrewSize: number;
+  /** @minimum 0 */
+  timeMaterialsHours: number;
+  timeMaterialsLaborRateType: LaborRateType;
+  /** @minimum 0 */
+  timeMaterialsLaborSellRate: number;
+  /** @minimum 0 */
+  timeMaterialsLoadedLaborCost: number;
+  /**
+     * @minimum 0
+     * @maximum 500
+     */
+  timeMaterialsMaterialMarkup: number;
+  /**
+     * @minimum 0
+     * @maximum 99.99
+     */
+  timeMaterialsTargetMargin: number;
+  /** @minimum 0 */
+  customLaborHours: number;
+  customLaborRateType: LaborRateType;
+  /** @minimum 0 */
+  customLaborSellRate: number;
+  /** @minimum 0 */
+  customLoadedLaborCost: number;
+  /**
+     * @minimum 0
+     * @maximum 500
+     */
+  customMaterialMarkup: number;
+  /**
+     * @minimum 0
+     * @maximum 99.99
+     */
+  customTargetMargin: number;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactAddress?: string | null;
+  proposalAccentColor: string;
+  proposalTerms: string;
 }
 
 export type CompanySettingsUpdateEvDefaultCableType = typeof CompanySettingsUpdateEvDefaultCableType[keyof typeof CompanySettingsUpdateEvDefaultCableType];
@@ -1317,6 +1402,56 @@ export interface CompanySettingsUpdate {
   panelReplacementCrewSize?: number;
   /** @minimum 0 */
   panelReplacementHoursPerPerson?: number;
+  /** @minimum 1 */
+  serviceCallVisitQuantity?: number;
+  /** @minimum 1 */
+  serviceCallCrewSize?: number;
+  /** @minimum 0 */
+  serviceCallHoursPerVisit?: number;
+  /** @minimum 1 */
+  timeMaterialsCrewSize?: number;
+  /** @minimum 0 */
+  timeMaterialsHours?: number;
+  timeMaterialsLaborRateType?: LaborRateType;
+  /** @minimum 0 */
+  timeMaterialsLaborSellRate?: number;
+  /** @minimum 0 */
+  timeMaterialsLoadedLaborCost?: number;
+  /**
+     * @minimum 0
+     * @maximum 500
+     */
+  timeMaterialsMaterialMarkup?: number;
+  /**
+     * @minimum 0
+     * @maximum 99.99
+     */
+  timeMaterialsTargetMargin?: number;
+  /** @minimum 0 */
+  customLaborHours?: number;
+  customLaborRateType?: LaborRateType;
+  /** @minimum 0 */
+  customLaborSellRate?: number;
+  /** @minimum 0 */
+  customLoadedLaborCost?: number;
+  /**
+     * @minimum 0
+     * @maximum 500
+     */
+  customMaterialMarkup?: number;
+  /**
+     * @minimum 0
+     * @maximum 99.99
+     */
+  customTargetMargin?: number;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactAddress?: string | null;
+  proposalAccentColor?: string;
+  proposalTerms?: string;
 }
 
 export type ListCustomersParams = {

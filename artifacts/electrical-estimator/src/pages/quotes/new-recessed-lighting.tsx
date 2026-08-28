@@ -1,6 +1,5 @@
 import {
   type RecessedLightingInputs,
-  useCreateQuote,
   usePreviewQuote,
   useGetSettings,
 } from "@workspace/api-client-react"
@@ -15,6 +14,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calculator, Info, Lightbulb, Ruler, TriangleAlert } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "wouter"
+import { CustomerPicker } from "@/components/customer-picker"
+import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
+import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -72,13 +74,14 @@ function numberValue(value: string, minimum = 0) {
 
 export function NewRecessedLightingQuote() {
   const [, setLocation] = useLocation()
-  const createQuote = useCreateQuote()
+  const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
   const { data: settings } = useGetSettings()
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+  const [customerId, setCustomerId] = useState<number | undefined>()
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
     proposalDescriptionFor("single-pole"),
@@ -86,9 +89,10 @@ export function NewRecessedLightingQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<RecessedLightingInputs>(initialInputs)
+  const revision = useQuoteRevisionPrefill("RECESSED_LIGHTING", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
 
   useEffect(() => {
-    if (settings && !settingsLoaded) {
+    if (settings && !settingsLoaded && !revision.isRevision) {
       setInputs((current) => ({
         ...current,
         laborAdjustmentHours: settings.recessedLightingLaborAdjustmentHours ?? 0,
@@ -184,6 +188,8 @@ export function NewRecessedLightingQuote() {
     createQuote.mutate(
       {
         data: {
+          customerId,
+          sourceQuoteId: revision.sourceQuoteId,
           customerName,
           customerEmail: customerEmail || null,
           projectName,
@@ -224,13 +230,14 @@ export function NewRecessedLightingQuote() {
             <Card className="border-t-4 border-t-secondary">
               <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <CustomerPicker idPrefix="recessed" customerId={customerId} customerName={customerName} customerEmail={customerEmail} onCustomerIdChange={setCustomerId} onCustomerNameChange={setCustomerName} onCustomerEmailChange={setCustomerEmail} />
                 <div className="space-y-2">
                   <Label htmlFor="recessed-customer">Customer Name *</Label>
-                  <Input id="recessed-customer" required value={customerName} onChange={(event) => setCustomerName(event.target.value)} />
+                  <Input id="recessed-customer" required value={customerName} onChange={(event) => { setCustomerId(undefined); setCustomerName(event.target.value) }} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="recessed-email">Customer Email</Label>
-                  <Input id="recessed-email" type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+                  <Input id="recessed-email" type="email" value={customerEmail} onChange={(event) => { setCustomerId(undefined); setCustomerEmail(event.target.value) }} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="recessed-project">Project Name *</Label>

@@ -6,18 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CustomerProposalLine } from './customerProposalLine';
+import type { ProposalCompanyPresentation } from './proposalCompanyPresentation';
 import type { QuoteStatus } from './quoteStatus';
 
 export interface CustomerProposal {
-  id: number;
   quoteNumber: string;
   customerName: string;
-  /** @nullable */
-  customerEmail: string | null;
   projectName: string;
   status: QuoteStatus;
   proposalDescription: string;
   createdAt: Date;
   finalSellingPrice: number;
   scope: CustomerProposalLine[];
+  company: ProposalCompanyPresentation;
+  terms: string;
 }

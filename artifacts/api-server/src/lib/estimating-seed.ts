@@ -1942,6 +1942,22 @@ export async function seedEstimatorData(
     .where(eq(quotesTable.companyId, company.id))
     .limit(1);
 
+  // This is metadata on the one recognizable starter fixture, not a rewrite of
+  // any saved estimate snapshot. It also upgrades databases seeded before the
+  // marker was introduced.
+  if (
+    existingQuote &&
+    existingQuote.quoteNumber === "Q-1024" &&
+    existingQuote.projectName === "Fleet charging installation" &&
+    existingQuote.module === "EV Charger Builder" &&
+    !existingQuote.isDemo
+  ) {
+    await database
+      .update(quotesTable)
+      .set({ isDemo: true })
+      .where(eq(quotesTable.id, existingQuote.id));
+  }
+
   if (!existingQuote && customer) {
     await database.insert(quotesTable).values({
       companyId: company.id,
@@ -1959,6 +1975,7 @@ export async function seedEstimatorData(
         "Provide and install one customer-supplied EV charger on a new 50A circuit, including #8 copper conductors, raceway, circuit protection, surge protection, standard access, and permit coordination. Final field conditions and applicable code requirements will be verified before work begins.",
       total: starterPricing.finalSellingPrice,
       margin: starterPricing.grossMargin,
+      isDemo: true,
     });
   }
 }

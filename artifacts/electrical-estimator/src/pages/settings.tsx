@@ -9,15 +9,27 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
+
+function NumberField({ label, testId, value, onChange, min, step = "0.01" }: { label: string; testId: string; value: string; onChange: (value: string) => void; min: string; step?: string }) {
+  return <div className="space-y-2"><Label>{label}</Label><Input data-testid={testId} type="number" min={min} step={step} className="font-mono" value={value} onChange={(event) => onChange(event.target.value)} /></div>
+}
+
+function RateTypeField({ label, testId, value, onChange }: { label: string; testId: string; value: string; onChange: (value: "residential" | "commercial") => void }) {
+  return <div className="space-y-2"><Label>{label}</Label><select data-testid={testId} value={value} onChange={(event) => onChange(event.target.value as "residential" | "commercial")} className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"><option value="residential">Residential</option><option value="commercial">Commercial</option></select></div>
+}
 
 export function Settings() {
   const queryClient = useQueryClient()
+  const { toast } = useToast()
   const { data: settings, isLoading } = useGetSettings()
   const updateSettings = useUpdateSettings({
     mutation: {
       onSuccess: (updatedSettings) => {
         queryClient.setQueryData(getGetSettingsQueryKey(), updatedSettings)
+        toast({ title: "Settings saved", description: "Company defaults and proposal presentation have been updated." })
       },
+      onError: (error) => toast({ variant: "destructive", title: "Could not save settings", description: error instanceof Error ? error.message : "Please review the values and try again." }),
     },
   })
   
@@ -38,6 +50,27 @@ export function Settings() {
     serviceUpgradeHoursPerPerson: "16",
     panelReplacementCrewSize: "2",
     panelReplacementHoursPerPerson: "10",
+    serviceCallVisitQuantity: "1",
+    serviceCallCrewSize: "1",
+    serviceCallHoursPerVisit: "1",
+    timeMaterialsCrewSize: "1",
+    timeMaterialsHours: "1",
+    timeMaterialsLaborRateType: "commercial",
+    timeMaterialsLaborSellRate: "0",
+    timeMaterialsLoadedLaborCost: "0",
+    timeMaterialsMaterialMarkup: "0",
+    timeMaterialsTargetMargin: "0",
+    customLaborHours: "0",
+    customLaborRateType: "commercial",
+    customLaborSellRate: "0",
+    customLoadedLaborCost: "0",
+    customMaterialMarkup: "0",
+    customTargetMargin: "0",
+    contactPhone: "",
+    contactEmail: "",
+    contactAddress: "",
+    proposalAccentColor: "#2563eb",
+    proposalTerms: "",
   })
 
   useEffect(() => {
@@ -59,6 +92,27 @@ export function Settings() {
         serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson.toString(),
         panelReplacementCrewSize: settings.panelReplacementCrewSize.toString(),
         panelReplacementHoursPerPerson: settings.panelReplacementHoursPerPerson.toString(),
+        serviceCallVisitQuantity: settings.serviceCallVisitQuantity.toString(),
+        serviceCallCrewSize: settings.serviceCallCrewSize.toString(),
+        serviceCallHoursPerVisit: settings.serviceCallHoursPerVisit.toString(),
+        timeMaterialsCrewSize: settings.timeMaterialsCrewSize.toString(),
+        timeMaterialsHours: settings.timeMaterialsHours.toString(),
+        timeMaterialsLaborRateType: settings.timeMaterialsLaborRateType,
+        timeMaterialsLaborSellRate: settings.timeMaterialsLaborSellRate.toString(),
+        timeMaterialsLoadedLaborCost: settings.timeMaterialsLoadedLaborCost.toString(),
+        timeMaterialsMaterialMarkup: settings.timeMaterialsMaterialMarkup.toString(),
+        timeMaterialsTargetMargin: settings.timeMaterialsTargetMargin.toString(),
+        customLaborHours: settings.customLaborHours.toString(),
+        customLaborRateType: settings.customLaborRateType,
+        customLaborSellRate: settings.customLaborSellRate.toString(),
+        customLoadedLaborCost: settings.customLoadedLaborCost.toString(),
+        customMaterialMarkup: settings.customMaterialMarkup.toString(),
+        customTargetMargin: settings.customTargetMargin.toString(),
+        contactPhone: settings.contactPhone ?? "",
+        contactEmail: settings.contactEmail ?? "",
+        contactAddress: settings.contactAddress ?? "",
+        proposalAccentColor: settings.proposalAccentColor,
+        proposalTerms: settings.proposalTerms,
       })
     }
   }, [settings])
@@ -82,6 +136,27 @@ export function Settings() {
         serviceUpgradeHoursPerPerson: parseFloat(form.serviceUpgradeHoursPerPerson),
         panelReplacementCrewSize: parseInt(form.panelReplacementCrewSize, 10),
         panelReplacementHoursPerPerson: parseFloat(form.panelReplacementHoursPerPerson),
+        serviceCallVisitQuantity: parseInt(form.serviceCallVisitQuantity, 10),
+        serviceCallCrewSize: parseInt(form.serviceCallCrewSize, 10),
+        serviceCallHoursPerVisit: parseFloat(form.serviceCallHoursPerVisit),
+        timeMaterialsCrewSize: parseInt(form.timeMaterialsCrewSize, 10),
+        timeMaterialsHours: parseFloat(form.timeMaterialsHours),
+        timeMaterialsLaborRateType: form.timeMaterialsLaborRateType as "residential" | "commercial",
+        timeMaterialsLaborSellRate: parseFloat(form.timeMaterialsLaborSellRate),
+        timeMaterialsLoadedLaborCost: parseFloat(form.timeMaterialsLoadedLaborCost),
+        timeMaterialsMaterialMarkup: parseFloat(form.timeMaterialsMaterialMarkup),
+        timeMaterialsTargetMargin: parseFloat(form.timeMaterialsTargetMargin),
+        customLaborHours: parseFloat(form.customLaborHours),
+        customLaborRateType: form.customLaborRateType as "residential" | "commercial",
+        customLaborSellRate: parseFloat(form.customLaborSellRate),
+        customLoadedLaborCost: parseFloat(form.customLoadedLaborCost),
+        customMaterialMarkup: parseFloat(form.customMaterialMarkup),
+        customTargetMargin: parseFloat(form.customTargetMargin),
+        contactPhone: form.contactPhone || null,
+        contactEmail: form.contactEmail || null,
+        contactAddress: form.contactAddress || null,
+        proposalAccentColor: form.proposalAccentColor,
+        proposalTerms: form.proposalTerms,
       }
     })
   }
@@ -104,10 +179,18 @@ export function Settings() {
           <div className="space-y-2">
             <Label>Company Name</Label>
             <Input 
+              data-testid="input-company-name"
               value={form.companyName}
               onChange={(e) => setForm(f => ({ ...f, companyName: e.target.value }))}
             />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2"><Label>Proposal Contact Email</Label><Input data-testid="input-proposal-email" type="email" value={form.contactEmail} onChange={(e) => setForm(f => ({ ...f, contactEmail: e.target.value }))} /></div>
+            <div className="space-y-2"><Label>Proposal Contact Phone</Label><Input data-testid="input-proposal-phone" value={form.contactPhone} onChange={(e) => setForm(f => ({ ...f, contactPhone: e.target.value }))} /></div>
+            <div className="space-y-2"><Label>Proposal Accent Color</Label><Input data-testid="input-proposal-accent-color" value={form.proposalAccentColor} onChange={(e) => setForm(f => ({ ...f, proposalAccentColor: e.target.value }))} placeholder="#2563eb" /></div>
+            <div className="space-y-2"><Label>Proposal Address</Label><Input data-testid="input-proposal-address" value={form.contactAddress} onChange={(e) => setForm(f => ({ ...f, contactAddress: e.target.value }))} /></div>
+          </div>
+          <div className="space-y-2"><Label>Proposal Terms</Label><textarea data-testid="input-proposal-terms" className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.proposalTerms} onChange={(e) => setForm(f => ({ ...f, proposalTerms: e.target.value }))} /></div>
         </CardContent>
       </Card>
 
@@ -309,10 +392,29 @@ export function Settings() {
                 onChange={(e) => setForm(f => ({ ...f, panelReplacementHoursPerPerson: e.target.value }))}
               />
             </div>
+            <div className="col-span-2 pt-3"><h3 className="font-semibold">Service Call Defaults</h3><p className="text-sm text-muted-foreground">Copied into new Service Call quotes.</p></div>
+            <NumberField label="Visits" testId="input-service-call-visits" value={form.serviceCallVisitQuantity} onChange={(value) => setForm(f => ({ ...f, serviceCallVisitQuantity: value }))} min="1" step="1" />
+            <NumberField label="Crew Size" testId="input-service-call-crew-size" value={form.serviceCallCrewSize} onChange={(value) => setForm(f => ({ ...f, serviceCallCrewSize: value }))} min="1" step="1" />
+            <NumberField label="Hours Per Visit" testId="input-service-call-hours" value={form.serviceCallHoursPerVisit} onChange={(value) => setForm(f => ({ ...f, serviceCallHoursPerVisit: value }))} min="0" />
+            <div className="col-span-2 pt-3"><h3 className="font-semibold">Time &amp; Materials Defaults</h3><p className="text-sm text-muted-foreground">Copied into new Time &amp; Materials quotes.</p></div>
+            <NumberField label="Crew Size" testId="input-time-materials-crew-size" value={form.timeMaterialsCrewSize} onChange={(value) => setForm(f => ({ ...f, timeMaterialsCrewSize: value }))} min="1" step="1" />
+            <NumberField label="Labor Hours" testId="input-time-materials-hours" value={form.timeMaterialsHours} onChange={(value) => setForm(f => ({ ...f, timeMaterialsHours: value }))} min="0" />
+            <RateTypeField label="Labor Rate Type" testId="select-time-materials-rate-type" value={form.timeMaterialsLaborRateType} onChange={(value) => setForm(f => ({ ...f, timeMaterialsLaborRateType: value }))} />
+            <NumberField label="Labor Sell Rate ($/hr)" testId="input-time-materials-sell-rate" value={form.timeMaterialsLaborSellRate} onChange={(value) => setForm(f => ({ ...f, timeMaterialsLaborSellRate: value }))} min="0" />
+            <NumberField label="Loaded Labor Cost ($/hr)" testId="input-time-materials-loaded-cost" value={form.timeMaterialsLoadedLaborCost} onChange={(value) => setForm(f => ({ ...f, timeMaterialsLoadedLaborCost: value }))} min="0" />
+            <NumberField label="Material Markup (%)" testId="input-time-materials-markup" value={form.timeMaterialsMaterialMarkup} onChange={(value) => setForm(f => ({ ...f, timeMaterialsMaterialMarkup: value }))} min="0" />
+            <NumberField label="Target Margin (%)" testId="input-time-materials-margin" value={form.timeMaterialsTargetMargin} onChange={(value) => setForm(f => ({ ...f, timeMaterialsTargetMargin: value }))} min="0" />
+            <div className="col-span-2 pt-3"><h3 className="font-semibold">Custom Items Defaults</h3><p className="text-sm text-muted-foreground">Copied into new Custom Items quotes.</p></div>
+            <NumberField label="Labor Hours" testId="input-custom-hours" value={form.customLaborHours} onChange={(value) => setForm(f => ({ ...f, customLaborHours: value }))} min="0" />
+            <RateTypeField label="Labor Rate Type" testId="select-custom-rate-type" value={form.customLaborRateType} onChange={(value) => setForm(f => ({ ...f, customLaborRateType: value }))} />
+            <NumberField label="Labor Sell Rate ($/hr)" testId="input-custom-sell-rate" value={form.customLaborSellRate} onChange={(value) => setForm(f => ({ ...f, customLaborSellRate: value }))} min="0" />
+            <NumberField label="Loaded Labor Cost ($/hr)" testId="input-custom-loaded-cost" value={form.customLoadedLaborCost} onChange={(value) => setForm(f => ({ ...f, customLoadedLaborCost: value }))} min="0" />
+            <NumberField label="Material Markup (%)" testId="input-custom-markup" value={form.customMaterialMarkup} onChange={(value) => setForm(f => ({ ...f, customMaterialMarkup: value }))} min="0" />
+            <NumberField label="Target Margin (%)" testId="input-custom-margin" value={form.customTargetMargin} onChange={(value) => setForm(f => ({ ...f, customTargetMargin: value }))} min="0" />
           </div>
 
           <div className="pt-4 flex justify-end">
-            <Button onClick={handleSave} disabled={updateSettings.isPending}>
+            <Button data-testid="button-save-settings" onClick={handleSave} disabled={updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save Settings"}
             </Button>
           </div>

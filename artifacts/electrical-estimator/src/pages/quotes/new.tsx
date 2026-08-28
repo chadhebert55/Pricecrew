@@ -1,4 +1,4 @@
-import { type EvChargerInputs, useCreateQuote, usePreviewQuote, useGetSettings } from "@workspace/api-client-react"
+import { type EvChargerInputs, usePreviewQuote, useGetSettings } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import { Zap, Calculator, Info, TriangleAlert } from "lucide-react"
+import { CustomerPicker } from "@/components/customer-picker"
+import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
+import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 
 function BasicSelect({ value, onChange, options, id }: { value: string, onChange: (v: string) => void, options: {label: string, value: string}[], id?: string }) {
   return (
@@ -25,7 +28,7 @@ function BasicSelect({ value, onChange, options, id }: { value: string, onChange
 
 export function NewQuote() {
   const [_, setLocation] = useLocation()
-  const createQuote = useCreateQuote()
+  const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
   const { data: settings } = useGetSettings()
   const [settingsLoaded, setSettingsLoaded] = useState(false)
@@ -34,6 +37,7 @@ export function NewQuote() {
   // Base details
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+  const [customerId, setCustomerId] = useState<number | undefined>()
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState("Provide and install dedicated 240V circuit for Level 2 EV charging equipment. Includes proper wire sizing, conduit/routing, and required overcurrent protection to meet NEC standards and manufacturer specifications.")
   
@@ -62,9 +66,10 @@ export function NewQuote() {
     laborRateType: "residential",
     laborAdjustmentHours: 0,
   })
+  const revision = useQuoteRevisionPrefill("EV_CHARGER", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
 
   useEffect(() => {
-    if (settings && !settingsLoaded) {
+    if (settings && !settingsLoaded && !revision.isRevision) {
       const defaultCableType = settings.evDefaultCableType ?? "8/3 NM-B"
       setInputs(current => ({
         ...current,
@@ -102,6 +107,8 @@ export function NewQuote() {
 
     createQuote.mutate({
       data: {
+        customerId,
+        sourceQuoteId: revision.sourceQuoteId,
         customerName,
         customerEmail: customerEmail || null,
         projectName,
@@ -139,13 +146,14 @@ export function NewQuote() {
                 <CardTitle>Project Details</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CustomerPicker idPrefix="ev" customerId={customerId} customerName={customerName} customerEmail={customerEmail} onCustomerIdChange={setCustomerId} onCustomerNameChange={setCustomerName} onCustomerEmailChange={setCustomerEmail} />
                 <div className="space-y-2">
                   <Label htmlFor="customerName">Customer Name *</Label>
                   <Input 
                     id="customerName" 
                     required 
                     value={customerName} 
-                    onChange={e => setCustomerName(e.target.value)} 
+                    onChange={e => { setCustomerId(undefined); setCustomerName(e.target.value) }}
                     placeholder="e.g. John Doe"
                   />
                 </div>
@@ -155,7 +163,7 @@ export function NewQuote() {
                     id="customerEmail" 
                     type="email" 
                     value={customerEmail} 
-                    onChange={e => setCustomerEmail(e.target.value)} 
+                    onChange={e => { setCustomerId(undefined); setCustomerEmail(e.target.value) }}
                     placeholder="john@example.com"
                   />
                 </div>

@@ -17,14 +17,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink } from "lucide-react"
+import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink, Copy } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { quoteBuilderRoute } from "@/lib/quote-builder-routes"
 
 export function QuoteDetail() {
   const params = useParams<{ id: string }>()
   const quoteId = parseInt(params.id || "0")
   const [_, setLocation] = useLocation()
   const queryClient = useQueryClient()
+  const { toast } = useToast()
   
   const { data: quote, isLoading } = useGetQuote(quoteId, {
     query: { enabled: !!quoteId, queryKey: getGetQuoteQueryKey(quoteId) }
@@ -36,7 +39,15 @@ export function QuoteDetail() {
         queryClient.setQueryData(getGetQuoteQueryKey(updatedQuote.id), updatedQuote)
         void queryClient.invalidateQueries({ queryKey: getListQuotesQueryKey() })
         void queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() })
+        baseline.current = JSON.stringify({
+          laborOverride: updatedQuote.pricing.laborOverride?.toString() || "",
+          priceOverride: updatedQuote.pricing.sellingPriceOverride?.toString() || "",
+          status: updatedQuote.status,
+          proposalDesc: updatedQuote.proposalDescription,
+        })
+        toast({ title: "Quote saved", description: "Your changes have been saved." })
       },
+      onError: (error) => toast({ variant: "destructive", title: "Could not save quote", description: error instanceof Error ? error.message : "Please try again." }),
     },
   })
 
@@ -46,6 +57,7 @@ export function QuoteDetail() {
   const [priceOverride, setPriceOverride] = useState<string>("")
   const [status, setStatus] = useState<QuoteStatus>("draft")
   const [proposalDesc, setProposalDesc] = useState<string>("")
+  const baseline = useRef("")
 
   useEffect(() => {
     if (quote && initializedForId.current !== quote.id) {
@@ -54,8 +66,19 @@ export function QuoteDetail() {
       setPriceOverride(quote.pricing.sellingPriceOverride?.toString() || "")
       setStatus(quote.status)
       setProposalDesc(quote.proposalDescription)
+      baseline.current = JSON.stringify({ laborOverride: quote.pricing.laborOverride?.toString() || "", priceOverride: quote.pricing.sellingPriceOverride?.toString() || "", status: quote.status, proposalDesc: quote.proposalDescription })
     }
   }, [quote])
+  const isDirty = baseline.current !== JSON.stringify({ laborOverride, priceOverride, status, proposalDesc })
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!isDirty) return
+      event.preventDefault()
+      event.returnValue = ""
+    }
+    window.addEventListener("beforeunload", warn)
+    return () => window.removeEventListener("beforeunload", warn)
+  }, [isDirty])
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading quote...</div>
   if (!quote) return <div className="p-8 text-center text-destructive">Quote not found.</div>
@@ -81,6 +104,10 @@ export function QuoteDetail() {
 
   const handleOpenProposal = () => {
     if (status !== "ready" || hasBlockingWarnings) return
+    if (isDirty) {
+      toast({ variant: "destructive", title: "Save changes before opening proposal", description: "The customer proposal would otherwise show stale saved details." })
+      return
+    }
     updateQuote.mutate(
       { id: quote.id, data: { status: "ready" } },
       {
@@ -91,6 +118,19 @@ export function QuoteDetail() {
         },
       },
     )
+  }
+
+  const handleDuplicate = () => {
+    const route = quoteBuilderRoute(quote.module)
+    if (!route) {
+      toast({
+        variant: "destructive",
+        title: "This quote cannot be revised",
+        description: `No editable builder is available for module “${quote.module}”.`,
+      })
+      return
+    }
+    setLocation(`${route}?reviseFrom=${quote.id}`)
   }
 
   // Derived effective pricing
@@ -127,6 +167,9 @@ export function QuoteDetail() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button data-testid="button-duplicate-quote" variant="outline" onClick={handleDuplicate}>
+            <Copy size={16} className="mr-2" /> Duplicate / Revise
+          </Button>
           <Button variant="outline" onClick={handleOpenProposal} disabled={status !== "ready" || hasBlockingWarnings || updateQuote.isPending} title={status !== "ready" ? "Mark this quote ready before opening the customer proposal" : undefined}>
             <ExternalLink size={16} className="mr-2" /> Customer Proposal
           </Button>
@@ -135,7 +178,7 @@ export function QuoteDetail() {
               <Check size={16} className="mr-2" /> Mark Ready
             </Button>
           )}
-          <Button onClick={handleSaveOverrides} disabled={updateQuote.isPending}>
+          <Button data-testid="button-save-quote" onClick={handleSaveOverrides} disabled={updateQuote.isPending}>
             <Save size={16} className="mr-2" /> {updateQuote.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>

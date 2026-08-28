@@ -5,6 +5,9 @@ import { Link } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
+const formatCurrency = (value: number) =>
+  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
 export function Dashboard() {
   const { data: summary, isLoading, error } = useGetDashboardSummary()
 
@@ -15,7 +18,9 @@ export function Dashboard() {
     { label: "Total Quotes", value: summary.totalQuotes, icon: FileText },
     { label: "Draft Quotes", value: summary.draftQuotes, icon: FileEdit },
     { label: "Ready Quotes", value: summary.readyQuotes, icon: CheckCircle2 },
-    { label: "Average Margin", value: `${(summary.averageMargin * 100).toFixed(1)}%`, icon: TrendingUp },
+    { label: "Average Margin", value: `${(summary.averageMargin * 100).toFixed(1)}%`, icon: TrendingUp, description: summary.averageMarginQuoteSet },
+    { label: "Draft Pipeline Value", value: formatCurrency(summary.draftPipelineValue ?? 0), icon: FileEdit, description: "Value of non-demo draft quotes; not yet customer-ready." },
+    { label: "Ready Proposal Value", value: formatCurrency(summary.readyProposalValue ?? 0), icon: CheckCircle2, description: "Value of non-demo quotes ready to share with customers." },
   ]
 
   return (
@@ -33,29 +38,30 @@ export function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {metrics.map((metric, i) => (
           <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-start justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {metric.label}
               </CardTitle>
               <metric.icon size={16} className="text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-mono">{metric.value}</div>
+              <div data-testid={`text-dashboard-${metric.label.toLowerCase().replace(/\s+/g, "-")}`} className="text-2xl font-bold font-mono">{metric.value}</div>
+              {"description" in metric && <p className="mt-1 text-xs text-muted-foreground">{metric.description}</p>}
             </CardContent>
           </Card>
         ))}
-        <Card className="col-span-1 md:col-span-2 lg:col-span-4 bg-secondary text-secondary-foreground border-none">
+        <Card className="col-span-1 md:col-span-2 lg:col-span-3 bg-secondary text-secondary-foreground border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-secondary-foreground/70">
               Total Quoted Value
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold font-mono text-primary">
-              ${summary.totalQuoted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div data-testid="text-dashboard-total-quoted-value" className="text-4xl font-bold font-mono text-primary">
+               {formatCurrency(summary.totalQuoted)}
             </div>
           </CardContent>
         </Card>

@@ -1,5 +1,6 @@
 import {
   boolean,
+  foreignKey,
   integer,
   jsonb,
   numeric,
@@ -459,6 +460,8 @@ export type PricingRecord = {
 export const companiesTable = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  /** Company-local, customer-safe quote number allocator. */
+  nextQuoteSequence: integer("next_quote_sequence").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -598,6 +601,27 @@ export const companySettingsTable = pgTable(
     )
       .notNull()
       .default(10),
+    serviceCallVisitQuantity: numeric("service_call_visit_quantity", { precision: 8, scale: 2, mode: "number" }).notNull().default(1),
+    serviceCallCrewSize: numeric("service_call_crew_size", { precision: 5, scale: 2, mode: "number" }).notNull().default(1),
+    serviceCallHoursPerVisit: numeric("service_call_hours_per_visit", { precision: 8, scale: 2, mode: "number" }).notNull().default(2),
+    timeMaterialsCrewSize: numeric("time_materials_crew_size", { precision: 5, scale: 2, mode: "number" }).notNull().default(1),
+    timeMaterialsHours: numeric("time_materials_hours", { precision: 8, scale: 2, mode: "number" }).notNull().default(2),
+    timeMaterialsLaborRateType: text("time_materials_labor_rate_type").$type<LaborRateType>().notNull().default("residential"),
+    timeMaterialsLaborSellRate: numeric("time_materials_labor_sell_rate", { precision: 10, scale: 2, mode: "number" }).notNull().default(150),
+    timeMaterialsLoadedLaborCost: numeric("time_materials_loaded_labor_cost", { precision: 10, scale: 2, mode: "number" }).notNull().default(65),
+    timeMaterialsMaterialMarkup: numeric("time_materials_material_markup", { precision: 6, scale: 4, mode: "number" }).notNull().default(0.25),
+    timeMaterialsTargetMargin: numeric("time_materials_target_margin", { precision: 6, scale: 4, mode: "number" }).notNull().default(0.4),
+    customLaborHours: numeric("custom_labor_hours", { precision: 8, scale: 2, mode: "number" }).notNull().default(2),
+    customLaborRateType: text("custom_labor_rate_type").$type<LaborRateType>().notNull().default("residential"),
+    customLaborSellRate: numeric("custom_labor_sell_rate", { precision: 10, scale: 2, mode: "number" }).notNull().default(150),
+    customLoadedLaborCost: numeric("custom_loaded_labor_cost", { precision: 10, scale: 2, mode: "number" }).notNull().default(65),
+    customMaterialMarkup: numeric("custom_material_markup", { precision: 6, scale: 4, mode: "number" }).notNull().default(0.25),
+    customTargetMargin: numeric("custom_target_margin", { precision: 6, scale: 4, mode: "number" }).notNull().default(0.4),
+    contactPhone: text("contact_phone"),
+    contactEmail: text("contact_email"),
+    contactAddress: text("contact_address"),
+    proposalAccentColor: text("proposal_accent_color").notNull().default("#2563eb"),
+    proposalTerms: text("proposal_terms").notNull().default(""),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()
@@ -659,6 +683,9 @@ export const quotesTable = pgTable("quotes", {
     .notNull()
     .references(() => companiesTable.id),
   customerId: integer("customer_id").references(() => customersTable.id),
+  sourceQuoteId: integer("source_quote_id"),
+  revisionNumber: integer("revision_number").notNull().default(0),
+  isDemo: boolean("is_demo").notNull().default(false),
   quoteNumber: text("quote_number").notNull(),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email"),
@@ -680,4 +707,11 @@ export const quotesTable = pgTable("quotes", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+}, (table) => [
+  foreignKey({
+    columns: [table.sourceQuoteId],
+    foreignColumns: [table.id],
+    name: "quotes_source_quote_id_quotes_id_fk",
+  }),
+  uniqueIndex("quotes_company_quote_number_unique").on(table.companyId, table.quoteNumber),
+]);

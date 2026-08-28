@@ -40,6 +40,8 @@ import {
   hasBlockingPricingWarnings,
   MAX_OVERRIDE_VALUE,
   matchCustomerForQuote,
+  normalizePercentageSetting,
+  normalizeEstimateModule,
   pricingForQuoteUpdate,
   parseProposalShareToken,
   validateOverrideValues,
@@ -600,16 +602,16 @@ test("override validation rejects negative, non-finite, and oversized values", (
   );
 });
 
-test("company-aware quote numbers remain unique across concurrent IDs and deletions", () => {
-  const existing = formatQuoteNumber(1, 41);
+test("customer-safe quote numbers use only a company-scoped sequence", () => {
+  const existing = formatQuoteNumber(41);
   const concurrent = [
-    formatQuoteNumber(1, 42),
-    formatQuoteNumber(1, 43),
-    formatQuoteNumber(2, 42),
+    formatQuoteNumber(42),
+    formatQuoteNumber(43),
+    formatQuoteNumber(44),
   ];
-  assert.equal(existing, "Q-1-000041");
+  assert.equal(existing, "Q-000041");
   assert.equal(new Set([existing, ...concurrent]).size, 4);
-  assert.equal(formatQuoteNumber(1, 44), "Q-1-000044");
+  assert.equal(formatQuoteNumber(45), "Q-000045");
 });
 
 const serviceCallInputs: ServiceCallInputRecord = {
@@ -724,6 +726,8 @@ test("Custom Items uses exact quote-local labor, materials, markup, and margin a
 });
 
 type QuoteRequest = {
+  customerId?: number;
+  sourceQuoteId?: number;
   customerName: string;
   customerEmail?: string | null;
   projectName: string;
@@ -734,9 +738,17 @@ type QuoteRequest = {
 
 type CreatedQuote = {
   id: number;
+  customerId: number | null;
   customerName: string;
   customerEmail: string | null;
 };
+
+test("module aliases include canonical and seeded historical builder labels", () => {
+  assert.equal(normalizeEstimateModule("EV_CHARGER"), "EV_CHARGER");
+  assert.equal(normalizeEstimateModule("EV Charger Builder"), "EV_CHARGER");
+  assert.equal(normalizeEstimateModule("Time & Materials"), "TIME_MATERIALS");
+  assert.equal(normalizeEstimateModule("unknown legacy calculator"), null);
+});
 
 type CustomerSummary = {
   id: number;
@@ -1287,6 +1299,36 @@ test("customer proposal descriptions strip exact catalog identity", () => {
     ),
     "20A 1-pole dual-function breaker",
   );
+  assert.equal(
+    customerMaterialDescription(
+      "Acme ZX-9912 supplier SKU 884219 https://supplier.example/product",
+    ),
+    "Electrical material",
+  );
+  assert.equal(
+    customerMaterialDescription("Acme Electrical conduit"),
+    "Electrical material",
+  );
+  assert.equal(
+    customerMaterialDescription("Future Supplier unencoded name", {
+      category: "Materials",
+      source: "Price book catalog",
+    }),
+    "Electrical material",
+  );
+  assert.equal(
+    customerMaterialDescription("Owner-selected decorative fixture", {
+      category: "Materials",
+      source: "Custom item",
+    }),
+    "Owner-selected decorative fixture",
+  );
+});
+
+test("module default percentage boundary accepts points and legacy fractions", () => {
+  assert.equal(normalizePercentageSetting(25), 0.25);
+  assert.equal(normalizePercentageSetting(40), 0.4);
+  assert.equal(normalizePercentageSetting(0.25), 0.25);
 });
 
 test("customer proposal tokens are high entropy, tamper evident, and rotate with quote changes", () => {
@@ -1304,4 +1346,70 @@ test("customer proposal tokens are high entropy, tamper evident, and rotate with
     parseProposalShareToken(`${first.slice(0, -1)}x`),
     null,
   );
+});
+
+test("quote revisions retain source customer identity and reject reassignment", async () => {
+  const marker = `Revision customer ${randomUUID()}`;
+  const email = `${randomUUID()}@example.com`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const source = await postQuote(baseUrl, {
+      customerName: `${marker} original`,
+      customerEmail: email,
+      projectName: `${marker} source`,
+      proposalDescription: "Immutable source proposal",
+      module: "SERVICE_CALL",
+      jobInputs: serviceCallInputs,
+    });
+    assert.equal(typeof source.customerId, "number");
+
+    const renamedEmail = `renamed-${email}`;
+    const renamed = await patchCustomer(baseUrl, source.customerId!, {
+      name: `${marker} renamed`,
+      email: renamedEmail,
+    });
+    assert.equal(renamed.response.status, 200);
+
+    const revision = await postQuote(baseUrl, {
+      sourceQuoteId: source.id,
+      // Deliberately retain stale snapshot identity and omit customerId. The
+      // source relationship, not mutable profile text, must select customer.
+      customerName: source.customerName,
+      customerEmail: source.customerEmail,
+      projectName: `${marker} revision`,
+      proposalDescription: "Editable recalculated revision",
+      module: "SERVICE_CALL",
+      jobInputs: { ...serviceCallInputs, crewHours: 3 },
+    });
+    assert.equal(revision.customerId, source.customerId);
+
+    const other = await postCustomer(baseUrl, {
+      name: `${marker} other`,
+      email: `other-${email}`,
+    });
+    const mismatchResponse = await fetch(`${baseUrl}/api/quotes`, {
+      method: "POST",
+      headers: authenticatedHeaders,
+      body: JSON.stringify({
+        customerId: other.id,
+        sourceQuoteId: source.id,
+        customerName: other.name,
+        customerEmail: other.email,
+        projectName: `${marker} invalid reassignment`,
+        proposalDescription: "Must be rejected",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+    });
+    assert.equal(mismatchResponse.status, 400);
+    assert.match(
+      ((await mismatchResponse.json()) as { error: string }).error,
+      /retain the source quote customer/i,
+    );
+  } finally {
+    await closeTestServer(server);
+    await cleanupCustomerTest(marker, email);
+    await cleanupCustomerTest(marker, `renamed-${email}`);
+  }
 });

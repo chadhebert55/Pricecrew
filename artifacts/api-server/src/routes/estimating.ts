@@ -1,6 +1,6 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   CreateQuoteBody,
   CreateQuoteResponse,
@@ -8,6 +8,8 @@ import {
   CreateCustomerResponse,
   GetCustomerParams,
   GetCustomerResponse,
+  DuplicateQuoteParams,
+  DuplicateQuoteResponse,
   GetDashboardSummaryResponse,
   GetCustomerProposalParams,
   GetCustomerProposalResponse,
@@ -94,6 +96,33 @@ type EstimateModule =
   | "TIME_MATERIALS"
   | "CUSTOM";
 
+export function normalizeEstimateModule(value: string): EstimateModule | null {
+  const key = value.trim().toUpperCase().replace(/&/g, "AND").replace(/[^A-Z0-9]/g, "");
+  const aliases: Record<string, EstimateModule> = {
+    EVCHARGER: "EV_CHARGER",
+    EVCHARGERBUILDER: "EV_CHARGER",
+    BATHROOM: "BATHROOM",
+    BATHROOMBUILDER: "BATHROOM",
+    KITCHEN: "KITCHEN",
+    KITCHENBUILDER: "KITCHEN",
+    RECESSEDLIGHTING: "RECESSED_LIGHTING",
+    RECESSEDLIGHTINGBUILDER: "RECESSED_LIGHTING",
+    SERVICEUPGRADE: "SERVICE_UPGRADE",
+    SERVICEUPGRADEBUILDER: "SERVICE_UPGRADE",
+    PANELREPLACEMENT: "PANEL_REPLACEMENT",
+    PANELREPLACEMENTBUILDER: "PANEL_REPLACEMENT",
+    SERVICECALL: "SERVICE_CALL",
+    SERVICECALLBUILDER: "SERVICE_CALL",
+    TIMEANDMATERIALS: "TIME_MATERIALS",
+    TIMEANDMATERIALSBUILDER: "TIME_MATERIALS",
+    CUSTOM: "CUSTOM",
+    CUSTOMBUILDER: "CUSTOM",
+    CUSTOMITEMS: "CUSTOM",
+    CUSTOMITEMSBUILDER: "CUSTOM",
+  };
+  return aliases[key] ?? null;
+}
+
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
 }
@@ -121,14 +150,21 @@ export function validateOverrideValues(values: {
   );
 }
 
-export function formatQuoteNumber(companyId: number, quoteId: number) {
-  return `Q-${companyId}-${String(quoteId).padStart(6, "0")}`;
+export function formatQuoteNumber(
+  sequenceOrLegacyCompanyId: number,
+  legacySequence?: number,
+) {
+  // The optional second argument keeps internal callers compiled during the
+  // additive migration; company IDs are deliberately never serialized.
+  const sequence = legacySequence ?? sequenceOrLegacyCompanyId;
+  return `Q-${String(sequence).padStart(6, "0")}`;
 }
 
 function serializeQuote(quote: typeof quotesTable.$inferSelect) {
   return {
     id: quote.id,
     quoteNumber: quote.quoteNumber,
+    customerId: quote.customerId,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
     projectName: quote.projectName,
@@ -142,6 +178,8 @@ function serializeQuote(quote: typeof quotesTable.$inferSelect) {
     assembly: quote.assembly,
     pricing: serializePricing(quote.pricing),
     proposalDescription: quote.proposalDescription,
+    sourceQuoteId: quote.sourceQuoteId,
+    revisionNumber: quote.revisionNumber,
   };
 }
 
@@ -359,7 +397,16 @@ export function parseProposalShareToken(token: string) {
   return { quoteId, timestamp };
 }
 
-export function customerMaterialDescription(description: string) {
+/**
+ * Produces proposal-safe scope wording.  Catalog rows are deliberately
+ * fail-closed: a future supplier naming convention must not become public
+ * merely because it does not resemble a SKU.  User-entered allowances remain
+ * useful unless they look like a branded catalog description.
+ */
+export function customerMaterialDescription(
+  description: string,
+  line?: { id?: string; category?: string; source?: string },
+) {
   const rules: Array<[RegExp, string]> = [
     [/^Milbank .*200A meter-main.*$/i, "200A meter-main with built-in disconnect"],
     [/^Siemens .*200A .*panel.*$/i, "200A Siemens panel"],
@@ -387,7 +434,39 @@ export function customerMaterialDescription(description: string) {
       ? `${breaker[1]} ${breaker[2]}-pole ${breaker[3]} breaker`
       : "Circuit breaker";
   }
-  return description;
+  const genericForCategory =
+    line?.category?.toLocaleLowerCase().includes("labor")
+      ? "Electrical labor"
+      : line?.category?.toLocaleLowerCase().includes("permit")
+        ? "Permit and inspection allowance"
+        : "Electrical material";
+  const catalogOrigin =
+    Boolean(line?.source) &&
+    !/customer supplied|allowance|custom|manual|labor/i.test(line?.source ?? "");
+  // Catalog names, SKUs, URLs, supplier product codes, and unknown
+  // supplier-origin descriptions are contractor-only.
+  if (
+    catalogOrigin ||
+    /https?:\/\/|www\.|\b(?:sku|upc|model|part(?:\s*(?:no|number))?)\b/i.test(
+      description,
+    ) ||
+    /[A-Z]{2,}[-\s]?\d{3,}|\b[A-Z0-9]{6,}\b/.test(description)
+  ) {
+    return genericForCategory;
+  }
+  // An initial capitalized vendor/brand token followed by a material is a
+  // catalog-style name even when it has no URL or part number (for example,
+  // “Acme Electrical conduit”). Keep ordinary human-entered scope useful.
+  if (/^[A-Z][A-Za-z&.'-]+(?:\s+[A-Z][A-Za-z&.'-]+){0,2}\s+(?:conduit|wire|cable|panel|breaker|receptacle|switch|fixture|fitting|material)s?$/.test(description) &&
+      /^[A-Z]/.test(description)) {
+    return genericForCategory;
+  }
+  return description.trim() || genericForCategory;
+}
+
+/** API percentage points -> fractional DB value, retaining legacy fraction clients. */
+export function normalizePercentageSetting(value: number) {
+  return value > 1 ? value / 100 : value;
 }
 
 export function withProfit(
@@ -607,22 +686,30 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     .where(eq(quotesTable.companyId, companyId))
     .orderBy(desc(quotesTable.updatedAt));
 
-  const totalQuoted = quotes.reduce((sum, quote) => sum + quote.total, 0);
+  const operatingQuotes = quotes.filter((quote) => !quote.isDemo);
+  const totalQuoted = operatingQuotes.reduce((sum, quote) => sum + quote.total, 0);
   const averageMargin =
-    quotes.length > 0
-      ? quotes.reduce((sum, quote) => sum + quote.margin, 0) / quotes.length
+    operatingQuotes.length > 0
+      ? operatingQuotes.reduce((sum, quote) => sum + quote.margin, 0) / operatingQuotes.length
       : 0;
   const data = GetDashboardSummaryResponse.parse({
-    totalQuotes: quotes.length,
-    draftQuotes: quotes.filter(
+    totalQuotes: operatingQuotes.length,
+    draftQuotes: operatingQuotes.filter(
       (quote) => normalizeQuoteStatus(quote.status) === "draft",
     ).length,
-    readyQuotes: quotes.filter(
+    readyQuotes: operatingQuotes.filter(
       (quote) => normalizeQuoteStatus(quote.status) === "ready",
     ).length,
     totalQuoted,
+    draftPipelineValue: operatingQuotes
+      .filter((quote) => normalizeQuoteStatus(quote.status) === "draft")
+      .reduce((sum, quote) => sum + quote.total, 0),
+    readyProposalValue: operatingQuotes
+      .filter((quote) => normalizeQuoteStatus(quote.status) === "ready")
+      .reduce((sum, quote) => sum + quote.total, 0),
     averageMargin,
-    recentQuotes: quotes.slice(0, 5).map(serializeQuoteSummary),
+    averageMarginQuoteSet: "All non-demo draft and ready quotes",
+    recentQuotes: operatingQuotes.slice(0, 5).map(serializeQuoteSummary),
   });
   req.log.info({ quoteCount: quotes.length }, "Loaded dashboard summary");
   res.json(data);
@@ -892,64 +979,103 @@ router.post("/quotes", async (req, res): Promise<void> => {
     return;
   }
 
+  let source: typeof quotesTable.$inferSelect | undefined;
+  if (parsed.data.sourceQuoteId !== undefined) {
+    [source] = await db
+      .select()
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.id, parsed.data.sourceQuoteId),
+          eq(quotesTable.companyId, companyId),
+        ),
+      );
+    if (!source) {
+      res.status(404).json({ error: "Source quote not found" });
+      return;
+    }
+    if (normalizeEstimateModule(source.module) !== parsed.data.module) {
+      res.status(400).json({ error: "Source quote module does not match this builder" });
+      return;
+    }
+    if (
+      parsed.data.customerId !== undefined &&
+      parsed.data.customerId !== source.customerId
+    ) {
+      res.status(400).json({
+        error: "A revision must retain the source quote customer",
+      });
+      return;
+    }
+  }
+
   const estimate = await calculateEstimate(
     companyId,
     parsed.data.module,
     parsed.data.jobInputs,
   );
 
-  const customer = await findOrCreateCustomer({
-    companyId,
-    name: parsed.data.customerName,
-    email: parsed.data.customerEmail,
-  });
+  let customer: typeof customersTable.$inferSelect;
+  let quoteCustomerName = parsed.data.customerName;
+  let quoteCustomerEmail = parsed.data.customerEmail;
+  const effectiveCustomerId = parsed.data.customerId ?? source?.customerId ?? undefined;
+  if (effectiveCustomerId !== undefined) {
+    const [selectedCustomer] = await db
+      .select()
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.id, effectiveCustomerId),
+          eq(customersTable.companyId, companyId),
+        ),
+      );
+    if (!selectedCustomer) {
+      res.status(404).json({ error: "Customer not found" });
+      return;
+    }
+    customer = selectedCustomer;
+    quoteCustomerName = selectedCustomer.name;
+    quoteCustomerEmail = selectedCustomer.email;
+  } else {
+    customer = await findOrCreateCustomer({
+      companyId,
+      name: parsed.data.customerName,
+      email: parsed.data.customerEmail,
+    });
+  }
 
   const pricing = withProfit(estimate.pricing, {
     laborOverride: parsed.data.laborOverride,
     sellingPriceOverride: parsed.data.sellingPriceOverride,
   });
   const quote = await db.transaction(async (tx) => {
-    const [pendingQuote] = await tx
-      .insert(quotesTable)
-      .values({
-        companyId,
-        customerId: customer?.id,
-        quoteNumber: `PENDING-${randomUUID()}`,
-        customerName: parsed.data.customerName,
-        customerEmail: parsed.data.customerEmail,
-        projectName: parsed.data.projectName,
-        module: parsed.data.module,
-        status: "draft",
-        jobInputs: parsed.data.jobInputs,
-        assembly: estimate.assembly,
-        pricing,
-        proposalDescription: parsed.data.proposalDescription,
-        total: pricing.finalSellingPrice,
-        margin: pricing.grossMargin,
-      })
-      .returning();
-
-    if (!pendingQuote) {
-      return undefined;
-    }
-
-    const [numberedQuote] = await tx
-      .update(quotesTable)
-      .set({
-        quoteNumber: formatQuoteNumber(
-          companyId,
-          pendingQuote.id,
-        ),
-      })
-      .where(
-        and(
-          eq(quotesTable.id, pendingQuote.id),
-          eq(quotesTable.companyId, companyId),
-        ),
-      )
-      .returning();
-
-    return numberedQuote;
+    const [company] = await tx
+      .update(companiesTable)
+      .set({ nextQuoteSequence: sql`${companiesTable.nextQuoteSequence} + 1` })
+      .where(eq(companiesTable.id, companyId))
+      .returning({ nextQuoteSequence: companiesTable.nextQuoteSequence });
+    if (!company) return undefined;
+    const [newQuote] = await tx.insert(quotesTable).values({
+      companyId,
+      customerId: customer.id,
+      quoteNumber: formatQuoteNumber(company.nextQuoteSequence - 1),
+      // Selected customer identity is authoritative. Legacy create/match
+      // continues to preserve the caller's immutable quote snapshot.
+      customerName: quoteCustomerName,
+      customerEmail: quoteCustomerEmail,
+      projectName: parsed.data.projectName,
+      module: parsed.data.module,
+      status: "draft",
+      jobInputs: parsed.data.jobInputs,
+      assembly: estimate.assembly,
+      pricing,
+      proposalDescription: parsed.data.proposalDescription,
+      total: pricing.finalSellingPrice,
+      margin: pricing.grossMargin,
+      sourceQuoteId: source?.id,
+      revisionNumber: source ? source.revisionNumber + 1 : 0,
+    }).returning();
+    return newQuote;
   });
 
   if (!quote) {
@@ -1025,13 +1151,15 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Proposal not found" });
     return;
   }
+  const [settings, company] = await Promise.all([
+    db.select().from(companySettingsTable).where(eq(companySettingsTable.companyId, quote.companyId)).then(([row]) => row),
+    db.select().from(companiesTable).where(eq(companiesTable.id, quote.companyId)).then(([row]) => row),
+  ]);
 
   res.json(
     GetCustomerProposalResponse.parse({
-      id: quote.id,
       quoteNumber: quote.quoteNumber,
       customerName: quote.customerName,
-      customerEmail: quote.customerEmail,
       projectName: quote.projectName,
       status: normalizeQuoteStatus(quote.status),
       proposalDescription: quote.proposalDescription,
@@ -1039,12 +1167,66 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
       finalSellingPrice: quote.pricing.finalSellingPrice,
       scope: quote.assembly.map((line) => ({
         id: line.id,
-        description: customerMaterialDescription(line.description),
+        description: customerMaterialDescription(line.description, line),
         quantity: line.quantity,
         unit: line.unit,
       })),
+      company: {
+        displayName: company?.name ?? "Electrical Contractor",
+        contactPhone: settings?.contactPhone ?? null,
+        contactEmail: settings?.contactEmail ?? null,
+        contactAddress: settings?.contactAddress ?? null,
+        accentColor: settings?.proposalAccentColor ?? "#2563eb",
+      },
+      terms: settings?.proposalTerms ?? "",
     }),
   );
+});
+
+router.post("/quotes/:id/duplicate", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  await ensureEstimatorSeed();
+  const params = DuplicateQuoteParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [source] = await db.select().from(quotesTable).where(and(
+    eq(quotesTable.id, params.data.id),
+    eq(quotesTable.companyId, companyId),
+  ));
+  if (!source) {
+    res.status(404).json({ error: "Quote not found" });
+    return;
+  }
+  const draft = await db.transaction(async (tx) => {
+    const [company] = await tx.update(companiesTable)
+      .set({ nextQuoteSequence: sql`${companiesTable.nextQuoteSequence} + 1` })
+      .where(eq(companiesTable.id, companyId))
+      .returning({ nextQuoteSequence: companiesTable.nextQuoteSequence });
+    if (!company) return undefined;
+    const [quote] = await tx.insert(quotesTable).values({
+      companyId,
+      customerId: source.customerId,
+      quoteNumber: formatQuoteNumber(company.nextQuoteSequence - 1),
+      customerName: source.customerName,
+      customerEmail: source.customerEmail,
+      projectName: source.projectName,
+      module: source.module,
+      status: "draft",
+      jobInputs: source.jobInputs,
+      assembly: source.assembly,
+      pricing: source.pricing,
+      proposalDescription: source.proposalDescription,
+      total: source.total,
+      margin: source.margin,
+      sourceQuoteId: source.id,
+      revisionNumber: source.revisionNumber + 1,
+    }).returning();
+    return quote;
+  });
+  if (!draft) throw new Error("Unable to duplicate quote");
+  res.status(201).json(DuplicateQuoteResponse.parse(serializeQuote(draft)));
 });
 
 router.get("/quotes/:id", async (req, res): Promise<void> => {
@@ -1240,6 +1422,27 @@ router.get("/settings", async (req, res): Promise<void> => {
       serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson,
       panelReplacementCrewSize: settings.panelReplacementCrewSize,
       panelReplacementHoursPerPerson: settings.panelReplacementHoursPerPerson,
+      serviceCallVisitQuantity: settings.serviceCallVisitQuantity,
+      serviceCallCrewSize: settings.serviceCallCrewSize,
+      serviceCallHoursPerVisit: settings.serviceCallHoursPerVisit,
+      timeMaterialsCrewSize: settings.timeMaterialsCrewSize,
+      timeMaterialsHours: settings.timeMaterialsHours,
+      timeMaterialsLaborRateType: settings.timeMaterialsLaborRateType,
+      timeMaterialsLaborSellRate: settings.timeMaterialsLaborSellRate,
+      timeMaterialsLoadedLaborCost: settings.timeMaterialsLoadedLaborCost,
+      timeMaterialsMaterialMarkup: settings.timeMaterialsMaterialMarkup * 100,
+      timeMaterialsTargetMargin: settings.timeMaterialsTargetMargin * 100,
+      customLaborHours: settings.customLaborHours,
+      customLaborRateType: settings.customLaborRateType,
+      customLaborSellRate: settings.customLaborSellRate,
+      customLoadedLaborCost: settings.customLoadedLaborCost,
+      customMaterialMarkup: settings.customMaterialMarkup * 100,
+      customTargetMargin: settings.customTargetMargin * 100,
+      contactPhone: settings.contactPhone,
+      contactEmail: settings.contactEmail,
+      contactAddress: settings.contactAddress,
+      proposalAccentColor: settings.proposalAccentColor,
+      proposalTerms: settings.proposalTerms,
     }),
   );
 });
@@ -1303,6 +1506,27 @@ router.patch("/settings", async (req, res): Promise<void> => {
       panelReplacementHoursPerPerson:
         parsed.data.panelReplacementHoursPerPerson ??
         currentSettings.panelReplacementHoursPerPerson,
+      serviceCallVisitQuantity: parsed.data.serviceCallVisitQuantity ?? currentSettings.serviceCallVisitQuantity,
+      serviceCallCrewSize: parsed.data.serviceCallCrewSize ?? currentSettings.serviceCallCrewSize,
+      serviceCallHoursPerVisit: parsed.data.serviceCallHoursPerVisit ?? currentSettings.serviceCallHoursPerVisit,
+      timeMaterialsCrewSize: parsed.data.timeMaterialsCrewSize ?? currentSettings.timeMaterialsCrewSize,
+      timeMaterialsHours: parsed.data.timeMaterialsHours ?? currentSettings.timeMaterialsHours,
+      timeMaterialsLaborRateType: parsed.data.timeMaterialsLaborRateType ?? currentSettings.timeMaterialsLaborRateType,
+      timeMaterialsLaborSellRate: parsed.data.timeMaterialsLaborSellRate ?? currentSettings.timeMaterialsLaborSellRate,
+      timeMaterialsLoadedLaborCost: parsed.data.timeMaterialsLoadedLaborCost ?? currentSettings.timeMaterialsLoadedLaborCost,
+      timeMaterialsMaterialMarkup: parsed.data.timeMaterialsMaterialMarkup === undefined ? currentSettings.timeMaterialsMaterialMarkup : normalizePercentageSetting(parsed.data.timeMaterialsMaterialMarkup),
+      timeMaterialsTargetMargin: parsed.data.timeMaterialsTargetMargin === undefined ? currentSettings.timeMaterialsTargetMargin : normalizePercentageSetting(parsed.data.timeMaterialsTargetMargin),
+      customLaborHours: parsed.data.customLaborHours ?? currentSettings.customLaborHours,
+      customLaborRateType: parsed.data.customLaborRateType ?? currentSettings.customLaborRateType,
+      customLaborSellRate: parsed.data.customLaborSellRate ?? currentSettings.customLaborSellRate,
+      customLoadedLaborCost: parsed.data.customLoadedLaborCost ?? currentSettings.customLoadedLaborCost,
+      customMaterialMarkup: parsed.data.customMaterialMarkup === undefined ? currentSettings.customMaterialMarkup : normalizePercentageSetting(parsed.data.customMaterialMarkup),
+      customTargetMargin: parsed.data.customTargetMargin === undefined ? currentSettings.customTargetMargin : normalizePercentageSetting(parsed.data.customTargetMargin),
+      contactPhone: "contactPhone" in parsed.data ? parsed.data.contactPhone : currentSettings.contactPhone,
+      contactEmail: "contactEmail" in parsed.data ? parsed.data.contactEmail : currentSettings.contactEmail,
+      contactAddress: "contactAddress" in parsed.data ? parsed.data.contactAddress : currentSettings.contactAddress,
+      proposalAccentColor: parsed.data.proposalAccentColor ?? currentSettings.proposalAccentColor,
+      proposalTerms: parsed.data.proposalTerms ?? currentSettings.proposalTerms,
     })
     .where(eq(companySettingsTable.id, currentSettings.id))
     .returning();
@@ -1336,6 +1560,27 @@ router.patch("/settings", async (req, res): Promise<void> => {
       serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson,
       panelReplacementCrewSize: settings.panelReplacementCrewSize,
       panelReplacementHoursPerPerson: settings.panelReplacementHoursPerPerson,
+      serviceCallVisitQuantity: settings.serviceCallVisitQuantity,
+      serviceCallCrewSize: settings.serviceCallCrewSize,
+      serviceCallHoursPerVisit: settings.serviceCallHoursPerVisit,
+      timeMaterialsCrewSize: settings.timeMaterialsCrewSize,
+      timeMaterialsHours: settings.timeMaterialsHours,
+      timeMaterialsLaborRateType: settings.timeMaterialsLaborRateType,
+      timeMaterialsLaborSellRate: settings.timeMaterialsLaborSellRate,
+      timeMaterialsLoadedLaborCost: settings.timeMaterialsLoadedLaborCost,
+      timeMaterialsMaterialMarkup: settings.timeMaterialsMaterialMarkup * 100,
+      timeMaterialsTargetMargin: settings.timeMaterialsTargetMargin * 100,
+      customLaborHours: settings.customLaborHours,
+      customLaborRateType: settings.customLaborRateType,
+      customLaborSellRate: settings.customLaborSellRate,
+      customLoadedLaborCost: settings.customLoadedLaborCost,
+      customMaterialMarkup: settings.customMaterialMarkup * 100,
+      customTargetMargin: settings.customTargetMargin * 100,
+      contactPhone: settings.contactPhone,
+      contactEmail: settings.contactEmail,
+      contactAddress: settings.contactAddress,
+      proposalAccentColor: settings.proposalAccentColor,
+      proposalTerms: settings.proposalTerms,
     }),
   );
 });

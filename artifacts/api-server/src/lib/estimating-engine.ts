@@ -3495,7 +3495,7 @@ export function calculateServiceCallEstimate(
   addCatalogLine(
     "single-pole-switch-replacement",
     "Single-pole switch replacement",
-    "Legrand radiant TM870WCC10 15A single-pole switch",
+    "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",
     inputs.switchReplacementQuantity,
   );
   addCatalogLine(

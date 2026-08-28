@@ -980,6 +980,77 @@ export const useUpdateQuote = <TError = ErrorType<void>,
       return useMutation(getUpdateQuoteMutationOptions(options));
     }
 
+export const getDuplicateQuoteUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/duplicate`
+}
+
+/**
+ * @summary Create an immutable draft revision from a quote snapshot
+ */
+export const duplicateQuote = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+
+  return customFetch<Quote>(getDuplicateQuoteUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDuplicateQuoteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateQuote>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateQuote>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['duplicateQuote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateQuote>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  duplicateQuote(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateQuote>>>
+
+    export type DuplicateQuoteMutationError = ErrorType<void>
+
+    /**
+ * @summary Create an immutable draft revision from a quote snapshot
+ */
+export const useDuplicateQuote = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateQuote>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateQuote>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDuplicateQuoteMutationOptions(options));
+    }
+
 export const getListPriceBookItemsUrl = () => {
 
 

@@ -17,6 +17,16 @@ import type { ServiceUpgradeInputs } from './serviceUpgradeInputs';
 import type { TimeMaterialsInputs } from './timeMaterialsInputs';
 
 export interface QuoteInput {
+  /**
+     * Existing customer ID, validated against the authenticated company.
+     * @minimum 1
+     */
+  customerId?: number;
+  /**
+     * Optional immutable source quote ID. The server verifies company and module ownership and creates a new revision.
+     * @minimum 1
+     */
+  sourceQuoteId?: number;
   /** @minLength 1 */
   customerName: string;
   /** @nullable */

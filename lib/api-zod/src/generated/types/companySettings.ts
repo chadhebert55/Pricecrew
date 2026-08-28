@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompanySettingsEvDefaultCableType } from './companySettingsEvDefaultCableType';
+import type { LaborRateType } from './laborRateType';
 
 export interface CompanySettings {
   companyName: string;
@@ -33,4 +34,54 @@ export interface CompanySettings {
   panelReplacementCrewSize: number;
   /** @minimum 0 */
   panelReplacementHoursPerPerson: number;
+  /** @minimum 1 */
+  serviceCallVisitQuantity: number;
+  /** @minimum 1 */
+  serviceCallCrewSize: number;
+  /** @minimum 0 */
+  serviceCallHoursPerVisit: number;
+  /** @minimum 1 */
+  timeMaterialsCrewSize: number;
+  /** @minimum 0 */
+  timeMaterialsHours: number;
+  timeMaterialsLaborRateType: LaborRateType;
+  /** @minimum 0 */
+  timeMaterialsLaborSellRate: number;
+  /** @minimum 0 */
+  timeMaterialsLoadedLaborCost: number;
+  /**
+     * @minimum 0
+     * @maximum 500
+     */
+  timeMaterialsMaterialMarkup: number;
+  /**
+     * @minimum 0
+     * @maximum 99.99
+     */
+  timeMaterialsTargetMargin: number;
+  /** @minimum 0 */
+  customLaborHours: number;
+  customLaborRateType: LaborRateType;
+  /** @minimum 0 */
+  customLaborSellRate: number;
+  /** @minimum 0 */
+  customLoadedLaborCost: number;
+  /**
+     * @minimum 0
+     * @maximum 500
+     */
+  customMaterialMarkup: number;
+  /**
+     * @minimum 0
+     * @maximum 99.99
+     */
+  customTargetMargin: number;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactAddress?: string | null;
+  proposalAccentColor: string;
+  proposalTerms: string;
 }

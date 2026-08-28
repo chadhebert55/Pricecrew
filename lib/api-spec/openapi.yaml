@@ -253,6 +253,26 @@ paths:
                 $ref: "#/components/schemas/QuoteUpdateResult"
         "404":
           description: Quote not found
+  /quotes/{id}/duplicate:
+    post:
+      operationId: duplicateQuote
+      tags: [quotes]
+      summary: Create an immutable draft revision from a quote snapshot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "201":
+          description: New draft quote revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "404":
+          description: Quote not found
   /price-book:
     get:
       operationId: listPriceBookItems
@@ -345,6 +365,7 @@ components:
         - readyQuotes
         - totalQuoted
         - averageMargin
+        - averageMarginQuoteSet
         - recentQuotes
       properties:
         totalQuotes:
@@ -355,8 +376,16 @@ components:
           type: number
         totalQuoted:
           type: number
+          deprecated: true
+          description: Compatibility total of all non-demo quotes.
+        draftPipelineValue:
+          type: number
+        readyProposalValue:
+          type: number
         averageMargin:
           type: number
+        averageMarginQuoteSet:
+          type: string
         recentQuotes:
           type: array
           items:
@@ -467,25 +496,21 @@ components:
     CustomerProposal:
       type: object
       required:
-        - id
         - quoteNumber
         - customerName
-        - customerEmail
         - projectName
         - status
         - proposalDescription
         - createdAt
         - finalSellingPrice
         - scope
+        - company
+        - terms
       properties:
-        id:
-          type: number
         quoteNumber:
           type: string
         customerName:
           type: string
-        customerEmail:
-          type: ["string", "null"]
         projectName:
           type: string
         status:
@@ -501,6 +526,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CustomerProposalLine"
+        company:
+          $ref: "#/components/schemas/ProposalCompanyPresentation"
+        terms:
+          type: string
+    ProposalCompanyPresentation:
+      type: object
+      required: [displayName, accentColor]
+      properties:
+        displayName:
+          type: string
+        contactPhone:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        contactAddress:
+          type: ["string", "null"]
+        accentColor:
+          type: string
     Quote:
       allOf:
         - $ref: "#/components/schemas/QuoteSummary"
@@ -513,6 +556,9 @@ components:
             - proposalDescription
             - createdAt
           properties:
+            customerId:
+              type: ["number", "null"]
+              description: Authenticated contractor-only customer identity used when revising a quote.
             customerEmail:
               type: ["string", "null"]
             jobInputs:
@@ -525,6 +571,10 @@ components:
               $ref: "#/components/schemas/PricingSummary"
             proposalDescription:
               type: string
+            sourceQuoteId:
+              type: ["number", "null"]
+            revisionNumber:
+              type: number
             createdAt:
               type: string
               format: date-time
@@ -547,6 +597,14 @@ components:
         - jobInputs
         - proposalDescription
       properties:
+        customerId:
+          type: number
+          minimum: 1
+          description: Existing customer ID, validated against the authenticated company.
+        sourceQuoteId:
+          type: number
+          minimum: 1
+          description: Optional immutable source quote ID. The server verifies company and module ownership and creates a new revision.
         customerName:
           type: string
           minLength: 1
@@ -1976,6 +2034,24 @@ components:
         - serviceUpgradeHoursPerPerson
         - panelReplacementCrewSize
         - panelReplacementHoursPerPerson
+        - serviceCallVisitQuantity
+        - serviceCallCrewSize
+        - serviceCallHoursPerVisit
+        - timeMaterialsCrewSize
+        - timeMaterialsHours
+        - timeMaterialsLaborRateType
+        - timeMaterialsLaborSellRate
+        - timeMaterialsLoadedLaborCost
+        - timeMaterialsMaterialMarkup
+        - timeMaterialsTargetMargin
+        - customLaborHours
+        - customLaborRateType
+        - customLaborSellRate
+        - customLoadedLaborCost
+        - customMaterialMarkup
+        - customTargetMargin
+        - proposalAccentColor
+        - proposalTerms
       properties:
         companyName:
           type: string
@@ -2022,6 +2098,27 @@ components:
         panelReplacementHoursPerPerson:
           type: number
           minimum: 0
+        serviceCallVisitQuantity: { type: number, minimum: 1 }
+        serviceCallCrewSize: { type: number, minimum: 1 }
+        serviceCallHoursPerVisit: { type: number, minimum: 0 }
+        timeMaterialsCrewSize: { type: number, minimum: 1 }
+        timeMaterialsHours: { type: number, minimum: 0 }
+        timeMaterialsLaborRateType: { $ref: "#/components/schemas/LaborRateType" }
+        timeMaterialsLaborSellRate: { type: number, minimum: 0 }
+        timeMaterialsLoadedLaborCost: { type: number, minimum: 0 }
+        timeMaterialsMaterialMarkup: { type: number, minimum: 0, maximum: 500 }
+        timeMaterialsTargetMargin: { type: number, minimum: 0, maximum: 99.99 }
+        customLaborHours: { type: number, minimum: 0 }
+        customLaborRateType: { $ref: "#/components/schemas/LaborRateType" }
+        customLaborSellRate: { type: number, minimum: 0 }
+        customLoadedLaborCost: { type: number, minimum: 0 }
+        customMaterialMarkup: { type: number, minimum: 0, maximum: 500 }
+        customTargetMargin: { type: number, minimum: 0, maximum: 99.99 }
+        contactPhone: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"] }
+        contactAddress: { type: ["string", "null"] }
+        proposalAccentColor: { type: string }
+        proposalTerms: { type: string }
     CompanySettingsUpdate:
       type: object
       properties:
@@ -2070,3 +2167,24 @@ components:
         panelReplacementHoursPerPerson:
           type: number
           minimum: 0
+        serviceCallVisitQuantity: { type: number, minimum: 1 }
+        serviceCallCrewSize: { type: number, minimum: 1 }
+        serviceCallHoursPerVisit: { type: number, minimum: 0 }
+        timeMaterialsCrewSize: { type: number, minimum: 1 }
+        timeMaterialsHours: { type: number, minimum: 0 }
+        timeMaterialsLaborRateType: { $ref: "#/components/schemas/LaborRateType" }
+        timeMaterialsLaborSellRate: { type: number, minimum: 0 }
+        timeMaterialsLoadedLaborCost: { type: number, minimum: 0 }
+        timeMaterialsMaterialMarkup: { type: number, minimum: 0, maximum: 500 }
+        timeMaterialsTargetMargin: { type: number, minimum: 0, maximum: 99.99 }
+        customLaborHours: { type: number, minimum: 0 }
+        customLaborRateType: { $ref: "#/components/schemas/LaborRateType" }
+        customLaborSellRate: { type: number, minimum: 0 }
+        customLoadedLaborCost: { type: number, minimum: 0 }
+        customMaterialMarkup: { type: number, minimum: 0, maximum: 500 }
+        customTargetMargin: { type: number, minimum: 0, maximum: 99.99 }
+        contactPhone: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"] }
+        contactAddress: { type: ["string", "null"] }
+        proposalAccentColor: { type: string }
+        proposalTerms: { type: string }

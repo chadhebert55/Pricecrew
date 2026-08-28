@@ -1,7 +1,6 @@
 import {
   BathroomInputsCircuitOption,
   type BathroomInputs,
-  useCreateQuote,
   usePreviewQuote,
   useGetSettings,
 } from "@workspace/api-client-react"
@@ -15,6 +14,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calculator, Info, TriangleAlert, Waves } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { CustomerPicker } from "@/components/customer-picker"
+import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
+import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 
 const initialInputs: BathroomInputs = {
   gfciReceptacles: 1,
@@ -53,13 +55,14 @@ function optionalAmount(value: string) {
 
 export function NewBathroomQuote() {
   const [, setLocation] = useLocation()
-  const createQuote = useCreateQuote()
+  const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
   const { data: settings } = useGetSettings()
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+  const [customerId, setCustomerId] = useState<number | undefined>()
   const [projectName, setProjectName] = useState("")
   const [proposalDescription, setProposalDescription] = useState(
     "Provide labor and listed materials for the bathroom electrical scope, including device installation, lighting and ventilation connections, switching, testing, and final trim. Existing conditions and applicable protection requirements will be verified before work begins.",
@@ -67,9 +70,10 @@ export function NewBathroomQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<BathroomInputs>(initialInputs)
+  const revision = useQuoteRevisionPrefill("BATHROOM", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
 
   useEffect(() => {
-    if (settings && !settingsLoaded) {
+    if (settings && !settingsLoaded && !revision.isRevision) {
       setInputs((current) => ({
         ...current,
         laborAdjustmentHours: settings.bathroomLaborAdjustmentHours ?? 0,
@@ -119,6 +123,8 @@ export function NewBathroomQuote() {
     createQuote.mutate(
       {
         data: {
+          customerId,
+          sourceQuoteId: revision.sourceQuoteId,
           customerName,
           customerEmail: customerEmail || null,
           projectName,
@@ -164,13 +170,14 @@ export function NewBathroomQuote() {
                 <CardTitle>Project Details</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <CustomerPicker idPrefix="bath" customerId={customerId} customerName={customerName} customerEmail={customerEmail} onCustomerIdChange={setCustomerId} onCustomerNameChange={setCustomerName} onCustomerEmailChange={setCustomerEmail} />
                 <div className="space-y-2">
                   <Label htmlFor="bath-customer">Customer Name *</Label>
-                  <Input id="bath-customer" required value={customerName} onChange={(event) => setCustomerName(event.target.value)} />
+                  <Input id="bath-customer" required value={customerName} onChange={(event) => { setCustomerId(undefined); setCustomerName(event.target.value) }} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bath-email">Customer Email</Label>
-                  <Input id="bath-email" type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+                  <Input id="bath-email" type="email" value={customerEmail} onChange={(event) => { setCustomerId(undefined); setCustomerEmail(event.target.value) }} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="bath-project">Project Name *</Label>

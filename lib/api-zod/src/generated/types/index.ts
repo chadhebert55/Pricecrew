@@ -57,6 +57,7 @@ export * from './pricingWarning';
 export * from './pricingWarningCategory';
 export * from './pricingWarningContext';
 export * from './pricingWarningSeverity';
+export * from './proposalCompanyPresentation';
 export * from './quote';
 export * from './quoteInput';
 export * from './quoteInputModule';

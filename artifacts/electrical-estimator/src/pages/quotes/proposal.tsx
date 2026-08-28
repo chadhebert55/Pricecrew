@@ -6,6 +6,12 @@ import { getGetCustomerProposalQueryKey, useGetCustomerProposal } from "@workspa
 import { Printer } from "lucide-react"
 import { useParams } from "wouter"
 
+function safeCssColor(value: string) {
+  const candidate = value.trim()
+  // Permit only standard hex colors; never inject arbitrary CSS values from settings.
+  return /^#[0-9a-f]{3,8}$/i.test(candidate) ? candidate : "#2563eb"
+}
+
 export function QuoteProposal() {
   const params = useParams<{ token: string }>()
   const token = params.token || ""
@@ -21,6 +27,7 @@ export function QuoteProposal() {
   }
 
   const canPrint = quote.status === "ready"
+  const accentColor = safeCssColor(quote.company.accentColor)
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-16">
@@ -30,14 +37,19 @@ export function QuoteProposal() {
         </Button>
       </div>
 
-      <Card className="print:border-0 print:shadow-none">
+      <Card className="print:border-0 print:shadow-none" style={{ borderTopColor: accentColor, borderTopWidth: "4px" }}>
         <CardHeader className="border-b">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary">Customer Proposal</p>
+              <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: accentColor }}>Customer Proposal</p>
               <CardTitle className="mt-2 text-3xl">{quote.projectName}</CardTitle>
               <p className="mt-2 text-muted-foreground">Prepared for {quote.customerName}</p>
-              {quote.customerEmail && <p className="text-sm text-muted-foreground">{quote.customerEmail}</p>}
+            </div>
+            <div className="text-right text-sm text-muted-foreground">
+              <p className="font-semibold text-foreground">{quote.company.displayName}</p>
+              {quote.company.contactPhone && <p>{quote.company.contactPhone}</p>}
+              {quote.company.contactEmail && <p>{quote.company.contactEmail}</p>}
+              {quote.company.contactAddress && <p className="whitespace-pre-wrap">{quote.company.contactAddress}</p>}
             </div>
             <div className="text-right">
               <Badge variant={canPrint ? "success" : "secondary"} className="capitalize">{quote.status}</Badge>
@@ -76,7 +88,7 @@ export function QuoteProposal() {
 
           <section className="rounded-lg bg-primary/5 p-6 text-right">
             <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Total Investment</p>
-            <p className="mt-1 font-mono text-4xl font-bold text-primary">
+            <p className="mt-1 font-mono text-4xl font-bold" style={{ color: accentColor }}>
               ${quote.finalSellingPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -84,9 +96,10 @@ export function QuoteProposal() {
             </p>
           </section>
 
-          <p className="border-t pt-5 text-sm text-muted-foreground">
-            Final installation details remain subject to site conditions and the proposed scope above.
-          </p>
+          <section className="border-t pt-5 text-sm text-muted-foreground">
+            <h2 className="mb-2 font-semibold text-foreground">Terms</h2>
+            <p className="whitespace-pre-wrap">{quote.terms || "Final installation details remain subject to site conditions and the proposed scope above."}</p>
+          </section>
         </CardContent>
       </Card>
     </div>
