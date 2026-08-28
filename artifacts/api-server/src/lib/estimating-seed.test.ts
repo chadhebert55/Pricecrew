@@ -164,6 +164,10 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         "1/0 copper service conductor alternative",
         "2/0 copper service conductor alternative",
         "4/0 copper service conductor alternative",
+        "#6 copper SER cable",
+        "#1 aluminum SER cable",
+        "60A subpanel load center",
+        "100A subpanel load center",
       ]) {
         assert.equal(
           seededRows.find((row) => row.item === item)?.unitCost,

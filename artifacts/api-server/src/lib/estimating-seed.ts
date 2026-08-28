@@ -388,6 +388,22 @@ export async function seedEstimatorData(
       isDefault: false,
     })),
   ];
+  const additionalAdditionSubpanelItems: SeedPriceBookItem[] = [
+    ...[
+      ["Conductor", "#6 copper SER cable", "ft"],
+      ["Conductor", "#1 aluminum SER cable", "ft"],
+      ["Panel", "60A subpanel load center", "ea"],
+      ["Panel", "100A subpanel load center", "ea"],
+    ].map(([category, item, unit]) => ({
+      category,
+      item,
+      unit,
+      unitCost: 0,
+      supplier: "Company default — set current cost",
+      sourceDate,
+      isDefault: false,
+    })),
+  ];
   let verifiedItems: SeedPriceBookItem[] = [
     ...[
       ["Equipment", "Milbank U3990-XL-200 200A meter-main — SKU 304898", "ea", 441.525, "Milbank", "U3990-XL-200", "304898", 200],
@@ -470,6 +486,7 @@ export async function seedEstimatorData(
     })),
     ...additionalServiceItems,
     ...additionalPanelReplacementItems,
+    ...additionalAdditionSubpanelItems,
     {
       category: "Protection",
       item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",

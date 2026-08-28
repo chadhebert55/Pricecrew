@@ -1209,6 +1209,237 @@ test("addition price-book audit includes mixed-circuit breaker and cable rows", 
     }).builders.includes("Addition"),
     true,
   );
+  for (const [category, item] of [
+    ["Conductor", "#6 copper SER cable"],
+    ["Conductor", "#1 aluminum SER cable"],
+    ["Panel", "60A subpanel load center"],
+    ["Protection", "Siemens 100A 2-pole Standard breaker"],
+  ]) {
+    assert.equal(
+      auditPriceBookItem({
+        category,
+        item,
+        unitCost: 1,
+        isDefault: false,
+        supplierSku: null,
+      }).builders.includes("Addition"),
+      true,
+    );
+  }
+});
+
+const additionSubpanelPriceBook: PriceBookItem[] = [
+  ...priceBook,
+  catalogRow("#6 copper SER cable", 3, { category: "Conductor" }),
+  catalogRow("#1 aluminum SER cable", 5, { category: "Conductor" }),
+  catalogRow("60A subpanel load center", 120, { category: "Panel" }),
+  catalogRow("100A subpanel load center", 180, { category: "Panel" }),
+  catalogRow("Siemens 60A 2-pole Standard breaker", 40, {
+    category: "Protection",
+    manufacturer: "Siemens",
+    amperage: 60,
+    poleCount: 2,
+    protectionType: "Standard",
+  }),
+  catalogRow("Siemens 100A 2-pole Standard breaker", 70, {
+    category: "Protection",
+    manufacturer: "Siemens",
+    amperage: 100,
+    poleCount: 2,
+    protectionType: "Standard",
+  }),
+];
+
+test("addition 60A and 100A subpanels use distinct verified 4-wire feeder groups", () => {
+  const sixty = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      subpanelOption: "60A Subpanel",
+      feederDistance: 25,
+    },
+    settings,
+    additionSubpanelPriceBook,
+  );
+  const hundred = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      subpanelOption: "100A Subpanel",
+      feederDistance: 25,
+    },
+    settings,
+    additionSubpanelPriceBook,
+  );
+
+  const sixtyFeeder = sixty.assembly.find(
+    (line) => line.id === "addition-subpanel-feeder",
+  );
+  const hundredFeeder = hundred.assembly.find(
+    (line) => line.id === "addition-subpanel-feeder",
+  );
+  assert.equal(sixtyFeeder?.description.includes("#6 copper SER 4-wire"), true);
+  assert.equal(sixtyFeeder?.unitCost, 3);
+  assert.equal(sixtyFeeder?.quantity, 25);
+  assert.equal(
+    hundredFeeder?.description.includes("#1 aluminum SER 4-wire"),
+    true,
+  );
+  assert.equal(hundredFeeder?.unitCost, 5);
+  assert.equal(hundredFeeder?.quantity, 25);
+  assert.equal(
+    sixty.assembly.find(
+      (line) => line.id === "addition-subpanel-feeder-breaker",
+    )?.description.includes("60A"),
+    true,
+  );
+  assert.equal(
+    hundred.assembly.find(
+      (line) => line.id === "addition-subpanel-feeder-breaker",
+    )?.description.includes("100A"),
+    true,
+  );
+  assert.equal(
+    sixty.assembly.find(
+      (line) => line.id === "addition-subpanel-load-center",
+    )?.description.includes("60A"),
+    true,
+  );
+  assert.equal(
+    hundred.assembly.find(
+      (line) => line.id === "addition-subpanel-load-center",
+    )?.description.includes("100A"),
+    true,
+  );
+});
+
+test("addition feeder distance increases material cost and final quote price", () => {
+  const shortFeeder = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      subpanelOption: "60A Subpanel",
+      feederDistance: 25,
+    },
+    settings,
+    additionSubpanelPriceBook,
+  );
+  const longFeeder = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      subpanelOption: "60A Subpanel",
+      feederDistance: 75,
+    },
+    settings,
+    additionSubpanelPriceBook,
+  );
+
+  assert.equal(
+    longFeeder.pricing.materialCost - shortFeeder.pricing.materialCost,
+    150,
+  );
+  assert.ok(
+    longFeeder.pricing.finalSellingPrice >
+      shortFeeder.pricing.finalSellingPrice,
+  );
+});
+
+test("addition subpanel materials remain explicitly unresolved when verified prices are missing", () => {
+  const result = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      subpanelOption: "100A Subpanel",
+      feederDistance: 40,
+    },
+    settings,
+    priceBook,
+  );
+
+  for (const id of [
+    "addition-subpanel-feeder",
+    "addition-subpanel-feeder-breaker",
+    "addition-subpanel-load-center",
+  ]) {
+    assert.equal(result.assembly.find((line) => line.id === id)?.unitCost, 0);
+  }
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "#1 aluminum SER cable",
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED" &&
+        warning.context.amperage === 100,
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "100A subpanel load center",
+    ),
+    true,
+  );
+});
+
+test("addition subpanel preview and create contracts stay in parity with 30A 10/3 circuits", () => {
+  const jobInputs = {
+    ...additionInputs,
+    subpanelOption: "60A Subpanel" as const,
+    feederDistance: 45,
+    circuitEntries: [
+      {
+        amperage: 30 as const,
+        poleCount: 2 as const,
+        protectionType: "Standard" as const,
+        cableType: "10/3 NM-B" as const,
+        quantity: 1,
+      },
+    ],
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({ module: "ADDITION", jobInputs }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Addition subpanel customer",
+      projectName: "Addition with subpanel",
+      module: "ADDITION",
+      jobInputs,
+      proposalDescription: "Addition and subpanel scope",
+    }).success,
+    true,
+  );
+
+  for (const invalidInputs of [
+    { ...jobInputs, subpanelOption: "200A Subpanel" },
+    { ...jobInputs, feederDistance: -1 },
+  ]) {
+    assert.equal(
+      PreviewQuoteBody.safeParse({
+        module: "ADDITION",
+        jobInputs: invalidInputs,
+      }).success,
+      false,
+    );
+    assert.equal(
+      CreateQuoteBody.safeParse({
+        customerName: "Addition subpanel customer",
+        projectName: "Invalid addition subpanel",
+        module: "ADDITION",
+        jobInputs: invalidInputs,
+        proposalDescription: "Addition scope",
+      }).success,
+      false,
+    );
+  }
 });
 
 test("panel replacement requires a complete supported panel, OCPD, and conductor tuple", () => {

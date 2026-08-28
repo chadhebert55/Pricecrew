@@ -952,7 +952,7 @@ async function getQuote(baseUrl: string, id: number) {
   return body;
 }
 
-test("saved Addition 30A circuits retain and price 10/3 NM-B without falling back to 10/2", async () => {
+test("saved Addition subpanel preview stays identical and retains the 30A 10/3 NM-B circuit", async () => {
   const { server, baseUrl } = await startTestServer();
   try {
     const context = testServerContexts.get(server);
@@ -989,6 +989,48 @@ test("saved Addition 30A circuits retain and price 10/3 NM-B without falling bac
         sourceDate: "2026-08-28",
         isDefault: false,
       },
+      {
+        companyId: membership.companyId,
+        category: "Conductor",
+        item: "#6 copper SER cable",
+        unit: "ft",
+        unitCost: 3,
+        supplier: "Regression catalog",
+        manufacturer: "Test Wire",
+        manufacturerPartNumber: "TEST-6-CU-SER",
+        supplierSku: "TEST-6-CU-SER",
+        sourceDate: "2026-08-28",
+        isDefault: false,
+      },
+      {
+        companyId: membership.companyId,
+        category: "Panel",
+        item: "60A subpanel load center",
+        unit: "ea",
+        unitCost: 120,
+        supplier: "Regression catalog",
+        manufacturer: "Test Panel",
+        manufacturerPartNumber: "TEST-60-PANEL",
+        supplierSku: "TEST-60-PANEL",
+        sourceDate: "2026-08-28",
+        isDefault: false,
+      },
+      {
+        companyId: membership.companyId,
+        category: "Protection",
+        item: "Siemens 60A 2-pole Standard breaker",
+        unit: "ea",
+        unitCost: 40,
+        supplier: "Regression catalog",
+        manufacturer: "Siemens",
+        manufacturerPartNumber: "TEST-60-BREAKER",
+        supplierSku: "TEST-60-BREAKER",
+        sourceDate: "2026-08-28",
+        amperage: 60,
+        poleCount: 2,
+        protectionType: "Standard",
+        isDefault: false,
+      },
     ]);
     const jobInputs: AdditionInputRecord = {
       length: 20,
@@ -1014,10 +1056,25 @@ test("saved Addition 30A circuits retain and price 10/3 NM-B without falling bac
         cableType: "10/3 NM-B",
         quantity: 1,
       }],
+      subpanelOption: "60A Subpanel",
+      feederDistance: 45,
       crewSize: 1,
       crewHours: 1,
       notes: "",
     };
+    const previewResponse = await fetch(`${baseUrl}/api/quotes/preview`, {
+      method: "POST",
+      headers: authenticatedHeaders(baseUrl),
+      body: JSON.stringify({ module: "ADDITION", jobInputs }),
+    });
+    const preview = (await previewResponse.json()) as Awaited<
+      ReturnType<typeof getQuote>
+    >;
+    assert.equal(
+      previewResponse.status,
+      200,
+      `Expected Addition preview to succeed: ${JSON.stringify(preview)}`,
+    );
     const created = await postQuote(baseUrl, {
       customerName: `Addition 10/3 ${randomUUID()}`,
       projectName: "30A Addition circuit",
@@ -1026,6 +1083,8 @@ test("saved Addition 30A circuits retain and price 10/3 NM-B without falling bac
       jobInputs,
     });
     const saved = await getQuote(baseUrl, created.id);
+    assert.equal(saved.jobInputs.subpanelOption, "60A Subpanel");
+    assert.equal(saved.jobInputs.feederDistance, 45);
     const savedEntries = saved.jobInputs.circuitEntries as AdditionInputRecord["circuitEntries"];
     assert.equal(savedEntries?.[0]?.cableType, "10/3 NM-B");
     const cableLine = saved.assembly.find(
@@ -1034,6 +1093,26 @@ test("saved Addition 30A circuits retain and price 10/3 NM-B without falling bac
     assert.equal(cableLine?.description, "30A 2-pole 10/3 NM-B branch-circuit cable");
     assert.equal(cableLine?.unitCost, 1.25);
     assert.equal(cableLine?.extendedCost, 106.25);
+    const feederLine = saved.assembly.find(
+      (line) => line.id === "addition-subpanel-feeder",
+    );
+    assert.equal(feederLine?.description.includes("#6 copper SER 4-wire"), true);
+    assert.equal(feederLine?.unitCost, 3);
+    assert.equal(feederLine?.extendedCost, 135);
+    assert.equal(
+      saved.assembly.find(
+        (line) => line.id === "addition-subpanel-feeder-breaker",
+      )?.unitCost,
+      40,
+    );
+    assert.equal(
+      saved.assembly.find(
+        (line) => line.id === "addition-subpanel-load-center",
+      )?.unitCost,
+      120,
+    );
+    assert.deepEqual(saved.assembly, preview.assembly);
+    assert.deepEqual(saved.pricing, preview.pricing);
     assert.equal(
       saved.assembly.some((line) => line.description.includes("10/2 NM-B")),
       false,

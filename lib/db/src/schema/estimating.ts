@@ -179,6 +179,11 @@ export type AdditionCircuitEntry = {
   quantity: number;
 };
 
+export type AdditionSubpanelOption =
+  | "No Subpanel"
+  | "60A Subpanel"
+  | "100A Subpanel";
+
 export type AdditionInputRecord = {
   length: number;
   width: number;
@@ -200,6 +205,8 @@ export type AdditionInputRecord = {
   breakerProtectionType: string;
   cableType: CableType;
   circuitEntries?: AdditionCircuitEntry[];
+  subpanelOption?: AdditionSubpanelOption;
+  feederDistance?: number;
   crewSize: number;
   crewHours: number;
   laborAdjustmentHours?: number;

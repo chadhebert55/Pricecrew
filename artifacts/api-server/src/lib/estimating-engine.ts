@@ -200,6 +200,17 @@ function warningMetadata(message: string): WarningMetadata {
       },
     };
   }
+  if (message.startsWith("Addition subpanel feeder distance")) {
+    return {
+      code: "ADDITION_SUBPANEL_FEEDER_DISTANCE_REQUIRED",
+      severity: "error",
+      category: "rule",
+      source: "addition-subpanel",
+      context: {
+        rule: "a selected Addition subpanel requires a positive feeder distance",
+      },
+    };
+  }
   if (message.startsWith("Service Upgrade allowance")) {
     return {
       code: "SERVICE_UPGRADE_ALLOWANCE_REVIEW",
@@ -649,6 +660,10 @@ export function auditPriceBookItem(
     builders,
     "Addition",
     name.includes("addition") ||
+      name.includes("subpanel") ||
+      name.includes("load center") ||
+      name.includes("6 copper ser") ||
+      name.includes("1 aluminum ser") ||
       name.includes("ceiling fan") ||
       name.includes("juno") ||
       name.includes("recessed") ||
@@ -717,6 +732,12 @@ export function auditPriceBookItem(
       builders.add("Addition");
     }
     if (
+      (name.includes("60a") || name.includes("100a")) &&
+      name.includes("2 pole")
+    ) {
+      builders.add("Addition");
+    }
+    if (
       (name.includes("100a") ||
         name.includes("150a") ||
         name.includes("200a")) &&
@@ -761,6 +782,9 @@ export function auditPriceBookItem(
     ) {
       builders.add("Service Upgrade");
       builders.add("Panel Replacement");
+    }
+    if (name.includes("6 copper ser") || name.includes("1 aluminum ser")) {
+      builders.add("Addition");
     }
   }
   if (
@@ -910,14 +934,18 @@ function unitCost(
   key: string,
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
+  expectedCategory?: string,
 ): { value: number; source: string } {
   const match = priceBook.find(
     (item) =>
       normalized(item.item) === normalized(key) &&
+      (!expectedCategory || itemInCategory(item, expectedCategory)) &&
       !item.isDefault &&
-      !normalized(item.item).startsWith("unverified "),
+      !normalized(item.item).startsWith("unverified ") &&
+      Number.isFinite(item.unitCost) &&
+      item.unitCost > 0,
   );
-  if (match && Number.isFinite(match.unitCost) && match.unitCost > 0) {
+  if (match) {
     return { value: match.unitCost, source: catalogSource(match) };
   }
 
@@ -2589,6 +2617,75 @@ export function calculateAdditionEstimate(
       });
     }
   }
+
+  const subpanelOption = inputs.subpanelOption ?? "No Subpanel";
+  if (subpanelOption !== "No Subpanel") {
+    const feederDistance = n(inputs.feederDistance);
+    const subpanelAmperage = subpanelOption === "60A Subpanel" ? 60 : 100;
+    const feederKey =
+      subpanelAmperage === 60
+        ? "#6 copper SER cable"
+        : "#1 aluminum SER cable";
+    const feederDescription =
+      subpanelAmperage === 60
+        ? "#6 copper SER 4-wire feeder"
+        : "#1 aluminum SER 4-wire feeder";
+    const panelKey = `${subpanelAmperage}A subpanel load center`;
+
+    if (feederDistance <= 0) {
+      pricingWarnings.push(
+        `Addition subpanel feeder distance is zero. Enter a positive feeder distance for the selected ${subpanelOption} before sending the quote.`,
+      );
+    }
+
+    const feeder = unitCost(
+      feederKey,
+      priceBook,
+      pricingWarnings,
+      "Conductor",
+    );
+    addLine(assembly, {
+      id: "addition-subpanel-feeder",
+      category: "Conductor",
+      description: `${feederDescription} with two hots, insulated neutral, and equipment grounding conductor`,
+      quantity: feederDistance,
+      unit: "ft",
+      unitCost: feeder.value,
+      source: feeder.source,
+    });
+
+    const feederBreaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: subpanelAmperage,
+        poleCount: 2,
+        protectionType: "Standard",
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "addition-subpanel-feeder-breaker",
+      category: "Protection",
+      description: feederBreaker.description,
+      quantity: 1,
+      unit: "ea",
+      unitCost: feederBreaker.value,
+      source: feederBreaker.source,
+    });
+
+    const panel = unitCost(panelKey, priceBook, pricingWarnings, "Panel");
+    addLine(assembly, {
+      id: "addition-subpanel-load-center",
+      category: "Panel",
+      description: `${subpanelAmperage}A subpanel load center with isolated neutral and equipment grounding provisions`,
+      quantity: 1,
+      unit: "ea",
+      unitCost: panel.value,
+      source: panel.source,
+    });
+  }
+
   const circuits = circuitEntries
     ? circuitEntries.reduce((sum, entry) => sum + n(entry.quantity), 0)
     : n(inputs.circuitCount);

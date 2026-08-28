@@ -572,6 +572,18 @@ export interface AdditionCircuitEntry {
   quantity: number;
 }
 
+/**
+ * Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.
+ */
+export type AdditionInputsSubpanelOption = typeof AdditionInputsSubpanelOption[keyof typeof AdditionInputsSubpanelOption];
+
+
+export const AdditionInputsSubpanelOption = {
+  No_Subpanel: 'No Subpanel',
+  '60A_Subpanel': '60A Subpanel',
+  '100A_Subpanel': '100A Subpanel',
+} as const;
+
 export interface AdditionInputs {
   /** @minimum 0 */
   length: number;
@@ -615,6 +627,13 @@ export interface AdditionInputs {
      * @minItems 1
      */
   circuitEntries?: AdditionCircuitEntry[];
+  /** Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel. */
+  subpanelOption?: AdditionInputsSubpanelOption;
+  /**
+     * Optional feeder distance in feet for a selected Addition subpanel.
+     * @minimum 0
+     */
+  feederDistance?: number;
   /** @minimum 1 */
   crewSize: number;
   /** @minimum 0 */

@@ -18,6 +18,7 @@ export * from './additionInputsBreakerProtectionType';
 export * from './additionInputsCableType';
 export * from './additionInputsPanelManufacturer';
 export * from './additionInputsRecessedLightSize';
+export * from './additionInputsSubpanelOption';
 export * from './assemblyLine';
 export * from './bathroomInputs';
 export * from './bathroomInputsCableType';

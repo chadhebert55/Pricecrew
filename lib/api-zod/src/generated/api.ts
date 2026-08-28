@@ -291,6 +291,8 @@ export const createQuoteBodyJobInputsFourHomeRunLengthMin = 0;
 
 
 
+export const createQuoteBodyJobInputsFourFeederDistanceMin = 0;
+
 
 export const createQuoteBodyJobInputsFourCrewHoursMin = 0;
 
@@ -732,6 +734,8 @@ export const CreateQuoteBody = zod.object({
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
+  "subpanelOption": zod.enum(['No Subpanel', '60A Subpanel', '100A Subpanel']).optional().describe('Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.'),
+  "feederDistance": zod.number().min(createQuoteBodyJobInputsFourFeederDistanceMin).optional().describe('Optional feeder distance in feet for a selected Addition subpanel.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(createQuoteBodyJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -1168,6 +1172,8 @@ export const createQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 export const createQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
 
+
+export const createQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
 
 
 export const createQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
@@ -1622,6 +1628,8 @@ export const CreateQuoteResponse = zod.object({
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
+  "subpanelOption": zod.enum(['No Subpanel', '60A Subpanel', '100A Subpanel']).optional().describe('Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.'),
+  "feederDistance": zod.number().min(createQuoteResponseTwoJobInputsFourFeederDistanceMin).optional().describe('Optional feeder distance in feet for a selected Addition subpanel.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(createQuoteResponseTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -2126,6 +2134,8 @@ export const previewQuoteBodyJobInputsFourHomeRunLengthMin = 0;
 
 
 
+export const previewQuoteBodyJobInputsFourFeederDistanceMin = 0;
+
 
 export const previewQuoteBodyJobInputsFourCrewHoursMin = 0;
 
@@ -2561,6 +2571,8 @@ export const PreviewQuoteBody = zod.object({
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
+  "subpanelOption": zod.enum(['No Subpanel', '60A Subpanel', '100A Subpanel']).optional().describe('Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.'),
+  "feederDistance": zod.number().min(previewQuoteBodyJobInputsFourFeederDistanceMin).optional().describe('Optional feeder distance in feet for a selected Addition subpanel.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(previewQuoteBodyJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -3151,6 +3163,8 @@ export const getQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
 
 
+export const getQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
+
 
 export const getQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
 
@@ -3604,6 +3618,8 @@ export const GetQuoteResponse = zod.object({
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
+  "subpanelOption": zod.enum(['No Subpanel', '60A Subpanel', '100A Subpanel']).optional().describe('Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.'),
+  "feederDistance": zod.number().min(getQuoteResponseTwoJobInputsFourFeederDistanceMin).optional().describe('Optional feeder distance in feet for a selected Addition subpanel.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(getQuoteResponseTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -4134,6 +4150,8 @@ export const updateQuoteResponseOneTwoJobInputsFourHomeRunLengthMin = 0;
 
 
 
+export const updateQuoteResponseOneTwoJobInputsFourFeederDistanceMin = 0;
+
 
 export const updateQuoteResponseOneTwoJobInputsFourCrewHoursMin = 0;
 
@@ -4587,6 +4605,8 @@ export const UpdateQuoteResponse = zod.object({
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
+  "subpanelOption": zod.enum(['No Subpanel', '60A Subpanel', '100A Subpanel']).optional().describe('Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.'),
+  "feederDistance": zod.number().min(updateQuoteResponseOneTwoJobInputsFourFeederDistanceMin).optional().describe('Optional feeder distance in feet for a selected Addition subpanel.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(updateQuoteResponseOneTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -5341,6 +5361,8 @@ export const duplicateQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
 
 
+export const duplicateQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
+
 
 export const duplicateQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
 
@@ -5794,6 +5816,8 @@ export const DuplicateQuoteResponse = zod.object({
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
+  "subpanelOption": zod.enum(['No Subpanel', '60A Subpanel', '100A Subpanel']).optional().describe('Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel.'),
+  "feederDistance": zod.number().min(duplicateQuoteResponseTwoJobInputsFourFeederDistanceMin).optional().describe('Optional feeder distance in feet for a selected Addition subpanel.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),

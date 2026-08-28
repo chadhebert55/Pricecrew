@@ -12,6 +12,7 @@ import type { AdditionInputsBreakerProtectionType } from './additionInputsBreake
 import type { AdditionInputsCableType } from './additionInputsCableType';
 import type { AdditionInputsPanelManufacturer } from './additionInputsPanelManufacturer';
 import type { AdditionInputsRecessedLightSize } from './additionInputsRecessedLightSize';
+import type { AdditionInputsSubpanelOption } from './additionInputsSubpanelOption';
 import type { LaborRateType } from './laborRateType';
 
 export interface AdditionInputs {
@@ -57,6 +58,13 @@ export interface AdditionInputs {
      * @minItems 1
      */
   circuitEntries?: AdditionCircuitEntry[];
+  /** Optional Addition subpanel scope. Legacy snapshots omit this field and mean No Subpanel. */
+  subpanelOption?: AdditionInputsSubpanelOption;
+  /**
+     * Optional feeder distance in feet for a selected Addition subpanel.
+     * @minimum 0
+     */
+  feederDistance?: number;
   /** @minimum 1 */
   crewSize: number;
   /** @minimum 0 */

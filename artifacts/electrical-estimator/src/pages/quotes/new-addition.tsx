@@ -37,6 +37,8 @@ const initialInputs: AdditionInputs = {
     cableType: "12/2 NM-B",
     quantity: 1,
   }],
+  subpanelOption: "No Subpanel",
+  feederDistance: 50,
   crewSize: 1,
   crewHours: 8,
   laborAdjustmentHours: 0,
@@ -147,6 +149,19 @@ export function NewAdditionQuote() {
 
   const setOptionalNumber = (key: keyof AdditionInputs, value: string) => {
     setInputs((current) => ({ ...current, [key]: value.trim() === "" ? undefined : nonNegativeNumber(value) }))
+  }
+
+  const hasSubpanel = inputs.subpanelOption !== undefined && inputs.subpanelOption !== "No Subpanel"
+  const setSubpanelIncluded = (included: boolean) => {
+    setInputs((current) => ({
+      ...current,
+      subpanelOption: included
+        ? current.subpanelOption === "60A Subpanel" || current.subpanelOption === "100A Subpanel"
+          ? current.subpanelOption
+          : "60A Subpanel"
+        : "No Subpanel",
+      feederDistance: included ? current.feederDistance ?? 50 : current.feederDistance,
+    }))
   }
 
   const applyAllowances = () => {
@@ -323,6 +338,63 @@ export function NewAdditionQuote() {
                       ))}
                     </div>
                   </div>
+                  <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="addition-add-subpanel">Add Subpanel?</Label>
+                        <select
+                          id="addition-add-subpanel"
+                          value={hasSubpanel ? "yes" : "no"}
+                          onChange={(event) => setSubpanelIncluded(event.target.value === "yes")}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                          Add a dedicated subpanel when the addition needs separate panel space. Missing verified catalog prices remain unresolved.
+                        </p>
+                      </div>
+                      {hasSubpanel && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="addition-subpanel-size">Subpanel size</Label>
+                            <select
+                              id="addition-subpanel-size"
+                              value={inputs.subpanelOption}
+                              onChange={(event) => setInputs((current) => ({
+                                ...current,
+                                subpanelOption: event.target.value as AdditionInputs["subpanelOption"],
+                              }))}
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                            >
+                              <option value="60A Subpanel">60A</option>
+                              <option value="100A Subpanel">100A</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Choose the feeder ampacity for the addition subpanel.
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="addition-feeder-distance">Feeder distance (FT)</Label>
+                            <Input
+                              id="addition-feeder-distance"
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={inputs.feederDistance ?? 0}
+                              onChange={(event) => setNumber("feederDistance", event.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {inputs.subpanelOption === "60A Subpanel"
+                                ? "Uses #6 copper SER as the proper 4-wire feeder when a verified catalog row is available."
+                                : "Uses #1 aluminum SER as the proper 4-wire feeder when a verified catalog row is available."}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
                   <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-2"><Label htmlFor="addition-labor-rate">Labor sell rate</Label><select id="addition-labor-rate" value={inputs.laborRateType ?? "residential"} onChange={(event) => setInputs((current) => ({ ...current, laborRateType: event.target.value as AdditionInputs["laborRateType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="residential">Residential</option><option value="commercial">Commercial</option></select></div>
                     <div className="space-y-2"><Label htmlFor="addition-crew-size">Crew size</Label><Input id="addition-crew-size" type="number" min="1" value={inputs.crewSize} onChange={(event) => setNumber("crewSize", event.target.value)} /></div>
@@ -337,7 +409,7 @@ export function NewAdditionQuote() {
 
           <div><div className="sticky top-6"><Card className="border-primary bg-secondary text-secondary-foreground shadow-lg"><CardHeader className="border-b border-secondary-border"><div className="flex items-center gap-2"><Calculator className="text-primary" size={20} /><CardTitle className="text-secondary-foreground">Calculation Preview</CardTitle></div><CardDescription className="text-secondary-foreground/70">Uses the same server estimator as saved quote creation.</CardDescription></CardHeader><CardContent className="space-y-5 pt-6">
             <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm"><Info className="mt-0.5 shrink-0 text-primary" size={16} /><p className="text-secondary-foreground/80">The square-foot figure creates starting allowances only. Final pricing is based on the selected scope, materials, labor, markup, and margin.</p></div>
-             {pricing && previewIsCurrent ? <><>{pricing.pricingWarnings.length > 0 && <div className="rounded-md border border-amber-400/40 bg-amber-400/10 p-3"><div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-300"><TriangleAlert size={16} /> Estimate needs confirmation</div><ul className="list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">{pricing.pricingWarnings.map((warning, index) => <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>)}</ul></div>}</><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="mb-2 font-semibold">Circuit schedule</p><div className="space-y-1 text-xs">{circuitEntries.map((entry, index) => <div key={index} className="flex justify-between gap-3"><span>{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span><span className="font-mono text-right">{entry.cableType}</span></div>)}</div></div><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div><div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>{pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}<div className="flex justify-between"><span>Gross Profit</span><span className="font-mono">${pricing.grossProfit.toFixed(2)}</span></div><div className="flex justify-between"><span>Gross Margin</span><span className="font-mono">{(pricing.grossMargin * 100).toFixed(1)}%</span></div><div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div></div></> : <div className="py-6 text-center text-sm text-secondary-foreground/70">Updating authoritative estimate...</div>}
+             {pricing && previewIsCurrent ? <><>{pricing.pricingWarnings.length > 0 && <div className="rounded-md border border-amber-400/40 bg-amber-400/10 p-3"><div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-300"><TriangleAlert size={16} /> Estimate needs confirmation</div><ul className="list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">{pricing.pricingWarnings.map((warning, index) => <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>)}</ul></div>}</><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="mb-2 font-semibold">Circuit schedule</p><div className="space-y-1 text-xs">{circuitEntries.map((entry, index) => <div key={index} className="flex justify-between gap-3"><span>{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span><span className="font-mono text-right">{entry.cableType}</span></div>)}</div></div><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="font-semibold">Subpanel scope</p><p className="mt-1 text-xs text-secondary-foreground/75">{inputs.subpanelOption ?? "No Subpanel"}{(inputs.subpanelOption ?? "No Subpanel") !== "No Subpanel" ? ` · ${inputs.feederDistance ?? 0} ft feeder` : ""}</p></div><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div><div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>{pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}<div className="flex justify-between"><span>Gross Profit</span><span className="font-mono">${pricing.grossProfit.toFixed(2)}</span></div><div className="flex justify-between"><span>Gross Margin</span><span className="font-mono">{(pricing.grossMargin * 100).toFixed(1)}%</span></div><div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div></div></> : <div className="py-6 text-center text-sm text-secondary-foreground/70">Updating authoritative estimate...</div>}
             <div className="space-y-3 border-t border-secondary-border pt-4"><div className="space-y-2"><Label htmlFor="addition-labor-override">Internal Labor Cost Override ($)</Label><Input id="addition-labor-override" min="0" step="0.01" type="number" value={laborOverride} onChange={(event) => setLaborOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.laborCost.toFixed(2)}` : "Optional"} /></div><div className="space-y-2"><Label htmlFor="addition-price-override">Selling Price Override ($)</Label><Input id="addition-price-override" min="0" step="0.01" type="number" value={sellingPriceOverride} onChange={(event) => setSellingPriceOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.calculatedSellingPrice.toFixed(2)}` : "Optional"} /></div></div>
             {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
             <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError}>{createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Addition Quote"}</Button>
