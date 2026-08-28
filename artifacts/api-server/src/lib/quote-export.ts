@@ -6,8 +6,51 @@ import { quotesTable, type AssemblyLineRecord } from "@workspace/db";
 
 export const JOBBER_DESTINATION = "jobber" as const;
 export const JOBBER_CSV_FORMAT = "csv" as const;
+export const JOBBER_CSV_VERSION = 1 as const;
+export const QUICKBOOKS_DESTINATION = "quickbooks" as const;
+export const QUICKBOOKS_CSV_FORMAT = "csv" as const;
+export const QUICKBOOKS_INVOICE_CSV_VERSION = 1 as const;
+export const HOUSECALL_PRO_DESTINATION = "housecall_pro" as const;
+export const HOUSECALL_PRO_CSV_FORMAT = "csv" as const;
+export const HOUSECALL_PRO_JOBS_CSV_VERSION = 1 as const;
 export const MAX_JOBBER_LINE_ITEMS = 10;
 export const MAX_JOBBER_ASSEMBLY_LINES = MAX_JOBBER_LINE_ITEMS - 1;
+
+export const QUICKBOOKS_INVOICE_HEADERS = [
+  "Invoice number",
+  "Customer",
+  "Invoice date",
+  "Due date",
+  "Item amount",
+] as const;
+
+export const HOUSECALL_PRO_JOB_HEADERS = [
+  "Customer ID",
+  "Display name",
+  "First name",
+  "Last name",
+  "Company",
+  "Service address",
+  "Billing address",
+  "Mobile number",
+  "Home number",
+  "Work number",
+  "Emails",
+  "Customer notes",
+  "Tags",
+  "Type",
+  "Notifications enabled",
+  "Is a contractor",
+  "Invoice number",
+  "Job ID",
+  "First line item description",
+  "Notes",
+  "Subtotal",
+  "Tax",
+  "Payment amount",
+  "Payment method type",
+  "Payment notes",
+] as const;
 
 export const JOBBER_QUOTE_HEADERS = [
   "Jobber Client ID",
@@ -82,6 +125,11 @@ type ResolvedMapping = {
   clientEmail: string;
   jobberClientId: string;
   jobberPropertyId: string;
+  quickBooksCustomer: string;
+  quickBooksInvoiceDate: string;
+  quickBooksDueDate: string;
+  housecallCustomerId: string;
+  housecallJobId: string;
   [key: string]: string;
 };
 
@@ -136,6 +184,11 @@ function resolveMapping(
     clientEmail,
     jobberClientId: mappingText(mapping, "jobberClientId"),
     jobberPropertyId: mappingText(mapping, "jobberPropertyId"),
+    quickBooksCustomer: mappingText(mapping, "quickBooksCustomer"),
+    quickBooksInvoiceDate: mappingText(mapping, "quickBooksInvoiceDate"),
+    quickBooksDueDate: mappingText(mapping, "quickBooksDueDate"),
+    housecallCustomerId: mappingText(mapping, "housecallCustomerId"),
+    housecallJobId: mappingText(mapping, "housecallJobId"),
   };
 }
 
@@ -430,7 +483,302 @@ export function buildJobberQuoteCsv(
   };
 }
 
-export function quoteExportFilename(quote: QuoteRecord) {
-  const safeQuoteNumber = quote.quoteNumber.replace(/[^a-z0-9_-]+/gi, "-");
-  return `quote-${safeQuoteNumber || quote.id}-jobber.csv`;
+function savedQuoteIssues(quote: QuoteRecord) {
+  const issues: QuoteExportPreflightIssue[] = [];
+  if (!text(quote.quoteNumber)) {
+    issues.push(
+      issue(
+        "QUOTE_NUMBER_REQUIRED",
+        "quoteNumber",
+        "The saved quote number is missing and must be repaired before export.",
+      ),
+    );
+  }
+  if (!text(quote.projectName)) {
+    issues.push(
+      issue(
+        "QUOTE_TITLE_REQUIRED",
+        "projectName",
+        "The saved project name is missing and must be repaired before export.",
+      ),
+    );
+  }
+  const finalSellingPrice = quote.pricing?.finalSellingPrice;
+  if (!isFiniteAmount(finalSellingPrice)) {
+    issues.push(
+      issue(
+        "FINAL_PRICE_INVALID",
+        "pricing.finalSellingPrice",
+        "The saved final selling price is missing or invalid; save a valid quote before exporting.",
+      ),
+    );
+  }
+  if (!isFiniteAmount(quote.total)) {
+    issues.push(
+      issue(
+        "QUOTE_TOTAL_INVALID",
+        "total",
+        "The saved quote total is missing or invalid; this quote cannot be exported safely.",
+      ),
+    );
+  } else if (
+    isFiniteAmount(finalSellingPrice) &&
+    cents(quote.total) !== cents(finalSellingPrice)
+  ) {
+    issues.push(
+      issue(
+        "SAVED_TOTAL_MISMATCH",
+        "total",
+        "The saved quote total does not match its saved final selling price. No recalculation was performed; repair the quote before exporting.",
+      ),
+    );
+  }
+  return issues;
 }
+
+function validIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
+}
+
+export function preflightQuickBooksQuoteExport(
+  quote: QuoteRecord,
+  mapping: QuoteExportMapping,
+) {
+  const resolved = resolveMapping(quote, mapping);
+  const issues = savedQuoteIssues(quote);
+  const customer = resolved.quickBooksCustomer || resolved.clientDisplayName;
+  if (!customer) {
+    issues.push(
+      issue(
+        "QUICKBOOKS_CUSTOMER_REQUIRED",
+        "mapping.quickBooksCustomer",
+        "Provide the QuickBooks customer name exactly as it appears in QuickBooks Online.",
+      ),
+    );
+  }
+  if (!validIsoDate(resolved.quickBooksInvoiceDate)) {
+    issues.push(
+      issue(
+        "QUICKBOOKS_INVOICE_DATE_REQUIRED",
+        "mapping.quickBooksInvoiceDate",
+        "Provide an invoice date in YYYY-MM-DD format.",
+      ),
+    );
+  }
+  if (!validIsoDate(resolved.quickBooksDueDate)) {
+    issues.push(
+      issue(
+        "QUICKBOOKS_DUE_DATE_REQUIRED",
+        "mapping.quickBooksDueDate",
+        "Provide a due date in YYYY-MM-DD format.",
+      ),
+    );
+  }
+  if (
+    validIsoDate(resolved.quickBooksInvoiceDate) &&
+    validIsoDate(resolved.quickBooksDueDate) &&
+    resolved.quickBooksDueDate < resolved.quickBooksInvoiceDate
+  ) {
+    issues.push(
+      issue(
+        "QUICKBOOKS_DUE_DATE_BEFORE_INVOICE",
+        "mapping.quickBooksDueDate",
+        "The QuickBooks due date cannot be before the invoice date.",
+      ),
+    );
+  }
+  return issues;
+}
+
+export function buildQuickBooksQuoteCsv(
+  quote: QuoteRecord,
+  mapping: QuoteExportMapping,
+) {
+  const issues = preflightQuickBooksQuoteExport(quote, mapping);
+  if (issues.length > 0) return { issues, csv: null as string | null };
+  const resolved = resolveMapping(quote, mapping);
+  const values = [
+    quote.quoteNumber,
+    resolved.quickBooksCustomer || resolved.clientDisplayName,
+    resolved.quickBooksInvoiceDate,
+    resolved.quickBooksDueDate,
+    quote.pricing.finalSellingPrice.toFixed(2),
+  ];
+  return {
+    issues: [] as QuoteExportPreflightIssue[],
+    csv:
+      [[...QUICKBOOKS_INVOICE_HEADERS], values]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\r\n") + "\r\n",
+  };
+}
+
+function combinedAddress(resolved: ResolvedMapping, prefix: "property" | "billing") {
+  return [
+    resolved[`${prefix}Street1`],
+    resolved[`${prefix}Street2`],
+    resolved[`${prefix}City`],
+    resolved[`${prefix}StateProvince`],
+    resolved[`${prefix}ZipPostalCode`],
+    resolved[`${prefix}Country`],
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function validHousecallPhone(value: string) {
+  if (!value) return true;
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 10 || digits.length === 11;
+}
+
+export function preflightHousecallProQuoteExport(
+  quote: QuoteRecord,
+  mapping: QuoteExportMapping,
+) {
+  const resolved = resolveMapping(quote, mapping);
+  const issues = savedQuoteIssues(quote);
+  if (
+    !resolved.housecallCustomerId &&
+    !resolved.clientDisplayName &&
+    !resolved.clientEmail
+  ) {
+    issues.push(
+      issue(
+        "HOUSECALL_CUSTOMER_IDENTITY_REQUIRED",
+        "mapping.clientFirstName",
+        "Provide a Housecall Pro Customer ID, customer name, company, or email.",
+      ),
+    );
+  }
+  if (resolved.housecallCustomerId.length > 191) {
+    issues.push(
+      issue(
+        "HOUSECALL_CUSTOMER_ID_TOO_LONG",
+        "mapping.housecallCustomerId",
+        "Housecall Pro Customer ID must be 191 characters or fewer.",
+      ),
+    );
+  }
+  if (resolved.housecallJobId.length > 191) {
+    issues.push(
+      issue(
+        "HOUSECALL_JOB_ID_TOO_LONG",
+        "mapping.housecallJobId",
+        "Housecall Pro Job ID must be 191 characters or fewer.",
+      ),
+    );
+  }
+  if (resolved.clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resolved.clientEmail)) {
+    issues.push(
+      issue(
+        "CLIENT_EMAIL_INVALID",
+        "mapping.clientEmail",
+        "Enter a valid customer email address or clear this optional field.",
+      ),
+    );
+  }
+  (
+    [
+      ["clientMobilePhone", resolved.clientMobilePhone],
+      ["clientHomePhone", resolved.clientHomePhone],
+      ["clientWorkPhone", resolved.clientWorkPhone],
+    ] as const
+  ).forEach(([field, value]) => {
+    if (!validHousecallPhone(value)) {
+      issues.push(
+        issue(
+          "HOUSECALL_PHONE_INVALID",
+          `mapping.${field}`,
+          "Housecall Pro phone numbers must contain 10 or 11 digits.",
+        ),
+      );
+    }
+  });
+  return issues;
+}
+
+export function buildHousecallProQuoteCsv(
+  quote: QuoteRecord,
+  mapping: QuoteExportMapping,
+) {
+  const issues = preflightHousecallProQuoteExport(quote, mapping);
+  if (issues.length > 0) return { issues, csv: null as string | null };
+  const resolved = resolveMapping(quote, mapping);
+  const values = [
+    resolved.housecallCustomerId,
+    resolved.clientDisplayName,
+    resolved.clientFirstName,
+    resolved.clientLastName,
+    resolved.clientCompanyName,
+    combinedAddress(resolved, "property"),
+    combinedAddress(resolved, "billing"),
+    resolved.clientMobilePhone,
+    resolved.clientHomePhone,
+    resolved.clientWorkPhone,
+    resolved.clientEmail,
+    "",
+    "",
+    resolved.clientCompanyName ? "business" : "homeowner",
+    "",
+    "",
+    quote.quoteNumber,
+    resolved.housecallJobId,
+    quote.projectName,
+    quote.proposalDescription,
+    quote.pricing.finalSellingPrice.toFixed(2),
+    "",
+    "",
+    "",
+    "",
+  ];
+  return {
+    issues: [] as QuoteExportPreflightIssue[],
+    csv:
+      [[...HOUSECALL_PRO_JOB_HEADERS], values]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\r\n") + "\r\n",
+  };
+}
+
+export function quoteExportFilename(
+  quote: QuoteRecord,
+  destination:
+    | typeof JOBBER_DESTINATION
+    | typeof QUICKBOOKS_DESTINATION
+    | typeof HOUSECALL_PRO_DESTINATION = JOBBER_DESTINATION,
+) {
+  const safeQuoteNumber = quote.quoteNumber.replace(/[^a-z0-9_-]+/gi, "-");
+  const provider =
+    destination === HOUSECALL_PRO_DESTINATION ? "housecall-pro" : destination;
+  return `quote-${safeQuoteNumber || quote.id}-${provider}.csv`;
+}
+
+export const QUOTE_EXPORT_ADAPTERS_V1 = {
+  [JOBBER_DESTINATION]: {
+    destination: JOBBER_DESTINATION,
+    format: JOBBER_CSV_FORMAT,
+    version: JOBBER_CSV_VERSION,
+    headers: JOBBER_QUOTE_HEADERS,
+    preflight: preflightJobberQuoteExport,
+    build: buildJobberQuoteCsv,
+  },
+  [QUICKBOOKS_DESTINATION]: {
+    destination: QUICKBOOKS_DESTINATION,
+    format: QUICKBOOKS_CSV_FORMAT,
+    version: QUICKBOOKS_INVOICE_CSV_VERSION,
+    headers: QUICKBOOKS_INVOICE_HEADERS,
+    preflight: preflightQuickBooksQuoteExport,
+    build: buildQuickBooksQuoteCsv,
+  },
+  [HOUSECALL_PRO_DESTINATION]: {
+    destination: HOUSECALL_PRO_DESTINATION,
+    format: HOUSECALL_PRO_CSV_FORMAT,
+    version: HOUSECALL_PRO_JOBS_CSV_VERSION,
+    headers: HOUSECALL_PRO_JOB_HEADERS,
+    preflight: preflightHousecallProQuoteExport,
+    build: buildHousecallProQuoteCsv,
+  },
+} as const;

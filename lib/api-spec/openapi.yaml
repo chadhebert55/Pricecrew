@@ -368,10 +368,76 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/QuoteExportRequest"
+              $ref: "#/components/schemas/JobberQuoteExportRequest"
       responses:
         "200":
           description: UTF-8 Jobber quote import CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+        "404":
+          description: Quote not found
+        "422":
+          description: Export data is incomplete or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteExportInvalid"
+  /quotes/{id}/exports/quickbooks.csv:
+    post:
+      operationId: exportQuickBooksQuoteCsv
+      tags: [quotes]
+      summary: Download a QuickBooks Online invoice CSV from a saved quote
+      description: Generates a UTF-8 QuickBooks Online invoice import CSV from the company-owned saved quote snapshot.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickBooksQuoteExportRequest"
+      responses:
+        "200":
+          description: UTF-8 QuickBooks Online invoice import CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+        "404":
+          description: Quote not found
+        "422":
+          description: Export data is incomplete or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteExportInvalid"
+  /quotes/{id}/exports/housecall-pro.csv:
+    post:
+      operationId: exportHousecallProQuoteCsv
+      tags: [quotes]
+      summary: Download a Housecall Pro jobs CSV from a saved quote
+      description: Generates a UTF-8 Housecall Pro jobs import CSV from the company-owned saved quote snapshot.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HousecallProQuoteExportRequest"
+      responses:
+        "200":
+          description: UTF-8 Housecall Pro jobs import CSV
           content:
             text/csv:
               schema:
@@ -962,7 +1028,43 @@ components:
       properties:
         destination:
           type: string
+          enum: [jobber, quickbooks, housecall_pro]
+        format:
+          type: string
+          enum: [csv]
+        mapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
+    JobberQuoteExportRequest:
+      type: object
+      required: [destination, format, mapping]
+      properties:
+        destination:
+          type: string
           enum: [jobber]
+        format:
+          type: string
+          enum: [csv]
+        mapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
+    QuickBooksQuoteExportRequest:
+      type: object
+      required: [destination, format, mapping]
+      properties:
+        destination:
+          type: string
+          enum: [quickbooks]
+        format:
+          type: string
+          enum: [csv]
+        mapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
+    HousecallProQuoteExportRequest:
+      type: object
+      required: [destination, format, mapping]
+      properties:
+        destination:
+          type: string
+          enum: [housecall_pro]
         format:
           type: string
           enum: [csv]
@@ -973,6 +1075,11 @@ components:
       additionalProperties: false
       properties:
         jobberClientId: { type: ["string", "null"] }
+        quickBooksCustomer: { type: ["string", "null"] }
+        quickBooksInvoiceDate: { type: ["string", "null"] }
+        quickBooksDueDate: { type: ["string", "null"] }
+        housecallCustomerId: { type: ["string", "null"] }
+        housecallJobId: { type: ["string", "null"] }
         clientTitle: { type: ["string", "null"] }
         clientFirstName: { type: ["string", "null"] }
         clientLastName: { type: ["string", "null"] }
@@ -1009,7 +1116,7 @@ components:
       type: object
       required: [destination, format, ready, issues, lineItemCount, quoteTotal, filename]
       properties:
-        destination: { type: string, enum: [jobber] }
+        destination: { type: string, enum: [jobber, quickbooks, housecall_pro] }
         format: { type: string, enum: [csv] }
         ready: { type: boolean }
         issues:

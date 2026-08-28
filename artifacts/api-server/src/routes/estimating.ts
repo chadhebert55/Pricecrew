@@ -10,8 +10,12 @@ import {
   GetCustomerResponse,
   DuplicateQuoteParams,
   DuplicateQuoteResponse,
+  ExportHousecallProQuoteCsvBody,
+  ExportHousecallProQuoteCsvParams,
   ExportJobberQuoteCsvBody,
   ExportJobberQuoteCsvParams,
+  ExportQuickBooksQuoteCsvBody,
+  ExportQuickBooksQuoteCsvParams,
   GetDashboardSummaryResponse,
   GetCustomerProposalParams,
   GetCustomerProposalResponse,
@@ -73,10 +77,13 @@ import {
 } from "@workspace/db";
 import { ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
-  buildJobberQuoteCsv,
+  HOUSECALL_PRO_CSV_FORMAT,
+  HOUSECALL_PRO_DESTINATION,
   JOBBER_CSV_FORMAT,
   JOBBER_DESTINATION,
-  preflightJobberQuoteExport,
+  QUOTE_EXPORT_ADAPTERS_V1,
+  QUICKBOOKS_CSV_FORMAT,
+  QUICKBOOKS_DESTINATION,
   quoteExportFilename,
 } from "../lib/quote-export";
 import {
@@ -1848,18 +1855,49 @@ router.post("/quotes/:id/exports/preflight", async (req, res): Promise<void> => 
     return;
   }
 
-  const issues = preflightJobberQuoteExport(quote, parsed.data.mapping);
+  const adapter =
+    parsed.data.destination === QUICKBOOKS_DESTINATION
+      ? {
+          destination: QUICKBOOKS_DESTINATION,
+          format: QUICKBOOKS_CSV_FORMAT,
+          issues: QUOTE_EXPORT_ADAPTERS_V1.quickbooks.preflight(
+            quote,
+            parsed.data.mapping,
+          ),
+          lineItemCount: 1,
+        }
+      : parsed.data.destination === HOUSECALL_PRO_DESTINATION
+        ? {
+            destination: HOUSECALL_PRO_DESTINATION,
+            format: HOUSECALL_PRO_CSV_FORMAT,
+            issues: QUOTE_EXPORT_ADAPTERS_V1.housecall_pro.preflight(
+              quote,
+              parsed.data.mapping,
+            ),
+            lineItemCount: 1,
+          }
+        : {
+            destination: JOBBER_DESTINATION,
+            format: JOBBER_CSV_FORMAT,
+            issues: QUOTE_EXPORT_ADAPTERS_V1.jobber.preflight(
+              quote,
+              parsed.data.mapping,
+            ),
+            lineItemCount: Array.isArray(quote.assembly)
+              ? quote.assembly.length + 1
+              : 0,
+          };
   res.json(
     PreflightQuoteExportResponse.parse({
-      destination: JOBBER_DESTINATION,
-      format: JOBBER_CSV_FORMAT,
-      ready: issues.length === 0,
-      issues,
-      lineItemCount: Array.isArray(quote.assembly) ? quote.assembly.length + 1 : 0,
+      destination: adapter.destination,
+      format: adapter.format,
+      ready: adapter.issues.length === 0,
+      issues: adapter.issues,
+      lineItemCount: adapter.lineItemCount,
       quoteTotal: Number.isFinite(quote.pricing?.finalSellingPrice)
         ? quote.pricing.finalSellingPrice
         : null,
-      filename: quoteExportFilename(quote),
+      filename: quoteExportFilename(quote, adapter.destination),
     }),
   );
 });
@@ -1872,8 +1910,12 @@ router.post("/quotes/:id/exports/jobber.csv", async (req, res): Promise<void> =>
     res.status(400).json({ error: params.error.message });
     return;
   }
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+  if (!parsed.success || parsed.data.destination !== JOBBER_DESTINATION) {
+    res.status(400).json({
+      error: parsed.success
+        ? "Jobber export requires the jobber destination."
+        : parsed.error.message,
+    });
     return;
   }
 
@@ -1891,7 +1933,10 @@ router.post("/quotes/:id/exports/jobber.csv", async (req, res): Promise<void> =>
     return;
   }
 
-  const result = buildJobberQuoteCsv(quote, parsed.data.mapping);
+  const result = QUOTE_EXPORT_ADAPTERS_V1.jobber.build(
+    quote,
+    parsed.data.mapping,
+  );
   if (!result.csv) {
     res.status(422).json({
       error: "Quote export is blocked until the listed issues are resolved.",
@@ -1910,6 +1955,118 @@ router.post("/quotes/:id/exports/jobber.csv", async (req, res): Promise<void> =>
     })
     .send(result.csv);
 });
+
+router.post(
+  "/quotes/:id/exports/quickbooks.csv",
+  async (req, res): Promise<void> => {
+    const companyId = requestCompanyId(req);
+    const params = ExportQuickBooksQuoteCsvParams.safeParse(req.params);
+    const parsed = ExportQuickBooksQuoteCsvBody.safeParse(req.body);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (!parsed.success || parsed.data.destination !== QUICKBOOKS_DESTINATION) {
+      res.status(400).json({
+        error: parsed.success
+          ? "QuickBooks export requires the quickbooks destination."
+          : parsed.error.message,
+      });
+      return;
+    }
+
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.id, params.data.id),
+          eq(quotesTable.companyId, companyId),
+        ),
+      );
+    if (!quote) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    const result = QUOTE_EXPORT_ADAPTERS_V1.quickbooks.build(
+      quote,
+      parsed.data.mapping,
+    );
+    if (!result.csv) {
+      res.status(422).json({
+        error: "Quote export is blocked until the listed issues are resolved.",
+        issues: result.issues,
+      });
+      return;
+    }
+    const filename = quoteExportFilename(quote, QUICKBOOKS_DESTINATION);
+    res
+      .status(200)
+      .set({
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "X-Content-Type-Options": "nosniff",
+      })
+      .send(result.csv);
+  },
+);
+
+router.post(
+  "/quotes/:id/exports/housecall-pro.csv",
+  async (req, res): Promise<void> => {
+    const companyId = requestCompanyId(req);
+    const params = ExportHousecallProQuoteCsvParams.safeParse(req.params);
+    const parsed = ExportHousecallProQuoteCsvBody.safeParse(req.body);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (!parsed.success || parsed.data.destination !== HOUSECALL_PRO_DESTINATION) {
+      res.status(400).json({
+        error: parsed.success
+          ? "Housecall Pro export requires the housecall_pro destination."
+          : parsed.error.message,
+      });
+      return;
+    }
+
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.id, params.data.id),
+          eq(quotesTable.companyId, companyId),
+        ),
+      );
+    if (!quote) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    const result = QUOTE_EXPORT_ADAPTERS_V1.housecall_pro.build(
+      quote,
+      parsed.data.mapping,
+    );
+    if (!result.csv) {
+      res.status(422).json({
+        error: "Quote export is blocked until the listed issues are resolved.",
+        issues: result.issues,
+      });
+      return;
+    }
+    const filename = quoteExportFilename(quote, HOUSECALL_PRO_DESTINATION);
+    res
+      .status(200)
+      .set({
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "X-Content-Type-Options": "nosniff",
+      })
+      .send(result.csv);
+  },
+);
 
 router.patch("/quotes/:id", async (req, res): Promise<void> => {
   const companyId = requestCompanyId(req);

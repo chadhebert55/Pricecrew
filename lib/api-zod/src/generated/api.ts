@@ -4942,10 +4942,15 @@ export const PreflightQuoteExportParams = zod.object({
 })
 
 export const PreflightQuoteExportBody = zod.object({
-  "destination": zod.enum(['jobber']),
+  "destination": zod.enum(['jobber', 'quickbooks', 'housecall_pro']),
   "format": zod.enum(['csv']),
   "mapping": zod.object({
   "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
   "clientTitle": zod.string().nullish(),
   "clientFirstName": zod.string().nullish(),
   "clientLastName": zod.string().nullish(),
@@ -4975,7 +4980,7 @@ export const PreflightQuoteExportBody = zod.object({
 })
 
 export const PreflightQuoteExportResponse = zod.object({
-  "destination": zod.enum(['jobber']),
+  "destination": zod.enum(['jobber', 'quickbooks', 'housecall_pro']),
   "format": zod.enum(['csv']),
   "ready": zod.boolean(),
   "issues": zod.array(zod.object({
@@ -5002,6 +5007,11 @@ export const ExportJobberQuoteCsvBody = zod.object({
   "format": zod.enum(['csv']),
   "mapping": zod.object({
   "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
   "clientTitle": zod.string().nullish(),
   "clientFirstName": zod.string().nullish(),
   "clientLastName": zod.string().nullish(),
@@ -5031,6 +5041,104 @@ export const ExportJobberQuoteCsvBody = zod.object({
 })
 
 export const ExportJobberQuoteCsvResponse = zod.unknown()
+
+
+/**
+ * Generates a UTF-8 QuickBooks Online invoice import CSV from the company-owned saved quote snapshot.
+ * @summary Download a QuickBooks Online invoice CSV from a saved quote
+ */
+export const ExportQuickBooksQuoteCsvParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ExportQuickBooksQuoteCsvBody = zod.object({
+  "destination": zod.enum(['quickbooks']),
+  "format": zod.enum(['csv']),
+  "mapping": zod.object({
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+})
+})
+
+export const ExportQuickBooksQuoteCsvResponse = zod.unknown()
+
+
+/**
+ * Generates a UTF-8 Housecall Pro jobs import CSV from the company-owned saved quote snapshot.
+ * @summary Download a Housecall Pro jobs CSV from a saved quote
+ */
+export const ExportHousecallProQuoteCsvParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ExportHousecallProQuoteCsvBody = zod.object({
+  "destination": zod.enum(['housecall_pro']),
+  "format": zod.enum(['csv']),
+  "mapping": zod.object({
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+})
+})
+
+export const ExportHousecallProQuoteCsvResponse = zod.unknown()
 
 
 /**

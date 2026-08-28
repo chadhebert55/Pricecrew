@@ -30,12 +30,15 @@ import type {
   DashboardSummary,
   EstimatePreview,
   HealthStatus,
+  HousecallProQuoteExportRequest,
+  JobberQuoteExportRequest,
   ListCustomersParams,
   ListQuotesParams,
   PriceBookItem,
   PriceBookItemUpdate,
   ProposalDecision,
   ProposalDecisionInput,
+  QuickBooksQuoteExportRequest,
   Quote,
   QuoteExportInvalid,
   QuoteExportPreflight,
@@ -1218,14 +1221,14 @@ export const getExportJobberQuoteCsvUrl = (id: number,) => {
  * @summary Download a Jobber-compatible CSV from a saved quote
  */
 export const exportJobberQuoteCsv = async (id: number,
-    quoteExportRequest: QuoteExportRequest, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+    jobberQuoteExportRequest: JobberQuoteExportRequest, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
 
   return customFetch<string>(getExportJobberQuoteCsvUrl(id),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(quoteExportRequest)
+    body: JSON.stringify(jobberQuoteExportRequest)
   }
 );}
 
@@ -1234,8 +1237,8 @@ export const exportJobberQuoteCsv = async (id: number,
 
 
 export const getExportJobberQuoteCsvMutationOptions = <TError = ErrorType<void | QuoteExportInvalid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<JobberQuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<JobberQuoteExportRequest>}, TContext> => {
 
 const mutationKey = ['exportJobberQuoteCsv'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1247,7 +1250,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, {id: number;data: BodyType<QuoteExportRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, {id: number;data: BodyType<JobberQuoteExportRequest>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  exportJobberQuoteCsv(id,data,requestOptions)
@@ -1261,21 +1264,167 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ExportJobberQuoteCsvMutationResult = NonNullable<Awaited<ReturnType<typeof exportJobberQuoteCsv>>>
-    export type ExportJobberQuoteCsvMutationBody = BodyType<QuoteExportRequest>
+    export type ExportJobberQuoteCsvMutationBody = BodyType<JobberQuoteExportRequest>
     export type ExportJobberQuoteCsvMutationError = ErrorType<void | QuoteExportInvalid>
 
     /**
  * @summary Download a Jobber-compatible CSV from a saved quote
  */
 export const useExportJobberQuoteCsv = <TError = ErrorType<void | QuoteExportInvalid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<JobberQuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof exportJobberQuoteCsv>>,
         TError,
-        {id: number;data: BodyType<QuoteExportRequest>},
+        {id: number;data: BodyType<JobberQuoteExportRequest>},
         TContext
       > => {
       return useMutation(getExportJobberQuoteCsvMutationOptions(options));
+    }
+
+export const getExportQuickBooksQuoteCsvUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/exports/quickbooks.csv`
+}
+
+/**
+ * Generates a UTF-8 QuickBooks Online invoice import CSV from the company-owned saved quote snapshot.
+ * @summary Download a QuickBooks Online invoice CSV from a saved quote
+ */
+export const exportQuickBooksQuoteCsv = async (id: number,
+    quickBooksQuoteExportRequest: QuickBooksQuoteExportRequest, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportQuickBooksQuoteCsvUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quickBooksQuoteExportRequest)
+  }
+);}
+
+
+
+
+
+export const getExportQuickBooksQuoteCsvMutationOptions = <TError = ErrorType<void | QuoteExportInvalid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportQuickBooksQuoteCsv>>, TError,{id: number;data: BodyType<QuickBooksQuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportQuickBooksQuoteCsv>>, TError,{id: number;data: BodyType<QuickBooksQuoteExportRequest>}, TContext> => {
+
+const mutationKey = ['exportQuickBooksQuoteCsv'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportQuickBooksQuoteCsv>>, {id: number;data: BodyType<QuickBooksQuoteExportRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  exportQuickBooksQuoteCsv(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExportQuickBooksQuoteCsvMutationResult = NonNullable<Awaited<ReturnType<typeof exportQuickBooksQuoteCsv>>>
+    export type ExportQuickBooksQuoteCsvMutationBody = BodyType<QuickBooksQuoteExportRequest>
+    export type ExportQuickBooksQuoteCsvMutationError = ErrorType<void | QuoteExportInvalid>
+
+    /**
+ * @summary Download a QuickBooks Online invoice CSV from a saved quote
+ */
+export const useExportQuickBooksQuoteCsv = <TError = ErrorType<void | QuoteExportInvalid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportQuickBooksQuoteCsv>>, TError,{id: number;data: BodyType<QuickBooksQuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof exportQuickBooksQuoteCsv>>,
+        TError,
+        {id: number;data: BodyType<QuickBooksQuoteExportRequest>},
+        TContext
+      > => {
+      return useMutation(getExportQuickBooksQuoteCsvMutationOptions(options));
+    }
+
+export const getExportHousecallProQuoteCsvUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/exports/housecall-pro.csv`
+}
+
+/**
+ * Generates a UTF-8 Housecall Pro jobs import CSV from the company-owned saved quote snapshot.
+ * @summary Download a Housecall Pro jobs CSV from a saved quote
+ */
+export const exportHousecallProQuoteCsv = async (id: number,
+    housecallProQuoteExportRequest: HousecallProQuoteExportRequest, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportHousecallProQuoteCsvUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(housecallProQuoteExportRequest)
+  }
+);}
+
+
+
+
+
+export const getExportHousecallProQuoteCsvMutationOptions = <TError = ErrorType<void | QuoteExportInvalid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportHousecallProQuoteCsv>>, TError,{id: number;data: BodyType<HousecallProQuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportHousecallProQuoteCsv>>, TError,{id: number;data: BodyType<HousecallProQuoteExportRequest>}, TContext> => {
+
+const mutationKey = ['exportHousecallProQuoteCsv'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportHousecallProQuoteCsv>>, {id: number;data: BodyType<HousecallProQuoteExportRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  exportHousecallProQuoteCsv(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExportHousecallProQuoteCsvMutationResult = NonNullable<Awaited<ReturnType<typeof exportHousecallProQuoteCsv>>>
+    export type ExportHousecallProQuoteCsvMutationBody = BodyType<HousecallProQuoteExportRequest>
+    export type ExportHousecallProQuoteCsvMutationError = ErrorType<void | QuoteExportInvalid>
+
+    /**
+ * @summary Download a Housecall Pro jobs CSV from a saved quote
+ */
+export const useExportHousecallProQuoteCsv = <TError = ErrorType<void | QuoteExportInvalid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportHousecallProQuoteCsv>>, TError,{id: number;data: BodyType<HousecallProQuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof exportHousecallProQuoteCsv>>,
+        TError,
+        {id: number;data: BodyType<HousecallProQuoteExportRequest>},
+        TContext
+      > => {
+      return useMutation(getExportHousecallProQuoteCsvMutationOptions(options));
     }
 
 export const getDuplicateQuoteUrl = (id: number,) => {

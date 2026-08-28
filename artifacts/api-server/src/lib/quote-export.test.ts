@@ -2,10 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { QuoteExportMapping } from "@workspace/api-zod";
 import {
+  buildHousecallProQuoteCsv,
   buildJobberQuoteCsv,
+  buildQuickBooksQuoteCsv,
+  HOUSECALL_PRO_JOB_HEADERS,
   JOBBER_QUOTE_HEADERS,
   MAX_JOBBER_ASSEMBLY_LINES,
+  preflightHousecallProQuoteExport,
   preflightJobberQuoteExport,
+  preflightQuickBooksQuoteExport,
+  QUICKBOOKS_INVOICE_HEADERS,
 } from "./quote-export";
 
 type SavedQuote = Parameters<typeof buildJobberQuoteCsv>[0];
@@ -252,4 +258,72 @@ test("Jobber preflight enforces the available assembly-line limit and line const
   const issues = preflightJobberQuoteExport(savedQuote({ assembly }), validMapping);
   assert.ok(issues.some((entry) => entry.code === "LINE_ITEM_LIMIT"));
   assert.ok(issues.some((entry) => entry.code === "LINE_QUANTITY_INVALID"));
+});
+
+test("QuickBooks Online V1 invoice CSV locks official required headers and preserves the saved override total", () => {
+  const result = buildQuickBooksQuoteCsv(savedQuote(), {
+    quickBooksCustomer: "Ada Lovelace",
+    quickBooksInvoiceDate: "2026-08-02",
+    quickBooksDueDate: "2026-09-01",
+  });
+  assert.deepEqual(result.issues, []);
+  assert.ok(result.csv);
+  const [headers, values] = parseCsvRows(result.csv);
+  assert.deepEqual(headers, [...QUICKBOOKS_INVOICE_HEADERS]);
+  assert.deepEqual(headers, [
+    "Invoice number",
+    "Customer",
+    "Invoice date",
+    "Due date",
+    "Item amount",
+  ]);
+  assert.equal(values?.[headers!.indexOf("Item amount")], "2345.67");
+  assert.equal(values?.[headers!.indexOf("Customer")], "Ada Lovelace");
+});
+
+test("QuickBooks Online preflight requires documented customer and date mappings", () => {
+  const issues = preflightQuickBooksQuoteExport(
+    savedQuote({ customerName: " " }),
+    {
+      quickBooksInvoiceDate: "2026-08-03",
+      quickBooksDueDate: "2026-08-02",
+    },
+  );
+  const codes = new Set(issues.map((entry) => entry.code));
+  assert.ok(codes.has("QUICKBOOKS_CUSTOMER_REQUIRED"));
+  assert.ok(codes.has("QUICKBOOKS_DUE_DATE_BEFORE_INVOICE"));
+});
+
+test("Housecall Pro V1 jobs CSV locks documented headers and accepted customer type while preserving the saved total", () => {
+  const result = buildHousecallProQuoteCsv(savedQuote(), {
+    clientCompanyName: "Analytical Engines LLC",
+    clientEmail: "ada@example.com",
+    housecallCustomerId: "customer-42",
+    housecallJobId: "job-42",
+    propertyStreet1: "123 Main St",
+    propertyCity: "Boston",
+    propertyStateProvince: "MA",
+    propertyZipPostalCode: "02108",
+  });
+  assert.deepEqual(result.issues, []);
+  assert.ok(result.csv);
+  const [headers, values] = parseCsvRows(result.csv);
+  assert.deepEqual(headers, [...HOUSECALL_PRO_JOB_HEADERS]);
+  assert.equal(values?.[headers!.indexOf("Type")], "business");
+  assert.equal(values?.[headers!.indexOf("Subtotal")], "2345.67");
+  assert.equal(values?.[headers!.indexOf("Tax")], "");
+  assert.equal(values?.[headers!.indexOf("Payment amount")], "");
+});
+
+test("Housecall Pro preflight enforces documented identity, ID, and phone constraints", () => {
+  const issues = preflightHousecallProQuoteExport(
+    savedQuote({ customerName: " ", customerEmail: null }),
+    {
+      housecallCustomerId: "x".repeat(192),
+      clientMobilePhone: "123",
+    },
+  );
+  const codes = new Set(issues.map((entry) => entry.code));
+  assert.ok(codes.has("HOUSECALL_CUSTOMER_ID_TOO_LONG"));
+  assert.ok(codes.has("HOUSECALL_PHONE_INVALID"));
 });

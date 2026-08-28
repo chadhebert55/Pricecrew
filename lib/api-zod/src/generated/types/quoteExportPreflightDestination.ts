@@ -11,4 +11,6 @@ export type QuoteExportPreflightDestination = typeof QuoteExportPreflightDestina
 
 export const QuoteExportPreflightDestination = {
   jobber: 'jobber',
+  quickbooks: 'quickbooks',
+  housecall_pro: 'housecall_pro',
 } as const;

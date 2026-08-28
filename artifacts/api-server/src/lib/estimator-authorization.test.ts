@@ -233,6 +233,54 @@ test("API authorization hides cross-company quotes and rejects invalid or draft 
       ).status,
       404,
     );
+    for (const provider of [
+      {
+        destination: "quickbooks",
+        path: "quickbooks.csv",
+        mapping: {
+          quickBooksCustomer: "Company B Customer",
+          quickBooksInvoiceDate: "2026-08-01",
+          quickBooksDueDate: "2026-08-31",
+        },
+      },
+      {
+        destination: "housecall_pro",
+        path: "housecall-pro.csv",
+        mapping: { housecallCustomerId: "company-b-customer" },
+      },
+    ] as const) {
+      const request = {
+        destination: provider.destination,
+        format: "csv",
+        mapping: provider.mapping,
+      };
+      assert.equal(
+        (
+          await fetch(
+            `${baseUrl}/api/quotes/${readyQuoteB.id}/exports/preflight`,
+            {
+              method: "POST",
+              headers: { ...authHeaders, "content-type": "application/json" },
+              body: JSON.stringify(request),
+            },
+          )
+        ).status,
+        404,
+      );
+      assert.equal(
+        (
+          await fetch(
+            `${baseUrl}/api/quotes/${readyQuoteB.id}/exports/${provider.path}`,
+            {
+              method: "POST",
+              headers: { ...authHeaders, "content-type": "application/json" },
+              body: JSON.stringify(request),
+            },
+          )
+        ).status,
+        404,
+      );
+    }
 
     const readyToken = createProposalShareToken(
       readyQuoteB.id,

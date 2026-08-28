@@ -1,6 +1,9 @@
 import {
+  exportHousecallProQuoteCsv,
   exportJobberQuoteCsv,
+  exportQuickBooksQuoteCsv,
   type QuoteExportMapping,
+  type QuoteExportRequestDestination,
   type QuoteExportPreflightIssue,
   usePreflightQuoteExport,
 } from "@workspace/api-client-react"
@@ -31,6 +34,7 @@ export function QuoteExportCard({
   const preflightExport = usePreflightQuoteExport()
   const initializedForId = useRef<number | null>(null)
   const [mapping, setMapping] = useState<QuoteExportMapping>({})
+  const [destination, setDestination] = useState<QuoteExportRequestDestination>("jobber")
   const [issues, setIssues] = useState<QuoteExportPreflightIssue[]>([])
   const [busy, setBusy] = useState(false)
 
@@ -43,6 +47,8 @@ export function QuoteExportCard({
       clientLastName: nameParts.slice(1).join(" "),
       clientEmail: customerEmail || "",
       propertyCountry: "United States",
+      quickBooksInvoiceDate: new Date().toISOString().slice(0, 10),
+      quickBooksDueDate: new Date().toISOString().slice(0, 10),
     })
     setIssues([])
   }, [customerEmail, customerName, quoteId])
@@ -63,7 +69,7 @@ export function QuoteExportCard({
     }
 
     const data = {
-      destination: "jobber" as const,
+      destination,
       format: "csv" as const,
       mapping,
     }
@@ -79,7 +85,24 @@ export function QuoteExportCard({
         return
       }
 
-      const csv = await exportJobberQuoteCsv(quoteId, data, { responseType: "text" })
+      const csv =
+        destination === "quickbooks"
+          ? await exportQuickBooksQuoteCsv(
+              quoteId,
+              { destination: "quickbooks", format: "csv", mapping },
+              { responseType: "text" },
+            )
+          : destination === "housecall_pro"
+            ? await exportHousecallProQuoteCsv(
+                quoteId,
+                { destination: "housecall_pro", format: "csv", mapping },
+                { responseType: "text" },
+              )
+            : await exportJobberQuoteCsv(
+                quoteId,
+                { destination: "jobber", format: "csv", mapping },
+                { responseType: "text" },
+              )
       const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
       const link = document.createElement("a")
       link.href = url
@@ -89,7 +112,7 @@ export function QuoteExportCard({
       link.remove()
       URL.revokeObjectURL(url)
       toast({
-        title: "Jobber CSV downloaded",
+        title: `${destinationLabel(destination)} CSV downloaded`,
         description: `The export preserves the saved quote total of $${preflight.quoteTotal?.toFixed(2) ?? "0.00"}.`,
       })
     } catch (error) {
@@ -116,7 +139,7 @@ export function QuoteExportCard({
               Prepare a provider-friendly file from this saved quote. This is a download for import—not a direct sync, connection, or send action.
             </CardDescription>
           </div>
-          <Button data-testid="button-download-jobber-csv" onClick={handleExport} disabled={busy}>
+          <Button data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy}>
             <Download size={16} className="mr-2" />
             {busy ? "Checking export..." : "Export Quote"}
           </Button>
@@ -124,7 +147,26 @@ export function QuoteExportCard({
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <ExportSelect label="Destination" value="jobber" option="Jobber" testId="select-export-destination" />
+          <div className="space-y-2">
+            <Label>Destination</Label>
+            <Select
+              value={destination}
+              onValueChange={(value) => {
+                setDestination(value as QuoteExportRequestDestination)
+                setIssues([])
+              }}
+            >
+              <SelectTrigger data-testid="select-export-destination"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="jobber">Jobber quote import</SelectItem>
+                <SelectItem value="quickbooks">QuickBooks Online invoice import</SelectItem>
+                <SelectItem value="housecall_pro">Housecall Pro jobs import</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Choose the documented import layout used by your contractor platform.
+            </p>
+          </div>
           <ExportSelect label="Format" value="csv" option="CSV import file" testId="select-export-format" />
         </div>
 
@@ -138,35 +180,62 @@ export function QuoteExportCard({
           </AlertDescription>
         </Alert>
 
-        <MappingSection
-          title="Jobber client mapping"
-          description="Optional Jobber IDs take priority. Otherwise Jobber can match or create a client from the contact values below."
-          fields={[
-            ["Jobber Client ID", "jobberClientId", "text"],
-            ["Client first name", "clientFirstName", "text"],
-            ["Client last name", "clientLastName", "text"],
-            ["Client company name", "clientCompanyName", "text"],
-            ["Client email", "clientEmail", "email"],
-            ["Client main phone", "clientMainPhone", "tel"],
-          ]}
-          mapping={mapping}
-          onChange={updateMapping}
-        />
-        <MappingSection
-          title="Jobber property mapping"
-          description="Provide an existing Jobber Property ID or at least Property Street 1 so Jobber can link or create the property."
-          fields={[
-            ["Jobber Property ID", "jobberPropertyId", "text"],
-            ["Property street 1", "propertyStreet1", "text"],
-            ["Property street 2", "propertyStreet2", "text"],
-            ["Property city", "propertyCity", "text"],
-            ["State / province", "propertyStateProvince", "text"],
-            ["ZIP / postal code", "propertyZipPostalCode", "text"],
-            ["Property country", "propertyCountry", "text"],
-          ]}
-          mapping={mapping}
-          onChange={updateMapping}
-        />
+        {destination === "quickbooks" ? (
+          <MappingSection
+            title="QuickBooks invoice mapping"
+            description="The customer must already exist in QuickBooks Online. Dates are required by its invoice importer."
+            fields={[
+              ["QuickBooks customer name", "quickBooksCustomer", "text"],
+              ["Invoice date (YYYY-MM-DD)", "quickBooksInvoiceDate", "date"],
+              ["Due date (YYYY-MM-DD)", "quickBooksDueDate", "date"],
+            ]}
+            mapping={mapping}
+            onChange={updateMapping}
+          />
+        ) : (
+          <>
+            <MappingSection
+              title={destination === "jobber" ? "Jobber client mapping" : "Housecall Pro customer mapping"}
+              description={destination === "jobber"
+                ? "Optional Jobber IDs take priority. Otherwise Jobber can match or create a client from the contact values below."
+                : "An optional Housecall Pro Customer ID takes priority. Otherwise provide a name, company, or email."}
+              fields={[
+                ...(destination === "jobber"
+                  ? [["Jobber Client ID", "jobberClientId", "text"] as FieldDefinition]
+                  : [
+                      ["Housecall Pro Customer ID", "housecallCustomerId", "text"] as FieldDefinition,
+                      ["Housecall Pro Job ID", "housecallJobId", "text"] as FieldDefinition,
+                    ]),
+                ["Client first name", "clientFirstName", "text"],
+                ["Client last name", "clientLastName", "text"],
+                ["Client company name", "clientCompanyName", "text"],
+                ["Client email", "clientEmail", "email"],
+                [destination === "jobber" ? "Client main phone" : "Mobile number", destination === "jobber" ? "clientMainPhone" : "clientMobilePhone", "tel"],
+              ]}
+              mapping={mapping}
+              onChange={updateMapping}
+            />
+            <MappingSection
+              title={destination === "jobber" ? "Jobber property mapping" : "Housecall Pro service address"}
+              description={destination === "jobber"
+                ? "Provide an existing Jobber Property ID or at least Property Street 1 so Jobber can link or create the property."
+                : "Address fields are optional and are combined into Housecall Pro's documented Service address field."}
+              fields={[
+                ...(destination === "jobber"
+                  ? [["Jobber Property ID", "jobberPropertyId", "text"] as FieldDefinition]
+                  : []),
+                ["Property street 1", "propertyStreet1", "text"],
+                ["Property street 2", "propertyStreet2", "text"],
+                ["Property city", "propertyCity", "text"],
+                ["State / province", "propertyStateProvince", "text"],
+                ["ZIP / postal code", "propertyZipPostalCode", "text"],
+                ["Property country", "propertyCountry", "text"],
+              ]}
+              mapping={mapping}
+              onChange={updateMapping}
+            />
+          </>
+        )}
 
         {issues.length > 0 && (
           <Alert variant="destructive" data-testid="alert-export-issues">
@@ -181,7 +250,10 @@ export function QuoteExportCard({
         )}
 
         <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-          Assembly rows keep saved quantities, units, sources, and costs with blank selling prices. A separate line carries the exact saved final selling price. Tax, discount, deposit, and taxable fields stay blank because they are not captured in the quote snapshot.
+          {destination === "jobber"
+            ? "Assembly rows keep saved quantities, units, sources, and costs with blank selling prices. A separate line carries the exact saved final selling price."
+            : "This format uses one row carrying the exact saved final selling price; it does not distribute that amount across assembly rows."}{" "}
+          Tax, discount, deposit, and taxable fields stay blank because they are not captured in the quote snapshot.
         </div>
       </CardContent>
     </Card>
@@ -197,13 +269,19 @@ function ExportSelect({ label, value, option, testId }: { label: string; value: 
         <SelectContent><SelectItem value={value}>{option}</SelectItem></SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground">
-        {value === "jobber" ? "Jobber is available now; additional contractor software can be added here later." : "Uses Jobber's current quote-import headers and accepted values."}
+        Uses the destination's documented import headers and accepted values.
       </p>
     </div>
   )
 }
 
-type FieldDefinition = [string, keyof QuoteExportMapping, "text" | "email" | "tel"]
+type FieldDefinition = [string, keyof QuoteExportMapping, "text" | "email" | "tel" | "date"]
+
+function destinationLabel(destination: QuoteExportRequestDestination) {
+  if (destination === "quickbooks") return "QuickBooks Online"
+  if (destination === "housecall_pro") return "Housecall Pro"
+  return "Jobber"
+}
 
 function MappingSection({
   title,

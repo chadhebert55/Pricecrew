@@ -11,4 +11,6 @@ export type QuoteExportRequestDestination = typeof QuoteExportRequestDestination
 
 export const QuoteExportRequestDestination = {
   jobber: 'jobber',
+  quickbooks: 'quickbooks',
+  housecall_pro: 'housecall_pro',
 } as const;

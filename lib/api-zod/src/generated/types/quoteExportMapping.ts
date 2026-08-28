@@ -10,6 +10,16 @@ export interface QuoteExportMapping {
   /** @nullable */
   jobberClientId?: string | null;
   /** @nullable */
+  quickBooksCustomer?: string | null;
+  /** @nullable */
+  quickBooksInvoiceDate?: string | null;
+  /** @nullable */
+  quickBooksDueDate?: string | null;
+  /** @nullable */
+  housecallCustomerId?: string | null;
+  /** @nullable */
+  housecallJobId?: string | null;
+  /** @nullable */
   clientTitle?: string | null;
   /** @nullable */
   clientFirstName?: string | null;

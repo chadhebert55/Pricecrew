@@ -1608,6 +1608,8 @@ export type QuoteExportRequestDestination = typeof QuoteExportRequestDestination
 
 export const QuoteExportRequestDestination = {
   jobber: 'jobber',
+  quickbooks: 'quickbooks',
+  housecall_pro: 'housecall_pro',
 } as const;
 
 export type QuoteExportRequestFormat = typeof QuoteExportRequestFormat[keyof typeof QuoteExportRequestFormat];
@@ -1620,6 +1622,16 @@ export const QuoteExportRequestFormat = {
 export interface QuoteExportMapping {
   /** @nullable */
   jobberClientId?: string | null;
+  /** @nullable */
+  quickBooksCustomer?: string | null;
+  /** @nullable */
+  quickBooksInvoiceDate?: string | null;
+  /** @nullable */
+  quickBooksDueDate?: string | null;
+  /** @nullable */
+  housecallCustomerId?: string | null;
+  /** @nullable */
+  housecallJobId?: string | null;
   /** @nullable */
   clientTitle?: string | null;
   /** @nullable */
@@ -1678,6 +1690,66 @@ export interface QuoteExportRequest {
   mapping: QuoteExportMapping;
 }
 
+export type JobberQuoteExportRequestDestination = typeof JobberQuoteExportRequestDestination[keyof typeof JobberQuoteExportRequestDestination];
+
+
+export const JobberQuoteExportRequestDestination = {
+  jobber: 'jobber',
+} as const;
+
+export type JobberQuoteExportRequestFormat = typeof JobberQuoteExportRequestFormat[keyof typeof JobberQuoteExportRequestFormat];
+
+
+export const JobberQuoteExportRequestFormat = {
+  csv: 'csv',
+} as const;
+
+export interface JobberQuoteExportRequest {
+  destination: JobberQuoteExportRequestDestination;
+  format: JobberQuoteExportRequestFormat;
+  mapping: QuoteExportMapping;
+}
+
+export type QuickBooksQuoteExportRequestDestination = typeof QuickBooksQuoteExportRequestDestination[keyof typeof QuickBooksQuoteExportRequestDestination];
+
+
+export const QuickBooksQuoteExportRequestDestination = {
+  quickbooks: 'quickbooks',
+} as const;
+
+export type QuickBooksQuoteExportRequestFormat = typeof QuickBooksQuoteExportRequestFormat[keyof typeof QuickBooksQuoteExportRequestFormat];
+
+
+export const QuickBooksQuoteExportRequestFormat = {
+  csv: 'csv',
+} as const;
+
+export interface QuickBooksQuoteExportRequest {
+  destination: QuickBooksQuoteExportRequestDestination;
+  format: QuickBooksQuoteExportRequestFormat;
+  mapping: QuoteExportMapping;
+}
+
+export type HousecallProQuoteExportRequestDestination = typeof HousecallProQuoteExportRequestDestination[keyof typeof HousecallProQuoteExportRequestDestination];
+
+
+export const HousecallProQuoteExportRequestDestination = {
+  housecall_pro: 'housecall_pro',
+} as const;
+
+export type HousecallProQuoteExportRequestFormat = typeof HousecallProQuoteExportRequestFormat[keyof typeof HousecallProQuoteExportRequestFormat];
+
+
+export const HousecallProQuoteExportRequestFormat = {
+  csv: 'csv',
+} as const;
+
+export interface HousecallProQuoteExportRequest {
+  destination: HousecallProQuoteExportRequestDestination;
+  format: HousecallProQuoteExportRequestFormat;
+  mapping: QuoteExportMapping;
+}
+
 export interface QuoteExportPreflightIssue {
   code: string;
   field: string;
@@ -1689,6 +1761,8 @@ export type QuoteExportPreflightDestination = typeof QuoteExportPreflightDestina
 
 export const QuoteExportPreflightDestination = {
   jobber: 'jobber',
+  quickbooks: 'quickbooks',
+  housecall_pro: 'housecall_pro',
 } as const;
 
 export type QuoteExportPreflightFormat = typeof QuoteExportPreflightFormat[keyof typeof QuoteExportPreflightFormat];
