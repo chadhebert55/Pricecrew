@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
@@ -1883,6 +1884,143 @@ test("price-book audit identifies unresolved active selections by builder", () =
     ).builders,
     ["Service Upgrade"],
   );
+});
+
+test("every service and panel builder material is assigned only to its consuming price-book audits", () => {
+  type BuilderName = "Service Upgrade" | "Panel Replacement";
+  type AuditInventoryItem =
+    | {
+        kind: "exact";
+        key: string;
+        builders: readonly BuilderName[];
+      }
+    | {
+        kind: "legacy";
+        key: string;
+        builders: readonly BuilderName[];
+      };
+
+  const inventory: readonly AuditInventoryItem[] = [
+    { kind: "exact", key: "304898", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "132873", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "1552599", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "79511", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "8891", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "512902", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "15350", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "152755", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "26750", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "25807", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "18745", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "26466", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "28551", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "79651", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "1266468", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "239663", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "300640", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "17742", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "35113", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "86163", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "160523", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "31589", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "9871", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "30952", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "1009903", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "152609", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "152791", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "32650", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "21719", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "legacy", key: "2-inch PVC mast raceway", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC weatherhead", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC expansion coupling", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC strap", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC hub", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC LB", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC 90", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC coupling", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "2-inch PVC mast related parts", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "3/4-inch PVC raceway", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "3/4-inch PVC fittings", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "intersystem bonding terminal", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "water-meter bonding clamp", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "4-square deep box", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "20A receptacle", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "20A receptacle plate", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "service duct seal", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "PVC primer", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "PVC glue", builders: ["Service Upgrade"] },
+    { kind: "legacy", key: "panel replacement feeder raceway", builders: ["Panel Replacement"] },
+    { kind: "legacy", key: "panel replacement feeder raceway fittings", builders: ["Panel Replacement"] },
+    { kind: "legacy", key: "panel knockout seal", builders: ["Panel Replacement"] },
+    { kind: "legacy", key: "4x4x3/4 plywood", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "legacy", key: "2x4x8 stud", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "legacy", key: "#8 solid grounding conductor", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "legacy", key: "#4 green bonding conductor", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "legacy", key: "anti-oxidation compound", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "legacy", key: "electrical tape", builders: ["Service Upgrade", "Panel Replacement"] },
+  ];
+
+  for (const selection of inventory) {
+    const audit = auditPriceBookItem(
+      catalogRow(
+        selection.kind === "exact" ? `Builder selection — SKU ${selection.key}` : selection.key,
+        0,
+        selection.kind === "exact" ? { supplierSku: selection.key } : {},
+      ),
+    );
+    assert.deepEqual(
+      audit.builders,
+      [...selection.builders],
+      `${selection.kind} builder material "${selection.key}" has incomplete or unrelated price-book audit metadata`,
+    );
+  }
+
+  const serviceBuilderSource = readFileSync(
+    new URL(
+      "../../../electrical-estimator/src/pages/quotes/new-service-upgrade.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const panelBuilderSource = readFileSync(
+    new URL(
+      "../../../electrical-estimator/src/pages/quotes/new-panel-replacement.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const serviceExactOptionsSource =
+    serviceBuilderSource.match(
+      /const exactCatalogOptions = \{([\s\S]*?)\} satisfies/,
+    )?.[1] ?? "";
+  const literalSkus = (source: string) =>
+    Array.from(source.matchAll(/\bSKU\s+(\d+)\b/g), (match) => match[1]);
+  const selectableSkusByBuilder = {
+    "Service Upgrade": new Set([
+      ...literalSkus(serviceBuilderSource),
+      ...Array.from(
+        serviceExactOptionsSource.matchAll(/["'](\d{4,})["']/g),
+        (match) => match[1],
+      ),
+    ]),
+    "Panel Replacement": new Set(literalSkus(panelBuilderSource)),
+  } satisfies Record<BuilderName, Set<string>>;
+
+  for (const [builder, selectableSkus] of Object.entries(
+    selectableSkusByBuilder,
+  ) as Array<[BuilderName, Set<string>]>) {
+    const inventoriedSkus = inventory
+      .filter(
+        (selection) =>
+          selection.kind === "exact" && selection.builders.includes(builder),
+      )
+      .map((selection) => selection.key);
+    assert.deepEqual(
+      [...selectableSkus].sort(),
+      inventoriedSkus.sort(),
+      `${builder} has a selectable exact catalog SKU missing from the price-book audit inventory`,
+    );
+  }
 });
 
 test("preview and create validation accept canonical and legacy switching values", () => {
