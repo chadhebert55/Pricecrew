@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './additionCircuitEntry';
+export * from './additionCircuitEntryAmperage';
+export * from './additionCircuitEntryCableType';
+export * from './additionCircuitEntryPoleCount';
+export * from './additionCircuitEntryProtectionType';
 export * from './additionInputs';
 export * from './additionInputsBreakerAmperage';
 export * from './additionInputsBreakerPoleCount';

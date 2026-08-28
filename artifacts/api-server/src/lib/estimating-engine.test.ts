@@ -856,6 +856,346 @@ test("addition preserves parity, editable pricing, audit, and cable safety", () 
   }).builders.includes("Addition"), true);
 });
 
+test("addition prices a mixed circuit schedule with independent quantities and verified sources", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
+    catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
+    catalogRow("Contractor-supplied ceiling fan", 180, { category: "Equipment" }),
+    catalogRow("10/2 NM-B cable", 1.25, { category: "Conductor" }),
+    catalogRow("Siemens Q230 30A 2-pole standard breaker", 25, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q230",
+      supplierSku: "SIEMENS-Q230",
+      amperage: 30,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+  ];
+  const mixedInputs: AdditionInputRecord = {
+    ...additionInputs,
+    circuitEntries: [
+      {
+        amperage: 15,
+        poleCount: 1,
+        protectionType: "AFCI",
+        cableType: "14/2 NM-B",
+        quantity: 2,
+      },
+      {
+        amperage: 20,
+        poleCount: 1,
+        protectionType: "Standard",
+        cableType: "12/2 NM-B",
+        quantity: 1,
+      },
+      {
+        amperage: 30,
+        poleCount: 2,
+        protectionType: "Standard",
+        cableType: "10/2 NM-B",
+        quantity: 1,
+      },
+    ],
+  };
+
+  const result = calculateAdditionEstimate(mixedInputs, settings, book);
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-1-cable")
+      ?.quantity,
+    120,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-1-breaker")
+      ?.quantity,
+    2,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-2-cable")
+      ?.unitCost,
+    0.56,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-2-cable")
+      ?.quantity,
+    35,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-3-cable")
+      ?.unitCost,
+    1.25,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-3-cable")
+      ?.quantity,
+    35,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-3-breaker")
+      ?.unitCost,
+    25,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-3-breaker")
+      ?.source.includes("SIEMENS-Q230"),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) => typeof warning !== "string" && warning.severity === "error",
+    ),
+    false,
+  );
+  const conductorLines = result.assembly.filter(
+    (line) =>
+      line.id.startsWith("addition-circuit-") && line.category === "Conductor",
+  );
+  assert.equal(
+    conductorLines.reduce((sum, line) => sum + line.quantity, 0),
+    190,
+  );
+  assert.equal(
+    conductorLines.reduce((sum, line) => sum + line.extendedCost, 0),
+    107.75,
+  );
+});
+
+test("addition schedule splits do not multiply shared route footage or pricing", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
+    catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
+    catalogRow("Contractor-supplied ceiling fan", 180, { category: "Equipment" }),
+  ];
+  const legacy = calculateAdditionEstimate(additionInputs, settings, book);
+  const split = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      circuitEntries: [
+        {
+          amperage: 15,
+          poleCount: 1,
+          protectionType: "AFCI",
+          cableType: "14/2 NM-B",
+          quantity: 1,
+        },
+        {
+          amperage: 15,
+          poleCount: 1,
+          protectionType: "AFCI",
+          cableType: "14/2 NM-B",
+          quantity: 1,
+        },
+      ],
+    },
+    settings,
+    book,
+  );
+  const splitCableLines = split.assembly.filter(
+    (line) =>
+      line.id.startsWith("addition-circuit-") && line.category === "Conductor",
+  );
+
+  assert.equal(
+    splitCableLines.reduce((sum, line) => sum + line.quantity, 0),
+    legacy.assembly.find((line) => line.id === "addition-cable")?.quantity,
+  );
+  assert.equal(
+    splitCableLines.reduce((sum, line) => sum + line.extendedCost, 0),
+    legacy.assembly.find((line) => line.id === "addition-cable")?.extendedCost,
+  );
+  assert.equal(
+    split.pricing.calculatedSellingPrice,
+    legacy.pricing.calculatedSellingPrice,
+  );
+});
+
+test("addition schedule pricing is not changed by legacy circuit allowance fields", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
+    catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
+    catalogRow("Contractor-supplied ceiling fan", 180, { category: "Equipment" }),
+  ];
+  const scheduledInputs: AdditionInputRecord = {
+    ...additionInputs,
+    circuitEntries: [
+      {
+        amperage: 15,
+        poleCount: 1,
+        protectionType: "AFCI",
+        cableType: "14/2 NM-B",
+        quantity: 2,
+      },
+    ],
+  };
+  const original = calculateAdditionEstimate(scheduledInputs, settings, book);
+  const staleLegacyAllowance = calculateAdditionEstimate(
+    { ...scheduledInputs, circuitCount: 12 },
+    settings,
+    book,
+  );
+
+  assert.deepEqual(staleLegacyAllowance.assembly, original.assembly);
+  assert.deepEqual(staleLegacyAllowance.pricing, original.pricing);
+});
+
+test("addition leaves incompatible or unverified circuit entries unresolved", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
+    catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
+    catalogRow("10/2 NM-B cable", 1.25, { category: "Conductor" }),
+  ];
+  const result = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      circuitEntries: [
+        {
+          amperage: 30,
+          poleCount: 2,
+          protectionType: "Standard",
+          cableType: "12/2 NM-B",
+          quantity: 1,
+        },
+      ],
+    },
+    settings,
+    book,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-1-cable")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-1-breaker")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "ADDITION_CIRCUIT_COMPATIBILITY_REVIEW" &&
+        warning.severity === "error",
+    ),
+    true,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED",
+    ),
+    true,
+  );
+});
+
+test("addition mixed circuit schedules have preview and create validation parity", () => {
+  const jobInputs = {
+    ...additionInputs,
+    circuitEntries: [
+      {
+        amperage: 15 as const,
+        poleCount: 1 as const,
+        protectionType: "AFCI" as const,
+        cableType: "14/2 NM-B" as const,
+        quantity: 2,
+      },
+      {
+        amperage: 20 as const,
+        poleCount: 1 as const,
+        protectionType: "GFCI" as const,
+        cableType: "12/2 NM-B" as const,
+        quantity: 1,
+      },
+      {
+        amperage: 30 as const,
+        poleCount: 2 as const,
+        protectionType: "Standard" as const,
+        cableType: "10/2 NM-B" as const,
+        quantity: 1,
+      },
+    ],
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({ module: "ADDITION", jobInputs }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Addition customer",
+      projectName: "Mixed circuit addition",
+      module: "ADDITION",
+      jobInputs,
+      proposalDescription: "Addition scope",
+    }).success,
+    true,
+  );
+
+  const invalidInputs = {
+    ...jobInputs,
+    circuitEntries: [{ ...jobInputs.circuitEntries[0], quantity: 0 }],
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "ADDITION",
+      jobInputs: invalidInputs,
+    }).success,
+    false,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Addition customer",
+      projectName: "Invalid mixed circuit addition",
+      module: "ADDITION",
+      jobInputs: invalidInputs,
+      proposalDescription: "Addition scope",
+    }).success,
+    false,
+  );
+});
+
+test("addition legacy scalar inputs retain their original assembly shape", () => {
+  const result = calculateAdditionEstimate(additionInputs, settings, priceBook);
+  assert.equal(result.assembly.some((line) => line.id === "addition-cable"), true);
+  assert.equal(
+    result.assembly.some((line) => line.id === "addition-breakers"),
+    true,
+  );
+  assert.equal(
+    result.assembly.some((line) => line.id.startsWith("addition-circuit-")),
+    false,
+  );
+});
+
+test("addition price-book audit includes mixed-circuit breaker and cable rows", () => {
+  assert.equal(
+    auditPriceBookItem({
+      category: "Protection",
+      item: "Siemens Q230 30A 2-pole standard breaker",
+      unitCost: 25,
+      isDefault: false,
+      supplierSku: "SIEMENS-Q230",
+    }).builders.includes("Addition"),
+    true,
+  );
+  assert.equal(
+    auditPriceBookItem({
+      category: "Conductor",
+      item: "10/2 NM-B cable",
+      unitCost: 1.25,
+      isDefault: false,
+      supplierSku: "10-2-NMB",
+    }).builders.includes("Addition"),
+    true,
+  );
+});
+
 test("panel replacement requires a complete supported panel, OCPD, and conductor tuple", () => {
   const result = calculatePanelReplacementEstimate(
     {

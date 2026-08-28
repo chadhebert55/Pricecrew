@@ -1335,6 +1335,31 @@ components:
           type: string
         guidance:
           type: string
+    AdditionCircuitEntry:
+      type: object
+      required:
+        - amperage
+        - poleCount
+        - protectionType
+        - cableType
+        - quantity
+      properties:
+        amperage:
+          type: number
+          enum: [15, 20, 30]
+        poleCount:
+          type: number
+          enum: [1, 2]
+        protectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        cableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/2 NM-B]
+        quantity:
+          type: number
+          minimum: 1
+      description: One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.
     AdditionInputs:
       type: object
       required:
@@ -1416,6 +1441,12 @@ components:
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+        circuitEntries:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/AdditionCircuitEntry"
+          description: Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.
         crewSize:
           type: number
           minimum: 1

@@ -1,4 +1,5 @@
 import type {
+  AdditionCircuitEntry,
   AdditionInputRecord,
   AssemblyLineRecord,
   BathroomInputRecord,
@@ -185,6 +186,17 @@ function warningMetadata(message: string): WarningMetadata {
         amperage: match?.[2] ? Number(match[2]) || null : null,
         poleCount: match?.[3] ? Number(match[3]) || null : null,
         protectionType: match?.[4] ?? null,
+      },
+    };
+  }
+  if (message.startsWith("Addition circuit compatibility is unresolved:")) {
+    return {
+      code: "ADDITION_CIRCUIT_COMPATIBILITY_REVIEW",
+      severity: "error",
+      category: "compatibility",
+      source: "addition-circuit-schedule",
+      context: {
+        rule: "each Addition circuit requires an explicitly compatible cable",
       },
     };
   }
@@ -699,6 +711,12 @@ export function auditPriceBookItem(
       builders.add("New House");
     }
     if (
+      (name.includes("15a") || name.includes("20a") || name.includes("30a")) &&
+      (name.includes("1 pole") || name.includes("2 pole"))
+    ) {
+      builders.add("Addition");
+    }
+    if (
       (name.includes("100a") ||
         name.includes("150a") ||
         name.includes("200a")) &&
@@ -722,6 +740,9 @@ export function auditPriceBookItem(
     }
     if (name.includes("10 2 nm b") || name.includes("8 2 nm b")) {
       builders.add("New House");
+    }
+    if (name.includes("10 2 nm b")) {
+      builders.add("Addition");
     }
     if (
       name.includes("8 3 nm b") ||
@@ -2459,44 +2480,118 @@ export function calculateAdditionEstimate(
     });
   }
 
-  const circuits = n(inputs.circuitCount);
-  const footage = n(inputs.routeLength) + n(inputs.homeRunLength) * circuits;
-  const compatible =
-    inputs.breakerAmperage !== 20 || inputs.cableType === "12/2 NM-B";
-  if (footage) {
-    if (!compatible) {
+  const circuitEntries = Array.isArray(inputs.circuitEntries)
+    ? inputs.circuitEntries
+    : null;
+  const additionCableCompatible = (entry: AdditionCircuitEntry) =>
+    entry.amperage === 15
+      ? entry.cableType === "12/2 NM-B" ||
+        entry.cableType === "14/2 NM-B" ||
+        entry.cableType === "14/3 NM-B"
+      : entry.amperage === 20
+        ? entry.cableType === "12/2 NM-B"
+        : entry.cableType === "10/2 NM-B";
+
+  if (circuitEntries) {
+    let commonRouteAllocated = false;
+    for (const [index, entry] of circuitEntries.entries()) {
+      const quantity = n(entry.quantity);
+      if (!quantity) continue;
+      const commonRouteFootage = commonRouteAllocated ? 0 : n(inputs.routeLength);
+      commonRouteAllocated = true;
+      const footage = commonRouteFootage + n(inputs.homeRunLength) * quantity;
+      const compatible = additionCableCompatible(entry);
+      if (!compatible) {
+        pricingWarnings.push(
+          `Addition circuit compatibility is unresolved: ${entry.cableType} cannot be used for a ${entry.amperage}A circuit. Select 12/2 NM-B for 20A circuits, 10/2 NM-B for 30A circuits, or 12/2/14/2/14/3 NM-B for 15A circuits; no cable cost was substituted.`,
+        );
+      }
+      if (footage) {
+        const cable = compatible
+          ? unitCost(`${entry.cableType} cable`, priceBook, pricingWarnings)
+          : {
+              value: 0,
+              source: "Unresolved — breaker amperage and cable type are incompatible",
+            };
+        addLine(assembly, {
+          id: `addition-circuit-${index + 1}-cable`,
+          category: "Conductor",
+          description: compatible
+            ? `${entry.amperage}A ${entry.poleCount}-pole ${entry.cableType} branch-circuit cable`
+            : `${entry.amperage}A ${entry.poleCount}-pole ${entry.cableType} cable — unresolved compatibility`,
+          quantity: footage,
+          unit: "ft",
+          unitCost: cable.value,
+          source: cable.source,
+        });
+      } else {
+        pricingWarnings.push(
+          `Addition circuit ${entry.amperage}A cable footage is zero. Confirm the common route and per-circuit home-run assumptions.`,
+        );
+      }
+      const breaker = resolveBreaker(
+        {
+          manufacturer: inputs.panelManufacturer,
+          amperage: entry.amperage,
+          poleCount: entry.poleCount,
+          protectionType: entry.protectionType,
+        },
+        priceBook,
+        pricingWarnings,
+      );
+      addLine(assembly, {
+        id: `addition-circuit-${index + 1}-breaker`,
+        category: "Protection",
+        description: breaker.description,
+        quantity,
+        unit: "ea",
+        unitCost: breaker.value,
+        source: breaker.source,
+      });
+    }
+  } else {
+    const circuits = n(inputs.circuitCount);
+    const footage = n(inputs.routeLength) + n(inputs.homeRunLength) * circuits;
+    const compatible =
+      inputs.breakerAmperage !== 20 || inputs.cableType === "12/2 NM-B";
+    if (footage) {
+      if (!compatible) {
+        pricingWarnings.push(
+          `Addition circuit compatibility is unresolved: ${inputs.cableType} cannot be used for a ${inputs.breakerAmperage}A circuit. Select 12/2 NM-B for 20A circuits; no cable cost was substituted.`,
+        );
+      }
+      const cable = compatible
+        ? unitCost(`${inputs.cableType} cable`, priceBook, pricingWarnings)
+        : { value: 0, source: "Unresolved — breaker amperage and cable type are incompatible" };
+      addLine(assembly, {
+        id: "addition-cable", category: "Conductor",
+        description: compatible
+          ? `${inputs.cableType} branch-circuit cable`
+          : `${inputs.cableType} / ${inputs.breakerAmperage}A circuit — unresolved compatibility`,
+        quantity: footage, unit: "ft", unitCost: cable.value, source: cable.source,
+      });
+    } else if (circuits) {
       pricingWarnings.push(
-        `Addition circuit compatibility is unresolved: ${inputs.cableType} cannot be used for a ${inputs.breakerAmperage}A circuit. Select 12/2 NM-B for 20A circuits; no cable cost was substituted.`,
+        "Addition cable footage is zero. Confirm the common route and per-circuit home-run assumptions.",
       );
     }
-    const cable = compatible
-      ? unitCost(`${inputs.cableType} cable`, priceBook, pricingWarnings)
-      : { value: 0, source: "Unresolved — breaker amperage and cable type are incompatible" };
-    addLine(assembly, {
-      id: "addition-cable", category: "Conductor",
-      description: compatible
-        ? `${inputs.cableType} branch-circuit cable`
-        : `${inputs.cableType} / ${inputs.breakerAmperage}A circuit — unresolved compatibility`,
-      quantity: footage, unit: "ft", unitCost: cable.value, source: cable.source,
-    });
-  } else if (circuits) {
-    pricingWarnings.push(
-      "Addition cable footage is zero. Confirm the common route and per-circuit home-run assumptions.",
-    );
+    if (circuits) {
+      const breaker = resolveBreaker({
+        manufacturer: inputs.panelManufacturer,
+        amperage: inputs.breakerAmperage,
+        poleCount: inputs.breakerPoleCount,
+        protectionType: inputs.breakerProtectionType,
+      }, priceBook, pricingWarnings);
+      addLine(assembly, {
+        id: "addition-breakers", category: "Protection",
+        description: breaker.description, quantity: circuits, unit: "ea",
+        unitCost: breaker.value, source: breaker.source,
+      });
+    }
   }
-  if (circuits) {
-    const breaker = resolveBreaker({
-      manufacturer: inputs.panelManufacturer,
-      amperage: inputs.breakerAmperage,
-      poleCount: inputs.breakerPoleCount,
-      protectionType: inputs.breakerProtectionType,
-    }, priceBook, pricingWarnings);
-    addLine(assembly, {
-      id: "addition-breakers", category: "Protection",
-      description: breaker.description, quantity: circuits, unit: "ea",
-      unitCost: breaker.value, source: breaker.source,
-    });
-  }
+  const circuits = circuitEntries
+    ? circuitEntries.reduce((sum, entry) => sum + n(entry.quantity), 0)
+    : n(inputs.circuitCount);
   const taskHours =
     n(inputs.receptacles) * 0.45 + n(inputs.switches) * 0.4 +
     n(inputs.dimmers) * 0.5 + n(inputs.recessedLights) +

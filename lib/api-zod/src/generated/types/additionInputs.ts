@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdditionCircuitEntry } from './additionCircuitEntry';
 import type { AdditionInputsBreakerAmperage } from './additionInputsBreakerAmperage';
 import type { AdditionInputsBreakerPoleCount } from './additionInputsBreakerPoleCount';
 import type { AdditionInputsBreakerProtectionType } from './additionInputsBreakerProtectionType';
@@ -51,6 +52,11 @@ export interface AdditionInputs {
   breakerPoleCount: AdditionInputsBreakerPoleCount;
   breakerProtectionType: AdditionInputsBreakerProtectionType;
   cableType: AdditionInputsCableType;
+  /**
+     * Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.
+     * @minItems 1
+     */
+  circuitEntries?: AdditionCircuitEntry[];
   /** @minimum 1 */
   crewSize: number;
   /** @minimum 0 */

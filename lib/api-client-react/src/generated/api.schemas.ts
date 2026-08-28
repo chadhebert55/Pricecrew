@@ -523,6 +523,55 @@ export const AdditionInputsCableType = {
   '14/3_NM-B': '14/3 NM-B',
 } as const;
 
+export type AdditionCircuitEntryAmperage = typeof AdditionCircuitEntryAmperage[keyof typeof AdditionCircuitEntryAmperage];
+
+
+export const AdditionCircuitEntryAmperage = {
+  NUMBER_15: 15,
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+} as const;
+
+export type AdditionCircuitEntryPoleCount = typeof AdditionCircuitEntryPoleCount[keyof typeof AdditionCircuitEntryPoleCount];
+
+
+export const AdditionCircuitEntryPoleCount = {
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+} as const;
+
+export type AdditionCircuitEntryProtectionType = typeof AdditionCircuitEntryProtectionType[keyof typeof AdditionCircuitEntryProtectionType];
+
+
+export const AdditionCircuitEntryProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type AdditionCircuitEntryCableType = typeof AdditionCircuitEntryCableType[keyof typeof AdditionCircuitEntryCableType];
+
+
+export const AdditionCircuitEntryCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+  '10/2_NM-B': '10/2 NM-B',
+} as const;
+
+/**
+ * One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.
+ */
+export interface AdditionCircuitEntry {
+  amperage: AdditionCircuitEntryAmperage;
+  poleCount: AdditionCircuitEntryPoleCount;
+  protectionType: AdditionCircuitEntryProtectionType;
+  cableType: AdditionCircuitEntryCableType;
+  /** @minimum 1 */
+  quantity: number;
+}
+
 export interface AdditionInputs {
   /** @minimum 0 */
   length: number;
@@ -561,6 +610,11 @@ export interface AdditionInputs {
   breakerPoleCount: AdditionInputsBreakerPoleCount;
   breakerProtectionType: AdditionInputsBreakerProtectionType;
   cableType: AdditionInputsCableType;
+  /**
+     * Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.
+     * @minItems 1
+     */
+  circuitEntries?: AdditionCircuitEntry[];
   /** @minimum 1 */
   crewSize: number;
   /** @minimum 0 */

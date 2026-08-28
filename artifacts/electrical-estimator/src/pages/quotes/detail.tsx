@@ -2,6 +2,7 @@ import {
   getGetDashboardSummaryQueryKey,
   getGetQuoteQueryKey,
   getListQuotesQueryKey,
+  type AdditionCircuitEntry,
   type QuoteStatus,
   useGetQuote,
   useUpdateQuote,
@@ -194,6 +195,10 @@ export function QuoteDetail() {
   const margin = quote.pricing.grossMargin * 100
   const estimatorNotes =
     typeof quote.jobInputs.notes === "string" ? quote.jobInputs.notes : ""
+  const additionCircuitEntries =
+    quote.module === "ADDITION"
+      ? (quote.jobInputs as { circuitEntries?: AdditionCircuitEntry[] }).circuitEntries
+      : undefined
   const unresolvedContractorMaterials = quote.assembly.some(
     (line) =>
       line.quantity > 0 &&
@@ -463,7 +468,7 @@ export function QuoteDetail() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 text-sm">
                 {Object.entries(quote.jobInputs).map(([key, value]) => {
-                  if (key === 'notes') return null;
+                   if (key === 'notes' || key === "circuitEntries") return null;
                   const label =
                     key === "bedroomCount"
                       ? "Bedroom Count"
@@ -477,6 +482,19 @@ export function QuoteDetail() {
                     </div>
                   )
                 })}
+                {additionCircuitEntries && additionCircuitEntries.length > 0 && (
+                  <div className="col-span-full mt-2 rounded-lg border border-primary/20 bg-primary/5 p-4" data-testid="addition-circuit-schedule">
+                    <h3 className="text-sm font-semibold">Circuit schedule</h3>
+                    <div className="mt-3 grid gap-2 text-sm">
+                      {additionCircuitEntries.map((entry, index) => (
+                        <div key={index} className="flex flex-col gap-1 rounded-md border bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="font-medium">{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span>
+                          <span className="text-muted-foreground">{entry.cableType}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               {estimatorNotes && (
                 <div className="mt-4 pt-4 border-t border-border">

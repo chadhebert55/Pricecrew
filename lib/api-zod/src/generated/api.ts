@@ -290,6 +290,8 @@ export const createQuoteBodyJobInputsFourRouteLengthMin = 0;
 export const createQuoteBodyJobInputsFourHomeRunLengthMin = 0;
 
 
+
+
 export const createQuoteBodyJobInputsFourCrewHoursMin = 0;
 
 export const createQuoteBodyJobInputsFiveRoomLengthMin = 0;
@@ -723,6 +725,13 @@ export const CreateQuoteBody = zod.object({
   "breakerPoleCount": zod.literal(1),
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "circuitEntries": zod.array(zod.object({
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "quantity": zod.number().min(1)
+}).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(createQuoteBodyJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -1157,6 +1166,8 @@ export const createQuoteResponseTwoJobInputsFourCircuitCountMin = 0;
 export const createQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
+
+
 
 
 export const createQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
@@ -1604,6 +1615,13 @@ export const CreateQuoteResponse = zod.object({
   "breakerPoleCount": zod.literal(1),
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "circuitEntries": zod.array(zod.object({
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "quantity": zod.number().min(1)
+}).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(createQuoteResponseTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -2107,6 +2125,8 @@ export const previewQuoteBodyJobInputsFourRouteLengthMin = 0;
 export const previewQuoteBodyJobInputsFourHomeRunLengthMin = 0;
 
 
+
+
 export const previewQuoteBodyJobInputsFourCrewHoursMin = 0;
 
 export const previewQuoteBodyJobInputsFiveRoomLengthMin = 0;
@@ -2534,6 +2554,13 @@ export const PreviewQuoteBody = zod.object({
   "breakerPoleCount": zod.literal(1),
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "circuitEntries": zod.array(zod.object({
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "quantity": zod.number().min(1)
+}).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(previewQuoteBodyJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -3123,6 +3150,8 @@ export const getQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 export const getQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
 
+
+
 export const getQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveRoomLengthMin = 0;
@@ -3568,6 +3597,13 @@ export const GetQuoteResponse = zod.object({
   "breakerPoleCount": zod.literal(1),
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "circuitEntries": zod.array(zod.object({
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "quantity": zod.number().min(1)
+}).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(getQuoteResponseTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -4097,6 +4133,8 @@ export const updateQuoteResponseOneTwoJobInputsFourRouteLengthMin = 0;
 export const updateQuoteResponseOneTwoJobInputsFourHomeRunLengthMin = 0;
 
 
+
+
 export const updateQuoteResponseOneTwoJobInputsFourCrewHoursMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFiveRoomLengthMin = 0;
@@ -4542,6 +4580,13 @@ export const UpdateQuoteResponse = zod.object({
   "breakerPoleCount": zod.literal(1),
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "circuitEntries": zod.array(zod.object({
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "quantity": zod.number().min(1)
+}).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(updateQuoteResponseOneTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
@@ -5295,6 +5340,8 @@ export const duplicateQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 export const duplicateQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
 
+
+
 export const duplicateQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFiveRoomLengthMin = 0;
@@ -5740,6 +5787,13 @@ export const DuplicateQuoteResponse = zod.object({
   "breakerPoleCount": zod.literal(1),
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
+  "circuitEntries": zod.array(zod.object({
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "quantity": zod.number().min(1)
+}).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsFourCrewHoursMin),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment applied once after crew and task labor.'),
