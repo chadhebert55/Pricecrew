@@ -183,6 +183,20 @@ export const createQuoteBodyJobInputsTwoAdditionalSwitchesMin = 0;
 
 export const createQuoteBodyJobInputsTwoRouteLengthMin = 0;
 
+export const createQuoteBodyJobInputsTwoExhaustFanMaterialCostOverrideMin = 0;
+
+export const createQuoteBodyJobInputsTwoFanLightMaterialCostOverrideMin = 0;
+
+export const createQuoteBodyJobInputsTwoFanLightHeatMaterialCostOverrideMin = 0;
+
+export const createQuoteBodyJobInputsTwoNewCircuitCableFootageMin = 0;
+
+export const createQuoteBodyJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
+
+export const createQuoteBodyJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
+
+export const createQuoteBodyJobInputsTwoNewCircuitLaborHoursMin = 0;
+
 export const createQuoteBodyJobInputsThreeRefrigeratorCircuitsMin = 0;
 
 export const createQuoteBodyJobInputsThreeDishwasherCircuitsMin = 0;
@@ -519,6 +533,14 @@ export const CreateQuoteBody = zod.object({
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "exhaustFanMaterialCostOverride": zod.number().min(createQuoteBodyJobInputsTwoExhaustFanMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.'),
+  "fanLightMaterialCostOverride": zod.number().min(createQuoteBodyJobInputsTwoFanLightMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light combination.'),
+  "fanLightHeatMaterialCostOverride": zod.number().min(createQuoteBodyJobInputsTwoFanLightHeatMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light\/heat combination.'),
+  "newCircuitCableFootage": zod.number().min(createQuoteBodyJobInputsTwoNewCircuitCableFootageMin).optional().describe('Dedicated 14\/2 NM-B footage for the optional new 15A bathroom circuit.'),
+  "newCircuitMaterialsQuantity": zod.number().min(createQuoteBodyJobInputsTwoNewCircuitMaterialsQuantityMin).optional().describe('Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.'),
+  "newCircuitMaterialsUnitCostOverride": zod.number().min(createQuoteBodyJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the new 15A circuit material package.'),
+  "newCircuitLaborHours": zod.number().min(createQuoteBodyJobInputsTwoNewCircuitLaborHoursMin).optional().describe('Labor hours for the optional new 15A bathroom circuit.'),
+  "newCircuitBreakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']).optional().describe('Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -847,6 +869,20 @@ export const createQuoteResponseTwoJobInputsTwoFanLightHeatUnitsMin = 0;
 export const createQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
 
 export const createQuoteResponseTwoJobInputsTwoRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoExhaustFanMaterialCostOverrideMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoFanLightMaterialCostOverrideMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoNewCircuitCableFootageMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
@@ -1187,6 +1223,14 @@ export const CreateQuoteResponse = zod.object({
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "exhaustFanMaterialCostOverride": zod.number().min(createQuoteResponseTwoJobInputsTwoExhaustFanMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.'),
+  "fanLightMaterialCostOverride": zod.number().min(createQuoteResponseTwoJobInputsTwoFanLightMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light combination.'),
+  "fanLightHeatMaterialCostOverride": zod.number().min(createQuoteResponseTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light\/heat combination.'),
+  "newCircuitCableFootage": zod.number().min(createQuoteResponseTwoJobInputsTwoNewCircuitCableFootageMin).optional().describe('Dedicated 14\/2 NM-B footage for the optional new 15A bathroom circuit.'),
+  "newCircuitMaterialsQuantity": zod.number().min(createQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin).optional().describe('Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.'),
+  "newCircuitMaterialsUnitCostOverride": zod.number().min(createQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the new 15A circuit material package.'),
+  "newCircuitLaborHours": zod.number().min(createQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin).optional().describe('Labor hours for the optional new 15A bathroom circuit.'),
+  "newCircuitBreakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']).optional().describe('Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -1552,6 +1596,20 @@ export const previewQuoteBodyJobInputsTwoAdditionalSwitchesMin = 0;
 
 export const previewQuoteBodyJobInputsTwoRouteLengthMin = 0;
 
+export const previewQuoteBodyJobInputsTwoExhaustFanMaterialCostOverrideMin = 0;
+
+export const previewQuoteBodyJobInputsTwoFanLightMaterialCostOverrideMin = 0;
+
+export const previewQuoteBodyJobInputsTwoFanLightHeatMaterialCostOverrideMin = 0;
+
+export const previewQuoteBodyJobInputsTwoNewCircuitCableFootageMin = 0;
+
+export const previewQuoteBodyJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
+
+export const previewQuoteBodyJobInputsTwoNewCircuitLaborHoursMin = 0;
+
 export const previewQuoteBodyJobInputsThreeRefrigeratorCircuitsMin = 0;
 
 export const previewQuoteBodyJobInputsThreeDishwasherCircuitsMin = 0;
@@ -1884,6 +1942,14 @@ export const PreviewQuoteBody = zod.object({
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "exhaustFanMaterialCostOverride": zod.number().min(previewQuoteBodyJobInputsTwoExhaustFanMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.'),
+  "fanLightMaterialCostOverride": zod.number().min(previewQuoteBodyJobInputsTwoFanLightMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light combination.'),
+  "fanLightHeatMaterialCostOverride": zod.number().min(previewQuoteBodyJobInputsTwoFanLightHeatMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light\/heat combination.'),
+  "newCircuitCableFootage": zod.number().min(previewQuoteBodyJobInputsTwoNewCircuitCableFootageMin).optional().describe('Dedicated 14\/2 NM-B footage for the optional new 15A bathroom circuit.'),
+  "newCircuitMaterialsQuantity": zod.number().min(previewQuoteBodyJobInputsTwoNewCircuitMaterialsQuantityMin).optional().describe('Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.'),
+  "newCircuitMaterialsUnitCostOverride": zod.number().min(previewQuoteBodyJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the new 15A circuit material package.'),
+  "newCircuitLaborHours": zod.number().min(previewQuoteBodyJobInputsTwoNewCircuitLaborHoursMin).optional().describe('Labor hours for the optional new 15A bathroom circuit.'),
+  "newCircuitBreakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']).optional().describe('Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -2298,6 +2364,20 @@ export const getQuoteResponseTwoJobInputsTwoAdditionalSwitchesMin = 0;
 
 export const getQuoteResponseTwoJobInputsTwoRouteLengthMin = 0;
 
+export const getQuoteResponseTwoJobInputsTwoExhaustFanMaterialCostOverrideMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoFanLightMaterialCostOverrideMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoNewCircuitCableFootageMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
+
 export const getQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin = 0;
@@ -2637,6 +2717,14 @@ export const GetQuoteResponse = zod.object({
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "exhaustFanMaterialCostOverride": zod.number().min(getQuoteResponseTwoJobInputsTwoExhaustFanMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.'),
+  "fanLightMaterialCostOverride": zod.number().min(getQuoteResponseTwoJobInputsTwoFanLightMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light combination.'),
+  "fanLightHeatMaterialCostOverride": zod.number().min(getQuoteResponseTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light\/heat combination.'),
+  "newCircuitCableFootage": zod.number().min(getQuoteResponseTwoJobInputsTwoNewCircuitCableFootageMin).optional().describe('Dedicated 14\/2 NM-B footage for the optional new 15A bathroom circuit.'),
+  "newCircuitMaterialsQuantity": zod.number().min(getQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin).optional().describe('Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.'),
+  "newCircuitMaterialsUnitCostOverride": zod.number().min(getQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the new 15A circuit material package.'),
+  "newCircuitLaborHours": zod.number().min(getQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin).optional().describe('Labor hours for the optional new 15A bathroom circuit.'),
+  "newCircuitBreakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']).optional().describe('Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),
@@ -3021,6 +3109,20 @@ export const updateQuoteResponseOneTwoJobInputsTwoAdditionalSwitchesMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsTwoRouteLengthMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsTwoExhaustFanMaterialCostOverrideMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoFanLightMaterialCostOverrideMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitCableFootageMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
+
 export const updateQuoteResponseOneTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsThreeDishwasherCircuitsMin = 0;
@@ -3360,6 +3462,14 @@ export const UpdateQuoteResponse = zod.object({
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.'),
+  "exhaustFanMaterialCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoExhaustFanMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.'),
+  "fanLightMaterialCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoFanLightMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light combination.'),
+  "fanLightHeatMaterialCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoFanLightHeatMaterialCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the contractor-supplied fan\/light\/heat combination.'),
+  "newCircuitCableFootage": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoNewCircuitCableFootageMin).optional().describe('Dedicated 14\/2 NM-B footage for the optional new 15A bathroom circuit.'),
+  "newCircuitMaterialsQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoNewCircuitMaterialsQuantityMin).optional().describe('Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.'),
+  "newCircuitMaterialsUnitCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin).optional().describe('Optional quote-local unit-cost override for the new 15A circuit material package.'),
+  "newCircuitLaborHours": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoNewCircuitLaborHoursMin).optional().describe('Labor hours for the optional new 15A bathroom circuit.'),
+  "newCircuitBreakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']).optional().describe('Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.'),
   "panelManufacturer": zod.string().optional(),
   "breakerAmperage": zod.number().optional(),
   "breakerPoleCount": zod.number().optional(),

@@ -93,6 +93,18 @@ export type BathroomInputRecord = {
   recessedLightSize?: RecessedLightSize;
   cableType?: CableType;
   laborAdjustmentHours?: number;
+  exhaustFanMaterialCostOverride?: number;
+  fanLightMaterialCostOverride?: number;
+  fanLightHeatMaterialCostOverride?: number;
+  newCircuitCableFootage?: number;
+  newCircuitMaterialsQuantity?: number;
+  newCircuitMaterialsUnitCostOverride?: number;
+  newCircuitLaborHours?: number;
+  newCircuitBreakerProtectionType?:
+    | "Standard"
+    | "GFCI"
+    | "AFCI"
+    | "Dual Function";
 };
 
 export type KitchenInputRecord = {

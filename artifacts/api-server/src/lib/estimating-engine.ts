@@ -1396,6 +1396,7 @@ export function calculateBathroomEstimate(
     quantity: number,
     customerSupplied = false,
     unit = "ea",
+    unitCostOverride?: number,
   ) => {
     const safeQuantity = Math.max(0, Number(quantity) || 0);
     if (safeQuantity === 0) return;
@@ -1406,7 +1407,24 @@ export function calculateBathroomEstimate(
           );
           return { value: 0, source: "Customer supplied fixture" };
         })()
-      : unitCost(key, priceBook, pricingWarnings);
+      : unitCostOverride !== undefined
+        ? (() => {
+            const override = Number(unitCostOverride);
+            if (Number.isFinite(override) && override > 0) {
+              return {
+                value: override,
+                source: "Quote-local material cost override",
+              };
+            }
+            pricingWarnings.push(
+              `Active material selection "${description}" has zero cost and is unresolved. Enter a positive quote material cost or clear the override to use the company price book.`,
+            );
+            return {
+              value: 0,
+              source: "Unresolved quote-local material cost override",
+            };
+          })()
+        : unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,
       category,
@@ -1439,9 +1457,9 @@ export function calculateBathroomEstimate(
     "vanity-lights",
     "Lighting",
     "Unverified allowance — vanity light",
-    "Vanity light allowance — fixture not verified",
+    "Customer-supplied vanity light fixture",
     inputs.vanityLights,
-    inputs.customerSuppliedFixtures,
+    true,
   );
   addPricedItem(
     "recessed-lights",
@@ -1451,7 +1469,7 @@ export function calculateBathroomEstimate(
       : JUNO_WF4_VERIFIED,
     `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
-    inputs.customerSuppliedFixtures,
+    false,
   );
   addPricedItem(
     "exhaust-fans",
@@ -1459,23 +1477,29 @@ export function calculateBathroomEstimate(
     "Panasonic FV-0511VF1 exhaust fan",
     "Panasonic FV-0511VF1 exhaust fan with new switch leg",
     inputs.exhaustFans,
-    inputs.customerSuppliedFixtures,
+    false,
+    "ea",
+    inputs.exhaustFanMaterialCostOverride,
   );
   addPricedItem(
     "fan-lights",
     "Ventilation",
-    "Unverified allowance — fan/light",
-    "Combination fan/light allowance — equipment not verified",
+    "Contractor-supplied bathroom fan/light combination",
+    "Contractor-supplied bathroom fan/light combination",
     inputs.fanLights,
-    inputs.customerSuppliedFixtures,
+    false,
+    "ea",
+    inputs.fanLightMaterialCostOverride,
   );
   addPricedItem(
     "fan-light-heat",
     "Ventilation",
-    "Unverified allowance — fan/light/heat",
-    "Combination fan/light/heat allowance — equipment not verified",
+    "Contractor-supplied bathroom fan/light/heat combination",
+    "Contractor-supplied bathroom fan/light/heat combination",
     inputs.fanLightHeatUnits,
-    inputs.customerSuppliedFixtures,
+    false,
+    "ea",
+    inputs.fanLightHeatMaterialCostOverride,
   );
   addPricedItem(
     "additional-switches",
@@ -1496,21 +1520,45 @@ export function calculateBathroomEstimate(
   }
 
   if (/new/i.test(inputs.circuitOption)) {
+    const circuitCableFootage = Number.isFinite(
+      Number(inputs.newCircuitCableFootage),
+    )
+      ? Math.max(0, Number(inputs.newCircuitCableFootage))
+      : Math.max(0, Number(inputs.routeLength) || 0);
     addPricedItem(
-      "bathroom-circuit",
-      "Circuit",
-      "Unverified allowance — bathroom circuit materials",
-      "New dedicated bathroom circuit materials allowance",
-      1,
+      "bathroom-15a-circuit-cable",
+      "Conductor",
+      "14/2 NM-B cable",
+      "14/2 NM-B cable for new 15A bathroom circuit",
+      circuitCableFootage,
+      false,
+      "ft",
     );
-    const breaker = resolveBreaker({
-      manufacturer: inputs.panelManufacturer ?? "",
-      amperage: inputs.breakerAmperage ?? 0,
-      poleCount: inputs.breakerPoleCount ?? 0,
-      protectionType: inputs.breakerProtectionType ?? "GFCI",
-    }, priceBook, pricingWarnings);
+    addPricedItem(
+      "bathroom-15a-circuit-materials",
+      "Circuit",
+      "Bathroom 15A circuit box and device materials",
+      "Normal box, device, connector, and circuit materials for new 15A bathroom circuit",
+      inputs.newCircuitMaterialsQuantity ?? 1,
+      false,
+      "package",
+      inputs.newCircuitMaterialsUnitCostOverride,
+    );
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer ?? "",
+        amperage: 15,
+        poleCount: 1,
+        protectionType:
+          inputs.newCircuitBreakerProtectionType ??
+          inputs.breakerProtectionType ??
+          "Standard",
+      },
+      priceBook,
+      pricingWarnings,
+    );
     addLine(assembly, {
-      id: "bathroom-circuit-protection",
+      id: "bathroom-15a-circuit-protection",
       category: "Protection",
       description: breaker.description,
       quantity: 1,
@@ -1587,7 +1635,11 @@ export function calculateBathroomEstimate(
     (inputs.heatedFloorCircuit ? 3 : 0) +
     inputs.additionalSwitches * 0.5 +
     routeLength / 30 +
-    (/new/i.test(inputs.circuitOption) ? 3 : 0) +
+    (/new/i.test(inputs.circuitOption)
+      ? Number.isFinite(Number(inputs.newCircuitLaborHours))
+        ? Math.max(0, Number(inputs.newCircuitLaborHours))
+        : 3
+      : 0) +
     (Number.isFinite(Number(inputs.laborAdjustmentHours))
       ? Number(inputs.laborAdjustmentHours)
       : 0);

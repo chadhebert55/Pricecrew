@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
@@ -53,13 +53,14 @@ function fail(message) {
   process.exitCode = 1;
 }
 
-const codegen = await run('pnpm', ['run', 'codegen'], {
-  cwd: workspaceRoot,
-});
+const generatedClient = join(
+  workspaceRoot,
+  'lib/api-client-react/src/generated/api.schemas.ts',
+);
 
-if (codegen.exitCode !== 0) {
+if (!existsSync(generatedClient)) {
   fail(
-    `Bundle-size check could not generate the API client (exit code ${codegen.exitCode}).`,
+    'Bundle-size check requires the committed generated API client. Run pnpm run codegen first.',
   );
 } else {
   const build = await run('pnpm', ['run', 'build'], {

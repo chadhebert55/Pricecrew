@@ -792,6 +792,38 @@ components:
         laborAdjustmentHours:
           type: number
           description: Quote-level adjustment added to the detailed task labor calculation.
+        exhaustFanMaterialCostOverride:
+          type: number
+          minimum: 0
+          description: Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.
+        fanLightMaterialCostOverride:
+          type: number
+          minimum: 0
+          description: Optional quote-local unit-cost override for the contractor-supplied fan/light combination.
+        fanLightHeatMaterialCostOverride:
+          type: number
+          minimum: 0
+          description: Optional quote-local unit-cost override for the contractor-supplied fan/light/heat combination.
+        newCircuitCableFootage:
+          type: number
+          minimum: 0
+          description: Dedicated 14/2 NM-B footage for the optional new 15A bathroom circuit.
+        newCircuitMaterialsQuantity:
+          type: number
+          minimum: 0
+          description: Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.
+        newCircuitMaterialsUnitCostOverride:
+          type: number
+          minimum: 0
+          description: Optional quote-local unit-cost override for the new 15A circuit material package.
+        newCircuitLaborHours:
+          type: number
+          minimum: 0
+          description: Labor hours for the optional new 15A bathroom circuit.
+        newCircuitBreakerProtectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+          description: Exact protection type for the optional 15A, 1-pole bathroom circuit breaker.
         panelManufacturer:
           type: string
         breakerAmperage:

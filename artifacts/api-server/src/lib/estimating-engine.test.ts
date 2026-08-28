@@ -3,6 +3,7 @@ import test from "node:test";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   auditPriceBookItem,
+  calculateBathroomEstimate,
   calculateKitchenEstimate,
   calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
@@ -11,6 +12,7 @@ import {
   type PriceBookItem,
 } from "./estimating-engine";
 import type {
+  BathroomInputRecord,
   KitchenInputRecord,
   PanelReplacementInputRecord,
   RecessedLightingInputRecord,
@@ -148,7 +150,224 @@ const priceBook: PriceBookItem[] = [
   ),
   catalogRow("Kitchen small-appliance circuit device assumption", 6),
   catalogRow("Kitchen microwave circuit device assumption", 8),
+  catalogRow("Panasonic FV-0511VF1 exhaust fan", 136, {
+    category: "Ventilation",
+    manufacturer: "Panasonic",
+    manufacturerPartNumber: "FV-0511VF1",
+  }),
+  catalogRow("Contractor-supplied bathroom fan/light combination", 210, {
+    category: "Ventilation",
+  }),
+  catalogRow("Contractor-supplied bathroom fan/light/heat combination", 360, {
+    category: "Ventilation",
+  }),
+  catalogRow("Bathroom 15A circuit box and device materials", 35, {
+    category: "Circuit",
+  }),
 ];
+
+const bathroomBuilderInputs: BathroomInputRecord = {
+  gfciReceptacles: 0,
+  additionalReceptacles: 0,
+  vanityLights: 1,
+  recessedLights: 0,
+  exhaustFans: 1,
+  fanLights: 1,
+  fanLightHeatUnits: 1,
+  heatedFloorCircuit: false,
+  additionalSwitches: 0,
+  routeLength: 30,
+  circuitOption: "Reuse existing circuit",
+  customerSuppliedFixtures: true,
+  notes: "",
+  laborRateType: "residential",
+  panelManufacturer: "Siemens",
+  breakerAmperage: 15,
+  breakerPoleCount: 1,
+  breakerProtectionType: "AFCI",
+  gfciAmperage: 20,
+  recessedLightSize: "4-inch",
+  cableType: "12/2 NM-B",
+  laborAdjustmentHours: 0,
+};
+
+test("bathroom prices all exhaust options as contractor supplied while vanity remains customer supplied", () => {
+  const result = calculateBathroomEstimate(
+    bathroomBuilderInputs,
+    settings,
+    priceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "vanity-lights")?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "vanity-lights")?.source,
+    "Customer supplied fixture",
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "exhaust-fans")?.unitCost,
+    136,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "fan-lights")?.unitCost,
+    210,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "fan-light-heat")?.unitCost,
+    360,
+  );
+});
+
+test("bathroom quote-local exhaust overrides flow through material, profit, and margin totals", () => {
+  const base = calculateBathroomEstimate(
+    bathroomBuilderInputs,
+    settings,
+    priceBook,
+  );
+  const overridden = calculateBathroomEstimate(
+    {
+      ...bathroomBuilderInputs,
+      exhaustFanMaterialCostOverride: 150,
+      fanLightMaterialCostOverride: 250,
+      fanLightHeatMaterialCostOverride: 400,
+    },
+    settings,
+    priceBook,
+  );
+
+  assert.equal(
+    overridden.assembly.find((line) => line.id === "exhaust-fans")?.unitCost,
+    150,
+  );
+  assert.equal(
+    overridden.assembly.find((line) => line.id === "fan-lights")?.unitCost,
+    250,
+  );
+  assert.equal(
+    overridden.assembly.find((line) => line.id === "fan-light-heat")?.unitCost,
+    400,
+  );
+  assert.equal(overridden.pricing.materialCost - base.pricing.materialCost, 94);
+  assert.notEqual(
+    overridden.pricing.calculatedSellingPrice,
+    base.pricing.calculatedSellingPrice,
+  );
+  assert.notEqual(overridden.pricing.grossProfit, base.pricing.grossProfit);
+  assert.notEqual(overridden.pricing.grossMargin, base.pricing.grossMargin);
+});
+
+test("bathroom new 15A AFCI circuit includes cable, editable materials, breaker, and labor", () => {
+  const reuse = calculateBathroomEstimate(
+    bathroomBuilderInputs,
+    settings,
+    priceBook,
+  );
+  const afci = calculateBathroomEstimate(
+    {
+      ...bathroomBuilderInputs,
+      circuitOption: "New dedicated circuit",
+      newCircuitCableFootage: 40,
+      newCircuitMaterialsQuantity: 2,
+      newCircuitLaborHours: 4.5,
+      newCircuitBreakerProtectionType: "AFCI",
+    },
+    settings,
+    priceBook,
+  );
+
+  assert.equal(
+    afci.assembly.find((line) => line.id === "bathroom-15a-circuit-cable")
+      ?.quantity,
+    40,
+  );
+  assert.equal(
+    afci.assembly.find((line) => line.id === "bathroom-15a-circuit-cable")
+      ?.unitCost,
+    0.37,
+  );
+  assert.equal(
+    afci.assembly.find((line) => line.id === "bathroom-15a-circuit-materials")
+      ?.quantity,
+    2,
+  );
+  assert.equal(
+    afci.assembly.find((line) => line.id === "bathroom-15a-circuit-protection")
+      ?.unitCost,
+    44,
+  );
+  assert.equal(
+    afci.assembly.find((line) => line.id === "bathroom-15a-circuit-protection")
+      ?.description.includes("15A AFCI"),
+    true,
+  );
+  assert.ok(
+    Math.abs(afci.pricing.materialCost - reuse.pricing.materialCost - 128.8) <
+      0.000001,
+  );
+  assert.equal(
+    afci.pricing.laborCost - reuse.pricing.laborCost,
+    4.5 * settings.loadedLaborCost,
+  );
+  assert.notEqual(
+    afci.pricing.calculatedSellingPrice,
+    reuse.pricing.calculatedSellingPrice,
+  );
+  assert.notEqual(afci.pricing.grossProfit, reuse.pricing.grossProfit);
+  assert.notEqual(afci.pricing.grossMargin, reuse.pricing.grossMargin);
+});
+
+test("bathroom preview and create validate identical 15A circuit and exhaust override snapshots", () => {
+  const jobInputs = {
+    ...bathroomBuilderInputs,
+    circuitOption: "New dedicated circuit" as const,
+    newCircuitCableFootage: 25,
+    newCircuitMaterialsQuantity: 1,
+    newCircuitMaterialsUnitCostOverride: 42,
+    newCircuitLaborHours: 3.5,
+    newCircuitBreakerProtectionType: "AFCI" as const,
+    exhaustFanMaterialCostOverride: 136,
+    fanLightMaterialCostOverride: 225,
+    fanLightHeatMaterialCostOverride: 375,
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({ module: "BATHROOM", jobInputs }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Bathroom customer",
+      projectName: "Bathroom renovation",
+      module: "BATHROOM",
+      jobInputs,
+      proposalDescription: "Install the configured bathroom electrical scope.",
+    }).success,
+    true,
+  );
+
+  const invalidInputs = {
+    ...jobInputs,
+    newCircuitBreakerProtectionType: "Unsupported",
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "BATHROOM",
+      jobInputs: invalidInputs,
+    }).success,
+    false,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Bathroom customer",
+      projectName: "Invalid bathroom",
+      module: "BATHROOM",
+      jobInputs: invalidInputs,
+      proposalDescription: "Validation test.",
+    }).success,
+    false,
+  );
+});
 
 const serviceUpgradeInputs: ServiceUpgradeInputRecord = {
   serviceSize: "200A",

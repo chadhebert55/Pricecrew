@@ -34,11 +34,15 @@ const initialInputs: BathroomInputs = {
   panelManufacturer: "Siemens",
   breakerAmperage: 20,
   breakerPoleCount: 1,
-  breakerProtectionType: "GFCI",
+  breakerProtectionType: "AFCI",
   gfciAmperage: 20,
   recessedLightSize: "4-inch",
   cableType: "12/2 NM-B",
   laborAdjustmentHours: 0,
+  newCircuitCableFootage: 30,
+  newCircuitMaterialsQuantity: 1,
+  newCircuitLaborHours: 3,
+  newCircuitBreakerProtectionType: "AFCI",
 }
 
 function optionalAmount(value: string) {
@@ -99,6 +103,13 @@ export function NewBathroomQuote() {
     setInputs((current) => ({
       ...current,
       [key]: Math.max(0, Number.parseInt(value, 10) || 0),
+    }))
+  }
+
+  const setOptionalNumber = (key: keyof BathroomInputs, value: string) => {
+    setInputs((current) => ({
+      ...current,
+      [key]: value.trim() === "" ? undefined : Math.max(0, Number(value) || 0),
     }))
   }
 
@@ -242,25 +253,24 @@ export function NewBathroomQuote() {
                         <option value="Square D">Square D Homeline</option>
                       </select>
                     </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Contractor-supplied exhaust equipment</h3>
+                  <p className="mb-4 text-sm text-muted-foreground">Leave an override blank to use the editable company Price Book cost.</p>
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                     <div className="space-y-2">
-                      <Label htmlFor="bath-breaker-protection">Breaker Protection</Label>
-                      <select id="bath-breaker-protection" value={inputs.breakerProtectionType ?? "GFCI"} onChange={(event) => setInputs((current) => ({ ...current, breakerProtectionType: event.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="Standard">Standard</option>
-                        <option value="GFCI">GFCI</option>
-                        <option value="AFCI">AFCI</option>
-                        <option value="Dual Function">Dual Function</option>
-                      </select>
+                      <Label htmlFor="bath-fan-cost">Standard Panasonic fan unit cost ($)</Label>
+                      <Input id="bath-fan-cost" type="number" min="0" step="0.01" value={inputs.exhaustFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("exhaustFanMaterialCostOverride", event.target.value)} placeholder="Price Book baseline: $136.00" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="bath-breaker-amps">Breaker Amperage</Label>
-                      <Input id="bath-breaker-amps" type="number" min="1" value={inputs.breakerAmperage ?? 20} onChange={(event) => setInputs((current) => ({ ...current, breakerAmperage: Number(event.target.value) }))} />
+                      <Label htmlFor="bath-fan-light-cost">Fan / light unit cost ($)</Label>
+                      <Input id="bath-fan-light-cost" type="number" min="0" step="0.01" value={inputs.fanLightMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("fanLightMaterialCostOverride", event.target.value)} placeholder="Use Price Book" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="bath-breaker-poles">Breaker Pole Count</Label>
-                      <select id="bath-breaker-poles" value={inputs.breakerPoleCount ?? 1} onChange={(event) => setInputs((current) => ({ ...current, breakerPoleCount: Number(event.target.value) }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="1">1-pole</option>
-                        <option value="2">2-pole</option>
-                      </select>
+                      <Label htmlFor="bath-fan-heat-cost">Fan / light / heat unit cost ($)</Label>
+                      <Input id="bath-fan-heat-cost" type="number" min="0" step="0.01" value={inputs.fanLightHeatMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("fanLightHeatMaterialCostOverride", event.target.value)} placeholder="Use Price Book" />
                     </div>
                   </div>
                 </section>
@@ -281,6 +291,47 @@ export function NewBathroomQuote() {
                       <option value={BathroomInputsCircuitOption.Reuse_existing_circuit}>Reuse existing circuit</option>
                     </select>
                   </div>
+                  {inputs.circuitOption === BathroomInputsCircuitOption.New_dedicated_circuit && (
+                    <div className="grid grid-cols-1 gap-5 rounded-lg border border-primary/20 bg-primary/5 p-4 md:col-span-2 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="bath-circuit-protection">15A Breaker Protection</Label>
+                        <select
+                          id="bath-circuit-protection"
+                          value={inputs.newCircuitBreakerProtectionType ?? "AFCI"}
+                          onChange={(event) => setInputs((current) => ({
+                            ...current,
+                            breakerAmperage: 15,
+                            breakerPoleCount: 1,
+                            breakerProtectionType: event.target.value,
+                            newCircuitBreakerProtectionType: event.target.value as NonNullable<BathroomInputs["newCircuitBreakerProtectionType"]>,
+                          }))}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="Standard">15A standard breaker</option>
+                          <option value="AFCI">15A AFCI (arc-fault) breaker</option>
+                          <option value="GFCI">15A GFCI breaker</option>
+                          <option value="Dual Function">15A dual-function AFCI/GFCI breaker</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bath-circuit-cable">Dedicated 14/2 NM-B (FT)</Label>
+                        <Input id="bath-circuit-cable" type="number" min="0" step="1" value={inputs.newCircuitCableFootage ?? 0} onChange={(event) => setOptionalNumber("newCircuitCableFootage", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bath-circuit-material-qty">Circuit material packages</Label>
+                        <Input id="bath-circuit-material-qty" type="number" min="0" step="1" value={inputs.newCircuitMaterialsQuantity ?? 1} onChange={(event) => setOptionalNumber("newCircuitMaterialsQuantity", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bath-circuit-material-cost">Material package unit-cost override ($)</Label>
+                        <Input id="bath-circuit-material-cost" type="number" min="0" step="0.01" value={inputs.newCircuitMaterialsUnitCostOverride ?? ""} onChange={(event) => setOptionalNumber("newCircuitMaterialsUnitCostOverride", event.target.value)} placeholder="Use Price Book" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bath-circuit-labor">Circuit labor (Hours)</Label>
+                        <Input id="bath-circuit-labor" type="number" min="0" step="0.25" value={inputs.newCircuitLaborHours ?? 3} onChange={(event) => setOptionalNumber("newCircuitLaborHours", event.target.value)} />
+                      </div>
+                      <p className="self-end text-xs text-muted-foreground">The selected 15A breaker, 14/2 cable, normal circuit materials, and labor all flow through the same markup, target-margin, and profit calculation as the rest of the quote.</p>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="bath-route">Common Wiring Route Length (FT)</Label>
                     <Input
@@ -310,13 +361,8 @@ export function NewBathroomQuote() {
                       />
                       Include heated-floor circuit
                     </label>
-                    <label className="flex items-center gap-3 text-sm font-medium">
-                      <Checkbox
-                        checked={inputs.customerSuppliedFixtures}
-                        onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFixtures: checked === true }))}
-                      />
-                      Customer supplies light and fan fixtures
-                    </label>
+                    <p className="text-sm font-medium">Customer supplies the vanity light fixture; installation labor and incidental rough-in materials remain included.</p>
+                    <p className="text-xs text-muted-foreground">Recessed lights and every selected exhaust configuration are contractor-supplied and priced through the company Price Book or the quote-local overrides above.</p>
                   </div>
                 </div>
 
@@ -341,7 +387,7 @@ export function NewBathroomQuote() {
                 <CardContent className="space-y-5 pt-6">
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
-                    <p className="text-secondary-foreground/80">Customer-supplied fixtures remain visible in the assembly at zero material cost. Existing circuits and heat equipment produce verification warnings.</p>
+                    <p className="text-secondary-foreground/80">The customer-supplied vanity fixture remains visible at zero purchase cost. Contractor-supplied exhaust equipment and the optional 15A circuit are included in pricing and margin.</p>
                   </div>
 
                   {pricing && previewIsCurrent ? (
@@ -362,6 +408,8 @@ export function NewBathroomQuote() {
                         <div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div>
                         <div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>
                         {pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}
+                        <div className="flex justify-between"><span>Gross Profit</span><span className="font-mono">${pricing.grossProfit.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Gross Margin</span><span className="font-mono">{(pricing.grossMargin * 100).toFixed(1)}%</span></div>
                         <div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div>
                       </div>
                     </>

@@ -10,6 +10,7 @@ export * from './assemblyLine';
 export * from './bathroomInputs';
 export * from './bathroomInputsCableType';
 export * from './bathroomInputsCircuitOption';
+export * from './bathroomInputsNewCircuitBreakerProtectionType';
 export * from './bathroomInputsRecessedLightSize';
 export * from './companySettings';
 export * from './companySettingsEvDefaultCableType';

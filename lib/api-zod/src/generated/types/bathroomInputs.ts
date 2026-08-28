@@ -7,6 +7,7 @@
  */
 import type { BathroomInputsCableType } from './bathroomInputsCableType';
 import type { BathroomInputsCircuitOption } from './bathroomInputsCircuitOption';
+import type { BathroomInputsNewCircuitBreakerProtectionType } from './bathroomInputsNewCircuitBreakerProtectionType';
 import type { BathroomInputsRecessedLightSize } from './bathroomInputsRecessedLightSize';
 import type { LaborRateType } from './laborRateType';
 
@@ -36,6 +37,43 @@ export interface BathroomInputs {
   laborRateType?: LaborRateType;
   /** Quote-level adjustment added to the detailed task labor calculation. */
   laborAdjustmentHours?: number;
+  /**
+     * Optional quote-local unit-cost override for the contractor-supplied standard exhaust fan.
+     * @minimum 0
+     */
+  exhaustFanMaterialCostOverride?: number;
+  /**
+     * Optional quote-local unit-cost override for the contractor-supplied fan/light combination.
+     * @minimum 0
+     */
+  fanLightMaterialCostOverride?: number;
+  /**
+     * Optional quote-local unit-cost override for the contractor-supplied fan/light/heat combination.
+     * @minimum 0
+     */
+  fanLightHeatMaterialCostOverride?: number;
+  /**
+     * Dedicated 14/2 NM-B footage for the optional new 15A bathroom circuit.
+     * @minimum 0
+     */
+  newCircuitCableFootage?: number;
+  /**
+     * Quantity of normal box, device, connector, and circuit-material packages for the new 15A circuit.
+     * @minimum 0
+     */
+  newCircuitMaterialsQuantity?: number;
+  /**
+     * Optional quote-local unit-cost override for the new 15A circuit material package.
+     * @minimum 0
+     */
+  newCircuitMaterialsUnitCostOverride?: number;
+  /**
+     * Labor hours for the optional new 15A bathroom circuit.
+     * @minimum 0
+     */
+  newCircuitLaborHours?: number;
+  /** Exact protection type for the optional 15A, 1-pole bathroom circuit breaker. */
+  newCircuitBreakerProtectionType?: BathroomInputsNewCircuitBreakerProtectionType;
   panelManufacturer?: string;
   breakerAmperage?: number;
   breakerPoleCount?: number;
