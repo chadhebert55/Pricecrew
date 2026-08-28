@@ -877,19 +877,27 @@ async function postCustomer(
   baseUrl: string,
   input: { name: string; email?: string | null },
 ) {
-  const response = await fetch(`${baseUrl}/api/customers`, {
-    method: "POST",
-    headers: authenticatedHeaders,
-    body: JSON.stringify(input),
-  });
-  const body = (await response.json()) as CustomerSummary & { error?: string };
+  const { response, body } = await postCustomerRequest(baseUrl, input);
   assert.equal(
     response.status,
     201,
     `Expected customer creation to succeed: ${JSON.stringify(body)}`,
   );
   assert.equal(typeof body.id, "number");
-  return body;
+  return body as CustomerSummary;
+}
+
+async function postCustomerRequest(
+  baseUrl: string,
+  input: { name: string; email?: string | null },
+) {
+  const response = await fetch(`${baseUrl}/api/customers`, {
+    method: "POST",
+    headers: authenticatedHeaders,
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json()) as CustomerSummary & { error?: string };
+  return { response, body };
 }
 
 async function patchCustomer(
@@ -969,6 +977,61 @@ test("simultaneous same-email quotes share one persisted customer", async () => 
       );
     assert.equal(customers.length, 1);
     assert.equal(quotes[0]?.customerId, customers[0]?.id);
+  } finally {
+    await closeTestServer(server);
+    await cleanupCustomerTest(marker, email);
+  }
+});
+
+test("simultaneous customer creation produces one normalized-email conflict", async () => {
+  const marker = `Concurrent customer creation ${randomUUID()}`;
+  const email = `${randomUUID()}@example.com`;
+  const firstName = `${marker} first`;
+  const secondName = `${marker} second`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const results = await Promise.all([
+      postCustomerRequest(baseUrl, {
+        name: firstName,
+        email: `  ${email.toUpperCase()} `,
+      }),
+      postCustomerRequest(baseUrl, {
+        name: secondName,
+        email: ` ${email} `,
+      }),
+    ]);
+
+    const successful = results.filter(
+      (result) => result.response.status === 201,
+    );
+    const conflicts = results.filter(
+      (result) => result.response.status === 409,
+    );
+    assert.equal(successful.length, 1);
+    assert.equal(conflicts.length, 1);
+    assert.deepEqual(conflicts[0]?.body, {
+      error: "A customer with this email already exists.",
+    });
+    assert.equal(successful[0]?.body.email, email);
+    assert.equal(typeof successful[0]?.body.id, "number");
+
+    const customers = await db
+      .select({
+        id: customersTable.id,
+        name: customersTable.name,
+        email: customersTable.email,
+      })
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.companyId, 1),
+          eq(customersTable.email, email),
+        ),
+      );
+    assert.equal(customers.length, 1);
+    assert.equal(customers[0]?.id, successful[0]?.body.id);
+    assert.equal(customers[0]?.name, successful[0]?.body.name);
   } finally {
     await closeTestServer(server);
     await cleanupCustomerTest(marker, email);
