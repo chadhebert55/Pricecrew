@@ -1946,7 +1946,29 @@ export const CreateQuoteResponse = zod.object({
   "proposalDescription": zod.string(),
   "sourceQuoteId": zod.number().nullish(),
   "revisionNumber": zod.number().optional(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "proposalDecision": zod.union([zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}),zod.null()]),
+  "proposalDecisions": zod.array(zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}))
 }))
 
 
@@ -2908,7 +2930,52 @@ export const GetCustomerProposalResponse = zod.object({
   "contactAddress": zod.string().nullish(),
   "accentColor": zod.string()
 }),
-  "terms": zod.string()
+  "terms": zod.string(),
+  "decision": zod.union([zod.object({
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}),zod.null()])
+})
+
+
+/**
+ * Accept or decline the exact ready proposal represented by the signed token.
+ * @summary Submit a customer proposal decision
+ */
+export const submitProposalDecisionPathTokenMin = 50;
+
+
+
+export const SubmitProposalDecisionParams = zod.object({
+  "token": zod.coerce.string().min(submitProposalDecisionPathTokenMin)
+})
+
+export const submitProposalDecisionBodyCustomerNameMax = 200;
+
+export const submitProposalDecisionBodySignatureMax = 500;
+
+export const submitProposalDecisionBodyExplanationMax = 2000;
+
+
+
+export const SubmitProposalDecisionBody = zod.object({
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().min(1).max(submitProposalDecisionBodyCustomerNameMax).optional(),
+  "signature": zod.string().min(1).max(submitProposalDecisionBodySignatureMax).optional(),
+  "explanation": zod.string().max(submitProposalDecisionBodyExplanationMax).optional()
+})
+
+export const SubmitProposalDecisionResponse = zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
 })
 
 
@@ -3833,7 +3900,29 @@ export const GetQuoteResponse = zod.object({
   "proposalDescription": zod.string(),
   "sourceQuoteId": zod.number().nullish(),
   "revisionNumber": zod.number().optional(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "proposalDecision": zod.union([zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}),zod.null()]),
+  "proposalDecisions": zod.array(zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}))
 }))
 
 
@@ -4780,10 +4869,68 @@ export const UpdateQuoteResponse = zod.object({
   "proposalDescription": zod.string(),
   "sourceQuoteId": zod.number().nullish(),
   "revisionNumber": zod.number().optional(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "proposalDecision": zod.union([zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}),zod.null()]),
+  "proposalDecisions": zod.array(zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}))
 })).and(zod.object({
   "proposalShareToken": zod.string().nullable().describe('Rotating signed token issued only for ready customer proposals.')
 }))
+
+
+/**
+ * Records a decision against the currently saved ready revision of a company-owned quote.
+ * @summary Record a decision for a company quote
+ */
+export const SubmitQuoteDecisionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const submitQuoteDecisionBodyCustomerNameMax = 200;
+
+export const submitQuoteDecisionBodySignatureMax = 500;
+
+export const submitQuoteDecisionBodyExplanationMax = 2000;
+
+
+
+export const SubmitQuoteDecisionBody = zod.object({
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().min(1).max(submitQuoteDecisionBodyCustomerNameMax).optional(),
+  "signature": zod.string().min(1).max(submitQuoteDecisionBodySignatureMax).optional(),
+  "explanation": zod.string().max(submitQuoteDecisionBodyExplanationMax).optional()
+})
+
+export const SubmitQuoteDecisionResponse = zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+})
 
 
 /**
@@ -5807,7 +5954,29 @@ export const DuplicateQuoteResponse = zod.object({
   "proposalDescription": zod.string(),
   "sourceQuoteId": zod.number().nullish(),
   "revisionNumber": zod.number().optional(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "proposalDecision": zod.union([zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}),zod.null()]),
+  "proposalDecisions": zod.array(zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "revisionNumber": zod.number(),
+  "tokenIssuedAt": zod.coerce.date(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "customerName": zod.string().nullable(),
+  "signature": zod.string().nullable(),
+  "explanation": zod.string().nullable(),
+  "decidedAt": zod.coerce.date()
+}))
 }))
 
 

@@ -34,6 +34,8 @@ import type {
   ListQuotesParams,
   PriceBookItem,
   PriceBookItemUpdate,
+  ProposalDecision,
+  ProposalDecisionInput,
   Quote,
   QuoteExportInvalid,
   QuoteExportPreflight,
@@ -42,7 +44,8 @@ import type {
   QuotePreviewInput,
   QuoteSummary,
   QuoteUpdate,
-  QuoteUpdateResult
+  QuoteUpdateResult,
+  ValidationError
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -834,6 +837,79 @@ export function useGetCustomerProposal<TData = Awaited<ReturnType<typeof getCust
 
 
 
+export const getSubmitProposalDecisionUrl = (token: string,) => {
+
+
+
+
+  return `/api/proposals/${token}`
+}
+
+/**
+ * Accept or decline the exact ready proposal represented by the signed token.
+ * @summary Submit a customer proposal decision
+ */
+export const submitProposalDecision = async (token: string,
+    proposalDecisionInput: ProposalDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<ProposalDecision> => {
+
+  return customFetch<ProposalDecision>(getSubmitProposalDecisionUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(proposalDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitProposalDecisionMutationOptions = <TError = ErrorType<void | ValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitProposalDecision>>, TError,{token: string;data: BodyType<ProposalDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitProposalDecision>>, TError,{token: string;data: BodyType<ProposalDecisionInput>}, TContext> => {
+
+const mutationKey = ['submitProposalDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitProposalDecision>>, {token: string;data: BodyType<ProposalDecisionInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  submitProposalDecision(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitProposalDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof submitProposalDecision>>>
+    export type SubmitProposalDecisionMutationBody = BodyType<ProposalDecisionInput>
+    export type SubmitProposalDecisionMutationError = ErrorType<void | ValidationError>
+
+    /**
+ * @summary Submit a customer proposal decision
+ */
+export const useSubmitProposalDecision = <TError = ErrorType<void | ValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitProposalDecision>>, TError,{token: string;data: BodyType<ProposalDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitProposalDecision>>,
+        TError,
+        {token: string;data: BodyType<ProposalDecisionInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitProposalDecisionMutationOptions(options));
+    }
+
 export const getGetQuoteUrl = (id: number,) => {
 
 
@@ -981,6 +1057,79 @@ export const useUpdateQuote = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateQuoteMutationOptions(options));
+    }
+
+export const getSubmitQuoteDecisionUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/decision`
+}
+
+/**
+ * Records a decision against the currently saved ready revision of a company-owned quote.
+ * @summary Record a decision for a company quote
+ */
+export const submitQuoteDecision = async (id: number,
+    proposalDecisionInput: ProposalDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<ProposalDecision> => {
+
+  return customFetch<ProposalDecision>(getSubmitQuoteDecisionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(proposalDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitQuoteDecisionMutationOptions = <TError = ErrorType<void | ValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitQuoteDecision>>, TError,{id: number;data: BodyType<ProposalDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitQuoteDecision>>, TError,{id: number;data: BodyType<ProposalDecisionInput>}, TContext> => {
+
+const mutationKey = ['submitQuoteDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitQuoteDecision>>, {id: number;data: BodyType<ProposalDecisionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitQuoteDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitQuoteDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof submitQuoteDecision>>>
+    export type SubmitQuoteDecisionMutationBody = BodyType<ProposalDecisionInput>
+    export type SubmitQuoteDecisionMutationError = ErrorType<void | ValidationError>
+
+    /**
+ * @summary Record a decision for a company quote
+ */
+export const useSubmitQuoteDecision = <TError = ErrorType<void | ValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitQuoteDecision>>, TError,{id: number;data: BodyType<ProposalDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitQuoteDecision>>,
+        TError,
+        {id: number;data: BodyType<ProposalDecisionInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitQuoteDecisionMutationOptions(options));
     }
 
 export const getPreflightQuoteExportUrl = (id: number,) => {

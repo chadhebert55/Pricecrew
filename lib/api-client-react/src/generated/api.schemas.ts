@@ -9,6 +9,10 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface ValidationError {
+  error: string;
+}
+
 export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
 
 
@@ -93,6 +97,21 @@ export interface ProposalCompanyPresentation {
   accentColor: string;
 }
 
+export type ProposalDecisionType = typeof ProposalDecisionType[keyof typeof ProposalDecisionType];
+
+
+export const ProposalDecisionType = {
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface ProposalDecisionPublic {
+  decision: ProposalDecisionType;
+  /** @nullable */
+  customerName: string | null;
+  decidedAt: string;
+}
+
 export interface CustomerProposal {
   quoteNumber: string;
   customerName: string;
@@ -104,6 +123,38 @@ export interface CustomerProposal {
   scope: CustomerProposalLine[];
   company: ProposalCompanyPresentation;
   terms: string;
+  decision: ProposalDecisionPublic | null;
+}
+
+export interface ProposalDecisionInput {
+  decision: ProposalDecisionType;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  customerName?: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  signature?: string;
+  /** @maxLength 2000 */
+  explanation?: string;
+}
+
+export interface ProposalDecision {
+  id: number;
+  quoteId: number;
+  revisionNumber: number;
+  tokenIssuedAt: string;
+  decision: ProposalDecisionType;
+  /** @nullable */
+  customerName: string | null;
+  /** @nullable */
+  signature: string | null;
+  /** @nullable */
+  explanation: string | null;
+  decidedAt: string;
 }
 
 export type EvChargerInputsCableType = typeof EvChargerInputsCableType[keyof typeof EvChargerInputsCableType];
@@ -1413,6 +1464,8 @@ export type Quote = QuoteSummary & ({
   sourceQuoteId?: number | null;
   revisionNumber?: number;
   createdAt: string;
+  proposalDecision: ProposalDecision | null;
+  proposalDecisions: ProposalDecision[];
 });
 
 export type QuoteUpdateResult = Quote & ({

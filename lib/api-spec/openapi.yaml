@@ -208,6 +208,42 @@ paths:
                 $ref: "#/components/schemas/CustomerProposal"
         "404":
           description: Proposal not found
+    post:
+      security: []
+      operationId: submitProposalDecision
+      tags: [quotes]
+      summary: Submit a customer proposal decision
+      description: Accept or decline the exact ready proposal represented by the signed token.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 50
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposalDecisionInput"
+      responses:
+        "200":
+          description: Recorded or previously recorded proposal decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalDecision"
+        "404":
+          description: Proposal not found or no longer current
+        "409":
+          description: Proposal is not ready or already has a different decision
+        "422":
+          description: Decision input is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
   /quotes/{id}:
     get:
       operationId: getQuote
@@ -253,6 +289,41 @@ paths:
                 $ref: "#/components/schemas/QuoteUpdateResult"
         "404":
           description: Quote not found
+  /quotes/{id}/decision:
+    post:
+      operationId: submitQuoteDecision
+      tags: [quotes]
+      summary: Record a decision for a company quote
+      description: Records a decision against the currently saved ready revision of a company-owned quote.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposalDecisionInput"
+      responses:
+        "200":
+          description: Recorded or previously recorded proposal decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalDecision"
+        "404":
+          description: Quote not found
+        "409":
+          description: Quote is not ready or already has a different decision
+        "422":
+          description: Decision input is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
   /quotes/{id}/exports/preflight:
     post:
       operationId: preflightQuoteExport
@@ -417,6 +488,12 @@ components:
           type: string
       required:
         - status
+    ValidationError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
     DashboardSummary:
       type: object
       required:
@@ -566,6 +643,7 @@ components:
         - scope
         - company
         - terms
+        - decision
       properties:
         quoteNumber:
           type: string
@@ -590,6 +668,75 @@ components:
           $ref: "#/components/schemas/ProposalCompanyPresentation"
         terms:
           type: string
+        decision:
+          oneOf:
+            - $ref: "#/components/schemas/ProposalDecisionPublic"
+            - type: "null"
+    ProposalDecisionType:
+      type: string
+      enum: [accepted, declined]
+    ProposalDecisionInput:
+      type: object
+      required: [decision]
+      additionalProperties: false
+      properties:
+        decision:
+          $ref: "#/components/schemas/ProposalDecisionType"
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        signature:
+          type: string
+          minLength: 1
+          maxLength: 500
+        explanation:
+          type: string
+          maxLength: 2000
+    ProposalDecision:
+      type: object
+      required:
+        - id
+        - quoteId
+        - revisionNumber
+        - tokenIssuedAt
+        - decision
+        - customerName
+        - signature
+        - explanation
+        - decidedAt
+      properties:
+        id:
+          type: number
+        quoteId:
+          type: number
+        revisionNumber:
+          type: number
+        tokenIssuedAt:
+          type: string
+          format: date-time
+        decision:
+          $ref: "#/components/schemas/ProposalDecisionType"
+        customerName:
+          type: ["string", "null"]
+        signature:
+          type: ["string", "null"]
+        explanation:
+          type: ["string", "null"]
+        decidedAt:
+          type: string
+          format: date-time
+    ProposalDecisionPublic:
+      type: object
+      required: [decision, customerName, decidedAt]
+      properties:
+        decision:
+          $ref: "#/components/schemas/ProposalDecisionType"
+        customerName:
+          type: ["string", "null"]
+        decidedAt:
+          type: string
+          format: date-time
     ProposalCompanyPresentation:
       type: object
       required: [displayName, accentColor]
@@ -615,6 +762,8 @@ components:
             - pricing
             - proposalDescription
             - createdAt
+            - proposalDecision
+            - proposalDecisions
           properties:
             customerId:
               type: ["number", "null"]
@@ -638,6 +787,14 @@ components:
             createdAt:
               type: string
               format: date-time
+            proposalDecision:
+              oneOf:
+                - $ref: "#/components/schemas/ProposalDecision"
+                - type: "null"
+            proposalDecisions:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProposalDecision"
     QuoteUpdateResult:
       allOf:
         - $ref: "#/components/schemas/Quote"

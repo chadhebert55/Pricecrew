@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink, Copy, Download } from "lucide-react"
+import { ArrowLeft, Save, FileText, Check, CheckCircle2, DollarSign, Calculator, TriangleAlert, ExternalLink, Copy, Download, XCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { quoteBuilderRoute } from "@/lib/quote-builder-routes"
@@ -273,6 +273,94 @@ export function QuoteDetail() {
           This quote cannot be marked ready until all unsafe, unresolved, or invalid pricing inputs are resolved.
         </div>
       )}
+
+      <Card data-testid="quote-proposal-decision">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            {quote.proposalDecision?.decision === "accepted" ? (
+              <CheckCircle2 className="text-emerald-600" size={20} />
+            ) : quote.proposalDecision?.decision === "declined" ? (
+              <XCircle className="text-amber-600" size={20} />
+            ) : (
+              <FileText className="text-muted-foreground" size={20} />
+            )}
+            <CardTitle>Proposal Decision</CardTitle>
+          </div>
+          <CardDescription>
+            Decisions are tied to the exact saved proposal revision and kept as an immutable audit trail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {quote.proposalDecision ? (
+            <div className="rounded-md border bg-muted/20 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant={quote.proposalDecision.decision === "accepted" ? "success" : "secondary"}
+                  className="capitalize"
+                >
+                  {quote.proposalDecision.decision}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(quote.proposalDecision.decidedAt).toLocaleString()}
+                </span>
+              </div>
+              {quote.proposalDecision.customerName && (
+                <p className="mt-3 text-sm">
+                  Customer: <span className="font-medium">{quote.proposalDecision.customerName}</span>
+                </p>
+              )}
+              {quote.proposalDecision.signature && (
+                <p className="mt-1 text-sm">
+                  Signature: <span className="font-medium">{quote.proposalDecision.signature}</span>
+                </p>
+              )}
+              {quote.proposalDecision.explanation && (
+                <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+                  {quote.proposalDecision.explanation}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No customer decision has been recorded for the current saved proposal revision.
+            </p>
+          )}
+
+          {quote.proposalDecisions.length > 0 && (
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold">Decision audit history</h3>
+              <div className="mt-3 space-y-3">
+                {quote.proposalDecisions.map((decision) => (
+                  <div key={decision.id} className="rounded-md border p-3 text-sm">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="font-medium capitalize">{decision.decision}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(decision.decidedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Quote revision {decision.revisionNumber} · proposal saved{" "}
+                      {new Date(decision.tokenIssuedAt).toLocaleString()}
+                    </p>
+                    {(decision.customerName || decision.signature) && (
+                      <p className="mt-2">
+                        {[decision.customerName, decision.signature && `signed ${decision.signature}`]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
+                    {decision.explanation && (
+                      <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                        {decision.explanation}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <QuoteExportCard
         quoteId={quote.id}

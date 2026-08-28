@@ -85,7 +85,11 @@ export async function requireEstimatorAuth(
 }
 
 export function isPublicProposalPath(req: Request) {
-  return req.method === "GET" && req.path.startsWith("/proposals/");
+  if (!req.path.startsWith("/proposals/")) return false;
+  return (
+    req.method === "GET" ||
+    (req.method === "POST" && /^\/proposals\/[^/]+$/.test(req.path))
+  );
 }
 
 class MembershipCreatedConcurrently extends Error {}

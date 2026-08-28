@@ -821,5 +821,43 @@ export const quotesTable = pgTable("quotes", {
     foreignColumns: [table.id],
     name: "quotes_source_quote_id_quotes_id_fk",
   }),
+  uniqueIndex("quotes_id_updated_at_unique").on(table.id, table.updatedAt),
   uniqueIndex("quotes_company_quote_number_unique").on(table.companyId, table.quoteNumber),
 ]);
+
+export type ProposalDecisionType = "accepted" | "declined";
+
+/**
+ * One immutable customer decision for one exact signed proposal revision.
+ * The unique quote/token key makes retries safe without mutating an audit row.
+ */
+export const proposalDecisionsTable = pgTable(
+  "proposal_decisions",
+  {
+    id: serial("id").primaryKey(),
+    quoteId: integer("quote_id").notNull(),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companiesTable.id),
+    revisionNumber: integer("revision_number").notNull(),
+    tokenIssuedAt: timestamp("token_issued_at", { withTimezone: true }).notNull(),
+    decision: text("decision").$type<ProposalDecisionType>().notNull(),
+    customerName: text("customer_name"),
+    signature: text("signature"),
+    explanation: text("explanation"),
+    decidedAt: timestamp("decided_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.quoteId, table.tokenIssuedAt],
+      foreignColumns: [quotesTable.id, quotesTable.updatedAt],
+      name: "proposal_decisions_quote_revision_fk",
+    }),
+    uniqueIndex("proposal_decisions_quote_token_unique").on(
+      table.quoteId,
+      table.tokenIssuedAt,
+    ),
+  ],
+);

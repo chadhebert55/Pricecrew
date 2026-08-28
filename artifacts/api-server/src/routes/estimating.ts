@@ -28,6 +28,12 @@ import {
   PreflightQuoteExportBody,
   PreflightQuoteExportParams,
   PreflightQuoteExportResponse,
+  SubmitProposalDecisionBody,
+  SubmitProposalDecisionParams,
+  SubmitProposalDecisionResponse,
+  SubmitQuoteDecisionBody,
+  SubmitQuoteDecisionParams,
+  SubmitQuoteDecisionResponse,
   UpdatePriceBookItemBody,
   UpdatePriceBookItemParams,
   UpdatePriceBookItemResponse,
@@ -46,6 +52,7 @@ import {
   customersTable,
   db,
   priceBookItemsTable,
+  proposalDecisionsTable,
   quotesTable,
   type AdditionInputRecord,
   type AssemblyLineRecord,
@@ -57,6 +64,7 @@ import {
   type NewHouseInputRecord,
   type PanelReplacementInputRecord,
   type PricingRecord,
+  type ProposalDecisionType,
   type QuoteJobInputsRecord,
   type RecessedLightingInputRecord,
   type ServiceCallInputRecord,
@@ -184,7 +192,40 @@ export function formatQuoteNumber(
   return `Q-${String(sequence).padStart(6, "0")}`;
 }
 
-function serializeQuote(quote: typeof quotesTable.$inferSelect) {
+type ProposalDecisionRow = typeof proposalDecisionsTable.$inferSelect;
+
+function serializeProposalDecision(decision: ProposalDecisionRow) {
+  return {
+    id: decision.id,
+    quoteId: decision.quoteId,
+    revisionNumber: decision.revisionNumber,
+    tokenIssuedAt: decision.tokenIssuedAt.toISOString(),
+    decision: decision.decision,
+    customerName: decision.customerName,
+    signature: decision.signature,
+    explanation: decision.explanation,
+    decidedAt: decision.decidedAt.toISOString(),
+  };
+}
+
+function serializePublicProposalDecision(decision: ProposalDecisionRow) {
+  return {
+    decision: decision.decision,
+    customerName: decision.customerName,
+    decidedAt: decision.decidedAt.toISOString(),
+  };
+}
+
+function serializeQuote(
+  quote: typeof quotesTable.$inferSelect,
+  decisions: ProposalDecisionRow[] = [],
+) {
+  const currentDecision =
+    decisions.find(
+      (decision) =>
+        decision.revisionNumber === quote.revisionNumber &&
+        decision.tokenIssuedAt.getTime() === quote.updatedAt.getTime(),
+    ) ?? null;
   return {
     id: quote.id,
     quoteNumber: quote.quoteNumber,
@@ -204,6 +245,10 @@ function serializeQuote(quote: typeof quotesTable.$inferSelect) {
     proposalDescription: quote.proposalDescription,
     sourceQuoteId: quote.sourceQuoteId,
     revisionNumber: quote.revisionNumber,
+    proposalDecision: currentDecision
+      ? serializeProposalDecision(currentDecision)
+      : null,
+    proposalDecisions: decisions.map(serializeProposalDecision),
   };
 }
 
@@ -234,6 +279,12 @@ function isUniqueConstraintError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   if ("code" in error && error.code === "23505") return true;
   return "cause" in error && isUniqueConstraintError(error.cause);
+}
+
+function isForeignKeyConstraintError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  if ("code" in error && error.code === "23503") return true;
+  return "cause" in error && isForeignKeyConstraintError(error.cause);
 }
 
 async function customerByNormalizedEmail(companyId: number, email: string) {
@@ -419,6 +470,157 @@ export function parseProposalShareToken(token: string) {
     return null;
   }
   return { quoteId, timestamp };
+}
+
+type NormalizedProposalDecision = {
+  decision: ProposalDecisionType;
+  customerName: string | null;
+  signature: string | null;
+  explanation: string | null;
+};
+
+function normalizeProposalDecisionInput(input: {
+  decision: ProposalDecisionType;
+  customerName?: string;
+  signature?: string;
+  explanation?: string;
+}): { value?: NormalizedProposalDecision; error?: string } {
+  const customerName = input.customerName?.trim() || null;
+  const signature = input.signature?.trim() || null;
+  const explanation = input.explanation?.trim() || null;
+  if (input.decision === "accepted" && !customerName) {
+    return { error: "Customer name is required to accept a proposal." };
+  }
+  if (input.decision === "accepted" && !signature) {
+    return { error: "Customer signature is required to accept a proposal." };
+  }
+  return {
+    value: {
+      decision: input.decision,
+      customerName,
+      signature: input.decision === "accepted" ? signature : null,
+      explanation,
+    },
+  };
+}
+
+function matchesDecisionInput(
+  decision: ProposalDecisionRow,
+  input: NormalizedProposalDecision,
+) {
+  return (
+    decision.decision === input.decision &&
+    decision.customerName === input.customerName &&
+    decision.signature === input.signature &&
+    decision.explanation === input.explanation
+  );
+}
+
+async function decisionForTokenContext(input: {
+  quoteId: number;
+  companyId: number;
+  tokenIssuedAt: Date;
+}) {
+  const [decision] = await db
+    .select()
+    .from(proposalDecisionsTable)
+    .where(
+      and(
+        eq(proposalDecisionsTable.quoteId, input.quoteId),
+        eq(proposalDecisionsTable.companyId, input.companyId),
+        eq(proposalDecisionsTable.tokenIssuedAt, input.tokenIssuedAt),
+      ),
+    );
+  return decision;
+}
+
+async function isQuoteSuperseded(quote: typeof quotesTable.$inferSelect) {
+  const [newerRevision] = await db
+    .select({ id: quotesTable.id })
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.companyId, quote.companyId),
+        eq(quotesTable.sourceQuoteId, quote.id),
+      ),
+    )
+    .limit(1);
+  return Boolean(newerRevision);
+}
+
+async function recordProposalDecision(input: {
+  quote: typeof quotesTable.$inferSelect;
+  tokenIssuedAt: Date;
+  decision: NormalizedProposalDecision;
+}) {
+  try {
+    return await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(${input.quote.id})`,
+      );
+    const [currentQuote] = await tx
+      .select()
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.id, input.quote.id),
+          eq(quotesTable.companyId, input.quote.companyId),
+        ),
+      );
+    const [newerRevision] = await tx
+      .select({ id: quotesTable.id })
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.companyId, input.quote.companyId),
+          eq(quotesTable.sourceQuoteId, input.quote.id),
+        ),
+      )
+      .limit(1);
+    if (
+      !currentQuote ||
+      normalizeQuoteStatus(currentQuote.status) !== "ready" ||
+      currentQuote.updatedAt.getTime() !== input.tokenIssuedAt.getTime() ||
+      newerRevision
+    ) {
+      return { stale: true as const };
+    }
+
+    const [existing] = await tx
+      .select()
+      .from(proposalDecisionsTable)
+      .where(
+        and(
+          eq(proposalDecisionsTable.quoteId, input.quote.id),
+          eq(proposalDecisionsTable.companyId, input.quote.companyId),
+          eq(proposalDecisionsTable.tokenIssuedAt, input.tokenIssuedAt),
+        ),
+      );
+    if (existing) {
+      return matchesDecisionInput(existing, input.decision)
+        ? { decision: existing, conflict: false as const, stale: false as const }
+        : { decision: existing, conflict: true as const, stale: false as const };
+    }
+
+    const [decision] = await tx
+      .insert(proposalDecisionsTable)
+      .values({
+        quoteId: input.quote.id,
+        companyId: input.quote.companyId,
+        revisionNumber: input.quote.revisionNumber,
+        tokenIssuedAt: input.tokenIssuedAt,
+        ...input.decision,
+      })
+      .returning();
+    if (!decision) throw new Error("Unable to record proposal decision");
+      return { decision, conflict: false as const, stale: false as const };
+    });
+  } catch (error) {
+    if (isForeignKeyConstraintError(error)) {
+      return { stale: true as const };
+    }
+    throw error;
+  }
 }
 
 /**
@@ -1247,6 +1449,9 @@ router.post("/quotes", async (req, res): Promise<void> => {
     sellingPriceOverride: parsed.data.sellingPriceOverride,
   });
   const quote = await db.transaction(async (tx) => {
+    if (source) {
+      await tx.execute(sql`select pg_advisory_xact_lock(${source.id})`);
+    }
     const [company] = await tx
       .update(companiesTable)
       .set({ nextQuoteSequence: sql`${companiesTable.nextQuoteSequence} + 1` })
@@ -1353,14 +1558,20 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
     !quote ||
     normalizeQuoteStatus(quote.status) !== "ready" ||
     !tokenData ||
-    quote.updatedAt.getTime() !== tokenData.timestamp
+    quote.updatedAt.getTime() !== tokenData.timestamp ||
+    (await isQuoteSuperseded(quote))
   ) {
     res.status(404).json({ error: "Proposal not found" });
     return;
   }
-  const [settings, company] = await Promise.all([
+  const [settings, company, decision] = await Promise.all([
     db.select().from(companySettingsTable).where(eq(companySettingsTable.companyId, quote.companyId)).then(([row]) => row),
     db.select().from(companiesTable).where(eq(companiesTable.id, quote.companyId)).then(([row]) => row),
+    decisionForTokenContext({
+      quoteId: quote.id,
+      companyId: quote.companyId,
+      tokenIssuedAt: quote.updatedAt,
+    }),
   ]);
 
   res.json(
@@ -1386,7 +1597,71 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
         accentColor: settings?.proposalAccentColor ?? "#2563eb",
       },
       terms: settings?.proposalTerms ?? "",
+      decision: decision ? serializePublicProposalDecision(decision) : null,
     }),
+  );
+});
+
+router.post("/proposals/:token", async (req, res): Promise<void> => {
+  const params = SubmitProposalDecisionParams.safeParse(req.params);
+  const parsed = SubmitProposalDecisionBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(422).json({ error: parsed.error.message });
+    return;
+  }
+
+  const tokenData = parseProposalShareToken(params.data.token);
+  if (!tokenData) {
+    res.status(404).json({ error: "Proposal not found" });
+    return;
+  }
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(eq(quotesTable.id, tokenData.quoteId));
+  if (
+    !quote ||
+    normalizeQuoteStatus(quote.status) !== "ready" ||
+    quote.updatedAt.getTime() !== tokenData.timestamp ||
+    (await isQuoteSuperseded(quote))
+  ) {
+    res.status(404).json({ error: "Proposal not found" });
+    return;
+  }
+
+  const normalized = normalizeProposalDecisionInput(parsed.data);
+  if (!normalized.value) {
+    res.status(422).json({ error: normalized.error });
+    return;
+  }
+  const result = await recordProposalDecision({
+    quote,
+    tokenIssuedAt: new Date(tokenData.timestamp),
+    decision: normalized.value,
+  });
+  if (result.stale) {
+    res.status(404).json({ error: "Proposal not found" });
+    return;
+  }
+  if (result.conflict) {
+    res.status(409).json({
+      error: `This proposal was already ${result.decision.decision}.`,
+    });
+    return;
+  }
+
+  req.log.info(
+    { quoteId: quote.id, decision: result.decision.decision },
+    "Recorded public proposal decision",
+  );
+  res.json(
+    SubmitProposalDecisionResponse.parse(
+      serializeProposalDecision(result.decision),
+    ),
   );
 });
 
@@ -1407,6 +1682,7 @@ router.post("/quotes/:id/duplicate", async (req, res): Promise<void> => {
     return;
   }
   const draft = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(${source.id})`);
     const [company] = await tx.update(companiesTable)
       .set({ nextQuoteSequence: sql`${companiesTable.nextQuoteSequence} + 1` })
       .where(eq(companiesTable.id, companyId))
@@ -1460,7 +1736,89 @@ router.get("/quotes/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetQuoteResponse.parse(serializeQuote(quote)));
+  const decisions = await db
+    .select()
+    .from(proposalDecisionsTable)
+    .where(
+      and(
+        eq(proposalDecisionsTable.quoteId, quote.id),
+        eq(proposalDecisionsTable.companyId, companyId),
+      ),
+    )
+    .orderBy(desc(proposalDecisionsTable.decidedAt));
+
+  res.json(GetQuoteResponse.parse(serializeQuote(quote, decisions)));
+});
+
+router.post("/quotes/:id/decision", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const params = SubmitQuoteDecisionParams.safeParse(req.params);
+  const parsed = SubmitQuoteDecisionBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(422).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.id, params.data.id),
+        eq(quotesTable.companyId, companyId),
+      ),
+    );
+  if (!quote) {
+    res.status(404).json({ error: "Quote not found" });
+    return;
+  }
+  if (normalizeQuoteStatus(quote.status) !== "ready") {
+    res.status(409).json({ error: "Only ready quotes can receive a decision." });
+    return;
+  }
+  if (await isQuoteSuperseded(quote)) {
+    res.status(409).json({
+      error: "This quote has been superseded by a newer revision.",
+    });
+    return;
+  }
+
+  const normalized = normalizeProposalDecisionInput(parsed.data);
+  if (!normalized.value) {
+    res.status(422).json({ error: normalized.error });
+    return;
+  }
+  const result = await recordProposalDecision({
+    quote,
+    tokenIssuedAt: quote.updatedAt,
+    decision: normalized.value,
+  });
+  if (result.stale) {
+    res.status(409).json({
+      error: "This quote is no longer the current ready revision.",
+    });
+    return;
+  }
+  if (result.conflict) {
+    res.status(409).json({
+      error: `This proposal was already ${result.decision.decision}.`,
+    });
+    return;
+  }
+
+  req.log.info(
+    { quoteId: quote.id, decision: result.decision.decision },
+    "Recorded internal proposal decision",
+  );
+  res.json(
+    SubmitQuoteDecisionResponse.parse(
+      serializeProposalDecision(result.decision),
+    ),
+  );
 });
 
 router.post("/quotes/:id/exports/preflight", async (req, res): Promise<void> => {
@@ -1587,6 +1945,23 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Quote not found" });
     return;
   }
+  const [existingDecision] = await db
+    .select({ id: proposalDecisionsTable.id })
+    .from(proposalDecisionsTable)
+    .where(
+      and(
+        eq(proposalDecisionsTable.quoteId, existingQuote.id),
+        eq(proposalDecisionsTable.companyId, companyId),
+      ),
+    )
+    .limit(1);
+  if (existingDecision) {
+    res.status(409).json({
+      error:
+        "This proposal already has a customer decision. Duplicate it to create a new revision.",
+    });
+    return;
+  }
   const targetStatus =
     parsed.data.status ?? normalizeQuoteStatus(existingQuote.status);
   let pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
@@ -1608,22 +1983,34 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
   } else if (pricing.deliberateLossApproval) {
     pricing = { ...pricing, deliberateLossApproval: null };
   }
-  const [quote] = await db
-    .update(quotesTable)
-    .set({
-      status: targetStatus,
-      pricing,
-      proposalDescription: parsed.data.proposalDescription,
-      total: pricing.finalSellingPrice,
-      margin: pricing.grossMargin,
-    })
-    .where(
-      and(
-        eq(quotesTable.id, existingQuote.id),
-        eq(quotesTable.companyId, companyId),
-      ),
-    )
-    .returning();
+  let quote: typeof quotesTable.$inferSelect | undefined;
+  try {
+    [quote] = await db
+      .update(quotesTable)
+      .set({
+        status: targetStatus,
+        pricing,
+        proposalDescription: parsed.data.proposalDescription,
+        total: pricing.finalSellingPrice,
+        margin: pricing.grossMargin,
+      })
+      .where(
+        and(
+          eq(quotesTable.id, existingQuote.id),
+          eq(quotesTable.companyId, companyId),
+        ),
+      )
+      .returning();
+  } catch (error) {
+    if (isForeignKeyConstraintError(error)) {
+      res.status(409).json({
+        error:
+          "This proposal received a customer decision while it was being updated. Duplicate it to create a new revision.",
+      });
+      return;
+    }
+    throw error;
+  }
 
   if (!quote) {
     throw new Error("Unable to update quote");

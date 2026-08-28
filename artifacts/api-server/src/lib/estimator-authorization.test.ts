@@ -45,10 +45,17 @@ test("company authorization exposes only the assigned company id", () => {
   assert.equal(authorization.allowed && authorization.companyId === 29, false);
 });
 
-test("only customer proposal reads bypass estimator authentication", () => {
+test("only customer proposal reads and signed decision submissions bypass estimator authentication", () => {
   assert.equal(
     isPublicProposalPath({
       method: "GET",
+      path: "/proposals/high-entropy-token",
+    } as never),
+    true,
+  );
+  assert.equal(
+    isPublicProposalPath({
+      method: "POST",
       path: "/proposals/high-entropy-token",
     } as never),
     true,

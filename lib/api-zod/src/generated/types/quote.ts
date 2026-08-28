@@ -7,6 +7,7 @@
  */
 import type { AssemblyLine } from './assemblyLine';
 import type { PricingSummary } from './pricingSummary';
+import type { ProposalDecision } from './proposalDecision';
 import type { QuoteJobInputsSnapshot } from './quoteJobInputsSnapshot';
 import type { QuoteSummary } from './quoteSummary';
 
@@ -26,4 +27,6 @@ export type Quote = QuoteSummary & ({
   sourceQuoteId?: number | null;
   revisionNumber?: number;
   createdAt: Date;
+  proposalDecision: ProposalDecision | null;
+  proposalDecisions: ProposalDecision[];
 });

@@ -7,6 +7,7 @@
  */
 import type { CustomerProposalLine } from './customerProposalLine';
 import type { ProposalCompanyPresentation } from './proposalCompanyPresentation';
+import type { ProposalDecisionPublic } from './proposalDecisionPublic';
 import type { QuoteStatus } from './quoteStatus';
 
 export interface CustomerProposal {
@@ -20,4 +21,5 @@ export interface CustomerProposal {
   scope: CustomerProposalLine[];
   company: ProposalCompanyPresentation;
   terms: string;
+  decision: ProposalDecisionPublic | null;
 }
