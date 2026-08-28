@@ -4787,6 +4787,106 @@ export const UpdateQuoteResponse = zod.object({
 
 
 /**
+ * Validates a company-owned saved quote snapshot without recalculating it or reading live catalog pricing.
+ * @summary Validate a provider-neutral saved quote export
+ */
+export const PreflightQuoteExportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PreflightQuoteExportBody = zod.object({
+  "destination": zod.enum(['jobber']),
+  "format": zod.enum(['csv']),
+  "mapping": zod.object({
+  "jobberClientId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+})
+})
+
+export const PreflightQuoteExportResponse = zod.object({
+  "destination": zod.enum(['jobber']),
+  "format": zod.enum(['csv']),
+  "ready": zod.boolean(),
+  "issues": zod.array(zod.object({
+  "code": zod.string(),
+  "field": zod.string(),
+  "message": zod.string()
+})),
+  "lineItemCount": zod.number(),
+  "quoteTotal": zod.number().nullable(),
+  "filename": zod.string()
+})
+
+
+/**
+ * Generates a UTF-8 Jobber quote import CSV from the company-owned saved quote snapshot.
+ * @summary Download a Jobber-compatible CSV from a saved quote
+ */
+export const ExportJobberQuoteCsvParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ExportJobberQuoteCsvBody = zod.object({
+  "destination": zod.enum(['jobber']),
+  "format": zod.enum(['csv']),
+  "mapping": zod.object({
+  "jobberClientId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+})
+})
+
+export const ExportJobberQuoteCsvResponse = zod.unknown()
+
+
+/**
  * @summary Create an immutable draft revision from a quote snapshot
  */
 export const DuplicateQuoteParams = zod.object({

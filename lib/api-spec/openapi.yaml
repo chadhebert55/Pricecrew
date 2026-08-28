@@ -253,6 +253,66 @@ paths:
                 $ref: "#/components/schemas/QuoteUpdateResult"
         "404":
           description: Quote not found
+  /quotes/{id}/exports/preflight:
+    post:
+      operationId: preflightQuoteExport
+      tags: [quotes]
+      summary: Validate a provider-neutral saved quote export
+      description: Validates a company-owned saved quote snapshot without recalculating it or reading live catalog pricing.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteExportRequest"
+      responses:
+        "200":
+          description: Export preflight result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteExportPreflight"
+        "404":
+          description: Quote not found
+  /quotes/{id}/exports/jobber.csv:
+    post:
+      operationId: exportJobberQuoteCsv
+      tags: [quotes]
+      summary: Download a Jobber-compatible CSV from a saved quote
+      description: Generates a UTF-8 Jobber quote import CSV from the company-owned saved quote snapshot.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteExportRequest"
+      responses:
+        "200":
+          description: UTF-8 Jobber quote import CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+        "404":
+          description: Quote not found
+        "422":
+          description: Export data is incomplete or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteExportInvalid"
   /quotes/{id}/duplicate:
     post:
       operationId: duplicateQuote
@@ -739,6 +799,78 @@ components:
           type: string
         deliberateLossConfirmation:
           $ref: "#/components/schemas/DeliberateLossConfirmation"
+    QuoteExportRequest:
+      type: object
+      required: [destination, format, mapping]
+      properties:
+        destination:
+          type: string
+          enum: [jobber]
+        format:
+          type: string
+          enum: [csv]
+        mapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
+    QuoteExportMapping:
+      type: object
+      additionalProperties: false
+      properties:
+        jobberClientId: { type: ["string", "null"] }
+        clientTitle: { type: ["string", "null"] }
+        clientFirstName: { type: ["string", "null"] }
+        clientLastName: { type: ["string", "null"] }
+        clientCompanyName: { type: ["string", "null"] }
+        clientEmail: { type: ["string", "null"] }
+        clientMainPhone: { type: ["string", "null"] }
+        clientHomePhone: { type: ["string", "null"] }
+        clientWorkPhone: { type: ["string", "null"] }
+        clientMobilePhone: { type: ["string", "null"] }
+        clientFaxPhone: { type: ["string", "null"] }
+        clientOtherPhone: { type: ["string", "null"] }
+        clientSmsEnabledPhoneNumber: { type: ["string", "null"] }
+        jobberPropertyId: { type: ["string", "null"] }
+        propertyStreet1: { type: ["string", "null"] }
+        propertyStreet2: { type: ["string", "null"] }
+        propertyCity: { type: ["string", "null"] }
+        propertyStateProvince: { type: ["string", "null"] }
+        propertyZipPostalCode: { type: ["string", "null"] }
+        propertyCountry: { type: ["string", "null"] }
+        billingStreet1: { type: ["string", "null"] }
+        billingStreet2: { type: ["string", "null"] }
+        billingCity: { type: ["string", "null"] }
+        billingStateProvince: { type: ["string", "null"] }
+        billingZipPostalCode: { type: ["string", "null"] }
+        billingCountry: { type: ["string", "null"] }
+    QuoteExportPreflightIssue:
+      type: object
+      required: [code, field, message]
+      properties:
+        code: { type: string }
+        field: { type: string }
+        message: { type: string }
+    QuoteExportPreflight:
+      type: object
+      required: [destination, format, ready, issues, lineItemCount, quoteTotal, filename]
+      properties:
+        destination: { type: string, enum: [jobber] }
+        format: { type: string, enum: [csv] }
+        ready: { type: boolean }
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteExportPreflightIssue"
+        lineItemCount: { type: number }
+        quoteTotal: { type: ["number", "null"] }
+        filename: { type: string }
+    QuoteExportInvalid:
+      type: object
+      required: [error, issues]
+      properties:
+        error: { type: string }
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteExportPreflightIssue"
     EvChargerInputs:
       type: object
       required:

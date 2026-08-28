@@ -1550,6 +1550,117 @@ export interface QuoteUpdate {
   deliberateLossConfirmation?: DeliberateLossConfirmation;
 }
 
+export type QuoteExportRequestDestination = typeof QuoteExportRequestDestination[keyof typeof QuoteExportRequestDestination];
+
+
+export const QuoteExportRequestDestination = {
+  jobber: 'jobber',
+} as const;
+
+export type QuoteExportRequestFormat = typeof QuoteExportRequestFormat[keyof typeof QuoteExportRequestFormat];
+
+
+export const QuoteExportRequestFormat = {
+  csv: 'csv',
+} as const;
+
+export interface QuoteExportMapping {
+  /** @nullable */
+  jobberClientId?: string | null;
+  /** @nullable */
+  clientTitle?: string | null;
+  /** @nullable */
+  clientFirstName?: string | null;
+  /** @nullable */
+  clientLastName?: string | null;
+  /** @nullable */
+  clientCompanyName?: string | null;
+  /** @nullable */
+  clientEmail?: string | null;
+  /** @nullable */
+  clientMainPhone?: string | null;
+  /** @nullable */
+  clientHomePhone?: string | null;
+  /** @nullable */
+  clientWorkPhone?: string | null;
+  /** @nullable */
+  clientMobilePhone?: string | null;
+  /** @nullable */
+  clientFaxPhone?: string | null;
+  /** @nullable */
+  clientOtherPhone?: string | null;
+  /** @nullable */
+  clientSmsEnabledPhoneNumber?: string | null;
+  /** @nullable */
+  jobberPropertyId?: string | null;
+  /** @nullable */
+  propertyStreet1?: string | null;
+  /** @nullable */
+  propertyStreet2?: string | null;
+  /** @nullable */
+  propertyCity?: string | null;
+  /** @nullable */
+  propertyStateProvince?: string | null;
+  /** @nullable */
+  propertyZipPostalCode?: string | null;
+  /** @nullable */
+  propertyCountry?: string | null;
+  /** @nullable */
+  billingStreet1?: string | null;
+  /** @nullable */
+  billingStreet2?: string | null;
+  /** @nullable */
+  billingCity?: string | null;
+  /** @nullable */
+  billingStateProvince?: string | null;
+  /** @nullable */
+  billingZipPostalCode?: string | null;
+  /** @nullable */
+  billingCountry?: string | null;
+}
+
+export interface QuoteExportRequest {
+  destination: QuoteExportRequestDestination;
+  format: QuoteExportRequestFormat;
+  mapping: QuoteExportMapping;
+}
+
+export interface QuoteExportPreflightIssue {
+  code: string;
+  field: string;
+  message: string;
+}
+
+export type QuoteExportPreflightDestination = typeof QuoteExportPreflightDestination[keyof typeof QuoteExportPreflightDestination];
+
+
+export const QuoteExportPreflightDestination = {
+  jobber: 'jobber',
+} as const;
+
+export type QuoteExportPreflightFormat = typeof QuoteExportPreflightFormat[keyof typeof QuoteExportPreflightFormat];
+
+
+export const QuoteExportPreflightFormat = {
+  csv: 'csv',
+} as const;
+
+export interface QuoteExportPreflight {
+  destination: QuoteExportPreflightDestination;
+  format: QuoteExportPreflightFormat;
+  ready: boolean;
+  issues: QuoteExportPreflightIssue[];
+  lineItemCount: number;
+  /** @nullable */
+  quoteTotal: number | null;
+  filename: string;
+}
+
+export interface QuoteExportInvalid {
+  error: string;
+  issues: QuoteExportPreflightIssue[];
+}
+
 export interface PriceBookItem {
   id: number;
   category: string;

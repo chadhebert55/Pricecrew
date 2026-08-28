@@ -10,6 +10,8 @@ import {
   GetCustomerResponse,
   DuplicateQuoteParams,
   DuplicateQuoteResponse,
+  ExportJobberQuoteCsvBody,
+  ExportJobberQuoteCsvParams,
   GetDashboardSummaryResponse,
   GetCustomerProposalParams,
   GetCustomerProposalResponse,
@@ -23,6 +25,9 @@ import {
   ListCustomersResponse,
   PreviewQuoteBody,
   PreviewQuoteResponse,
+  PreflightQuoteExportBody,
+  PreflightQuoteExportParams,
+  PreflightQuoteExportResponse,
   UpdatePriceBookItemBody,
   UpdatePriceBookItemParams,
   UpdatePriceBookItemResponse,
@@ -59,6 +64,13 @@ import {
   type TimeMaterialsInputRecord,
 } from "@workspace/db";
 import { ensureEstimatorSeed } from "../lib/estimating-seed";
+import {
+  buildJobberQuoteCsv,
+  JOBBER_CSV_FORMAT,
+  JOBBER_DESTINATION,
+  preflightJobberQuoteExport,
+  quoteExportFilename,
+} from "../lib/quote-export";
 import {
   isPublicProposalPath,
   requestCompanyId,
@@ -1449,6 +1461,96 @@ router.get("/quotes/:id", async (req, res): Promise<void> => {
   }
 
   res.json(GetQuoteResponse.parse(serializeQuote(quote)));
+});
+
+router.post("/quotes/:id/exports/preflight", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const params = PreflightQuoteExportParams.safeParse(req.params);
+  const parsed = PreflightQuoteExportBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.id, params.data.id),
+        eq(quotesTable.companyId, companyId),
+      ),
+    );
+  if (!quote) {
+    res.status(404).json({ error: "Quote not found" });
+    return;
+  }
+
+  const issues = preflightJobberQuoteExport(quote, parsed.data.mapping);
+  res.json(
+    PreflightQuoteExportResponse.parse({
+      destination: JOBBER_DESTINATION,
+      format: JOBBER_CSV_FORMAT,
+      ready: issues.length === 0,
+      issues,
+      lineItemCount: Array.isArray(quote.assembly) ? quote.assembly.length + 1 : 0,
+      quoteTotal: Number.isFinite(quote.pricing?.finalSellingPrice)
+        ? quote.pricing.finalSellingPrice
+        : null,
+      filename: quoteExportFilename(quote),
+    }),
+  );
+});
+
+router.post("/quotes/:id/exports/jobber.csv", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const params = ExportJobberQuoteCsvParams.safeParse(req.params);
+  const parsed = ExportJobberQuoteCsvBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.id, params.data.id),
+        eq(quotesTable.companyId, companyId),
+      ),
+    );
+  if (!quote) {
+    res.status(404).json({ error: "Quote not found" });
+    return;
+  }
+
+  const result = buildJobberQuoteCsv(quote, parsed.data.mapping);
+  if (!result.csv) {
+    res.status(422).json({
+      error: "Quote export is blocked until the listed issues are resolved.",
+      issues: result.issues,
+    });
+    return;
+  }
+
+  const filename = quoteExportFilename(quote);
+  res
+    .status(200)
+    .set({
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "X-Content-Type-Options": "nosniff",
+    })
+    .send(result.csv);
 });
 
 router.patch("/quotes/:id", async (req, res): Promise<void> => {

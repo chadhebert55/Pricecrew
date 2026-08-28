@@ -18,10 +18,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink, Copy } from "lucide-react"
+import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink, Copy, Download } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { quoteBuilderRoute } from "@/lib/quote-builder-routes"
+import { QuoteExportCard } from "@/components/quote-export-card"
 
 export function QuoteDetail() {
   const params = useParams<{ id: string }>()
@@ -244,7 +245,13 @@ export function QuoteDetail() {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            data-testid="button-export-quote-header"
+            onClick={() => document.getElementById("quote-integrations-exports")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          >
+            <Download size={16} className="mr-2" /> Export Quote
+          </Button>
           <Button data-testid="button-duplicate-quote" variant="outline" onClick={handleDuplicate}>
             <Copy size={16} className="mr-2" /> Duplicate / Revise
           </Button>
@@ -266,6 +273,13 @@ export function QuoteDetail() {
           This quote cannot be marked ready until all unsafe, unresolved, or invalid pricing inputs are resolved.
         </div>
       )}
+
+      <QuoteExportCard
+        quoteId={quote.id}
+        customerName={quote.customerName}
+        customerEmail={quote.customerEmail}
+        isDirty={isDirty}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         

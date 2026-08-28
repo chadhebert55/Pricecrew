@@ -35,6 +35,9 @@ import type {
   PriceBookItem,
   PriceBookItemUpdate,
   Quote,
+  QuoteExportInvalid,
+  QuoteExportPreflight,
+  QuoteExportRequest,
   QuoteInput,
   QuotePreviewInput,
   QuoteSummary,
@@ -978,6 +981,152 @@ export const useUpdateQuote = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateQuoteMutationOptions(options));
+    }
+
+export const getPreflightQuoteExportUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/exports/preflight`
+}
+
+/**
+ * Validates a company-owned saved quote snapshot without recalculating it or reading live catalog pricing.
+ * @summary Validate a provider-neutral saved quote export
+ */
+export const preflightQuoteExport = async (id: number,
+    quoteExportRequest: QuoteExportRequest, options?: Parameters<typeof customFetch>[1]): Promise<QuoteExportPreflight> => {
+
+  return customFetch<QuoteExportPreflight>(getPreflightQuoteExportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quoteExportRequest)
+  }
+);}
+
+
+
+
+
+export const getPreflightQuoteExportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof preflightQuoteExport>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof preflightQuoteExport>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext> => {
+
+const mutationKey = ['preflightQuoteExport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof preflightQuoteExport>>, {id: number;data: BodyType<QuoteExportRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  preflightQuoteExport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreflightQuoteExportMutationResult = NonNullable<Awaited<ReturnType<typeof preflightQuoteExport>>>
+    export type PreflightQuoteExportMutationBody = BodyType<QuoteExportRequest>
+    export type PreflightQuoteExportMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate a provider-neutral saved quote export
+ */
+export const usePreflightQuoteExport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof preflightQuoteExport>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof preflightQuoteExport>>,
+        TError,
+        {id: number;data: BodyType<QuoteExportRequest>},
+        TContext
+      > => {
+      return useMutation(getPreflightQuoteExportMutationOptions(options));
+    }
+
+export const getExportJobberQuoteCsvUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/exports/jobber.csv`
+}
+
+/**
+ * Generates a UTF-8 Jobber quote import CSV from the company-owned saved quote snapshot.
+ * @summary Download a Jobber-compatible CSV from a saved quote
+ */
+export const exportJobberQuoteCsv = async (id: number,
+    quoteExportRequest: QuoteExportRequest, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportJobberQuoteCsvUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quoteExportRequest)
+  }
+);}
+
+
+
+
+
+export const getExportJobberQuoteCsvMutationOptions = <TError = ErrorType<void | QuoteExportInvalid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext> => {
+
+const mutationKey = ['exportJobberQuoteCsv'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, {id: number;data: BodyType<QuoteExportRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  exportJobberQuoteCsv(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExportJobberQuoteCsvMutationResult = NonNullable<Awaited<ReturnType<typeof exportJobberQuoteCsv>>>
+    export type ExportJobberQuoteCsvMutationBody = BodyType<QuoteExportRequest>
+    export type ExportJobberQuoteCsvMutationError = ErrorType<void | QuoteExportInvalid>
+
+    /**
+ * @summary Download a Jobber-compatible CSV from a saved quote
+ */
+export const useExportJobberQuoteCsv = <TError = ErrorType<void | QuoteExportInvalid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportJobberQuoteCsv>>, TError,{id: number;data: BodyType<QuoteExportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof exportJobberQuoteCsv>>,
+        TError,
+        {id: number;data: BodyType<QuoteExportRequest>},
+        TContext
+      > => {
+      return useMutation(getExportJobberQuoteCsvMutationOptions(options));
     }
 
 export const getDuplicateQuoteUrl = (id: number,) => {

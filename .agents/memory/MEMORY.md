@@ -8,3 +8,4 @@
 - [Customer identity matching](customer-identity-matching.md) — email identity is company-scoped and DB-enforced; names alone may match only one email-less customer.
 - [Concurrent validation isolation](concurrent-validation-isolation.md) — registered checks may overlap; isolate generated prerequisites and build outputs.
 - [Tenant onboarding isolation](tenant-onboarding-isolation.md) — first-time identities get a new company with defaults only; never claim or copy another tenant’s private records.
+- [Quote export fidelity](quote-export-fidelity.md) — provider exports preserve the saved final total while keeping unsnapshotted selling, tax, and discount values blank.
