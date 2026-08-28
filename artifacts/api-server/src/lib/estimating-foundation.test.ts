@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
-import test from "node:test";
+import test, { after } from "node:test";
 import type {
   BathroomInputRecord,
   CustomInputRecord,
@@ -14,6 +14,7 @@ import type {
 } from "@workspace/db";
 import {
   customersTable,
+  companyMembersTable,
   db,
   quotesTable,
 } from "@workspace/db";
@@ -44,7 +45,10 @@ import {
   validateOverrideValues,
   withProfit,
 } from "../routes/estimating";
-import { SIEMENS_QF250A_SEED_COST } from "./estimating-seed";
+import {
+  ensureEstimatorSeed,
+  SIEMENS_QF250A_SEED_COST,
+} from "./estimating-seed";
 
 const settings: EstimatingSettings = {
   residentialLaborSellRate: 150,
@@ -740,7 +744,35 @@ type CustomerSummary = {
   email: string | null;
 };
 
+const authenticatedHeaders = {
+  "content-type": "application/json",
+  "x-test-clerk-user-id": "user_estimator_integration_tests",
+};
+
+after(async () => {
+  await db
+    .delete(companyMembersTable)
+    .where(
+      eq(
+        companyMembersTable.userId,
+        "user_estimator_integration_tests",
+      ),
+    );
+});
+
 async function startTestServer() {
+  await ensureEstimatorSeed();
+  await db
+    .insert(companyMembersTable)
+    .values({
+      userId: "user_estimator_integration_tests",
+      companyId: 1,
+      role: "member",
+    })
+    .onConflictDoUpdate({
+      target: companyMembersTable.userId,
+      set: { companyId: 1, role: "member" },
+    });
   const server = await new Promise<Server>((resolve, reject) => {
     const candidate = app.listen(0, () => resolve(candidate));
     candidate.once("error", reject);
@@ -765,7 +797,7 @@ async function closeTestServer(server: Server) {
 async function postQuote(baseUrl: string, input: QuoteRequest) {
   const response = await fetch(`${baseUrl}/api/quotes`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: authenticatedHeaders,
     body: JSON.stringify(input),
   });
   const body = (await response.json()) as Partial<CreatedQuote> & {
@@ -786,7 +818,7 @@ async function postCustomer(
 ) {
   const response = await fetch(`${baseUrl}/api/customers`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: authenticatedHeaders,
     body: JSON.stringify(input),
   });
   const body = (await response.json()) as CustomerSummary & { error?: string };
@@ -806,7 +838,7 @@ async function patchCustomer(
 ) {
   const response = await fetch(`${baseUrl}/api/customers/${id}`, {
     method: "PATCH",
-    headers: { "content-type": "application/json" },
+    headers: authenticatedHeaders,
     body: JSON.stringify(input),
   });
   const body = (await response.json()) as Partial<CustomerSummary> & {

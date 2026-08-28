@@ -52,7 +52,12 @@ import {
   type ServiceUpgradeInputRecord,
   type TimeMaterialsInputRecord,
 } from "@workspace/db";
-import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
+import { ensureEstimatorSeed } from "../lib/estimating-seed";
+import {
+  isPublicProposalPath,
+  requestCompanyId,
+  requireEstimatorAuth,
+} from "../middlewares/estimatorAuth";
 import {
   calculateBathroomEstimate,
   calculateCustomEstimate,
@@ -68,6 +73,14 @@ import {
 } from "../lib/estimating-engine";
 
 const router: IRouter = Router();
+
+router.use((req, res, next) => {
+  if (isPublicProposalPath(req)) {
+    next();
+    return;
+  }
+  void requireEstimatorAuth(req, res, next);
+});
 
 type QuoteStatus = "draft" | "ready";
 type EstimateModule =
@@ -161,11 +174,11 @@ function isUniqueConstraintError(error: unknown): boolean {
   return "cause" in error && isUniqueConstraintError(error.cause);
 }
 
-async function customerByNormalizedEmail(email: string) {
+async function customerByNormalizedEmail(companyId: number, email: string) {
   const customers = await db
     .select()
     .from(customersTable)
-    .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+    .where(eq(customersTable.companyId, companyId));
   return customers.find(
     (customer) => normalizeCustomerEmail(customer.email) === email,
   );
@@ -230,6 +243,7 @@ export function matchCustomerForQuote(
 }
 
 async function findOrCreateCustomer(input: {
+  companyId: number;
   name: string;
   email?: string | null;
 }) {
@@ -238,7 +252,7 @@ async function findOrCreateCustomer(input: {
   const customers = await db
     .select()
     .from(customersTable)
-    .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+    .where(eq(customersTable.companyId, input.companyId));
   const match = matchCustomerForQuote(customers, { name, email });
 
   if (match?.customer) {
@@ -251,20 +265,26 @@ async function findOrCreateCustomer(input: {
           .where(
             and(
               eq(customersTable.id, match.customer.id),
-              eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+              eq(customersTable.companyId, input.companyId),
               isNull(customersTable.email),
             ),
           )
           .returning();
       } catch (error) {
         if (isUniqueConstraintError(error)) {
-          const concurrentEmailMatch = await customerByNormalizedEmail(email);
+           const concurrentEmailMatch = await customerByNormalizedEmail(
+             input.companyId,
+             email,
+           );
           if (concurrentEmailMatch) return concurrentEmailMatch;
         }
         throw error;
       }
       if (updated) return updated;
-      const concurrentEmailMatch = await customerByNormalizedEmail(email);
+       const concurrentEmailMatch = await customerByNormalizedEmail(
+         input.companyId,
+         email,
+       );
       if (concurrentEmailMatch) return concurrentEmailMatch;
     }
     if (!match.shouldSetEmail) return match.customer;
@@ -274,7 +294,7 @@ async function findOrCreateCustomer(input: {
     const [customer] = await db
       .insert(customersTable)
       .values({
-        companyId: DEFAULT_COMPANY_ID,
+        companyId: input.companyId,
         name,
         email,
       })
@@ -283,7 +303,10 @@ async function findOrCreateCustomer(input: {
     return customer;
   } catch (error) {
     if (email && isUniqueConstraintError(error)) {
-      const concurrentEmailMatch = await customerByNormalizedEmail(email);
+       const concurrentEmailMatch = await customerByNormalizedEmail(
+         input.companyId,
+         email,
+       );
       if (concurrentEmailMatch) return concurrentEmailMatch;
     }
     throw error;
@@ -435,12 +458,12 @@ export function hasBlockingPricingWarnings(
   );
 }
 
-async function companySettings() {
+async function companySettings(companyId: number) {
   await ensureEstimatorSeed();
   const [settings] = await db
     .select()
     .from(companySettingsTable)
-    .where(eq(companySettingsTable.companyId, DEFAULT_COMPANY_ID));
+    .where(eq(companySettingsTable.companyId, companyId));
 
   if (!settings) {
     throw new Error("Starter company settings were not initialized");
@@ -450,10 +473,11 @@ async function companySettings() {
 }
 
 async function calculateEstimate(
+  companyId: number,
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
 ) {
-  const settings = await companySettings();
+  const settings = await companySettings(companyId);
   const priceBook = await db
     .select({
       category: priceBookItemsTable.category,
@@ -471,7 +495,7 @@ async function calculateEstimate(
       isDefault: priceBookItemsTable.isDefault,
     })
     .from(priceBookItemsTable)
-    .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID));
+    .where(eq(priceBookItemsTable.companyId, companyId));
 
   if (module === "BATHROOM" && isBathroomInput(jobInputs)) {
     return calculateBathroomEstimate(jobInputs, settings, priceBook);
@@ -575,11 +599,12 @@ function moduleMatchesInputs(
 }
 
 router.get("/dashboard/summary", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const quotes = await db
     .select()
     .from(quotesTable)
-    .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID))
+    .where(eq(quotesTable.companyId, companyId))
     .orderBy(desc(quotesTable.updatedAt));
 
   const totalQuoted = quotes.reduce((sum, quote) => sum + quote.total, 0);
@@ -604,6 +629,7 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
 });
 
 router.get("/customers", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const parsedQuery = ListCustomersQueryParams.safeParse(req.query);
   if (!parsedQuery.success) {
@@ -615,12 +641,12 @@ router.get("/customers", async (req, res): Promise<void> => {
     db
       .select()
       .from(customersTable)
-      .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID))
+      .where(eq(customersTable.companyId, companyId))
       .orderBy(customersTable.name),
     db
       .select()
       .from(quotesTable)
-      .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID)),
+      .where(eq(quotesTable.companyId, companyId)),
   ]);
   const search = parsedQuery.data.search?.trim().toLocaleLowerCase();
   const filtered = search
@@ -639,6 +665,7 @@ router.get("/customers", async (req, res): Promise<void> => {
 });
 
 router.post("/customers", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const parsed = CreateCustomerBody.safeParse(req.body);
   if (!parsed.success) {
@@ -651,7 +678,7 @@ router.post("/customers", async (req, res): Promise<void> => {
     const customers = await db
       .select()
       .from(customersTable)
-      .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+      .where(eq(customersTable.companyId, companyId));
     if (
       customers.some(
         (customer) => normalizeCustomerEmail(customer.email) === email,
@@ -667,7 +694,7 @@ router.post("/customers", async (req, res): Promise<void> => {
     [customer] = await db
       .insert(customersTable)
       .values({
-        companyId: DEFAULT_COMPANY_ID,
+        companyId,
         name: parsed.data.name.trim().replace(/\s+/g, " "),
         email,
       })
@@ -688,6 +715,7 @@ router.post("/customers", async (req, res): Promise<void> => {
 });
 
 router.get("/customers/:id", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const params = GetCustomerParams.safeParse(req.params);
   if (!params.success) {
@@ -701,7 +729,7 @@ router.get("/customers/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(customersTable.id, params.data.id),
-        eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+        eq(customersTable.companyId, companyId),
       ),
     );
   if (!customer) {
@@ -715,7 +743,7 @@ router.get("/customers/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(quotesTable.customerId, customer.id),
-        eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+        eq(quotesTable.companyId, companyId),
       ),
     )
     .orderBy(desc(quotesTable.updatedAt));
@@ -729,6 +757,7 @@ router.get("/customers/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/customers/:id", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const params = UpdateCustomerParams.safeParse(req.params);
   const parsed = UpdateCustomerBody.safeParse(req.body);
@@ -747,7 +776,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(customersTable.id, params.data.id),
-        eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+        eq(customersTable.companyId, companyId),
       ),
     );
   if (!existing) {
@@ -763,7 +792,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
     const customers = await db
       .select()
       .from(customersTable)
-      .where(eq(customersTable.companyId, DEFAULT_COMPANY_ID));
+      .where(eq(customersTable.companyId, companyId));
     const conflict = customers.find(
       (customer) =>
         customer.id !== existing.id &&
@@ -787,7 +816,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
       .where(
         and(
           eq(customersTable.id, existing.id),
-          eq(customersTable.companyId, DEFAULT_COMPANY_ID),
+          eq(customersTable.companyId, companyId),
         ),
       )
       .returning();
@@ -806,7 +835,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(quotesTable.customerId, customer.id),
-        eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+        eq(quotesTable.companyId, companyId),
       ),
     );
   req.log.info({ customerId: customer.id }, "Updated customer");
@@ -816,6 +845,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
 });
 
 router.get("/quotes", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const parsedQuery = ListQuotesQueryParams.safeParse(req.query);
   if (!parsedQuery.success) {
@@ -827,7 +857,7 @@ router.get("/quotes", async (req, res): Promise<void> => {
   const allQuotes = await db
     .select()
     .from(quotesTable)
-    .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID))
+    .where(eq(quotesTable.companyId, companyId))
     .orderBy(desc(quotesTable.updatedAt));
   const filteredQuotes = parsedQuery.data.status
     ? allQuotes.filter(
@@ -840,6 +870,7 @@ router.get("/quotes", async (req, res): Promise<void> => {
 });
 
 router.post("/quotes", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const parsed = CreateQuoteBody.safeParse(req.body);
   if (!parsed.success) {
@@ -862,11 +893,13 @@ router.post("/quotes", async (req, res): Promise<void> => {
   }
 
   const estimate = await calculateEstimate(
+    companyId,
     parsed.data.module,
     parsed.data.jobInputs,
   );
 
   const customer = await findOrCreateCustomer({
+    companyId,
     name: parsed.data.customerName,
     email: parsed.data.customerEmail,
   });
@@ -879,7 +912,7 @@ router.post("/quotes", async (req, res): Promise<void> => {
     const [pendingQuote] = await tx
       .insert(quotesTable)
       .values({
-        companyId: DEFAULT_COMPANY_ID,
+        companyId,
         customerId: customer?.id,
         quoteNumber: `PENDING-${randomUUID()}`,
         customerName: parsed.data.customerName,
@@ -904,14 +937,14 @@ router.post("/quotes", async (req, res): Promise<void> => {
       .update(quotesTable)
       .set({
         quoteNumber: formatQuoteNumber(
-          DEFAULT_COMPANY_ID,
+          companyId,
           pendingQuote.id,
         ),
       })
       .where(
         and(
           eq(quotesTable.id, pendingQuote.id),
-          eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+          eq(quotesTable.companyId, companyId),
         ),
       )
       .returning();
@@ -928,6 +961,7 @@ router.post("/quotes", async (req, res): Promise<void> => {
 });
 
 router.post("/quotes/preview", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   const parsed = PreviewQuoteBody.safeParse(req.body);
   if (!parsed.success) {
     req.log.warn({ errors: parsed.error.message }, "Invalid quote preview");
@@ -949,6 +983,7 @@ router.post("/quotes/preview", async (req, res): Promise<void> => {
   }
 
   const estimate = await calculateEstimate(
+    companyId,
     parsed.data.module,
     parsed.data.jobInputs,
   );
@@ -983,7 +1018,6 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
   const tokenData = parseProposalShareToken(params.data.token);
   if (
     !quote ||
-    quote.companyId !== DEFAULT_COMPANY_ID ||
     normalizeQuoteStatus(quote.status) !== "ready" ||
     !tokenData ||
     quote.updatedAt.getTime() !== tokenData.timestamp
@@ -1014,6 +1048,7 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
 });
 
 router.get("/quotes/:id", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const params = GetQuoteParams.safeParse(req.params);
   if (!params.success) {
@@ -1024,9 +1059,14 @@ router.get("/quotes/:id", async (req, res): Promise<void> => {
   const [quote] = await db
     .select()
     .from(quotesTable)
-    .where(eq(quotesTable.id, params.data.id));
+    .where(
+      and(
+        eq(quotesTable.id, params.data.id),
+        eq(quotesTable.companyId, companyId),
+      ),
+    );
 
-  if (!quote || quote.companyId !== DEFAULT_COMPANY_ID) {
+  if (!quote) {
     res.status(404).json({ error: "Quote not found" });
     return;
   }
@@ -1035,6 +1075,7 @@ router.get("/quotes/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/quotes/:id", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const params = UpdateQuoteParams.safeParse(req.params);
   const parsed = UpdateQuoteBody.safeParse(req.body);
@@ -1057,8 +1098,13 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
   const [existingQuote] = await db
     .select()
     .from(quotesTable)
-    .where(eq(quotesTable.id, params.data.id));
-  if (!existingQuote || existingQuote.companyId !== DEFAULT_COMPANY_ID) {
+    .where(
+      and(
+        eq(quotesTable.id, params.data.id),
+        eq(quotesTable.companyId, companyId),
+      ),
+    );
+  if (!existingQuote) {
     res.status(404).json({ error: "Quote not found" });
     return;
   }
@@ -1086,7 +1132,7 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(quotesTable.id, existingQuote.id),
-        eq(quotesTable.companyId, DEFAULT_COMPANY_ID),
+        eq(quotesTable.companyId, companyId),
       ),
     )
     .returning();
@@ -1107,12 +1153,13 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/price-book", async (_req, res): Promise<void> => {
+router.get("/price-book", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const items = await db
     .select()
     .from(priceBookItemsTable)
-    .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID))
+    .where(eq(priceBookItemsTable.companyId, companyId))
     .orderBy(priceBookItemsTable.category, priceBookItemsTable.item);
 
   res.json(
@@ -1127,6 +1174,7 @@ router.get("/price-book", async (_req, res): Promise<void> => {
 });
 
 router.patch("/price-book/:id", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
   const params = UpdatePriceBookItemParams.safeParse(req.params);
   const parsed = UpdatePriceBookItemBody.safeParse(req.body);
@@ -1145,7 +1193,7 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(priceBookItemsTable.id, params.data.id),
-        eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID),
+        eq(priceBookItemsTable.companyId, companyId),
       ),
     )
     .returning();
@@ -1164,12 +1212,13 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/settings", async (_req, res): Promise<void> => {
-  const settings = await companySettings();
+router.get("/settings", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const settings = await companySettings(companyId);
   const [company] = await db
     .select()
     .from(companiesTable)
-    .where(eq(companiesTable.id, DEFAULT_COMPANY_ID));
+    .where(eq(companiesTable.id, companyId));
 
   res.json(
     GetSettingsResponse.parse({
@@ -1196,13 +1245,14 @@ router.get("/settings", async (_req, res): Promise<void> => {
 });
 
 router.patch("/settings", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
   const parsed = UpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const currentSettings = await companySettings();
+  const currentSettings = await companySettings(companyId);
   const residentialLaborSellRate =
     parsed.data.residentialLaborSellRate ??
     parsed.data.laborRate ??
@@ -1211,7 +1261,7 @@ router.patch("/settings", async (req, res): Promise<void> => {
     await db
       .update(companiesTable)
       .set({ name: parsed.data.companyName })
-      .where(eq(companiesTable.id, DEFAULT_COMPANY_ID));
+      .where(eq(companiesTable.id, companyId));
   }
 
   const [settings] = await db
@@ -1259,7 +1309,7 @@ router.patch("/settings", async (req, res): Promise<void> => {
   const [company] = await db
     .select()
     .from(companiesTable)
-    .where(eq(companiesTable.id, DEFAULT_COMPANY_ID));
+    .where(eq(companiesTable.id, companyId));
 
   if (!settings) {
     throw new Error("Unable to update company settings");

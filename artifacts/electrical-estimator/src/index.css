@@ -1,5 +1,7 @@
+@layer theme, base, clerk, components, utilities;
 @import url('https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
+@import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
 
@@ -153,4 +155,9 @@ td {
 }
 input[type="number"] {
   @apply font-mono;
+}
+
+.cl-formFieldInput::placeholder {
+  color: #64748b;
+  opacity: 1;
 }

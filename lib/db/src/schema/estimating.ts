@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -462,6 +463,31 @@ export const companiesTable = pgTable("companies", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Clerk owns the user record. This table is the application-owned bridge that
+ * grants a signed-in identity access to one estimating company.
+ */
+export const companyMembersTable = pgTable(
+  "company_members",
+  {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companiesTable.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("company_members_user_id_unique").on(table.userId),
+    uniqueIndex("company_members_company_owner_unique")
+      .on(table.companyId)
+      .where(sql`${table.role} = 'owner'`),
+  ],
+);
 
 export const companySettingsTable = pgTable(
   "company_settings",

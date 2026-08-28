@@ -1,8 +1,12 @@
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, Zap } from "lucide-react"
+import { useClerk, useUser } from "@clerk/react"
+import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, Zap, LogOut } from "lucide-react"
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation()
+  const { signOut } = useClerk()
+  const { user } = useUser()
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
 
   const navItems = [
     { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -41,8 +45,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-secondary-border text-xs text-secondary-foreground/50">
-          Industrial Estimating Workspace
+        <div className="border-t border-secondary-border p-4">
+          <p className="truncate text-xs font-medium text-secondary-foreground/80">
+            {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
+          </p>
+          <button
+            type="button"
+            onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            className="mt-3 flex w-full items-center gap-2 rounded px-2 py-2 text-xs text-secondary-foreground/70 transition-colors hover:bg-secondary-foreground/10 hover:text-secondary-foreground"
+          >
+            <LogOut size={14} />
+            Sign out
+          </button>
         </div>
       </aside>
 

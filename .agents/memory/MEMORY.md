@@ -7,3 +7,4 @@
 - [Catalog price normalization](catalog-price-normalization.md) — per-thousand wire prices require six-decimal storage and complete source metadata; ambiguous package units stay unresolved.
 - [Customer identity matching](customer-identity-matching.md) — email identity is company-scoped and DB-enforced; names alone may match only one email-less customer.
 - [Concurrent validation isolation](concurrent-validation-isolation.md) — registered checks may overlap; isolate generated prerequisites and build outputs.
+- [Tenant onboarding isolation](tenant-onboarding-isolation.md) — first-time identities get a new company with defaults only; never claim or copy another tenant’s private records.

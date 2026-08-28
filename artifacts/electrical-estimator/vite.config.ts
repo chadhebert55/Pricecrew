@@ -84,7 +84,7 @@ export default defineConfig(({ command }) => {
     base: basePath ?? '/',
     plugins: [
       react(),
-      tailwindcss(),
+      tailwindcss({ optimize: false }),
       entryChunkReportPlugin(),
       runtimeErrorOverlay(),
       ...replitPlugins,
