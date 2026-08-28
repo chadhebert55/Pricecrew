@@ -475,6 +475,9 @@ export const createQuoteBodyJobInputsEightTargetMarginMax = 99.99;
 
 export const createQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const createQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
+
 export const createQuoteBodyJobInputsNineCrewSizeMultipleOf = 1;
 
 export const createQuoteBodyJobInputsNineCrewHoursMin = 0;
@@ -491,6 +494,9 @@ export const createQuoteBodyJobInputsNineTargetMarginMax = 99.99;
 
 
 export const createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+export const createQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 export const createQuoteBodyJobInputsOnezeroLaborHoursMin = 0;
 
@@ -509,8 +515,14 @@ export const createQuoteBodyJobInputsOnezeroMaterialsItemQuantityMin = 0;
 
 export const createQuoteBodyJobInputsOnezeroMaterialsItemUnitCostMin = 0;
 
+export const createQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax = 500;
+
 
 export const createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemCostMin = 0;
+
+export const createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 
 export const createQuoteBodyJobInputsOneoneFloorCountMultipleOf = 1;
@@ -918,7 +930,11 @@ export const CreateQuoteBody = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(createQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(createQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(createQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -933,7 +949,11 @@ export const CreateQuoteBody = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(createQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(createQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -948,12 +968,20 @@ export const CreateQuoteBody = zod.object({
   "description": zod.string(),
   "quantity": zod.number().min(createQuoteBodyJobInputsOnezeroMaterialsItemQuantityMin),
   "unit": zod.string(),
-  "unitCost": zod.number().min(createQuoteBodyJobInputsOnezeroMaterialsItemUnitCostMin)
+  "unitCost": zod.number().min(createQuoteBodyJobInputsOnezeroMaterialsItemUnitCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin).max(createQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(createQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -1311,6 +1339,9 @@ export const createQuoteResponseTwoJobInputsEightTargetMarginMax = 99.99;
 
 export const createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
+
 export const createQuoteResponseTwoJobInputsNineCrewSizeMultipleOf = 1;
 
 export const createQuoteResponseTwoJobInputsNineCrewHoursMin = 0;
@@ -1327,6 +1358,9 @@ export const createQuoteResponseTwoJobInputsNineTargetMarginMax = 99.99;
 
 
 export const createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+export const createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 export const createQuoteResponseTwoJobInputsOnezeroLaborHoursMin = 0;
 
@@ -1345,8 +1379,14 @@ export const createQuoteResponseTwoJobInputsOnezeroMaterialsItemQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin = 0;
 
+export const createQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax = 500;
+
 
 export const createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 
 export const createQuoteResponseTwoJobInputsOneoneFloorCountMultipleOf = 1;
@@ -1400,6 +1440,16 @@ export const createQuoteResponseTwoJobInputsOneoneCrewSizeMultipleOf = 1;
 export const createQuoteResponseTwoJobInputsOneoneCrewHoursMin = 0;
 
 export const createQuoteResponseTwoJobInputsOneoneLaborAdjustmentHoursMin = 0;
+
+export const createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin = 10;
+export const createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax = 500;
+
+export const createQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMin = 10;
+export const createQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMax = 500;
+
+export const createQuoteResponseTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin = 0;
+
+export const createQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin = 0;
 
 
 
@@ -1756,7 +1806,11 @@ export const CreateQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -1771,7 +1825,11 @@ export const CreateQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -1786,12 +1844,20 @@ export const CreateQuoteResponse = zod.object({
   "description": zod.string(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsOnezeroMaterialsItemQuantityMin),
   "unit": zod.string(),
-  "unitCost": zod.number().min(createQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin)
+  "unitCost": zod.number().min(createQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -1845,7 +1911,8 @@ export const CreateQuoteResponse = zod.object({
   "unit": zod.string(),
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
-  "source": zod.string()
+  "source": zod.string(),
+  "intentionalExclusionReason": zod.string().min(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
   "materialCost": zod.number(),
@@ -1857,7 +1924,13 @@ export const CreateQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable(),
   "laborSellRate": zod.number().optional(),
   "laborSellAmount": zod.number().optional(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "deliberateLossApproval": zod.union([zod.object({
+  "reason": zod.string().min(createQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMin).max(createQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMax),
+  "confirmedAt": zod.coerce.date(),
+  "costAtConfirmation": zod.number().min(createQuoteResponseTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin),
+  "sellingPriceAtConfirmation": zod.number().min(createQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin)
+}),zod.null()]).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -2187,6 +2260,9 @@ export const previewQuoteBodyJobInputsEightTargetMarginMax = 99.99;
 
 export const previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
+
 export const previewQuoteBodyJobInputsNineCrewSizeMultipleOf = 1;
 
 export const previewQuoteBodyJobInputsNineCrewHoursMin = 0;
@@ -2203,6 +2279,9 @@ export const previewQuoteBodyJobInputsNineTargetMarginMax = 99.99;
 
 
 export const previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+export const previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 export const previewQuoteBodyJobInputsOnezeroLaborHoursMin = 0;
 
@@ -2221,8 +2300,14 @@ export const previewQuoteBodyJobInputsOnezeroMaterialsItemQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsOnezeroMaterialsItemUnitCostMin = 0;
 
+export const previewQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin = 10;
+export const previewQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax = 500;
+
 
 export const previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemCostMin = 0;
+
+export const previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 
 export const previewQuoteBodyJobInputsOneoneFloorCountMultipleOf = 1;
@@ -2624,7 +2709,11 @@ export const PreviewQuoteBody = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(previewQuoteBodyJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -2639,7 +2728,11 @@ export const PreviewQuoteBody = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(previewQuoteBodyJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -2654,12 +2747,20 @@ export const PreviewQuoteBody = zod.object({
   "description": zod.string(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsOnezeroMaterialsItemQuantityMin),
   "unit": zod.string(),
-  "unitCost": zod.number().min(previewQuoteBodyJobInputsOnezeroMaterialsItemUnitCostMin)
+  "unitCost": zod.number().min(previewQuoteBodyJobInputsOnezeroMaterialsItemUnitCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(previewQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin).max(previewQuoteBodyJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(previewQuoteBodyJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -2709,6 +2810,16 @@ export const PreviewQuoteBody = zod.object({
   "sellingPriceOverride": zod.number().min(previewQuoteBodySellingPriceOverrideMin).max(previewQuoteBodySellingPriceOverrideMax).nullish()
 })
 
+export const previewQuoteResponseAssemblyItemIntentionalExclusionReasonMin = 10;
+export const previewQuoteResponseAssemblyItemIntentionalExclusionReasonMax = 500;
+
+export const previewQuoteResponsePricingOneDeliberateLossApprovalOneReasonMin = 10;
+export const previewQuoteResponsePricingOneDeliberateLossApprovalOneReasonMax = 500;
+
+export const previewQuoteResponsePricingOneDeliberateLossApprovalOneCostAtConfirmationMin = 0;
+
+export const previewQuoteResponsePricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin = 0;
+
 
 
 
@@ -2723,7 +2834,8 @@ export const PreviewQuoteResponse = zod.object({
   "unit": zod.string(),
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
-  "source": zod.string()
+  "source": zod.string(),
+  "intentionalExclusionReason": zod.string().min(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMin).max(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
   "materialCost": zod.number(),
@@ -2735,7 +2847,13 @@ export const PreviewQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable(),
   "laborSellRate": zod.number().optional(),
   "laborSellAmount": zod.number().optional(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "deliberateLossApproval": zod.union([zod.object({
+  "reason": zod.string().min(previewQuoteResponsePricingOneDeliberateLossApprovalOneReasonMin).max(previewQuoteResponsePricingOneDeliberateLossApprovalOneReasonMax),
+  "confirmedAt": zod.coerce.date(),
+  "costAtConfirmation": zod.number().min(previewQuoteResponsePricingOneDeliberateLossApprovalOneCostAtConfirmationMin),
+  "sellingPriceAtConfirmation": zod.number().min(previewQuoteResponsePricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin)
+}),zod.null()]).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -3108,6 +3226,9 @@ export const getQuoteResponseTwoJobInputsEightTargetMarginMax = 99.99;
 
 export const getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
+
 export const getQuoteResponseTwoJobInputsNineCrewSizeMultipleOf = 1;
 
 export const getQuoteResponseTwoJobInputsNineCrewHoursMin = 0;
@@ -3124,6 +3245,9 @@ export const getQuoteResponseTwoJobInputsNineTargetMarginMax = 99.99;
 
 
 export const getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+export const getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 export const getQuoteResponseTwoJobInputsOnezeroLaborHoursMin = 0;
 
@@ -3142,8 +3266,14 @@ export const getQuoteResponseTwoJobInputsOnezeroMaterialsItemQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin = 0;
 
+export const getQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin = 10;
+export const getQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax = 500;
+
 
 export const getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin = 0;
+
+export const getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 
 export const getQuoteResponseTwoJobInputsOneoneFloorCountMultipleOf = 1;
@@ -3197,6 +3327,16 @@ export const getQuoteResponseTwoJobInputsOneoneCrewSizeMultipleOf = 1;
 export const getQuoteResponseTwoJobInputsOneoneCrewHoursMin = 0;
 
 export const getQuoteResponseTwoJobInputsOneoneLaborAdjustmentHoursMin = 0;
+
+export const getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin = 10;
+export const getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax = 500;
+
+export const getQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMin = 10;
+export const getQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMax = 500;
+
+export const getQuoteResponseTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin = 0;
+
+export const getQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin = 0;
 
 
 
@@ -3553,7 +3693,11 @@ export const GetQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -3568,7 +3712,11 @@ export const GetQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -3583,12 +3731,20 @@ export const GetQuoteResponse = zod.object({
   "description": zod.string(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsOnezeroMaterialsItemQuantityMin),
   "unit": zod.string(),
-  "unitCost": zod.number().min(getQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin)
+  "unitCost": zod.number().min(getQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(getQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -3642,7 +3798,8 @@ export const GetQuoteResponse = zod.object({
   "unit": zod.string(),
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
-  "source": zod.string()
+  "source": zod.string(),
+  "intentionalExclusionReason": zod.string().min(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
   "materialCost": zod.number(),
@@ -3654,7 +3811,13 @@ export const GetQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable(),
   "laborSellRate": zod.number().optional(),
   "laborSellAmount": zod.number().optional(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "deliberateLossApproval": zod.union([zod.object({
+  "reason": zod.string().min(getQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMin).max(getQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMax),
+  "confirmedAt": zod.coerce.date(),
+  "costAtConfirmation": zod.number().min(getQuoteResponseTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin),
+  "sellingPriceAtConfirmation": zod.number().min(getQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin)
+}),zod.null()]).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -3687,13 +3850,20 @@ export const updateQuoteBodyLaborOverrideMax = 999999999.99;
 export const updateQuoteBodySellingPriceOverrideMin = 0;
 export const updateQuoteBodySellingPriceOverrideMax = 999999999.99;
 
+export const updateQuoteBodyDeliberateLossConfirmationReasonMin = 10;
+export const updateQuoteBodyDeliberateLossConfirmationReasonMax = 500;
+
 
 
 export const UpdateQuoteBody = zod.object({
   "status": zod.enum(['draft', 'ready']).optional(),
   "laborOverride": zod.number().min(updateQuoteBodyLaborOverrideMin).max(updateQuoteBodyLaborOverrideMax).nullish(),
   "sellingPriceOverride": zod.number().min(updateQuoteBodySellingPriceOverrideMin).max(updateQuoteBodySellingPriceOverrideMax).nullish(),
-  "proposalDescription": zod.string().optional()
+  "proposalDescription": zod.string().optional(),
+  "deliberateLossConfirmation": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(updateQuoteBodyDeliberateLossConfirmationReasonMin).max(updateQuoteBodyDeliberateLossConfirmationReasonMax)
+}).optional()
 })
 
 export const updateQuoteResponseOneTwoJobInputsOneRouteLengthMin = 0;
@@ -4003,6 +4173,9 @@ export const updateQuoteResponseOneTwoJobInputsEightTargetMarginMax = 99.99;
 
 export const updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
+
 export const updateQuoteResponseOneTwoJobInputsNineCrewSizeMultipleOf = 1;
 
 export const updateQuoteResponseOneTwoJobInputsNineCrewHoursMin = 0;
@@ -4019,6 +4192,9 @@ export const updateQuoteResponseOneTwoJobInputsNineTargetMarginMax = 99.99;
 
 
 export const updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 export const updateQuoteResponseOneTwoJobInputsOnezeroLaborHoursMin = 0;
 
@@ -4037,8 +4213,14 @@ export const updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemQuantityMin =
 
 export const updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemUnitCostMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin = 10;
+export const updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax = 500;
+
 
 export const updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 
 export const updateQuoteResponseOneTwoJobInputsOneoneFloorCountMultipleOf = 1;
@@ -4092,6 +4274,16 @@ export const updateQuoteResponseOneTwoJobInputsOneoneCrewSizeMultipleOf = 1;
 export const updateQuoteResponseOneTwoJobInputsOneoneCrewHoursMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsOneoneLaborAdjustmentHoursMin = 0;
+
+export const updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMin = 10;
+export const updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMax = 500;
+
+export const updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneReasonMin = 10;
+export const updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneReasonMax = 500;
+
+export const updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin = 0;
+
+export const updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin = 0;
 
 
 
@@ -4448,7 +4640,11 @@ export const UpdateQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -4463,7 +4659,11 @@ export const UpdateQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -4478,12 +4678,20 @@ export const UpdateQuoteResponse = zod.object({
   "description": zod.string(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemQuantityMin),
   "unit": zod.string(),
-  "unitCost": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemUnitCostMin)
+  "unitCost": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemUnitCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -4537,7 +4745,8 @@ export const UpdateQuoteResponse = zod.object({
   "unit": zod.string(),
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
-  "source": zod.string()
+  "source": zod.string(),
+  "intentionalExclusionReason": zod.string().min(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
   "materialCost": zod.number(),
@@ -4549,7 +4758,13 @@ export const UpdateQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable(),
   "laborSellRate": zod.number().optional(),
   "laborSellAmount": zod.number().optional(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "deliberateLossApproval": zod.union([zod.object({
+  "reason": zod.string().min(updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneReasonMin).max(updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneReasonMax),
+  "confirmedAt": zod.coerce.date(),
+  "costAtConfirmation": zod.number().min(updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin),
+  "sellingPriceAtConfirmation": zod.number().min(updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin)
+}),zod.null()]).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),
@@ -4885,6 +5100,9 @@ export const duplicateQuoteResponseTwoJobInputsEightTargetMarginMax = 99.99;
 
 export const duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
+
 export const duplicateQuoteResponseTwoJobInputsNineCrewSizeMultipleOf = 1;
 
 export const duplicateQuoteResponseTwoJobInputsNineCrewHoursMin = 0;
@@ -4901,6 +5119,9 @@ export const duplicateQuoteResponseTwoJobInputsNineTargetMarginMax = 99.99;
 
 
 export const duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 export const duplicateQuoteResponseTwoJobInputsOnezeroLaborHoursMin = 0;
 
@@ -4919,8 +5140,14 @@ export const duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemQuantityMin =
 
 export const duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin = 10;
+export const duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax = 500;
+
 
 export const duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin = 10;
+export const duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax = 500;
 
 
 export const duplicateQuoteResponseTwoJobInputsOneoneFloorCountMultipleOf = 1;
@@ -4974,6 +5201,16 @@ export const duplicateQuoteResponseTwoJobInputsOneoneCrewSizeMultipleOf = 1;
 export const duplicateQuoteResponseTwoJobInputsOneoneCrewHoursMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsOneoneLaborAdjustmentHoursMin = 0;
+
+export const duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin = 10;
+export const duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax = 500;
+
+export const duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMin = 10;
+export const duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMax = 500;
+
+export const duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin = 0;
+
+export const duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin = 0;
 
 
 
@@ -5330,7 +5567,11 @@ export const DuplicateQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoJobInputsEightMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -5345,7 +5586,11 @@ export const DuplicateQuoteResponse = zod.object({
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoJobInputsNineMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -5360,12 +5605,20 @@ export const DuplicateQuoteResponse = zod.object({
   "description": zod.string(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemQuantityMin),
   "unit": zod.string(),
-  "unitCost": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin)
+  "unitCost": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemUnitCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoJobInputsOnezeroMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "miscellaneousMaterials": zod.array(zod.object({
   "id": zod.string().min(1),
   "description": zod.string(),
-  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin)
+  "cost": zod.number().min(duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemCostMin),
+  "intentionalExclusion": zod.object({
+  "confirmed": zod.literal(true),
+  "reason": zod.string().min(duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoJobInputsOnezeroMiscellaneousMaterialsItemIntentionalExclusionReasonMax)
+}).optional()
 })),
   "notes": zod.string()
 }),zod.object({
@@ -5419,7 +5672,8 @@ export const DuplicateQuoteResponse = zod.object({
   "unit": zod.string(),
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
-  "source": zod.string()
+  "source": zod.string(),
+  "intentionalExclusionReason": zod.string().min(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
   "materialCost": zod.number(),
@@ -5431,7 +5685,13 @@ export const DuplicateQuoteResponse = zod.object({
   "sellingPriceOverride": zod.number().nullable(),
   "laborSellRate": zod.number().optional(),
   "laborSellAmount": zod.number().optional(),
-  "laborRateType": zod.enum(['residential', 'commercial']).optional()
+  "laborRateType": zod.enum(['residential', 'commercial']).optional(),
+  "deliberateLossApproval": zod.union([zod.object({
+  "reason": zod.string().min(duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMin).max(duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneReasonMax),
+  "confirmedAt": zod.coerce.date(),
+  "costAtConfirmation": zod.number().min(duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneCostAtConfirmationMin),
+  "sellingPriceAtConfirmation": zod.number().min(duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceAtConfirmationMin)
+}),zod.null()]).optional()
 }).and(zod.object({
   "grossProfit": zod.number(),
   "grossMargin": zod.number(),

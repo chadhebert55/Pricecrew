@@ -993,7 +993,6 @@ function resolveBreaker(
   selection: BreakerSelection,
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
-  excludeDefaultRows = false,
 ) {
   const exactProtectionType = protectionType(selection.protectionType);
   if (!exactProtectionType) {
@@ -1012,7 +1011,7 @@ function resolveBreaker(
       item.amperage === selection.amperage &&
       item.poleCount === selection.poleCount &&
       normalized(item.protectionType ?? "") === normalized(exactProtectionType) &&
-      (!excludeDefaultRows || !item.isDefault) &&
+      !item.isDefault &&
       !normalized(item.item).startsWith("unverified ") &&
       Number.isFinite(item.unitCost) &&
       item.unitCost > 0,
@@ -1067,6 +1066,7 @@ function finalizeEstimate(
     (line) =>
       line.quantity > 0 &&
       line.unitCost <= 0 &&
+      !line.intentionalExclusionReason &&
       line.source !== "Included labor scope",
   );
   for (const line of zeroCostMaterialLines) {
@@ -1174,7 +1174,12 @@ function configuredEstimateSettings(
 function addMiscellaneousMaterialLines(
   assembly: AssemblyLineRecord[],
   pricingWarnings: string[],
-  lines: Array<{ id: string; description: string; cost: number }>,
+  lines: Array<{
+    id: string;
+    description: string;
+    cost: number;
+    intentionalExclusion?: { confirmed: true; reason: string };
+  }>,
   warningPrefix: string,
 ) {
   lines.forEach((line, index) => {
@@ -1182,13 +1187,17 @@ function addMiscellaneousMaterialLines(
     const cost = Number.isFinite(Number(line.cost))
       ? Math.max(0, Number(line.cost))
       : 0;
+    const exclusionReason =
+      line.intentionalExclusion?.confirmed === true
+        ? line.intentionalExclusion.reason.trim()
+        : "";
     if (!description && cost === 0) return;
     if (!description) {
       pricingWarnings.push(
         `${warningPrefix} material line ${index + 1} has a cost but no description. Confirm the material before sending the quote.`,
       );
     }
-    if (cost === 0) {
+    if (cost === 0 && exclusionReason.length < 10) {
       pricingWarnings.push(
         `${warningPrefix} material "${description || `line ${index + 1}`}" has zero cost and must be confirmed before sending the quote.`,
       );
@@ -1200,7 +1209,12 @@ function addMiscellaneousMaterialLines(
       quantity: 1,
       unit: "allowance",
       unitCost: cost,
-      source: "Contractor-entered material allowance",
+      source: exclusionReason
+        ? "Contractor-entered material allowance — intentionally excluded"
+        : "Contractor-entered material allowance",
+      ...(exclusionReason
+        ? { intentionalExclusionReason: exclusionReason }
+        : {}),
     });
   });
 }
@@ -2476,7 +2490,7 @@ export function calculateAdditionEstimate(
       amperage: inputs.breakerAmperage,
       poleCount: inputs.breakerPoleCount,
       protectionType: inputs.breakerProtectionType,
-    }, priceBook, pricingWarnings, true);
+    }, priceBook, pricingWarnings);
     addLine(assembly, {
       id: "addition-breakers", category: "Protection",
       description: breaker.description, quantity: circuits, unit: "ea",
@@ -2604,7 +2618,6 @@ export function calculateServiceUpgradeEstimate(
       },
       priceBook,
       pricingWarnings,
-      true,
     );
     addLine(assembly, {
       id: "service-breaker",
@@ -3117,7 +3130,6 @@ export function calculatePanelReplacementEstimate(
     },
     priceBook,
     pricingWarnings,
-    true,
   );
   addLine(assembly, {
     id: "panel-replacement-breaker",
@@ -3298,7 +3310,6 @@ export function calculatePanelReplacementEstimate(
       },
       priceBook,
       pricingWarnings,
-      true,
     );
     addLine(assembly, {
       id: `panel-existing-breaker-${index}`,
@@ -3787,13 +3798,17 @@ export function calculateCustomEstimate(
     const unitCost = Number.isFinite(Number(line.unitCost))
       ? Math.max(0, Number(line.unitCost))
       : 0;
+    const exclusionReason =
+      line.intentionalExclusion?.confirmed === true
+        ? line.intentionalExclusion.reason.trim()
+        : "";
     if (!description && quantity === 0 && unitCost === 0) return;
     if (!description) {
       pricingWarnings.push(
         `Custom material line ${index + 1} has no description. Confirm the material before sending the quote.`,
       );
     }
-    if (unitCost === 0) {
+    if (unitCost === 0 && exclusionReason.length < 10) {
       pricingWarnings.push(
         `Custom material "${description || `line ${index + 1}`}" has zero cost and must be confirmed before sending the quote.`,
       );
@@ -3805,7 +3820,12 @@ export function calculateCustomEstimate(
       quantity,
       unit: line.unit.trim() || "ea",
       unitCost,
-      source: "Contractor-entered custom material",
+      source: exclusionReason
+        ? "Contractor-entered custom material — intentionally excluded"
+        : "Contractor-entered custom material",
+      ...(exclusionReason
+        ? { intentionalExclusionReason: exclusionReason }
+        : {}),
     });
   });
 

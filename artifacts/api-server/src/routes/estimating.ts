@@ -43,8 +43,10 @@ import {
   priceBookItemsTable,
   quotesTable,
   type AdditionInputRecord,
+  type AssemblyLineRecord,
   type BathroomInputRecord,
   type CustomInputRecord,
+  type DeliberateLossApproval,
   type EvChargerInputRecord,
   type KitchenInputRecord,
   type NewHouseInputRecord,
@@ -547,6 +549,144 @@ export function hasBlockingPricingWarnings(
   );
 }
 
+const LABOR_ADJUSTMENT_KEYS = new Set([
+  "laborAdjustmentHours",
+  "generalLaborAdjustmentHours",
+  "relocationLaborHours",
+  "accessDifficultyLaborHours",
+  "groundingReworkLaborHours",
+  "feederDistanceLaborHours",
+  "serviceConditionLaborHours",
+  "utilityCoordinationLaborHours",
+  "panelRemovalLaborHours",
+  "feederInstallationLaborHours",
+  "groundingLaborHours",
+]);
+
+export function negativeLaborAdjustmentFields(
+  jobInputs: QuoteJobInputsRecord | Record<string, unknown>,
+) {
+  return Object.entries(jobInputs)
+    .filter(
+      ([key, value]) =>
+        LABOR_ADJUSTMENT_KEYS.has(key) &&
+        typeof value === "number" &&
+        Number.isFinite(value) &&
+        value < 0,
+    )
+    .map(([key]) => key);
+}
+
+type DeliberateLossConfirmation = {
+  confirmed: true;
+  reason: string;
+};
+
+type ReadinessPolicyInput = {
+  pricing: PricingRecord;
+  assembly: AssemblyLineRecord[];
+  jobInputs: QuoteJobInputsRecord | Record<string, unknown>;
+  deliberateLossConfirmation?: DeliberateLossConfirmation;
+  now?: Date;
+};
+
+type ReadinessPolicyResult =
+  | { allowed: false; error: string }
+  | {
+      allowed: true;
+      deliberateLossApproval: DeliberateLossApproval | null;
+    };
+
+function currentDeliberateLossApproval(
+  pricing: PricingRecord,
+  totalCost: number,
+) {
+  const approval = pricing.deliberateLossApproval;
+  return Boolean(
+    approval &&
+      approval.reason.trim().length >= 10 &&
+      approval.costAtConfirmation === totalCost &&
+      approval.sellingPriceAtConfirmation === pricing.finalSellingPrice,
+  );
+}
+
+export function evaluateCustomerReadyPricing({
+  pricing,
+  assembly,
+  jobInputs,
+  deliberateLossConfirmation,
+  now = new Date(),
+}: ReadinessPolicyInput): ReadinessPolicyResult {
+  if (hasBlockingPricingWarnings(pricing.pricingWarnings)) {
+    return {
+      allowed: false,
+      error:
+        "Resolve all missing, unsafe, or invalid material prices before marking this quote ready.",
+    };
+  }
+
+  if (negativeLaborAdjustmentFields(jobInputs).length > 0) {
+    return {
+      allowed: false,
+      error:
+        "Negative labor adjustments are not allowed on customer-ready quotes.",
+    };
+  }
+
+  const unresolvedContractorMaterials = assembly.filter(
+    (line) =>
+      line.quantity > 0 &&
+      line.unitCost <= 0 &&
+      line.source.startsWith("Contractor-entered") &&
+      (!line.intentionalExclusionReason ||
+        line.intentionalExclusionReason.trim().length < 10),
+  );
+  if (unresolvedContractorMaterials.length > 0) {
+    return {
+      allowed: false,
+      error:
+        "Every active contractor-supplied material needs a cost or an intentional-exclusion reason before marking this quote ready.",
+    };
+  }
+
+  const effectiveLaborCost = pricing.laborOverride ?? pricing.laborCost;
+  const totalCost = Number(
+    (pricing.materialCost + effectiveLaborCost).toFixed(2),
+  );
+  if (pricing.finalSellingPrice + 0.005 < totalCost) {
+    if (currentDeliberateLossApproval(pricing, totalCost)) {
+      return {
+        allowed: true,
+        deliberateLossApproval: pricing.deliberateLossApproval ?? null,
+      };
+    }
+
+    const reason = deliberateLossConfirmation?.reason.trim() ?? "";
+    if (
+      deliberateLossConfirmation?.confirmed !== true ||
+      reason.length < 10
+    ) {
+      return {
+        allowed: false,
+        error:
+          "Selling price is below calculated cost. Confirm the deliberate loss and record a reason before marking this quote ready.",
+      };
+    }
+
+    return {
+      allowed: true,
+      deliberateLossApproval: {
+        reason,
+        confirmedAt: now.toISOString(),
+        costAtConfirmation: totalCost,
+        sellingPriceAtConfirmation: pricing.finalSellingPrice,
+      },
+    };
+  }
+
+  return { allowed: true, deliberateLossApproval: null };
+}
+
 async function companySettings(companyId: number) {
   await ensureEstimatorSeed();
   const [settings] = await db
@@ -1015,6 +1155,15 @@ router.post("/quotes", async (req, res): Promise<void> => {
     });
     return;
   }
+  const negativeLaborFields = negativeLaborAdjustmentFields(
+    parsed.data.jobInputs,
+  );
+  if (negativeLaborFields.length > 0) {
+    res.status(400).json({
+      error: `Labor adjustments must be non-negative: ${negativeLaborFields.join(", ")}.`,
+    });
+    return;
+  }
 
   let source: typeof quotesTable.$inferSelect | undefined;
   if (parsed.data.sourceQuoteId !== undefined) {
@@ -1141,6 +1290,15 @@ router.post("/quotes/preview", async (req, res): Promise<void> => {
   if (!moduleMatchesInputs(parsed.data.module, parsed.data.jobInputs)) {
     res.status(400).json({
       error: `Job inputs do not match module ${parsed.data.module}`,
+    });
+    return;
+  }
+  const negativeLaborFields = negativeLaborAdjustmentFields(
+    parsed.data.jobInputs,
+  );
+  if (negativeLaborFields.length > 0) {
+    res.status(400).json({
+      error: `Labor adjustments must be non-negative: ${negativeLaborFields.join(", ")}.`,
     });
     return;
   }
@@ -1327,22 +1485,31 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Quote not found" });
     return;
   }
-  if (
-    parsed.data.status === "ready" &&
-    hasBlockingPricingWarnings(existingQuote.pricing.pricingWarnings)
-  ) {
-    res.status(409).json({
-      error:
-        "Resolve all missing or invalid material prices before marking this quote ready.",
+  const targetStatus =
+    parsed.data.status ?? normalizeQuoteStatus(existingQuote.status);
+  let pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
+  if (targetStatus === "ready") {
+    const readiness = evaluateCustomerReadyPricing({
+      pricing,
+      assembly: existingQuote.assembly,
+      jobInputs: existingQuote.jobInputs,
+      deliberateLossConfirmation: parsed.data.deliberateLossConfirmation,
     });
-    return;
+    if (!readiness.allowed) {
+      res.status(409).json({ error: readiness.error });
+      return;
+    }
+    pricing = {
+      ...pricing,
+      deliberateLossApproval: readiness.deliberateLossApproval,
+    };
+  } else if (pricing.deliberateLossApproval) {
+    pricing = { ...pricing, deliberateLossApproval: null };
   }
-
-  const pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
   const [quote] = await db
     .update(quotesTable)
     .set({
-      status: parsed.data.status ?? normalizeQuoteStatus(existingQuote.status),
+      status: targetStatus,
       pricing,
       proposalDescription: parsed.data.proposalDescription,
       total: pricing.finalSellingPrice,

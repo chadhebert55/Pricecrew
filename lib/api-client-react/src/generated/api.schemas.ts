@@ -1016,12 +1016,22 @@ export const ServiceCallInputsServiceType = {
   Commercial_standard_service_visit: 'Commercial standard service visit',
 } as const;
 
+export interface IntentionalMaterialExclusion {
+  confirmed: true;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  reason: string;
+}
+
 export interface MiscellaneousMaterialInput {
   /** @minLength 1 */
   id: string;
   description: string;
   /** @minimum 0 */
   cost: number;
+  intentionalExclusion?: IntentionalMaterialExclusion;
 }
 
 export interface ServiceCallInputs {
@@ -1102,6 +1112,7 @@ export interface CustomMaterialInput {
   unit: string;
   /** @minimum 0 */
   unitCost: number;
+  intentionalExclusion?: IntentionalMaterialExclusion;
 }
 
 export interface CustomInputs {
@@ -1309,6 +1320,24 @@ export interface AssemblyLine {
   unitCost: number;
   extendedCost: number;
   source: string;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  intentionalExclusionReason?: string;
+}
+
+export interface DeliberateLossApproval {
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  reason: string;
+  confirmedAt: string;
+  /** @minimum 0 */
+  costAtConfirmation: number;
+  /** @minimum 0 */
+  sellingPriceAtConfirmation: number;
 }
 
 export interface PricingInput {
@@ -1324,6 +1353,7 @@ export interface PricingInput {
   laborSellRate?: number;
   laborSellAmount?: number;
   laborRateType?: LaborRateType;
+  deliberateLossApproval?: DeliberateLossApproval | null;
 }
 
 export type PricingWarningSeverity = typeof PricingWarningSeverity[keyof typeof PricingWarningSeverity];
@@ -1493,6 +1523,15 @@ export interface EstimatePreview {
   planning?: RecessedLightingPlanning;
 }
 
+export interface DeliberateLossConfirmation {
+  confirmed: true;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  reason: string;
+}
+
 export interface QuoteUpdate {
   status?: QuoteStatus;
   /**
@@ -1508,6 +1547,7 @@ export interface QuoteUpdate {
      */
   sellingPriceOverride?: number | null;
   proposalDescription?: string;
+  deliberateLossConfirmation?: DeliberateLossConfirmation;
 }
 
 export interface PriceBookItem {

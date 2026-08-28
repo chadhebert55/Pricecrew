@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { IntentionalMaterialExclusion } from './intentionalMaterialExclusion';
 
 export interface CustomMaterialInput {
   /** @minLength 1 */
@@ -15,4 +16,5 @@ export interface CustomMaterialInput {
   unit: string;
   /** @minimum 0 */
   unitCost: number;
+  intentionalExclusion?: IntentionalMaterialExclusion;
 }

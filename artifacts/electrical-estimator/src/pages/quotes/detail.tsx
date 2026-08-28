@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Save, FileText, Check, DollarSign, Calculator, TriangleAlert, ExternalLink, Copy } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -44,7 +45,11 @@ export function QuoteDetail() {
           priceOverride: updatedQuote.pricing.sellingPriceOverride?.toString() || "",
           status: updatedQuote.status,
           proposalDesc: updatedQuote.proposalDescription,
+          deliberateLossConfirmed: Boolean(updatedQuote.pricing.deliberateLossApproval),
+          deliberateLossReason: updatedQuote.pricing.deliberateLossApproval?.reason ?? "",
         })
+        setDeliberateLossConfirmed(Boolean(updatedQuote.pricing.deliberateLossApproval))
+        setDeliberateLossReason(updatedQuote.pricing.deliberateLossApproval?.reason ?? "")
         toast({ title: "Quote saved", description: "Your changes have been saved." })
       },
       onError: (error) => toast({ variant: "destructive", title: "Could not save quote", description: error instanceof Error ? error.message : "Please try again." }),
@@ -57,6 +62,8 @@ export function QuoteDetail() {
   const [priceOverride, setPriceOverride] = useState<string>("")
   const [status, setStatus] = useState<QuoteStatus>("draft")
   const [proposalDesc, setProposalDesc] = useState<string>("")
+  const [deliberateLossConfirmed, setDeliberateLossConfirmed] = useState(false)
+  const [deliberateLossReason, setDeliberateLossReason] = useState("")
   const baseline = useRef("")
 
   useEffect(() => {
@@ -66,10 +73,12 @@ export function QuoteDetail() {
       setPriceOverride(quote.pricing.sellingPriceOverride?.toString() || "")
       setStatus(quote.status)
       setProposalDesc(quote.proposalDescription)
-      baseline.current = JSON.stringify({ laborOverride: quote.pricing.laborOverride?.toString() || "", priceOverride: quote.pricing.sellingPriceOverride?.toString() || "", status: quote.status, proposalDesc: quote.proposalDescription })
+      setDeliberateLossConfirmed(Boolean(quote.pricing.deliberateLossApproval))
+      setDeliberateLossReason(quote.pricing.deliberateLossApproval?.reason ?? "")
+      baseline.current = JSON.stringify({ laborOverride: quote.pricing.laborOverride?.toString() || "", priceOverride: quote.pricing.sellingPriceOverride?.toString() || "", status: quote.status, proposalDesc: quote.proposalDescription, deliberateLossConfirmed: Boolean(quote.pricing.deliberateLossApproval), deliberateLossReason: quote.pricing.deliberateLossApproval?.reason ?? "" })
     }
   }, [quote])
-  const isDirty = baseline.current !== JSON.stringify({ laborOverride, priceOverride, status, proposalDesc })
+  const isDirty = baseline.current !== JSON.stringify({ laborOverride, priceOverride, status, proposalDesc, deliberateLossConfirmed, deliberateLossReason })
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (!isDirty) return
@@ -84,6 +93,10 @@ export function QuoteDetail() {
   if (!quote) return <div className="p-8 text-center text-destructive">Quote not found.</div>
 
   const handleSaveOverrides = () => {
+    if (status === "ready" && requiresDeliberateLossConfirmation && !validDeliberateLossConfirmation) {
+      toast({ variant: "destructive", title: "Deliberate loss confirmation required", description: "Check the confirmation and record a reason of at least 10 characters." })
+      return
+    }
     updateQuote.mutate({
       id: quote.id,
       data: {
@@ -91,14 +104,29 @@ export function QuoteDetail() {
         proposalDescription: proposalDesc,
         laborOverride: laborOverride ? parseFloat(laborOverride) : null,
         sellingPriceOverride: priceOverride ? parseFloat(priceOverride) : null,
+        deliberateLossConfirmation: requiresDeliberateLossConfirmation && validDeliberateLossConfirmation
+          ? { confirmed: true, reason: deliberateLossReason.trim() }
+          : undefined,
       }
     })
   }
 
   const handleMarkReady = () => {
+    if (requiresDeliberateLossConfirmation && !validDeliberateLossConfirmation) {
+      toast({ variant: "destructive", title: "Deliberate loss confirmation required", description: "This price is below calculated cost. Check the confirmation and record why the loss is intentional." })
+      return
+    }
     updateQuote.mutate({
       id: quote.id,
-      data: { status: "ready" }
+      data: {
+        status: "ready",
+        proposalDescription: proposalDesc,
+        laborOverride: laborOverride ? parseFloat(laborOverride) : null,
+        sellingPriceOverride: priceOverride ? parseFloat(priceOverride) : null,
+        deliberateLossConfirmation: requiresDeliberateLossConfirmation
+          ? { confirmed: true, reason: deliberateLossReason.trim() }
+          : undefined,
+      }
     })
   }
 
@@ -108,8 +136,20 @@ export function QuoteDetail() {
       toast({ variant: "destructive", title: "Save changes before opening proposal", description: "The customer proposal would otherwise show stale saved details." })
       return
     }
+    if (requiresDeliberateLossConfirmation && !validDeliberateLossConfirmation) {
+      toast({ variant: "destructive", title: "Deliberate loss confirmation required", description: "Record why the below-cost price is intentional before opening the customer proposal." })
+      return
+    }
     updateQuote.mutate(
-      { id: quote.id, data: { status: "ready" } },
+      {
+        id: quote.id,
+        data: {
+          status: "ready",
+          deliberateLossConfirmation: requiresDeliberateLossConfirmation
+            ? { confirmed: true, reason: deliberateLossReason.trim() }
+            : undefined,
+        },
+      },
       {
         onSuccess: (updatedQuote) => {
           if (updatedQuote.proposalShareToken) {
@@ -134,17 +174,55 @@ export function QuoteDetail() {
   }
 
   // Derived effective pricing
-  const effectiveLabor = quote.pricing.laborOverride ?? quote.pricing.laborCost
-  const effectiveSellingPrice = quote.pricing.finalSellingPrice
+  const enteredLaborOverride = laborOverride.trim() === "" ? null : Number(laborOverride)
+  const enteredSellingPriceOverride = priceOverride.trim() === "" ? null : Number(priceOverride)
+  const effectiveLabor =
+    enteredLaborOverride !== null && Number.isFinite(enteredLaborOverride)
+      ? enteredLaborOverride
+      : quote.pricing.laborCost
+  const effectiveSellingPrice =
+    enteredSellingPriceOverride !== null && Number.isFinite(enteredSellingPriceOverride)
+      ? enteredSellingPriceOverride
+      : quote.pricing.calculatedSellingPrice
   
   const totalCost = quote.pricing.materialCost + effectiveLabor
+  const requiresDeliberateLossConfirmation = effectiveSellingPrice + 0.005 < totalCost
+  const validDeliberateLossConfirmation =
+    deliberateLossConfirmed && deliberateLossReason.trim().length >= 10
   const gp = quote.pricing.grossProfit
   const margin = quote.pricing.grossMargin * 100
   const estimatorNotes =
     typeof quote.jobInputs.notes === "string" ? quote.jobInputs.notes : ""
-  const hasBlockingWarnings = quote.pricing.pricingWarnings.some(
-    (warning) => warning.severity === "error",
+  const unresolvedContractorMaterials = quote.assembly.some(
+    (line) =>
+      line.quantity > 0 &&
+      line.unitCost <= 0 &&
+      line.source.startsWith("Contractor-entered") &&
+      (!line.intentionalExclusionReason || line.intentionalExclusionReason.trim().length < 10),
   )
+  const negativeLaborAdjustmentKeys = new Set([
+    "laborAdjustmentHours",
+    "generalLaborAdjustmentHours",
+    "relocationLaborHours",
+    "accessDifficultyLaborHours",
+    "groundingReworkLaborHours",
+    "feederDistanceLaborHours",
+    "serviceConditionLaborHours",
+    "utilityCoordinationLaborHours",
+    "panelRemovalLaborHours",
+    "feederInstallationLaborHours",
+    "groundingLaborHours",
+  ])
+  const hasNegativeLaborAdjustment = Object.entries(quote.jobInputs).some(
+    ([key, value]) =>
+      negativeLaborAdjustmentKeys.has(key) &&
+      typeof value === "number" &&
+      value < 0,
+  )
+  const hasBlockingWarnings =
+    quote.pricing.pricingWarnings.some((warning) => warning.severity === "error") ||
+    unresolvedContractorMaterials ||
+    hasNegativeLaborAdjustment
 
   return (
     <div className="space-y-6 pb-24">
@@ -185,7 +263,7 @@ export function QuoteDetail() {
       </div>
       {status !== "ready" && hasBlockingWarnings && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          This quote cannot be marked ready until all missing or invalid material prices are resolved.
+          This quote cannot be marked ready until all unsafe, unresolved, or invalid pricing inputs are resolved.
         </div>
       )}
 
@@ -427,6 +505,36 @@ export function QuoteDetail() {
                   className="font-mono border-primary/50 focus-visible:ring-primary"
                 />
               </div>
+              {requiresDeliberateLossConfirmation && (
+                <div className="space-y-3 rounded-md border border-destructive/50 bg-destructive/10 p-4" data-testid="deliberate-loss-confirmation">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="deliberate-loss-confirmed"
+                      checked={deliberateLossConfirmed}
+                      onCheckedChange={(checked) => setDeliberateLossConfirmed(checked === true)}
+                    />
+                    <div>
+                      <Label htmlFor="deliberate-loss-confirmed" className="font-semibold text-destructive">
+                        I am deliberately pricing this quote below calculated cost
+                      </Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Calculated cost is ${totalCost.toFixed(2)}. This approval and its reason are recorded on the quote.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliberate-loss-reason">Reason for deliberate loss *</Label>
+                    <Textarea
+                      id="deliberate-loss-reason"
+                      value={deliberateLossReason}
+                      onChange={(event) => setDeliberateLossReason(event.target.value)}
+                      minLength={10}
+                      maxLength={500}
+                      placeholder="Explain why this below-cost price is intentional..."
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

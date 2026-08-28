@@ -49,6 +49,10 @@ export type MiscellaneousMaterialInput = {
   id: string;
   description: string;
   cost: number;
+  intentionalExclusion?: {
+    confirmed: true;
+    reason: string;
+  };
 };
 
 export type EvChargerInputRecord = {
@@ -383,6 +387,10 @@ export type CustomMaterialInput = {
   quantity: number;
   unit: string;
   unitCost: number;
+  intentionalExclusion?: {
+    confirmed: true;
+    reason: string;
+  };
 };
 
 export type CustomInputRecord = {
@@ -496,6 +504,14 @@ export type AssemblyLineRecord = {
   unitCost: number;
   extendedCost: number;
   source: string;
+  intentionalExclusionReason?: string;
+};
+
+export type DeliberateLossApproval = {
+  reason: string;
+  confirmedAt: string;
+  costAtConfirmation: number;
+  sellingPriceAtConfirmation: number;
 };
 
 export type PricingWarningSeverity = "info" | "warning" | "error";
@@ -536,6 +552,7 @@ export type PricingRecord = {
   laborSellRate?: number;
   laborSellAmount?: number;
   laborRateType?: LaborRateType;
+  deliberateLossApproval?: DeliberateLossApproval | null;
 };
 
 export const companiesTable = pgTable("companies", {
@@ -789,7 +806,7 @@ export const quotesTable = pgTable("quotes", {
   proposalDescription: text("proposal_description").notNull(),
   total: numeric("total", { precision: 12, scale: 2, mode: "number" })
     .notNull(),
-  margin: numeric("margin", { precision: 6, scale: 4, mode: "number" })
+  margin: numeric("margin", { precision: 16, scale: 4, mode: "number" })
     .notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

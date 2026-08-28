@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DeliberateLossApproval } from './deliberateLossApproval';
 import type { LaborRateType } from './laborRateType';
 
 export interface PricingInput {
@@ -20,4 +21,5 @@ export interface PricingInput {
   laborSellRate?: number;
   laborSellAmount?: number;
   laborRateType?: LaborRateType;
+  deliberateLossApproval?: DeliberateLossApproval | null;
 }

@@ -737,6 +737,8 @@ components:
           maximum: 999999999.99
         proposalDescription:
           type: string
+        deliberateLossConfirmation:
+          $ref: "#/components/schemas/DeliberateLossConfirmation"
     EvChargerInputs:
       type: object
       required:
@@ -1697,6 +1699,8 @@ components:
         cost:
           type: number
           minimum: 0
+        intentionalExclusion:
+          $ref: "#/components/schemas/IntentionalMaterialExclusion"
     ServiceCallInputs:
       type: object
       required:
@@ -1838,6 +1842,8 @@ components:
         unitCost:
           type: number
           minimum: 0
+        intentionalExclusion:
+          $ref: "#/components/schemas/IntentionalMaterialExclusion"
     CustomInputs:
       type: object
       required:
@@ -2058,6 +2064,10 @@ components:
           type: number
         source:
           type: string
+        intentionalExclusionReason:
+          type: string
+          minLength: 10
+          maxLength: 500
     PricingInput:
       type: object
       required:
@@ -2089,6 +2099,57 @@ components:
           type: number
         laborRateType:
           $ref: "#/components/schemas/LaborRateType"
+        deliberateLossApproval:
+          oneOf:
+            - $ref: "#/components/schemas/DeliberateLossApproval"
+            - type: "null"
+    IntentionalMaterialExclusion:
+      type: object
+      required:
+        - confirmed
+        - reason
+      properties:
+        confirmed:
+          type: boolean
+          enum: [true]
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+    DeliberateLossConfirmation:
+      type: object
+      required:
+        - confirmed
+        - reason
+      properties:
+        confirmed:
+          type: boolean
+          enum: [true]
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+    DeliberateLossApproval:
+      type: object
+      required:
+        - reason
+        - confirmedAt
+        - costAtConfirmation
+        - sellingPriceAtConfirmation
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+        confirmedAt:
+          type: string
+          format: date-time
+        costAtConfirmation:
+          type: number
+          minimum: 0
+        sellingPriceAtConfirmation:
+          type: number
+          minimum: 0
     PricingSummary:
       allOf:
         - $ref: "#/components/schemas/PricingInput"

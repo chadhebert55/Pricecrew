@@ -15,4 +15,9 @@ export interface AssemblyLine {
   unitCost: number;
   extendedCost: number;
   source: string;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  intentionalExclusionReason?: string;
 }

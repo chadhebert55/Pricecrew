@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Calculator, Info, Plus, Shapes, Trash2, TriangleAlert } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "wouter"
@@ -150,6 +151,45 @@ export function NewCustomQuote() {
     }))
   }
 
+  const setMaterialExclusion = (
+    collection: "materials" | "miscellaneousMaterials",
+    id: string,
+    confirmed: boolean,
+  ) => {
+    setInputs((current) => ({
+      ...current,
+      [collection]: current[collection].map((line) => {
+        if (line.id !== id) return line
+        if (!confirmed) {
+          const { intentionalExclusion: _removed, ...remaining } = line
+          return remaining
+        }
+        return {
+          ...line,
+          intentionalExclusion: { confirmed: true, reason: "" },
+        }
+      }),
+    }))
+  }
+
+  const setMaterialExclusionReason = (
+    collection: "materials" | "miscellaneousMaterials",
+    id: string,
+    reason: string,
+  ) => {
+    setInputs((current) => ({
+      ...current,
+      [collection]: current[collection].map((line) =>
+        line.id === id
+          ? {
+              ...line,
+              intentionalExclusion: { confirmed: true, reason },
+            }
+          : line,
+      ),
+    }))
+  }
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
     if (!settingsLoaded || !previewIsCurrent) return
@@ -256,12 +296,28 @@ export function NewCustomQuote() {
                   ) : (
                     <div className="space-y-3">
                       {inputs.materials.map((line) => (
-                        <div key={line.id} className="grid gap-3 rounded-md border p-4 md:grid-cols-[minmax(0,1fr)_90px_90px_120px_40px]">
-                          <div className="space-y-1"><Label>Description</Label><Input value={line.description} onChange={(event) => updateMaterial(line.id, "description", event.target.value)} placeholder="Panelboard, conduit, fittings..." /></div>
-                          <div className="space-y-1"><Label>Qty</Label><Input type="number" min="0" step="0.01" value={line.quantity || ""} onChange={(event) => updateMaterial(line.id, "quantity", event.target.value)} /></div>
-                          <div className="space-y-1"><Label>Unit</Label><Input value={line.unit} onChange={(event) => updateMaterial(line.id, "unit", event.target.value)} /></div>
-                          <div className="space-y-1"><Label>Unit Cost</Label><Input type="number" min="0" step="0.01" value={line.unitCost || ""} onChange={(event) => updateMaterial(line.id, "unitCost", event.target.value)} /></div>
-                          <Button type="button" variant="ghost" size="icon" className="mt-6 text-destructive" onClick={() => setInputs((current) => ({ ...current, materials: current.materials.filter((item) => item.id !== line.id) }))}><Trash2 size={16} /></Button>
+                        <div key={line.id} className="space-y-3 rounded-md border p-4">
+                          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_90px_90px_120px_40px]">
+                            <div className="space-y-1"><Label>Description</Label><Input value={line.description} onChange={(event) => updateMaterial(line.id, "description", event.target.value)} placeholder="Panelboard, conduit, fittings..." /></div>
+                            <div className="space-y-1"><Label>Qty</Label><Input type="number" min="0" step="0.01" value={line.quantity || ""} onChange={(event) => updateMaterial(line.id, "quantity", event.target.value)} /></div>
+                            <div className="space-y-1"><Label>Unit</Label><Input value={line.unit} onChange={(event) => updateMaterial(line.id, "unit", event.target.value)} /></div>
+                            <div className="space-y-1"><Label>Unit Cost</Label><Input type="number" min="0" step="0.01" value={line.unitCost || ""} onChange={(event) => updateMaterial(line.id, "unitCost", event.target.value)} /></div>
+                            <Button type="button" variant="ghost" size="icon" className="mt-6 text-destructive" onClick={() => setInputs((current) => ({ ...current, materials: current.materials.filter((item) => item.id !== line.id) }))}><Trash2 size={16} /></Button>
+                          </div>
+                          {line.quantity > 0 && line.unitCost === 0 && (
+                            <div className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+                              <div className="flex items-start gap-2">
+                                <Checkbox id={`custom-material-exclude-${line.id}`} checked={Boolean(line.intentionalExclusion)} onCheckedChange={(checked) => setMaterialExclusion("materials", line.id, checked === true)} />
+                                <Label htmlFor={`custom-material-exclude-${line.id}`} className="text-sm">Intentionally exclude this contractor-supplied material from cost</Label>
+                              </div>
+                              {line.intentionalExclusion && (
+                                <div className="space-y-1">
+                                  <Label htmlFor={`custom-material-exclude-reason-${line.id}`} className="text-xs">Exclusion reason *</Label>
+                                  <Textarea id={`custom-material-exclude-reason-${line.id}`} minLength={10} maxLength={500} value={line.intentionalExclusion.reason} onChange={(event) => setMaterialExclusionReason("materials", line.id, event.target.value)} placeholder="Explain why this material cost is intentionally excluded..." />
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -278,10 +334,26 @@ export function NewCustomQuote() {
                     <Button type="button" variant="outline" size="sm" onClick={addMiscellaneous}><Plus size={14} className="mr-1" /> Add Allowance</Button>
                   </div>
                   {inputs.miscellaneousMaterials.map((line) => (
-                    <div key={line.id} className="grid gap-3 rounded-md border p-4 md:grid-cols-[minmax(0,1fr)_140px_40px]">
-                      <div className="space-y-1"><Label>Description</Label><Input value={line.description} onChange={(event) => setInputs((current) => ({ ...current, miscellaneousMaterials: current.miscellaneousMaterials.map((item) => item.id === line.id ? { ...item, description: event.target.value } : item) }))} placeholder="Permit, lift rental, consumables..." /></div>
-                      <div className="space-y-1"><Label>Cost</Label><Input type="number" min="0" step="0.01" value={line.cost || ""} onChange={(event) => setInputs((current) => ({ ...current, miscellaneousMaterials: current.miscellaneousMaterials.map((item) => item.id === line.id ? { ...item, cost: Math.max(0, Number(event.target.value) || 0) } : item) }))} /></div>
-                      <Button type="button" variant="ghost" size="icon" className="mt-6 text-destructive" onClick={() => setInputs((current) => ({ ...current, miscellaneousMaterials: current.miscellaneousMaterials.filter((item) => item.id !== line.id) }))}><Trash2 size={16} /></Button>
+                    <div key={line.id} className="space-y-3 rounded-md border p-4">
+                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px_40px]">
+                        <div className="space-y-1"><Label>Description</Label><Input value={line.description} onChange={(event) => setInputs((current) => ({ ...current, miscellaneousMaterials: current.miscellaneousMaterials.map((item) => item.id === line.id ? { ...item, description: event.target.value } : item) }))} placeholder="Permit, lift rental, consumables..." /></div>
+                        <div className="space-y-1"><Label>Cost</Label><Input type="number" min="0" step="0.01" value={line.cost || ""} onChange={(event) => setInputs((current) => ({ ...current, miscellaneousMaterials: current.miscellaneousMaterials.map((item) => item.id === line.id ? { ...item, cost: Math.max(0, Number(event.target.value) || 0) } : item) }))} /></div>
+                        <Button type="button" variant="ghost" size="icon" className="mt-6 text-destructive" onClick={() => setInputs((current) => ({ ...current, miscellaneousMaterials: current.miscellaneousMaterials.filter((item) => item.id !== line.id) }))}><Trash2 size={16} /></Button>
+                      </div>
+                      {line.cost === 0 && line.description.trim() !== "" && (
+                        <div className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+                          <div className="flex items-start gap-2">
+                            <Checkbox id={`custom-misc-exclude-${line.id}`} checked={Boolean(line.intentionalExclusion)} onCheckedChange={(checked) => setMaterialExclusion("miscellaneousMaterials", line.id, checked === true)} />
+                            <Label htmlFor={`custom-misc-exclude-${line.id}`} className="text-sm">Intentionally exclude this contractor-supplied allowance from cost</Label>
+                          </div>
+                          {line.intentionalExclusion && (
+                            <div className="space-y-1">
+                              <Label htmlFor={`custom-misc-exclude-reason-${line.id}`} className="text-xs">Exclusion reason *</Label>
+                              <Textarea id={`custom-misc-exclude-reason-${line.id}`} minLength={10} maxLength={500} value={line.intentionalExclusion.reason} onChange={(event) => setMaterialExclusionReason("miscellaneousMaterials", line.id, event.target.value)} placeholder="Explain why this allowance cost is intentionally excluded..." />
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </section>

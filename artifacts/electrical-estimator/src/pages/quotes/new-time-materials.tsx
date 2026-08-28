@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Calculator, Info, TriangleAlert, Clock, Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
@@ -127,6 +128,37 @@ export function NewTimeMaterialsQuote() {
     setInputs(c => ({
       ...c,
       miscellaneousMaterials: c.miscellaneousMaterials.filter(m => m.id !== id)
+    }))
+  }
+
+  const setIntentionalExclusion = (id: string, confirmed: boolean) => {
+    setInputs((current) => ({
+      ...current,
+      miscellaneousMaterials: current.miscellaneousMaterials.map((line) => {
+        if (line.id !== id) return line
+        if (!confirmed) {
+          const { intentionalExclusion: _removed, ...remaining } = line
+          return remaining
+        }
+        return {
+          ...line,
+          intentionalExclusion: { confirmed: true, reason: "" },
+        }
+      }),
+    }))
+  }
+
+  const setIntentionalExclusionReason = (id: string, reason: string) => {
+    setInputs((current) => ({
+      ...current,
+      miscellaneousMaterials: current.miscellaneousMaterials.map((line) =>
+        line.id === id
+          ? {
+              ...line,
+              intentionalExclusion: { confirmed: true, reason },
+            }
+          : line,
+      ),
     }))
   }
 
@@ -281,21 +313,50 @@ export function NewTimeMaterialsQuote() {
                         </div>
                       ) : (
                         <div className="divide-y">
-                          {inputs.miscellaneousMaterials.map((mat, i) => (
-                            <div key={mat.id} className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                              <div className="flex-1 w-full space-y-2">
-                                <Label className="text-xs" htmlFor={`mat-desc-${mat.id}`}>Description</Label>
-                                <Input id={`mat-desc-${mat.id}`} placeholder="e.g. Expected conduit and wire, fixtures..." value={mat.description} onChange={(e) => updateMiscMaterial(mat.id, "description", e.target.value)} />
+                          {inputs.miscellaneousMaterials.map((mat) => (
+                            <div key={mat.id} className="space-y-3 p-4">
+                              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                                <div className="flex-1 w-full space-y-2">
+                                  <Label className="text-xs" htmlFor={`mat-desc-${mat.id}`}>Description</Label>
+                                  <Input id={`mat-desc-${mat.id}`} placeholder="e.g. Expected conduit and wire, fixtures..." value={mat.description} onChange={(e) => updateMiscMaterial(mat.id, "description", e.target.value)} />
+                                </div>
+                                <div className="w-full sm:w-32 space-y-2">
+                                  <Label className="text-xs" htmlFor={`mat-cost-${mat.id}`}>Est. Cost ($)</Label>
+                                  <Input id={`mat-cost-${mat.id}`} type="number" min="0" step="0.01" value={mat.cost || ""} onChange={(e) => updateMiscMaterial(mat.id, "cost", e.target.value)} />
+                                </div>
+                                <div className="pt-6">
+                                  <Button type="button" variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => removeMiscMaterial(mat.id)}>
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="w-full sm:w-32 space-y-2">
-                                <Label className="text-xs" htmlFor={`mat-cost-${mat.id}`}>Est. Cost ($)</Label>
-                                <Input id={`mat-cost-${mat.id}`} type="number" min="0" step="0.01" value={mat.cost || ""} onChange={(e) => updateMiscMaterial(mat.id, "cost", e.target.value)} />
-                              </div>
-                              <div className="pt-6">
-                                <Button type="button" variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => removeMiscMaterial(mat.id)}>
-                                  <Trash2 size={16} />
-                                </Button>
-                              </div>
+                              {mat.cost === 0 && mat.description.trim() !== "" && (
+                                <div className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+                                  <div className="flex items-start gap-2">
+                                    <Checkbox
+                                      id={`mat-exclude-${mat.id}`}
+                                      checked={Boolean(mat.intentionalExclusion)}
+                                      onCheckedChange={(checked) => setIntentionalExclusion(mat.id, checked === true)}
+                                    />
+                                    <Label htmlFor={`mat-exclude-${mat.id}`} className="text-sm">
+                                      Intentionally exclude this contractor-supplied material from cost
+                                    </Label>
+                                  </div>
+                                  {mat.intentionalExclusion && (
+                                    <div className="space-y-1">
+                                      <Label htmlFor={`mat-exclude-reason-${mat.id}`} className="text-xs">Exclusion reason *</Label>
+                                      <Textarea
+                                        id={`mat-exclude-reason-${mat.id}`}
+                                        minLength={10}
+                                        maxLength={500}
+                                        value={mat.intentionalExclusion.reason}
+                                        onChange={(event) => setIntentionalExclusionReason(mat.id, event.target.value)}
+                                        placeholder="Explain why this material cost is intentionally excluded..."
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DeliberateLossConfirmation } from './deliberateLossConfirmation';
 import type { QuoteStatus } from './quoteStatus';
 
 export interface QuoteUpdate {
@@ -22,4 +23,5 @@ export interface QuoteUpdate {
      */
   sellingPriceOverride?: number | null;
   proposalDescription?: string;
+  deliberateLossConfirmation?: DeliberateLossConfirmation;
 }

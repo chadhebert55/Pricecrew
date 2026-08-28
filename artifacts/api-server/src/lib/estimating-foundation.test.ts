@@ -42,11 +42,13 @@ import {
   formatQuoteNumber,
   customerMaterialDescription,
   createProposalShareToken,
+  evaluateCustomerReadyPricing,
   hasBlockingPricingWarnings,
   MAX_OVERRIDE_VALUE,
   matchCustomerForQuote,
   normalizePercentageSetting,
   normalizeEstimateModule,
+  negativeLaborAdjustmentFields,
   pricingForQuoteUpdate,
   parseProposalShareToken,
   validateOverrideValues,
@@ -1554,6 +1556,252 @@ test("zero-cost active T&M material lines produce a structured audit warning", (
     ),
     true,
   );
+});
+
+test("default breaker rows remain unresolved in every previously permissive builder", () => {
+  const default50AGfci = catalogRow("Unverified Siemens 50A GFCI breaker", 99, {
+    manufacturer: "Siemens",
+    amperage: 50,
+    poleCount: 2,
+    protectionType: "GFCI",
+    isDefault: true,
+  });
+  const default15AStandard = catalogRow(
+    "Unverified Siemens 15A standard breaker",
+    9,
+    {
+      manufacturer: "Siemens",
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "Standard",
+      isDefault: true,
+    },
+  );
+  const estimates = [
+    {
+      name: "EV Charger",
+      lineId: "breaker",
+      result: calculateEvChargerEstimate(evInputs, settings, [default50AGfci]),
+    },
+    {
+      name: "Bathroom",
+      lineId: "bathroom-15a-circuit-protection",
+      result: calculateBathroomEstimate(
+        {
+          ...bathroomInputs,
+          circuitOption: "Install new 15A circuit",
+          newCircuitBreakerProtectionType: "Standard",
+        },
+        settings,
+        [default15AStandard],
+      ),
+    },
+    {
+      name: "Kitchen",
+      lineId: "kitchen-breakers-15a",
+      result: calculateKitchenEstimate(
+        {
+          ...kitchenInputs,
+          breaker15AQuantity: 1,
+          breaker15AProtectionType: "Standard",
+        },
+        settings,
+        [default15AStandard],
+      ),
+    },
+    {
+      name: "Recessed Lighting",
+      lineId: "recessed-circuit-protection",
+      result: calculateRecessedLightingEstimate(
+        {
+          ...recessedInputs,
+          circuitOption: "Install new circuit",
+        },
+        settings,
+        [default15AStandard],
+      ),
+    },
+  ];
+
+  for (const { name, lineId, result } of estimates) {
+    assert.equal(
+      result.assembly.find((line) => line.id === lineId)?.unitCost,
+      0,
+      name,
+    );
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "EXACT_BREAKER_UNRESOLVED",
+      ),
+      true,
+      name,
+    );
+  }
+});
+
+test("Custom and T&M zero-cost contractor materials block readiness without an audited exclusion", () => {
+  const cases = [
+    {
+      name: "Time & Materials",
+      jobInputs: {
+        ...timeMaterialsInputs,
+        miscellaneousMaterials: [
+          { id: "tm-zero", description: "Special-order fitting", cost: 0 },
+        ],
+      },
+      calculate: (jobInputs: TimeMaterialsInputRecord) =>
+        calculateTimeMaterialsEstimate(jobInputs, settings, []),
+    },
+    {
+      name: "Custom",
+      jobInputs: {
+        ...customInputs,
+        materials: [
+          {
+            id: "custom-zero",
+            description: "Owner-selected fixture",
+            quantity: 1,
+            unit: "ea",
+            unitCost: 0,
+          },
+        ],
+        miscellaneousMaterials: [],
+      },
+      calculate: (jobInputs: CustomInputRecord) =>
+        calculateCustomEstimate(jobInputs, settings, []),
+    },
+  ] as const;
+
+  for (const testCase of cases) {
+    const estimate = testCase.calculate(testCase.jobInputs as never);
+    const readiness = evaluateCustomerReadyPricing({
+      pricing: estimate.pricing,
+      assembly: estimate.assembly,
+      jobInputs: testCase.jobInputs,
+    });
+    assert.equal(readiness.allowed, false, testCase.name);
+  }
+});
+
+test("an explicit material exclusion reason is stored and permits readiness", () => {
+  const reason = "Customer is purchasing this material directly.";
+  const jobInputs: TimeMaterialsInputRecord = {
+    ...timeMaterialsInputs,
+    miscellaneousMaterials: [
+      {
+        id: "excluded",
+        description: "Customer-purchased light fixture",
+        cost: 0,
+        intentionalExclusion: { confirmed: true, reason },
+      },
+    ],
+  };
+  const estimate = calculateTimeMaterialsEstimate(jobInputs, settings, []);
+  assert.equal(
+    estimate.assembly[0]?.intentionalExclusionReason,
+    reason,
+  );
+  assert.equal(
+    evaluateCustomerReadyPricing({
+      pricing: estimate.pricing,
+      assembly: estimate.assembly,
+      jobInputs,
+    }).allowed,
+    true,
+  );
+});
+
+test("negative labor adjustments block customer-ready status", () => {
+  const jobInputs = {
+    ...recessedInputs,
+    laborAdjustmentHours: -20,
+  };
+  assert.deepEqual(negativeLaborAdjustmentFields(jobInputs), [
+    "laborAdjustmentHours",
+  ]);
+  const readiness = evaluateCustomerReadyPricing({
+    pricing: {
+      materialCost: 100,
+      laborCost: 130,
+      materialMarkup: 0.25,
+      calculatedSellingPrice: 425,
+      finalSellingPrice: 425,
+      laborOverride: null,
+      sellingPriceOverride: null,
+      grossProfit: 195,
+      grossMargin: 0.4588,
+      pricingWarnings: [],
+    },
+    assembly: [],
+    jobInputs,
+  });
+  assert.equal(readiness.allowed, false);
+  assert.match(
+    readiness.allowed ? "" : readiness.error,
+    /Negative labor adjustments/,
+  );
+});
+
+test("below-cost quotes require and record a deliberate-loss confirmation", () => {
+  const pricing = withProfit(
+    {
+      materialCost: 100,
+      laborCost: 130,
+      materialMarkup: 0.25,
+      calculatedSellingPrice: 425,
+      finalSellingPrice: 425,
+      laborOverride: null,
+      sellingPriceOverride: null,
+      grossProfit: 195,
+      grossMargin: 0.4588,
+      pricingWarnings: [],
+    },
+    { sellingPriceOverride: 200 },
+  );
+  const withoutApproval = evaluateCustomerReadyPricing({
+    pricing,
+    assembly: [],
+    jobInputs: timeMaterialsInputs,
+  });
+  assert.equal(withoutApproval.allowed, false);
+  assert.match(
+    withoutApproval.allowed ? "" : withoutApproval.error,
+    /below calculated cost/,
+  );
+
+  const confirmedAt = new Date("2026-08-28T15:00:00.000Z");
+  const approved = evaluateCustomerReadyPricing({
+    pricing,
+    assembly: [],
+    jobInputs: timeMaterialsInputs,
+    deliberateLossConfirmation: {
+      confirmed: true,
+      reason: "Strategic warranty recovery for this customer.",
+    },
+    now: confirmedAt,
+  });
+  assert.equal(approved.allowed, true);
+  if (!approved.allowed) return;
+  assert.deepEqual(approved.deliberateLossApproval, {
+    reason: "Strategic warranty recovery for this customer.",
+    confirmedAt: confirmedAt.toISOString(),
+    costAtConfirmation: 230,
+    sellingPriceAtConfirmation: 200,
+  });
+
+  const staleApproval = evaluateCustomerReadyPricing({
+    pricing: {
+      ...pricing,
+      finalSellingPrice: 200.004,
+      sellingPriceOverride: 200.004,
+      deliberateLossApproval: approved.deliberateLossApproval,
+    },
+    assembly: [],
+    jobInputs: timeMaterialsInputs,
+  });
+  assert.equal(staleApproval.allowed, false);
 });
 
 test("quotes with unresolved catalog prices cannot enter a ready state", () => {
