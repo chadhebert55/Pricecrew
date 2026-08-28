@@ -734,6 +734,12 @@ type CreatedQuote = {
   customerEmail: string | null;
 };
 
+type CustomerSummary = {
+  id: number;
+  name: string;
+  email: string | null;
+};
+
 async function startTestServer() {
   const server = await new Promise<Server>((resolve, reject) => {
     const candidate = app.listen(0, () => resolve(candidate));
@@ -772,6 +778,41 @@ async function postQuote(baseUrl: string, input: QuoteRequest) {
   );
   assert.equal(typeof body.id, "number");
   return body as CreatedQuote;
+}
+
+async function postCustomer(
+  baseUrl: string,
+  input: { name: string; email?: string | null },
+) {
+  const response = await fetch(`${baseUrl}/api/customers`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json()) as CustomerSummary & { error?: string };
+  assert.equal(
+    response.status,
+    201,
+    `Expected customer creation to succeed: ${JSON.stringify(body)}`,
+  );
+  assert.equal(typeof body.id, "number");
+  return body;
+}
+
+async function patchCustomer(
+  baseUrl: string,
+  id: number,
+  input: { name?: string; email?: string | null },
+) {
+  const response = await fetch(`${baseUrl}/api/customers/${id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json()) as Partial<CustomerSummary> & {
+    error?: string;
+  };
+  return { response, body };
 }
 
 async function cleanupCustomerTest(marker: string, email: string) {
@@ -964,6 +1005,106 @@ test("simultaneous email claims converge on one customer without rewriting histo
   } finally {
     await closeTestServer(server);
     await cleanupCustomerTest(marker, email);
+  }
+});
+
+test("customer email edits normalize, preserve quote snapshots, and reject conflicts atomically", async () => {
+  const marker = `Customer edit ${randomUUID()}`;
+  const originalEmail = `${randomUUID()}@example.com`;
+  const conflictingEmail = `${randomUUID()}@example.com`;
+  const updatedEmail = `${randomUUID()}@example.com`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const primary = await postCustomer(baseUrl, {
+      name: `${marker} primary`,
+      email: `  ${originalEmail.toUpperCase()} `,
+    });
+    const conflicting = await postCustomer(baseUrl, {
+      name: `${marker} conflicting`,
+      email: `  ${conflictingEmail.toUpperCase()} `,
+    });
+    assert.equal(primary.email, originalEmail);
+    assert.equal(conflicting.email, conflictingEmail);
+
+    const historical = await postQuote(baseUrl, {
+      customerName: `${marker} primary`,
+      customerEmail: `  ${originalEmail.toUpperCase()} `,
+      projectName: `${marker} historical quote`,
+      proposalDescription: "Customer profile edit snapshot regression",
+      module: "SERVICE_CALL",
+      jobInputs: serviceCallInputs,
+    });
+    const historicalBefore = await db
+      .select({
+        id: quotesTable.id,
+        customerId: quotesTable.customerId,
+        customerName: quotesTable.customerName,
+        customerEmail: quotesTable.customerEmail,
+      })
+      .from(quotesTable)
+      .where(eq(quotesTable.id, historical.id));
+    assert.deepEqual(historicalBefore, [
+      {
+        id: historical.id,
+        customerId: primary.id,
+        customerName: `${marker} primary`,
+        customerEmail: `  ${originalEmail.toUpperCase()} `,
+      },
+    ]);
+
+    const customersBeforeConflict = await db
+      .select({
+        id: customersTable.id,
+        name: customersTable.name,
+        email: customersTable.email,
+      })
+      .from(customersTable)
+      .where(inArray(customersTable.id, [primary.id, conflicting.id]));
+
+    const conflict = await patchCustomer(baseUrl, primary.id, {
+      name: `${marker} changed during conflict`,
+      email: `  ${conflictingEmail.toUpperCase()} `,
+    });
+    assert.equal(conflict.response.status, 409);
+    assert.deepEqual(conflict.body, {
+      error: "A customer with this email already exists.",
+    });
+
+    const customersAfterConflict = await db
+      .select({
+        id: customersTable.id,
+        name: customersTable.name,
+        email: customersTable.email,
+      })
+      .from(customersTable)
+      .where(inArray(customersTable.id, [primary.id, conflicting.id]));
+    assert.deepEqual(
+      customersAfterConflict.sort((left, right) => left.id - right.id),
+      customersBeforeConflict.sort((left, right) => left.id - right.id),
+    );
+
+    const successfulUpdate = await patchCustomer(baseUrl, primary.id, {
+      name: `  ${marker} updated   primary  `,
+      email: `  ${updatedEmail.toUpperCase()} `,
+    });
+    assert.equal(successfulUpdate.response.status, 200);
+    assert.equal(successfulUpdate.body.name, `${marker} updated primary`);
+    assert.equal(successfulUpdate.body.email, updatedEmail);
+
+    const historicalAfter = await db
+      .select({
+        id: quotesTable.id,
+        customerId: quotesTable.customerId,
+        customerName: quotesTable.customerName,
+        customerEmail: quotesTable.customerEmail,
+      })
+      .from(quotesTable)
+      .where(eq(quotesTable.id, historical.id));
+    assert.deepEqual(historicalAfter, historicalBefore);
+  } finally {
+    await closeTestServer(server);
+    await cleanupCustomerTest(marker, originalEmail);
   }
 });
 
