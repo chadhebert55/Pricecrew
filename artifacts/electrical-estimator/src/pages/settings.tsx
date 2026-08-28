@@ -45,6 +45,7 @@ export function Settings() {
     evDefaultCableType: "8/3 NM-B",
     bathroomLaborAdjustmentHours: "0",
     kitchenLaborAdjustmentHours: "0",
+    additionLaborAdjustmentHours: "0",
     recessedLightingLaborAdjustmentHours: "0",
     serviceUpgradeCrewSize: "2",
     serviceUpgradeHoursPerPerson: "16",
@@ -90,6 +91,7 @@ export function Settings() {
         evDefaultCableType: settings.evDefaultCableType,
         bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours.toString(),
         kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours.toString(),
+        additionLaborAdjustmentHours: settings.additionLaborAdjustmentHours.toString(),
         recessedLightingLaborAdjustmentHours: settings.recessedLightingLaborAdjustmentHours.toString(),
         serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize.toString(),
         serviceUpgradeHoursPerPerson: settings.serviceUpgradeHoursPerPerson.toString(),
@@ -137,6 +139,7 @@ export function Settings() {
         evDefaultCableType: form.evDefaultCableType as "8/3 NM-B" | "8/2 NM-B" | "6/3 NM-B" | "8/2 SER",
         bathroomLaborAdjustmentHours: parseFloat(form.bathroomLaborAdjustmentHours),
         kitchenLaborAdjustmentHours: parseFloat(form.kitchenLaborAdjustmentHours),
+        additionLaborAdjustmentHours: parseFloat(form.additionLaborAdjustmentHours),
         recessedLightingLaborAdjustmentHours: parseFloat(form.recessedLightingLaborAdjustmentHours),
         serviceUpgradeCrewSize: parseInt(form.serviceUpgradeCrewSize, 10),
         serviceUpgradeHoursPerPerson: parseFloat(form.serviceUpgradeHoursPerPerson),
@@ -345,6 +348,16 @@ export function Settings() {
                 className="font-mono"
                 value={form.kitchenLaborAdjustmentHours}
                 onChange={(e) => setForm(f => ({ ...f, kitchenLaborAdjustmentHours: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Addition Labor Adjustment (hr)</Label>
+              <Input
+                type="number"
+                step="0.25"
+                className="font-mono"
+                value={form.additionLaborAdjustmentHours}
+                onChange={(e) => setForm(f => ({ ...f, additionLaborAdjustmentHours: e.target.value }))}
               />
             </div>
             <div className="space-y-2">

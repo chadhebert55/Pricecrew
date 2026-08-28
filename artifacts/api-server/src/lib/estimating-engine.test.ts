@@ -4,6 +4,7 @@ import test from "node:test";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
   auditPriceBookItem,
+  calculateAdditionEstimate,
   calculateBathroomEstimate,
   calculateKitchenEstimate,
   calculateNewHouseEstimate,
@@ -14,6 +15,7 @@ import {
   type PriceBookItem,
 } from "./estimating-engine";
 import type {
+  AdditionInputRecord,
   BathroomInputRecord,
   KitchenInputRecord,
   NewHouseInputRecord,
@@ -21,6 +23,16 @@ import type {
   RecessedLightingInputRecord,
   ServiceUpgradeInputRecord,
 } from "@workspace/db";
+
+const additionInputs: AdditionInputRecord = {
+  length: 20, width: 16, receptacles: 8, switches: 3, dimmers: 1,
+  recessedLights: 6, recessedLightSize: "4-inch", ceilingFans: 1,
+  customerSuppliedFans: false, circuitCount: 2, routeLength: 50,
+  homeRunLength: 35, panelManufacturer: "Siemens", breakerAmperage: 15,
+  breakerPoleCount: 1, breakerProtectionType: "AFCI",
+  cableType: "14/2 NM-B", crewSize: 2, crewHours: 8,
+  laborAdjustmentHours: 0, laborRateType: "residential", notes: "",
+};
 
 const settings: EstimatingSettings = {
   residentialLaborSellRate: 150,
@@ -813,6 +825,35 @@ test("panel replacement never prices an incompatible feeder or generic breaker",
     ),
     true,
   );
+});
+
+test("addition preserves parity, editable pricing, audit, and cable safety", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
+    catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
+    catalogRow("Contractor-supplied ceiling fan", 180, { category: "Equipment" }),
+  ];
+  const result = calculateAdditionEstimate(additionInputs, settings, book);
+  const areaOverride = calculateAdditionEstimate(
+    { ...additionInputs, squareFootageOverride: 900 }, settings, book,
+  );
+  assert.equal(result.pricing.calculatedSellingPrice, areaOverride.pricing.calculatedSellingPrice);
+  assert.equal(result.assembly.find((line) => line.id === "addition-cable")?.quantity, 120);
+  const incompatible = calculateAdditionEstimate(
+    { ...additionInputs, breakerAmperage: 20, cableType: "14/2 NM-B" },
+    settings, book,
+  );
+  assert.equal(incompatible.assembly.find((line) => line.id === "addition-cable")?.unitCost, 0);
+  assert.equal(PreviewQuoteBody.safeParse({ module: "ADDITION", jobInputs: additionInputs }).success, true);
+  assert.equal(CreateQuoteBody.safeParse({
+    customerName: "Addition customer", projectName: "Addition", module: "ADDITION",
+    jobInputs: additionInputs, proposalDescription: "Addition scope",
+  }).success, true);
+  assert.equal(auditPriceBookItem({
+    category: "Equipment", item: "Contractor-supplied ceiling fan",
+    unitCost: 0, isDefault: false, supplierSku: null,
+  }).builders.includes("Addition"), true);
 });
 
 test("panel replacement requires a complete supported panel, OCPD, and conductor tuple", () => {
@@ -1828,7 +1869,7 @@ test("price-book audit identifies unresolved active selections by builder", () =
   assert.deepEqual(unresolvedBreaker.builders, ["EV Charger"]);
   assert.match(unresolvedBreaker.auditMessage ?? "", /sourced contractor cost/i);
   assert.equal(verifiedFixture.isUnresolved, false);
-  assert.deepEqual(verifiedFixture.builders, ["Recessed Lighting"]);
+  assert.deepEqual(verifiedFixture.builders, ["Addition", "Recessed Lighting"]);
 
   const unresolvedPrimer = auditPriceBookItem(
     catalogRow("PVCFIT clear quart primer — SKU 152609", 0, {

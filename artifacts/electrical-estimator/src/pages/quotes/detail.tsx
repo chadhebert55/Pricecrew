@@ -220,6 +220,8 @@ export function QuoteDetail() {
                   ? "Bathroom Builder"
                   : quote.module === "KITCHEN"
                     ? "Kitchen Builder"
+                    : quote.module === "ADDITION"
+                      ? "Addition Builder"
                     : quote.module === "RECESSED_LIGHTING"
                       ? "Recessed Lighting Builder"
                       : quote.module === "SERVICE_UPGRADE"

@@ -421,6 +421,105 @@ export interface KitchenInputs {
   cableType?: KitchenInputsCableType;
 }
 
+export type AdditionInputsRecessedLightSize = typeof AdditionInputsRecessedLightSize[keyof typeof AdditionInputsRecessedLightSize];
+
+
+export const AdditionInputsRecessedLightSize = {
+  '4-inch': '4-inch',
+  '6-inch': '6-inch',
+} as const;
+
+export type AdditionInputsPanelManufacturer = typeof AdditionInputsPanelManufacturer[keyof typeof AdditionInputsPanelManufacturer];
+
+
+export const AdditionInputsPanelManufacturer = {
+  Siemens: 'Siemens',
+  Eaton: 'Eaton',
+  Square_D: 'Square D',
+} as const;
+
+export type AdditionInputsBreakerAmperage = typeof AdditionInputsBreakerAmperage[keyof typeof AdditionInputsBreakerAmperage];
+
+
+export const AdditionInputsBreakerAmperage = {
+  NUMBER_15: 15,
+  NUMBER_20: 20,
+} as const;
+
+export type AdditionInputsBreakerPoleCount = typeof AdditionInputsBreakerPoleCount[keyof typeof AdditionInputsBreakerPoleCount];
+
+
+export const AdditionInputsBreakerPoleCount = {
+  NUMBER_1: 1,
+} as const;
+
+export type AdditionInputsBreakerProtectionType = typeof AdditionInputsBreakerProtectionType[keyof typeof AdditionInputsBreakerProtectionType];
+
+
+export const AdditionInputsBreakerProtectionType = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+  AFCI: 'AFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type AdditionInputsCableType = typeof AdditionInputsCableType[keyof typeof AdditionInputsCableType];
+
+
+export const AdditionInputsCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
+
+export interface AdditionInputs {
+  /** @minimum 0 */
+  length: number;
+  /** @minimum 0 */
+  width: number;
+  /**
+     * Optional direct square footage used only to establish editable starting allowances.
+     * @exclusiveMinimum 0
+     */
+  squareFootageOverride?: number;
+  /** @minimum 0 */
+  receptacles: number;
+  /** @minimum 0 */
+  switches: number;
+  /** @minimum 0 */
+  dimmers: number;
+  /** @minimum 0 */
+  recessedLights: number;
+  recessedLightSize?: AdditionInputsRecessedLightSize;
+  /** @minimum 0 */
+  ceilingFans: number;
+  customerSuppliedFans: boolean;
+  /**
+     * Optional quote-local unit cost for contractor-supplied fans.
+     * @minimum 0
+     */
+  ceilingFanMaterialCostOverride?: number;
+  /** @minimum 0 */
+  circuitCount: number;
+  /** @minimum 0 */
+  routeLength: number;
+  /** @minimum 0 */
+  homeRunLength: number;
+  panelManufacturer: AdditionInputsPanelManufacturer;
+  breakerAmperage: AdditionInputsBreakerAmperage;
+  breakerPoleCount: AdditionInputsBreakerPoleCount;
+  breakerProtectionType: AdditionInputsBreakerProtectionType;
+  cableType: AdditionInputsCableType;
+  /** @minimum 1 */
+  crewSize: number;
+  /** @minimum 0 */
+  crewHours: number;
+  /** Quote-level adjustment applied once after crew and task labor. */
+  laborAdjustmentHours?: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+}
+
 export type RecessedLightingInputsFixtureSize = typeof RecessedLightingInputsFixtureSize[keyof typeof RecessedLightingInputsFixtureSize];
 
 
@@ -1199,7 +1298,7 @@ export interface NewHouseInputs {
 /**
  * Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
  */
-export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs | { [key: string]: unknown };
+export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | AdditionInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs | { [key: string]: unknown };
 
 export interface AssemblyLine {
   id: string;
@@ -1301,6 +1400,7 @@ export const QuoteInputModule = {
   EV_CHARGER: 'EV_CHARGER',
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
+  ADDITION: 'ADDITION',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
   SERVICE_UPGRADE: 'SERVICE_UPGRADE',
   PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
@@ -1328,7 +1428,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | AdditionInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -1352,6 +1452,7 @@ export const QuotePreviewInputModule = {
   EV_CHARGER: 'EV_CHARGER',
   BATHROOM: 'BATHROOM',
   KITCHEN: 'KITCHEN',
+  ADDITION: 'ADDITION',
   RECESSED_LIGHTING: 'RECESSED_LIGHTING',
   SERVICE_UPGRADE: 'SERVICE_UPGRADE',
   PANEL_REPLACEMENT: 'PANEL_REPLACEMENT',
@@ -1363,7 +1464,7 @@ export const QuotePreviewInputModule = {
 
 export interface QuotePreviewInput {
   module: QuotePreviewInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | AdditionInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99
@@ -1473,6 +1574,7 @@ export interface CompanySettings {
   evDefaultCableType: CompanySettingsEvDefaultCableType;
   bathroomLaborAdjustmentHours: number;
   kitchenLaborAdjustmentHours: number;
+  additionLaborAdjustmentHours: number;
   recessedLightingLaborAdjustmentHours: number;
   /** @minimum 1 */
   serviceUpgradeCrewSize: number;
@@ -1567,6 +1669,7 @@ export interface CompanySettingsUpdate {
   evDefaultCableType?: CompanySettingsUpdateEvDefaultCableType;
   bathroomLaborAdjustmentHours?: number;
   kitchenLaborAdjustmentHours?: number;
+  additionLaborAdjustmentHours?: number;
   recessedLightingLaborAdjustmentHours?: number;
   /** @minimum 1 */
   serviceUpgradeCrewSize?: number;

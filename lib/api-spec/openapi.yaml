@@ -619,6 +619,7 @@ components:
             - EV_CHARGER
             - BATHROOM
             - KITCHEN
+            - ADDITION
             - RECESSED_LIGHTING
             - SERVICE_UPGRADE
             - PANEL_REPLACEMENT
@@ -631,6 +632,7 @@ components:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
             - $ref: "#/components/schemas/KitchenInputs"
+            - $ref: "#/components/schemas/AdditionInputs"
             - $ref: "#/components/schemas/RecessedLightingInputs"
             - $ref: "#/components/schemas/ServiceUpgradeInputs"
             - $ref: "#/components/schemas/PanelReplacementInputs"
@@ -655,6 +657,7 @@ components:
         - $ref: "#/components/schemas/EvChargerInputs"
         - $ref: "#/components/schemas/BathroomInputs"
         - $ref: "#/components/schemas/KitchenInputs"
+        - $ref: "#/components/schemas/AdditionInputs"
         - $ref: "#/components/schemas/RecessedLightingInputs"
         - $ref: "#/components/schemas/ServiceUpgradeInputs"
         - $ref: "#/components/schemas/PanelReplacementInputs"
@@ -676,6 +679,7 @@ components:
             - EV_CHARGER
             - BATHROOM
             - KITCHEN
+            - ADDITION
             - RECESSED_LIGHTING
             - SERVICE_UPGRADE
             - PANEL_REPLACEMENT
@@ -688,6 +692,7 @@ components:
             - $ref: "#/components/schemas/EvChargerInputs"
             - $ref: "#/components/schemas/BathroomInputs"
             - $ref: "#/components/schemas/KitchenInputs"
+            - $ref: "#/components/schemas/AdditionInputs"
             - $ref: "#/components/schemas/RecessedLightingInputs"
             - $ref: "#/components/schemas/ServiceUpgradeInputs"
             - $ref: "#/components/schemas/PanelReplacementInputs"
@@ -931,6 +936,100 @@ components:
         quantitySource:
           type: string
         guidance:
+          type: string
+    AdditionInputs:
+      type: object
+      required:
+        - length
+        - width
+        - receptacles
+        - switches
+        - dimmers
+        - recessedLights
+        - ceilingFans
+        - customerSuppliedFans
+        - circuitCount
+        - routeLength
+        - homeRunLength
+        - panelManufacturer
+        - breakerAmperage
+        - breakerPoleCount
+        - breakerProtectionType
+        - cableType
+        - crewSize
+        - crewHours
+        - notes
+      properties:
+        length:
+          type: number
+          minimum: 0
+        width:
+          type: number
+          minimum: 0
+        squareFootageOverride:
+          type: number
+          exclusiveMinimum: 0
+          description: Optional direct square footage used only to establish editable starting allowances.
+        receptacles:
+          type: number
+          minimum: 0
+        switches:
+          type: number
+          minimum: 0
+        dimmers:
+          type: number
+          minimum: 0
+        recessedLights:
+          type: number
+          minimum: 0
+        recessedLightSize:
+          type: string
+          enum: [4-inch, 6-inch]
+        ceilingFans:
+          type: number
+          minimum: 0
+        customerSuppliedFans:
+          type: boolean
+        ceilingFanMaterialCostOverride:
+          type: number
+          minimum: 0
+          description: Optional quote-local unit cost for contractor-supplied fans.
+        circuitCount:
+          type: number
+          minimum: 0
+        routeLength:
+          type: number
+          minimum: 0
+        homeRunLength:
+          type: number
+          minimum: 0
+        panelManufacturer:
+          type: string
+          enum: [Siemens, Eaton, Square D]
+        breakerAmperage:
+          type: number
+          enum: [15, 20]
+        breakerPoleCount:
+          type: number
+          enum: [1]
+        breakerProtectionType:
+          type: string
+          enum: [Standard, GFCI, AFCI, Dual Function]
+        cableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+        crewSize:
+          type: number
+          minimum: 1
+        crewHours:
+          type: number
+          minimum: 0
+        laborAdjustmentHours:
+          type: number
+          description: Quote-level adjustment applied once after crew and task labor.
+        laborRateType:
+          $ref: "#/components/schemas/LaborRateType"
+        notes:
           type: string
     KitchenInputs:
       type: object
@@ -2133,6 +2232,7 @@ components:
         - evDefaultCableType
         - bathroomLaborAdjustmentHours
         - kitchenLaborAdjustmentHours
+        - additionLaborAdjustmentHours
         - recessedLightingLaborAdjustmentHours
         - serviceUpgradeCrewSize
         - serviceUpgradeHoursPerPerson
@@ -2190,6 +2290,8 @@ components:
         bathroomLaborAdjustmentHours:
           type: number
         kitchenLaborAdjustmentHours:
+          type: number
+        additionLaborAdjustmentHours:
           type: number
         recessedLightingLaborAdjustmentHours:
           type: number
@@ -2262,6 +2364,8 @@ components:
         bathroomLaborAdjustmentHours:
           type: number
         kitchenLaborAdjustmentHours:
+          type: number
+        additionLaborAdjustmentHours:
           type: number
         recessedLightingLaborAdjustmentHours:
           type: number

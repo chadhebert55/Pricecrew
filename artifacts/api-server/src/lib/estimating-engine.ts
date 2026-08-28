@@ -1,4 +1,5 @@
 import type {
+  AdditionInputRecord,
   AssemblyLineRecord,
   BathroomInputRecord,
   CustomInputRecord,
@@ -483,6 +484,7 @@ const BUILDER_NAMES = [
   "EV Charger",
   "Bathroom",
   "Kitchen",
+  "Addition",
   "Recessed Lighting",
   "Service Upgrade",
   "Panel Replacement",
@@ -633,6 +635,16 @@ export function auditPriceBookItem(
   );
   addBuilderIf(
     builders,
+    "Addition",
+    name.includes("addition") ||
+      name.includes("ceiling fan") ||
+      name.includes("juno") ||
+      name.includes("recessed") ||
+      name.includes("single pole switch") ||
+      name.includes("dimmer"),
+  );
+  addBuilderIf(
+    builders,
     "Service Upgrade",
     name.includes("service") ||
       name.includes("meter") ||
@@ -676,6 +688,7 @@ export function auditPriceBookItem(
     ) {
       builders.add("Bathroom");
       builders.add("Kitchen");
+      builders.add("Addition");
       builders.add("Recessed Lighting");
       builders.add("New House");
     }
@@ -703,6 +716,7 @@ export function auditPriceBookItem(
     ) {
       builders.add("Bathroom");
       builders.add("Kitchen");
+      builders.add("Addition");
       builders.add("Recessed Lighting");
       builders.add("New House");
     }
@@ -744,6 +758,7 @@ export function auditPriceBookItem(
     ) {
       builders.add("Bathroom");
       builders.add("Kitchen");
+      builders.add("Addition");
       builders.add("New House");
     }
   }
@@ -2344,6 +2359,140 @@ export function calculateKitchenEstimate(
     settings,
     pricingWarnings,
     inputs.laborRateType,
+  );
+}
+
+export function calculateAdditionEstimate(
+  inputs: AdditionInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  const assembly: AssemblyLineRecord[] = [];
+  const pricingWarnings: string[] = [];
+  const n = (value: number | undefined) =>
+    Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+  const squareFeet =
+    inputs.squareFootageOverride === undefined
+      ? n(inputs.length) * n(inputs.width)
+      : n(inputs.squareFootageOverride);
+  if (!squareFeet) {
+    pricingWarnings.push(
+      "Addition size is incomplete. Enter positive length and width or a positive direct square-foot override before sending the quote.",
+    );
+  }
+  pricingWarnings.push(
+    `Addition allowances use ${Number(squareFeet.toFixed(2))} square feet for planning only. Selling price is calculated from the editable scope, materials, and labor rather than a fixed square-foot rate.`,
+  );
+  const catalogLine = (
+    id: string,
+    category: string,
+    key: string,
+    description: string,
+    quantity: number,
+  ) => {
+    if (!n(quantity)) return;
+    const price = unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id, category, description, quantity: n(quantity), unit: "ea",
+      unitCost: price.value, source: price.source,
+    });
+  };
+  catalogLine("addition-receptacles", "Devices",
+    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    "Tamper-resistant receptacles", inputs.receptacles);
+  catalogLine("addition-switches", "Controls",
+    "Pass & Seymour TM870-W 15A single-pole switch",
+    "Single-pole switches", inputs.switches);
+  catalogLine("addition-dimmers", "Controls",
+    "Lutron DVCL-153P-WH Diva LED+ dimmer", "LED dimmers", inputs.dimmers);
+  const size = inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch";
+  catalogLine("addition-recessed-lights", "Lighting",
+    size === "6-inch" ? JUNO_WF6_VERIFIED : JUNO_WF4_VERIFIED,
+    `${size} recessed lights`, inputs.recessedLights);
+
+  const fans = n(inputs.ceilingFans);
+  if (fans) {
+    let fanPrice = { value: 0, source: "Customer supplied fixture" };
+    if (inputs.customerSuppliedFans) {
+      pricingWarnings.push(
+        'Customer-supplied material "ceiling fan" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.',
+      );
+    } else if (
+      inputs.ceilingFanMaterialCostOverride !== undefined &&
+      n(inputs.ceilingFanMaterialCostOverride) > 0
+    ) {
+      fanPrice = {
+        value: n(inputs.ceilingFanMaterialCostOverride),
+        source: "Quote-local material cost override",
+      };
+    } else if (inputs.ceilingFanMaterialCostOverride !== undefined) {
+      pricingWarnings.push(
+        'Active material selection "contractor-supplied ceiling fan" has zero cost and is unresolved. Enter a positive quote material cost or clear the override to use the company price book.',
+      );
+      fanPrice.source = "Unresolved quote-local material cost override";
+    } else {
+      fanPrice = unitCost(
+        "Contractor-supplied ceiling fan", priceBook, pricingWarnings,
+      );
+    }
+    addLine(assembly, {
+      id: "addition-ceiling-fans", category: "Equipment",
+      description: inputs.customerSuppliedFans
+        ? "Customer-supplied ceiling fans"
+        : "Contractor-supplied ceiling fans",
+      quantity: fans, unit: "ea", unitCost: fanPrice.value,
+      source: fanPrice.source,
+    });
+  }
+
+  const circuits = n(inputs.circuitCount);
+  const footage = n(inputs.routeLength) + n(inputs.homeRunLength) * circuits;
+  const compatible =
+    inputs.breakerAmperage !== 20 || inputs.cableType === "12/2 NM-B";
+  if (footage) {
+    if (!compatible) {
+      pricingWarnings.push(
+        `Addition circuit compatibility is unresolved: ${inputs.cableType} cannot be used for a ${inputs.breakerAmperage}A circuit. Select 12/2 NM-B for 20A circuits; no cable cost was substituted.`,
+      );
+    }
+    const cable = compatible
+      ? unitCost(`${inputs.cableType} cable`, priceBook, pricingWarnings)
+      : { value: 0, source: "Unresolved — breaker amperage and cable type are incompatible" };
+    addLine(assembly, {
+      id: "addition-cable", category: "Conductor",
+      description: compatible
+        ? `${inputs.cableType} branch-circuit cable`
+        : `${inputs.cableType} / ${inputs.breakerAmperage}A circuit — unresolved compatibility`,
+      quantity: footage, unit: "ft", unitCost: cable.value, source: cable.source,
+    });
+  } else if (circuits) {
+    pricingWarnings.push(
+      "Addition cable footage is zero. Confirm the common route and per-circuit home-run assumptions.",
+    );
+  }
+  if (circuits) {
+    const breaker = resolveBreaker({
+      manufacturer: inputs.panelManufacturer,
+      amperage: inputs.breakerAmperage,
+      poleCount: inputs.breakerPoleCount,
+      protectionType: inputs.breakerProtectionType,
+    }, priceBook, pricingWarnings, true);
+    addLine(assembly, {
+      id: "addition-breakers", category: "Protection",
+      description: breaker.description, quantity: circuits, unit: "ea",
+      unitCost: breaker.value, source: breaker.source,
+    });
+  }
+  const taskHours =
+    n(inputs.receptacles) * 0.45 + n(inputs.switches) * 0.4 +
+    n(inputs.dimmers) * 0.5 + n(inputs.recessedLights) +
+    fans * 1.75 + circuits * 2.5;
+  const adjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
+    ? Number(inputs.laborAdjustmentHours) : 0;
+  return finalizeEstimate(
+    assembly,
+    Math.max(0, taskHours + Math.max(1, n(inputs.crewSize)) * n(inputs.crewHours) + adjustment),
+    settings, pricingWarnings, inputs.laborRateType,
   );
 }
 

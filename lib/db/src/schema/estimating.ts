@@ -167,6 +167,32 @@ export type KitchenInputRecord = {
   laborAdjustmentHours?: number;
 };
 
+export type AdditionInputRecord = {
+  length: number;
+  width: number;
+  squareFootageOverride?: number;
+  receptacles: number;
+  switches: number;
+  dimmers: number;
+  recessedLights: number;
+  recessedLightSize?: RecessedLightSize;
+  ceilingFans: number;
+  customerSuppliedFans: boolean;
+  ceilingFanMaterialCostOverride?: number;
+  circuitCount: number;
+  routeLength: number;
+  homeRunLength: number;
+  panelManufacturer: string;
+  breakerAmperage: number;
+  breakerPoleCount: number;
+  breakerProtectionType: string;
+  cableType: CableType;
+  crewSize: number;
+  crewHours: number;
+  laborAdjustmentHours?: number;
+  laborRateType?: LaborRateType;
+  notes: string;
+};
 export type RecessedLightingInputRecord = {
   roomLength: number;
   roomWidth: number;
@@ -452,6 +478,7 @@ export type QuoteJobInputsRecord =
   | EvChargerInputRecord
   | BathroomInputRecord
   | KitchenInputRecord
+  | AdditionInputRecord
   | RecessedLightingInputRecord
   | ServiceUpgradeInputRecord
   | PanelReplacementInputRecord
@@ -617,6 +644,13 @@ export const companySettingsTable = pgTable(
       .notNull()
       .default(0),
     kitchenLaborAdjustmentHours: numeric("kitchen_labor_adjustment_hours", {
+      precision: 8,
+      scale: 2,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
+    additionLaborAdjustmentHours: numeric("addition_labor_adjustment_hours", {
       precision: 8,
       scale: 2,
       mode: "number",

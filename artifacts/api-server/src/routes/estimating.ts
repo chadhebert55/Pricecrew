@@ -42,6 +42,7 @@ import {
   db,
   priceBookItemsTable,
   quotesTable,
+  type AdditionInputRecord,
   type BathroomInputRecord,
   type CustomInputRecord,
   type EvChargerInputRecord,
@@ -62,6 +63,7 @@ import {
   requireEstimatorAuth,
 } from "../middlewares/estimatorAuth";
 import {
+  calculateAdditionEstimate,
   calculateBathroomEstimate,
   calculateCustomEstimate,
   calculateEvChargerEstimate,
@@ -91,6 +93,7 @@ type EstimateModule =
   | "EV_CHARGER"
   | "BATHROOM"
   | "KITCHEN"
+  | "ADDITION"
   | "RECESSED_LIGHTING"
   | "SERVICE_UPGRADE"
   | "PANEL_REPLACEMENT"
@@ -108,6 +111,8 @@ export function normalizeEstimateModule(value: string): EstimateModule | null {
     BATHROOMBUILDER: "BATHROOM",
     KITCHEN: "KITCHEN",
     KITCHENBUILDER: "KITCHEN",
+    ADDITION: "ADDITION",
+    ADDITIONBUILDER: "ADDITION",
     RECESSEDLIGHTING: "RECESSED_LIGHTING",
     RECESSEDLIGHTINGBUILDER: "RECESSED_LIGHTING",
     SERVICEUPGRADE: "SERVICE_UPGRADE",
@@ -587,6 +592,9 @@ async function calculateEstimate(
   if (module === "KITCHEN" && isKitchenInput(jobInputs)) {
     return calculateKitchenEstimate(jobInputs, settings, priceBook);
   }
+  if (module === "ADDITION" && isAdditionInput(jobInputs)) {
+    return calculateAdditionEstimate(jobInputs, settings, priceBook);
+  }
   if (module === "EV_CHARGER" && isEvInput(jobInputs)) {
     return calculateEvChargerEstimate(jobInputs, settings, priceBook);
   }
@@ -630,6 +638,16 @@ function isKitchenInput(
   jobInputs: QuoteJobInputsRecord,
 ): jobInputs is KitchenInputRecord {
   return "refrigeratorCircuits" in jobInputs && "countertopReceptacles" in jobInputs;
+}
+
+function isAdditionInput(
+  jobInputs: QuoteJobInputsRecord,
+): jobInputs is AdditionInputRecord {
+  return (
+    "length" in jobInputs &&
+    "ceilingFans" in jobInputs &&
+    "circuitCount" in jobInputs
+  );
 }
 
 function isRecessedLightingInput(
@@ -685,6 +703,7 @@ function moduleMatchesInputs(
     (module === "EV_CHARGER" && isEvInput(jobInputs)) ||
     (module === "BATHROOM" && isBathroomInput(jobInputs)) ||
     (module === "KITCHEN" && isKitchenInput(jobInputs)) ||
+    (module === "ADDITION" && isAdditionInput(jobInputs)) ||
     (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs))
     || (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs))
     || (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs))
@@ -1434,6 +1453,7 @@ router.get("/settings", async (req, res): Promise<void> => {
       evDefaultCableType: settings.evDefaultCableType,
       bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours,
       kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours,
+      additionLaborAdjustmentHours: settings.additionLaborAdjustmentHours,
       recessedLightingLaborAdjustmentHours:
         settings.recessedLightingLaborAdjustmentHours,
       serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize,
@@ -1512,6 +1532,9 @@ router.patch("/settings", async (req, res): Promise<void> => {
       kitchenLaborAdjustmentHours:
         parsed.data.kitchenLaborAdjustmentHours ??
         currentSettings.kitchenLaborAdjustmentHours,
+      additionLaborAdjustmentHours:
+        parsed.data.additionLaborAdjustmentHours ??
+        currentSettings.additionLaborAdjustmentHours,
       recessedLightingLaborAdjustmentHours:
         parsed.data.recessedLightingLaborAdjustmentHours ??
         currentSettings.recessedLightingLaborAdjustmentHours,
@@ -1578,6 +1601,7 @@ router.patch("/settings", async (req, res): Promise<void> => {
       evDefaultCableType: settings.evDefaultCableType,
       bathroomLaborAdjustmentHours: settings.bathroomLaborAdjustmentHours,
       kitchenLaborAdjustmentHours: settings.kitchenLaborAdjustmentHours,
+      additionLaborAdjustmentHours: settings.additionLaborAdjustmentHours,
       recessedLightingLaborAdjustmentHours:
         settings.recessedLightingLaborAdjustmentHours,
       serviceUpgradeCrewSize: settings.serviceUpgradeCrewSize,

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdditionInputs } from './additionInputs';
 import type { BathroomInputs } from './bathroomInputs';
 import type { CustomInputs } from './customInputs';
 import type { EvChargerInputs } from './evChargerInputs';
@@ -35,7 +36,7 @@ export interface QuoteInput {
   /** @minLength 1 */
   projectName: string;
   module: QuoteInputModule;
-  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
+  jobInputs: EvChargerInputs | BathroomInputs | KitchenInputs | AdditionInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs;
   /**
      * @minimum 0
      * @maximum 999999999.99

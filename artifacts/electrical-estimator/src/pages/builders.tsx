@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes, House } from "lucide-react"
 import { Link } from "wouter"
+import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes, House, HousePlus } from "lucide-react"
 
 export function Builders() {
   const modules = [
@@ -37,6 +37,14 @@ export function Builders() {
       icon: Clock,
       status: "live",
       href: "/quotes/new/time-materials"
+    },
+    {
+      id: "addition",
+      title: "Residential Addition",
+      description: "Turn addition dimensions into editable device, lighting, fan, circuit, route, and labor allowances without a fixed square-foot price.",
+      icon: HousePlus,
+      status: "live",
+      href: "/quotes/new/addition"
     },
     {
       id: "bathroom",

@@ -25,6 +25,7 @@ export interface CompanySettings {
   evDefaultCableType: CompanySettingsEvDefaultCableType;
   bathroomLaborAdjustmentHours: number;
   kitchenLaborAdjustmentHours: number;
+  additionLaborAdjustmentHours: number;
   recessedLightingLaborAdjustmentHours: number;
   /** @minimum 1 */
   serviceUpgradeCrewSize: number;

@@ -37,6 +37,10 @@ const NewBathroomQuote = lazy(() =>
 const NewKitchenQuote = lazy(() =>
   import('@/pages/quotes/new-kitchen').then(({ NewKitchenQuote }) => ({ default: NewKitchenQuote })),
 );
+
+const NewAdditionQuote = lazy(() =>
+  import('@/pages/quotes/new-addition').then(({ NewAdditionQuote }) => ({ default: NewAdditionQuote })),
+);
 const NewRecessedLightingQuote = lazy(() =>
   import('@/pages/quotes/new-recessed-lighting').then(({ NewRecessedLightingQuote }) => ({
     default: NewRecessedLightingQuote,
@@ -178,6 +182,7 @@ function PrivateRouter() {
             <Route path="/quotes/new" component={NewQuote} />
             <Route path="/quotes/new/bathroom" component={NewBathroomQuote} />
             <Route path="/quotes/new/kitchen" component={NewKitchenQuote} />
+            <Route path="/quotes/new/addition" component={NewAdditionQuote} />
             <Route path="/quotes/new/recessed-lighting" component={NewRecessedLightingQuote} />
             <Route path="/quotes/new/service-upgrade" component={NewServiceUpgradeQuote} />
             <Route path="/quotes/new/panel-replacement" component={NewPanelReplacementQuote} />
