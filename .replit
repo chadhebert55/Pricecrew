@@ -20,6 +20,10 @@ author = "agent"
 task = "workflow.run"
 args = "typecheck"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "estimator-bundle-size"
+
 [[workflows.workflow]]
 name = "typecheck"
 author = "agent"
@@ -30,6 +34,17 @@ isValidation = true
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm run build"
+
+[[workflows.workflow]]
+name = "estimator-bundle-size"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/electrical-estimator run check:bundle-size"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 stack = "PNPM_WORKSPACE"

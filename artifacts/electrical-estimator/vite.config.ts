@@ -5,6 +5,43 @@ import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
+const entryChunkBudgetBytes = 500_000;
+const entryChunkReportPrefix = 'ELECTRICAL_ESTIMATOR_ENTRY_CHUNK ';
+
+function entryChunkReportPlugin() {
+  return {
+    name: 'electrical-estimator-entry-chunk-report',
+    writeBundle(
+      _options: unknown,
+      bundle: Record<
+        string,
+        { type: string; isEntry?: boolean; code?: string }
+      >,
+    ) {
+      const entryChunk = Object.values(bundle).find(
+        (output) => output.type === 'chunk' && output.isEntry,
+      );
+
+      if (!entryChunk || typeof entryChunk.code !== 'string') {
+        throw new Error('Could not find the electrical estimator entry chunk.');
+      }
+
+      const sizeBytes = Buffer.byteLength(entryChunk.code, 'utf8');
+
+      console.log(
+        `${entryChunkReportPrefix}${JSON.stringify({
+          fileName: Object.entries(bundle).find(
+            ([, output]) => output === entryChunk,
+          )?.[0],
+          sizeBytes,
+          budgetBytes: entryChunkBudgetBytes,
+          withinBudget: sizeBytes <= entryChunkBudgetBytes,
+        })}`,
+      );
+    },
+  };
+}
+
 const replitPlugins =
   process.env.NODE_ENV !== 'production' && process.env.REPL_ID !== undefined
     ? [
@@ -48,6 +85,7 @@ export default defineConfig(({ command }) => {
     plugins: [
       react(),
       tailwindcss(),
+      entryChunkReportPlugin(),
       runtimeErrorOverlay(),
       ...replitPlugins,
     ],
@@ -65,7 +103,9 @@ export default defineConfig(({ command }) => {
     },
     root: path.resolve(import.meta.dirname),
     build: {
-      outDir: path.resolve(import.meta.dirname, 'dist/public'),
+      outDir: process.env.BUNDLE_CHECK_OUTPUT_DIR
+        ? path.resolve(process.env.BUNDLE_CHECK_OUTPUT_DIR)
+        : path.resolve(import.meta.dirname, 'dist/public'),
       emptyOutDir: true,
     },
     server: {
