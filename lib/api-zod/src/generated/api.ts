@@ -592,6 +592,8 @@ export const createQuoteBodySellingPriceOverrideMin = 0;
 export const createQuoteBodySellingPriceOverrideMax = 999999999.99;
 
 
+export const createQuoteBodyTakeoffIdMultipleOf = 1;
+
 
 
 export const CreateQuoteBody = zod.object({
@@ -1047,7 +1049,8 @@ export const CreateQuoteBody = zod.object({
 })]),
   "laborOverride": zod.number().min(createQuoteBodyLaborOverrideMin).max(createQuoteBodyLaborOverrideMax).nullish(),
   "sellingPriceOverride": zod.number().min(createQuoteBodySellingPriceOverrideMin).max(createQuoteBodySellingPriceOverrideMax).nullish(),
-  "proposalDescription": zod.string().min(1)
+  "proposalDescription": zod.string().min(1),
+  "takeoffId": zod.number().min(1).multipleOf(createQuoteBodyTakeoffIdMultipleOf).optional()
 })
 
 export const createQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
@@ -1479,6 +1482,28 @@ export const createQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPri
 
 
 
+
+export const createQuoteResponseTwoTakeoffReviewOneTakeoffIdMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneApprovedInputsMultipleOfOne = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneItemsItemIdMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMin = 0;
+export const createQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMin = 0;
+export const createQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneItemsItemSourcePageMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneReviewEventsItemIdMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf = 1;
 
 
 
@@ -2004,7 +2029,38 @@ export const CreateQuoteResponse = zod.object({
   "signature": zod.string().nullable(),
   "explanation": zod.string().nullable(),
   "decidedAt": zod.coerce.date()
-}))
+})),
+  "takeoffReview": zod.union([zod.object({
+  "takeoffId": zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneTakeoffIdMultipleOf),
+  "fileName": zod.string(),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneApprovedInputsMultipleOfOne)),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(createQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMin).multipleOf(createQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(createQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMin).multipleOf(createQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(createQuoteResponseTwoTakeoffReviewOneItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(createQuoteResponseTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedAt": zod.coerce.date()
+}),zod.null()])
 }))
 
 
@@ -2953,6 +3009,314 @@ export const PreviewQuoteResponse = zod.object({
 
 
 /**
+ * @summary Request a direct upload URL for an electrical plan PDF
+ */
+export const requestTakeoffUploadUrlBodyFileNameMax = 255;
+
+export const requestTakeoffUploadUrlBodyFileSizeMax = 26214400;
+export const requestTakeoffUploadUrlBodyFileSizeMultipleOf = 1;
+
+
+
+export const RequestTakeoffUploadUrlBody = zod.object({
+  "fileName": zod.string().min(1).max(requestTakeoffUploadUrlBodyFileNameMax),
+  "fileSize": zod.number().min(1).max(requestTakeoffUploadUrlBodyFileSizeMax).multipleOf(requestTakeoffUploadUrlBodyFileSizeMultipleOf),
+  "contentType": zod.enum(['application/pdf'])
+})
+
+
+
+
+export const RequestTakeoffUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string().min(1)
+})
+
+
+/**
+ * @summary Extract reviewable quantities from an uploaded plan PDF
+ */
+export const createTakeoffBodyFileNameMax = 255;
+
+export const createTakeoffBodyFileSizeMax = 26214400;
+export const createTakeoffBodyFileSizeMultipleOf = 1;
+
+export const createTakeoffBodyObjectPathRegExp = new RegExp('^/objects/uploads/[0-9]+/[A-Za-z0-9-]+$');
+
+
+export const CreateTakeoffBody = zod.object({
+  "module": zod.enum(['ADDITION', 'NEW_HOUSE']),
+  "fileName": zod.string().min(1).max(createTakeoffBodyFileNameMax),
+  "fileSize": zod.number().min(1).max(createTakeoffBodyFileSizeMax).multipleOf(createTakeoffBodyFileSizeMultipleOf),
+  "contentType": zod.enum(['application/pdf']),
+  "objectPath": zod.string().regex(createTakeoffBodyObjectPathRegExp),
+  "baseInputs": zod.record(zod.string(), zod.unknown())
+})
+
+export const createTakeoffResponseIdMultipleOf = 1;
+
+export const createTakeoffResponseFileSizeMultipleOf = 1;
+
+export const createTakeoffResponsePageCountMultipleOf = 1;
+
+export const createTakeoffResponseItemsItemIdMultipleOf = 1;
+
+export const createTakeoffResponseItemsItemProposedQuantityMin = 0;
+export const createTakeoffResponseItemsItemProposedQuantityMultipleOf = 1;
+
+export const createTakeoffResponseItemsItemApprovedQuantityMin = 0;
+export const createTakeoffResponseItemsItemApprovedQuantityMultipleOf = 1;
+
+export const createTakeoffResponseItemsItemSourcePageMultipleOf = 1;
+
+export const createTakeoffResponseReviewEventsItemIdMultipleOf = 1;
+
+export const createTakeoffResponseReviewEventsItemItemIdMultipleOf = 1;
+
+export const createTakeoffResponseReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const createTakeoffResponseReviewEventsItemNextQuantityMultipleOf = 1;
+
+export const createTakeoffResponseApprovedInputsMultipleOfOne = 1;
+
+
+
+export const CreateTakeoffResponse = zod.object({
+  "id": zod.number().multipleOf(createTakeoffResponseIdMultipleOf),
+  "module": zod.enum(['ADDITION', 'NEW_HOUSE']),
+  "fileName": zod.string(),
+  "fileSize": zod.number().multipleOf(createTakeoffResponseFileSizeMultipleOf),
+  "contentType": zod.string(),
+  "status": zod.enum(['processing', 'ready', 'failed']),
+  "pageCount": zod.number().multipleOf(createTakeoffResponsePageCountMultipleOf).nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorMessage": zod.string().nullable(),
+  "extractionSummary": zod.record(zod.string(), zod.unknown()).nullable(),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(createTakeoffResponseItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(createTakeoffResponseItemsItemProposedQuantityMin).multipleOf(createTakeoffResponseItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(createTakeoffResponseItemsItemApprovedQuantityMin).multipleOf(createTakeoffResponseItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(createTakeoffResponseItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(createTakeoffResponseReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(createTakeoffResponseReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(createTakeoffResponseReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(createTakeoffResponseReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(createTakeoffResponseApprovedInputsMultipleOfOne)),
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Get a takeoff and its review trail
+ */
+export const getTakeoffPathIdMultipleOf = 1;
+
+
+
+export const GetTakeoffParams = zod.object({
+  "id": zod.coerce.number().multipleOf(getTakeoffPathIdMultipleOf)
+})
+
+export const getTakeoffResponseIdMultipleOf = 1;
+
+export const getTakeoffResponseFileSizeMultipleOf = 1;
+
+export const getTakeoffResponsePageCountMultipleOf = 1;
+
+export const getTakeoffResponseItemsItemIdMultipleOf = 1;
+
+export const getTakeoffResponseItemsItemProposedQuantityMin = 0;
+export const getTakeoffResponseItemsItemProposedQuantityMultipleOf = 1;
+
+export const getTakeoffResponseItemsItemApprovedQuantityMin = 0;
+export const getTakeoffResponseItemsItemApprovedQuantityMultipleOf = 1;
+
+export const getTakeoffResponseItemsItemSourcePageMultipleOf = 1;
+
+export const getTakeoffResponseReviewEventsItemIdMultipleOf = 1;
+
+export const getTakeoffResponseReviewEventsItemItemIdMultipleOf = 1;
+
+export const getTakeoffResponseReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const getTakeoffResponseReviewEventsItemNextQuantityMultipleOf = 1;
+
+export const getTakeoffResponseApprovedInputsMultipleOfOne = 1;
+
+
+
+export const GetTakeoffResponse = zod.object({
+  "id": zod.number().multipleOf(getTakeoffResponseIdMultipleOf),
+  "module": zod.enum(['ADDITION', 'NEW_HOUSE']),
+  "fileName": zod.string(),
+  "fileSize": zod.number().multipleOf(getTakeoffResponseFileSizeMultipleOf),
+  "contentType": zod.string(),
+  "status": zod.enum(['processing', 'ready', 'failed']),
+  "pageCount": zod.number().multipleOf(getTakeoffResponsePageCountMultipleOf).nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorMessage": zod.string().nullable(),
+  "extractionSummary": zod.record(zod.string(), zod.unknown()).nullable(),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(getTakeoffResponseItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(getTakeoffResponseItemsItemProposedQuantityMin).multipleOf(getTakeoffResponseItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(getTakeoffResponseItemsItemApprovedQuantityMin).multipleOf(getTakeoffResponseItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(getTakeoffResponseItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(getTakeoffResponseReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(getTakeoffResponseReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(getTakeoffResponseReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(getTakeoffResponseReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(getTakeoffResponseApprovedInputsMultipleOfOne)),
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Download the source plan PDF
+ */
+export const getTakeoffDocumentPathIdMultipleOf = 1;
+
+
+
+export const GetTakeoffDocumentParams = zod.object({
+  "id": zod.coerce.number().multipleOf(getTakeoffDocumentPathIdMultipleOf)
+})
+
+export const GetTakeoffDocumentResponse = zod.unknown()
+
+
+/**
+ * @summary Accept, reject, edit, or leave a takeoff item unresolved
+ */
+export const reviewTakeoffItemPathIdMultipleOf = 1;
+
+export const reviewTakeoffItemPathItemIdMultipleOf = 1;
+
+
+
+export const ReviewTakeoffItemParams = zod.object({
+  "id": zod.coerce.number().multipleOf(reviewTakeoffItemPathIdMultipleOf),
+  "itemId": zod.coerce.number().multipleOf(reviewTakeoffItemPathItemIdMultipleOf)
+})
+
+export const reviewTakeoffItemBodyApprovedQuantityMin = 0;
+export const reviewTakeoffItemBodyApprovedQuantityMax = 100000;
+export const reviewTakeoffItemBodyApprovedQuantityMultipleOf = 1;
+
+export const reviewTakeoffItemBodyReviewerNoteMax = 1000;
+
+
+
+export const ReviewTakeoffItemBody = zod.object({
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "approvedQuantity": zod.number().min(reviewTakeoffItemBodyApprovedQuantityMin).max(reviewTakeoffItemBodyApprovedQuantityMax).multipleOf(reviewTakeoffItemBodyApprovedQuantityMultipleOf).nullish(),
+  "reviewerNote": zod.string().max(reviewTakeoffItemBodyReviewerNoteMax).nullish()
+})
+
+export const reviewTakeoffItemResponseIdMultipleOf = 1;
+
+export const reviewTakeoffItemResponseFileSizeMultipleOf = 1;
+
+export const reviewTakeoffItemResponsePageCountMultipleOf = 1;
+
+export const reviewTakeoffItemResponseItemsItemIdMultipleOf = 1;
+
+export const reviewTakeoffItemResponseItemsItemProposedQuantityMin = 0;
+export const reviewTakeoffItemResponseItemsItemProposedQuantityMultipleOf = 1;
+
+export const reviewTakeoffItemResponseItemsItemApprovedQuantityMin = 0;
+export const reviewTakeoffItemResponseItemsItemApprovedQuantityMultipleOf = 1;
+
+export const reviewTakeoffItemResponseItemsItemSourcePageMultipleOf = 1;
+
+export const reviewTakeoffItemResponseReviewEventsItemIdMultipleOf = 1;
+
+export const reviewTakeoffItemResponseReviewEventsItemItemIdMultipleOf = 1;
+
+export const reviewTakeoffItemResponseReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const reviewTakeoffItemResponseReviewEventsItemNextQuantityMultipleOf = 1;
+
+export const reviewTakeoffItemResponseApprovedInputsMultipleOfOne = 1;
+
+
+
+export const ReviewTakeoffItemResponse = zod.object({
+  "id": zod.number().multipleOf(reviewTakeoffItemResponseIdMultipleOf),
+  "module": zod.enum(['ADDITION', 'NEW_HOUSE']),
+  "fileName": zod.string(),
+  "fileSize": zod.number().multipleOf(reviewTakeoffItemResponseFileSizeMultipleOf),
+  "contentType": zod.string(),
+  "status": zod.enum(['processing', 'ready', 'failed']),
+  "pageCount": zod.number().multipleOf(reviewTakeoffItemResponsePageCountMultipleOf).nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorMessage": zod.string().nullable(),
+  "extractionSummary": zod.record(zod.string(), zod.unknown()).nullable(),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(reviewTakeoffItemResponseItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(reviewTakeoffItemResponseItemsItemProposedQuantityMin).multipleOf(reviewTakeoffItemResponseItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(reviewTakeoffItemResponseItemsItemApprovedQuantityMin).multipleOf(reviewTakeoffItemResponseItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(reviewTakeoffItemResponseItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(reviewTakeoffItemResponseReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(reviewTakeoffItemResponseReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(reviewTakeoffItemResponseReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(reviewTakeoffItemResponseReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(reviewTakeoffItemResponseApprovedInputsMultipleOfOne)),
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Get a customer-safe proposal
  */
 export const getCustomerProposalPathTokenMin = 50;
@@ -3469,6 +3833,28 @@ export const getQuoteResponseTwoPricingOneDeliberateLossApprovalOneSellingPriceA
 
 
 
+
+export const getQuoteResponseTwoTakeoffReviewOneTakeoffIdMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneApprovedInputsMultipleOfOne = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneItemsItemIdMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMin = 0;
+export const getQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMin = 0;
+export const getQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneItemsItemSourcePageMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneReviewEventsItemIdMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf = 1;
 
 
 
@@ -3994,7 +4380,38 @@ export const GetQuoteResponse = zod.object({
   "signature": zod.string().nullable(),
   "explanation": zod.string().nullable(),
   "decidedAt": zod.coerce.date()
-}))
+})),
+  "takeoffReview": zod.union([zod.object({
+  "takeoffId": zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneTakeoffIdMultipleOf),
+  "fileName": zod.string(),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneApprovedInputsMultipleOfOne)),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(getQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMin).multipleOf(getQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(getQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMin).multipleOf(getQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(getQuoteResponseTwoTakeoffReviewOneItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(getQuoteResponseTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedAt": zod.coerce.date()
+}),zod.null()])
 }))
 
 
@@ -4456,6 +4873,28 @@ export const updateQuoteResponseOneTwoPricingOneDeliberateLossApprovalOneSelling
 
 
 
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneTakeoffIdMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneApprovedInputsMultipleOfOne = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneItemsItemIdMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneItemsItemProposedQuantityMin = 0;
+export const updateQuoteResponseOneTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneItemsItemApprovedQuantityMin = 0;
+export const updateQuoteResponseOneTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneItemsItemSourcePageMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemIdMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf = 1;
 
 
 
@@ -4981,7 +5420,38 @@ export const UpdateQuoteResponse = zod.object({
   "signature": zod.string().nullable(),
   "explanation": zod.string().nullable(),
   "decidedAt": zod.coerce.date()
-}))
+})),
+  "takeoffReview": zod.union([zod.object({
+  "takeoffId": zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneTakeoffIdMultipleOf),
+  "fileName": zod.string(),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneApprovedInputsMultipleOfOne)),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(updateQuoteResponseOneTwoTakeoffReviewOneItemsItemProposedQuantityMin).multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(updateQuoteResponseOneTwoTakeoffReviewOneItemsItemApprovedQuantityMin).multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(updateQuoteResponseOneTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedAt": zod.coerce.date()
+}),zod.null()])
 })).and(zod.object({
   "proposalShareToken": zod.string().nullable().describe('Rotating signed token issued only for ready customer proposals.')
 }))
@@ -5668,6 +6138,28 @@ export const duplicateQuoteResponseTwoPricingOneDeliberateLossApprovalOneSelling
 
 
 
+export const duplicateQuoteResponseTwoTakeoffReviewOneTakeoffIdMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneApprovedInputsMultipleOfOne = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneItemsItemIdMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMin = 0;
+export const duplicateQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMin = 0;
+export const duplicateQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneItemsItemSourcePageMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemIdMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf = 1;
+
 
 
 export const DuplicateQuoteResponse = zod.object({
@@ -6192,7 +6684,38 @@ export const DuplicateQuoteResponse = zod.object({
   "signature": zod.string().nullable(),
   "explanation": zod.string().nullable(),
   "decidedAt": zod.coerce.date()
-}))
+})),
+  "takeoffReview": zod.union([zod.object({
+  "takeoffId": zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneTakeoffIdMultipleOf),
+  "fileName": zod.string(),
+  "approvedInputs": zod.record(zod.string(), zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneApprovedInputsMultipleOfOne)),
+  "items": zod.array(zod.object({
+  "id": zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneItemsItemIdMultipleOf),
+  "fieldKey": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['quantity', 'circuit', 'dimension']),
+  "proposedQuantity": zod.number().min(duplicateQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMin).multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneItemsItemProposedQuantityMultipleOf),
+  "approvedQuantity": zod.number().min(duplicateQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMin).multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneItemsItemApprovedQuantityMultipleOf).nullable(),
+  "confidence": zod.enum(['high', 'medium', 'low']),
+  "sourceContext": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneItemsItemSourcePageMultipleOf).nullable(),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "reviewerNote": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "reviewEvents": zod.array(zod.object({
+  "id": zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemIdMultipleOf),
+  "itemId": zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemItemIdMultipleOf),
+  "action": zod.enum(['accepted', 'rejected', 'unresolved', 'edited']),
+  "previousStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "nextStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "previousQuantity": zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemPreviousQuantityMultipleOf).nullable(),
+  "nextQuantity": zod.number().multipleOf(duplicateQuoteResponseTwoTakeoffReviewOneReviewEventsItemNextQuantityMultipleOf).nullable(),
+  "note": zod.string().nullable(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "approvedAt": zod.coerce.date()
+}),zod.null()])
 }))
 
 

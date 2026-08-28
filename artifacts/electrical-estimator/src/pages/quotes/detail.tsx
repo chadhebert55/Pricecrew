@@ -504,6 +504,79 @@ export function QuoteDetail() {
               )}
             </CardContent>
           </Card>
+
+          {quote.takeoffReview && (
+            <Card data-testid="quote-takeoff-audit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText size={20} className="text-primary" />
+                  Blueprint Takeoff Review
+                </CardTitle>
+                <CardDescription>
+                  Approved plan quantities and the immutable review trail saved with this quote.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+                  <span className="font-medium">{quote.takeoffReview.fileName}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Approved {new Date(quote.takeoffReview.approvedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {quote.takeoffReview.items.map((item) => (
+                    <div key={item.id} className="rounded-md border p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {item.status === "accepted" ? (
+                            <CheckCircle2 size={16} className="text-emerald-500" />
+                          ) : item.status === "rejected" ? (
+                            <XCircle size={16} className="text-destructive" />
+                          ) : (
+                            <TriangleAlert size={16} className="text-amber-500" />
+                          )}
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{item.confidence} confidence</Badge>
+                          <Badge variant={item.status === "accepted" ? "default" : "secondary"}>
+                            {item.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-[auto_1fr]">
+                        <span>
+                          Proposed {item.proposedQuantity}
+                          {item.status === "accepted" && ` · approved ${item.approvedQuantity}`}
+                        </span>
+                        <span className="sm:text-right">
+                          {item.sourcePage ? `Page ${item.sourcePage}: ` : ""}
+                          “{item.sourceContext}”
+                        </span>
+                      </div>
+                      {item.reviewerNote && (
+                        <p className="mt-2 rounded bg-muted/40 p-2 text-xs">{item.reviewerNote}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold">Review audit history</h3>
+                  <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+                    {quote.takeoffReview.reviewEvents.map((event) => (
+                      <div key={event.id} className="flex flex-col justify-between gap-1 rounded border p-2 sm:flex-row">
+                        <span className="capitalize">
+                          {event.action} · {event.previousStatus} → {event.nextStatus}
+                          {event.nextQuantity !== null ? ` · quantity ${event.nextQuantity}` : ""}
+                        </span>
+                        <span>{new Date(event.reviewedAt).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right Col - Pricing & Overrides */}

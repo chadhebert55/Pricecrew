@@ -56,8 +56,11 @@ import {
   customersTable,
   db,
   priceBookItemsTable,
+  planTakeoffsTable,
   proposalDecisionsTable,
   quotesTable,
+  takeoffItemsTable,
+  takeoffReviewEventsTable,
   type AdditionInputRecord,
   type AssemblyLineRecord,
   type BathroomInputRecord,
@@ -74,6 +77,7 @@ import {
   type ServiceCallInputRecord,
   type ServiceUpgradeInputRecord,
   type TimeMaterialsInputRecord,
+  type TakeoffQuoteSnapshotRecord,
 } from "@workspace/db";
 import { ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
@@ -256,6 +260,125 @@ function serializeQuote(
       ? serializeProposalDecision(currentDecision)
       : null,
     proposalDecisions: decisions.map(serializeProposalDecision),
+    takeoffReview: quote.takeoffReview ?? null,
+  };
+}
+
+async function validateTakeoffSnapshotForQuote({
+  companyId,
+  takeoffId,
+  module,
+  jobInputs,
+}: {
+  companyId: number;
+  takeoffId: number;
+  module: EstimateModule;
+  jobInputs: QuoteJobInputsRecord;
+}): Promise<
+  | { ok: true; snapshot: TakeoffQuoteSnapshotRecord }
+  | { ok: false; status: 400 | 404 | 409; error: string }
+> {
+  const [takeoff] = await db
+    .select()
+    .from(planTakeoffsTable)
+    .where(
+      and(
+        eq(planTakeoffsTable.id, takeoffId),
+        eq(planTakeoffsTable.companyId, companyId),
+      ),
+    );
+  if (!takeoff) {
+    return { ok: false, status: 404, error: "Blueprint takeoff not found." };
+  }
+  if (takeoff.builderModule !== module) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Blueprint takeoff does not match this quote builder.",
+    };
+  }
+  if (takeoff.status !== "ready") {
+    return {
+      ok: false,
+      status: 409,
+      error: takeoff.errorMessage ?? "Blueprint takeoff is not ready for quoting.",
+    };
+  }
+  const [items, events] = await Promise.all([
+    db
+      .select()
+      .from(takeoffItemsTable)
+      .where(eq(takeoffItemsTable.takeoffId, takeoff.id))
+      .orderBy(takeoffItemsTable.id),
+    db
+      .select()
+      .from(takeoffReviewEventsTable)
+      .where(eq(takeoffReviewEventsTable.takeoffId, takeoff.id))
+      .orderBy(takeoffReviewEventsTable.createdAt),
+  ]);
+  const accepted = items.filter(
+    (item) => item.status === "accepted" && item.approvedQuantity !== null,
+  );
+  if (accepted.length === 0) {
+    return {
+      ok: false,
+      status: 409,
+      error: "Accept at least one blueprint takeoff item before creating the quote.",
+    };
+  }
+  const submittedInputs = jobInputs as unknown as Record<string, unknown>;
+  for (const item of items) {
+    const expected =
+      item.status === "accepted"
+        ? item.approvedQuantity
+        : takeoff.baseInputs[item.fieldKey];
+    if (expected !== undefined && submittedInputs[item.fieldKey] !== expected) {
+      return {
+        ok: false,
+        status: 409,
+        error:
+          item.status === "accepted"
+            ? `The approved ${item.label} value changed. Update the takeoff review before quoting.`
+            : `${item.label} has not been approved. Restore the builder value or approve it in the takeoff review.`,
+      };
+    }
+  }
+  const approvedInputs = Object.fromEntries(
+    accepted.map((item) => [item.fieldKey, item.approvedQuantity as number]),
+  );
+  return {
+    ok: true,
+    snapshot: {
+      takeoffId: takeoff.id,
+      fileName: takeoff.fileName,
+      approvedInputs,
+      items: items.map((item) => ({
+        id: item.id,
+        fieldKey: item.fieldKey,
+        label: item.label,
+        kind: item.kind,
+        proposedQuantity: item.proposedQuantity,
+        approvedQuantity: item.approvedQuantity,
+        confidence: item.confidence,
+        sourceContext: item.sourceContext,
+        sourcePage: item.sourcePage,
+        status: item.status,
+        reviewerNote: item.reviewerNote,
+        reviewedAt: item.reviewedAt?.toISOString() ?? null,
+      })),
+      reviewEvents: events.map((event) => ({
+        id: event.id,
+        itemId: event.itemId,
+        action: event.action,
+        previousStatus: event.previousStatus,
+        nextStatus: event.nextStatus,
+        previousQuantity: event.previousQuantity,
+        nextQuantity: event.nextQuantity,
+        note: event.note,
+        reviewedAt: event.createdAt.toISOString(),
+      })),
+      approvedAt: new Date().toISOString(),
+    },
   };
 }
 
@@ -1376,6 +1499,22 @@ router.post("/quotes", async (req, res): Promise<void> => {
     });
     return;
   }
+  let takeoffReview: TakeoffQuoteSnapshotRecord | null = null;
+  if (parsed.data.takeoffId !== undefined) {
+    const takeoffValidation = await validateTakeoffSnapshotForQuote({
+      companyId,
+      takeoffId: parsed.data.takeoffId,
+      module: parsed.data.module,
+      jobInputs: parsed.data.jobInputs as QuoteJobInputsRecord,
+    });
+    if (!takeoffValidation.ok) {
+      res
+        .status(takeoffValidation.status)
+        .json({ error: takeoffValidation.error });
+      return;
+    }
+    takeoffReview = takeoffValidation.snapshot;
+  }
   const negativeLaborFields = negativeLaborAdjustmentFields(
     parsed.data.jobInputs,
   );
@@ -1480,6 +1619,8 @@ router.post("/quotes", async (req, res): Promise<void> => {
       assembly: estimate.assembly,
       pricing,
       proposalDescription: parsed.data.proposalDescription,
+      takeoffId: takeoffReview?.takeoffId,
+      takeoffReview,
       total: pricing.finalSellingPrice,
       margin: pricing.grossMargin,
       sourceQuoteId: source?.id,

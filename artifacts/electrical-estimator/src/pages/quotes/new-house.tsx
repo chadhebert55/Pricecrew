@@ -17,6 +17,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
 
 const initialInputs: NewHouseInputs = {
   finishedSquareFootage: 2000,
@@ -86,6 +87,7 @@ export function NewHouseQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<NewHouseInputs>(initialInputs)
+  const [takeoffId, setTakeoffId] = useState<number | undefined>()
   const revision = useQuoteRevisionPrefill("NEW_HOUSE", {
     setCustomerName,
     setCustomerEmail,
@@ -160,6 +162,7 @@ export function NewHouseQuote() {
           proposalDescription,
           laborOverride: optionalAmount(laborOverride),
           sellingPriceOverride: optionalAmount(sellingPriceOverride),
+          takeoffId,
         },
       },
       { onSuccess: (quote) => setLocation(`/quotes/${quote.id}`) },
@@ -201,6 +204,18 @@ export function NewHouseQuote() {
                 </div>
               </CardContent>
             </Card>
+
+            <PlanTakeoffReview
+              module="NEW_HOUSE"
+              baseInputs={inputs as unknown as Record<string, unknown>}
+              onTakeoffApplied={(reviewedInputs, reviewedTakeoffId) => {
+                setInputs((current) => ({
+                  ...current,
+                  ...reviewedInputs,
+                } as NewHouseInputs))
+                setTakeoffId(reviewedTakeoffId)
+              }}
+            />
 
             <Card className="border-t-4 border-t-primary shadow-md">
               <CardHeader className="border-b border-primary/10 bg-primary/5">

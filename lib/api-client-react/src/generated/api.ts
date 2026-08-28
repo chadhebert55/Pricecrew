@@ -48,6 +48,11 @@ import type {
   QuoteSummary,
   QuoteUpdate,
   QuoteUpdateResult,
+  Takeoff,
+  TakeoffInput,
+  TakeoffItemReview,
+  TakeoffUploadRequest,
+  TakeoffUploadResponse,
   ValidationError
 } from './api.schemas';
 
@@ -761,6 +766,376 @@ export const usePreviewQuote = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPreviewQuoteMutationOptions(options));
+    }
+
+export const getRequestTakeoffUploadUrlUrl = () => {
+
+
+
+
+  return `/api/takeoffs/upload-url`
+}
+
+/**
+ * @summary Request a direct upload URL for an electrical plan PDF
+ */
+export const requestTakeoffUploadUrl = async (takeoffUploadRequest: TakeoffUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<TakeoffUploadResponse> => {
+
+  return customFetch<TakeoffUploadResponse>(getRequestTakeoffUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(takeoffUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestTakeoffUploadUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTakeoffUploadUrl>>, TError,{data: BodyType<TakeoffUploadRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestTakeoffUploadUrl>>, TError,{data: BodyType<TakeoffUploadRequest>}, TContext> => {
+
+const mutationKey = ['requestTakeoffUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestTakeoffUploadUrl>>, {data: BodyType<TakeoffUploadRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestTakeoffUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestTakeoffUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestTakeoffUploadUrl>>>
+    export type RequestTakeoffUploadUrlMutationBody = BodyType<TakeoffUploadRequest>
+    export type RequestTakeoffUploadUrlMutationError = ErrorType<void>
+
+    /**
+ * @summary Request a direct upload URL for an electrical plan PDF
+ */
+export const useRequestTakeoffUploadUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTakeoffUploadUrl>>, TError,{data: BodyType<TakeoffUploadRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestTakeoffUploadUrl>>,
+        TError,
+        {data: BodyType<TakeoffUploadRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestTakeoffUploadUrlMutationOptions(options));
+    }
+
+export const getCreateTakeoffUrl = () => {
+
+
+
+
+  return `/api/takeoffs`
+}
+
+/**
+ * @summary Extract reviewable quantities from an uploaded plan PDF
+ */
+export const createTakeoff = async (takeoffInput: TakeoffInput, options?: Parameters<typeof customFetch>[1]): Promise<Takeoff> => {
+
+  return customFetch<Takeoff>(getCreateTakeoffUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(takeoffInput)
+  }
+);}
+
+
+
+
+
+export const getCreateTakeoffMutationOptions = <TError = ErrorType<ValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTakeoff>>, TError,{data: BodyType<TakeoffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTakeoff>>, TError,{data: BodyType<TakeoffInput>}, TContext> => {
+
+const mutationKey = ['createTakeoff'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTakeoff>>, {data: BodyType<TakeoffInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTakeoff(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTakeoffMutationResult = NonNullable<Awaited<ReturnType<typeof createTakeoff>>>
+    export type CreateTakeoffMutationBody = BodyType<TakeoffInput>
+    export type CreateTakeoffMutationError = ErrorType<ValidationError>
+
+    /**
+ * @summary Extract reviewable quantities from an uploaded plan PDF
+ */
+export const useCreateTakeoff = <TError = ErrorType<ValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTakeoff>>, TError,{data: BodyType<TakeoffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTakeoff>>,
+        TError,
+        {data: BodyType<TakeoffInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTakeoffMutationOptions(options));
+    }
+
+export const getGetTakeoffUrl = (id: number,) => {
+
+
+
+
+  return `/api/takeoffs/${id}`
+}
+
+/**
+ * @summary Get a takeoff and its review trail
+ */
+export const getTakeoff = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Takeoff> => {
+
+  return customFetch<Takeoff>(getGetTakeoffUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTakeoffQueryKey = (id: number,) => {
+    return [
+    `/api/takeoffs/${id}`
+    ] as const;
+    }
+
+
+export const getGetTakeoffQueryOptions = <TData = Awaited<ReturnType<typeof getTakeoff>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTakeoff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTakeoffQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTakeoff>>> = ({ signal }) => getTakeoff(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTakeoff>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTakeoffQueryResult = NonNullable<Awaited<ReturnType<typeof getTakeoff>>>
+export type GetTakeoffQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a takeoff and its review trail
+ */
+
+export function useGetTakeoff<TData = Awaited<ReturnType<typeof getTakeoff>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTakeoff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTakeoffQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTakeoffDocumentUrl = (id: number,) => {
+
+
+
+
+  return `/api/takeoffs/${id}/document`
+}
+
+/**
+ * @summary Download the source plan PDF
+ */
+export const getTakeoffDocument = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetTakeoffDocumentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTakeoffDocumentQueryKey = (id: number,) => {
+    return [
+    `/api/takeoffs/${id}/document`
+    ] as const;
+    }
+
+
+export const getGetTakeoffDocumentQueryOptions = <TData = Awaited<ReturnType<typeof getTakeoffDocument>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTakeoffDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTakeoffDocumentQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTakeoffDocument>>> = ({ signal }) => getTakeoffDocument(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTakeoffDocument>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTakeoffDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof getTakeoffDocument>>>
+export type GetTakeoffDocumentQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download the source plan PDF
+ */
+
+export function useGetTakeoffDocument<TData = Awaited<ReturnType<typeof getTakeoffDocument>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTakeoffDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTakeoffDocumentQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewTakeoffItemUrl = (id: number,
+    itemId: number,) => {
+
+
+
+
+  return `/api/takeoffs/${id}/items/${itemId}`
+}
+
+/**
+ * @summary Accept, reject, edit, or leave a takeoff item unresolved
+ */
+export const reviewTakeoffItem = async (id: number,
+    itemId: number,
+    takeoffItemReview: TakeoffItemReview, options?: Parameters<typeof customFetch>[1]): Promise<Takeoff> => {
+
+  return customFetch<Takeoff>(getReviewTakeoffItemUrl(id,itemId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(takeoffItemReview)
+  }
+);}
+
+
+
+
+
+export const getReviewTakeoffItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewTakeoffItem>>, TError,{id: number;itemId: number;data: BodyType<TakeoffItemReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewTakeoffItem>>, TError,{id: number;itemId: number;data: BodyType<TakeoffItemReview>}, TContext> => {
+
+const mutationKey = ['reviewTakeoffItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewTakeoffItem>>, {id: number;itemId: number;data: BodyType<TakeoffItemReview>}> = (props) => {
+          const {id,itemId,data} = props ?? {};
+
+          return  reviewTakeoffItem(id,itemId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewTakeoffItemMutationResult = NonNullable<Awaited<ReturnType<typeof reviewTakeoffItem>>>
+    export type ReviewTakeoffItemMutationBody = BodyType<TakeoffItemReview>
+    export type ReviewTakeoffItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Accept, reject, edit, or leave a takeoff item unresolved
+ */
+export const useReviewTakeoffItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewTakeoffItem>>, TError,{id: number;itemId: number;data: BodyType<TakeoffItemReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewTakeoffItem>>,
+        TError,
+        {id: number;itemId: number;data: BodyType<TakeoffItemReview>},
+        TContext
+      > => {
+      return useMutation(getReviewTakeoffItemMutationOptions(options));
     }
 
 export const getGetCustomerProposalUrl = (token: string,) => {

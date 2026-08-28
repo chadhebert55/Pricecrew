@@ -51,4 +51,6 @@ export interface QuoteInput {
   sellingPriceOverride?: number | null;
   /** @minLength 1 */
   proposalDescription: string;
+  /** @minimum 1 */
+  takeoffId?: number;
 }

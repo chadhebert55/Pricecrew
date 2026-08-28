@@ -1523,6 +1523,96 @@ export type PricingSummary = PricingInput & {
   pricingWarnings: PricingWarning[];
 };
 
+export type TakeoffItemKind = typeof TakeoffItemKind[keyof typeof TakeoffItemKind];
+
+
+export const TakeoffItemKind = {
+  quantity: 'quantity',
+  circuit: 'circuit',
+  dimension: 'dimension',
+} as const;
+
+export type TakeoffConfidence = typeof TakeoffConfidence[keyof typeof TakeoffConfidence];
+
+
+export const TakeoffConfidence = {
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+export type TakeoffItemStatus = typeof TakeoffItemStatus[keyof typeof TakeoffItemStatus];
+
+
+export const TakeoffItemStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  rejected: 'rejected',
+  unresolved: 'unresolved',
+} as const;
+
+export interface TakeoffItem {
+  id: number;
+  fieldKey: string;
+  label: string;
+  kind: TakeoffItemKind;
+  /** @minimum 0 */
+  proposedQuantity: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  approvedQuantity: number | null;
+  confidence: TakeoffConfidence;
+  sourceContext: string;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  sourcePage: number | null;
+  status: TakeoffItemStatus;
+  /** @nullable */
+  reviewerNote: string | null;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type TakeoffReviewEventAction = typeof TakeoffReviewEventAction[keyof typeof TakeoffReviewEventAction];
+
+
+export const TakeoffReviewEventAction = {
+  accepted: 'accepted',
+  rejected: 'rejected',
+  unresolved: 'unresolved',
+  edited: 'edited',
+} as const;
+
+export interface TakeoffReviewEvent {
+  id: number;
+  itemId: number;
+  action: TakeoffReviewEventAction;
+  previousStatus: TakeoffItemStatus;
+  nextStatus: TakeoffItemStatus;
+  /** @nullable */
+  previousQuantity: number | null;
+  /** @nullable */
+  nextQuantity: number | null;
+  /** @nullable */
+  note: string | null;
+  reviewedAt: string;
+}
+
+export type TakeoffQuoteSnapshotApprovedInputs = {[key: string]: number};
+
+export interface TakeoffQuoteSnapshot {
+  takeoffId: number;
+  fileName: string;
+  approvedInputs: TakeoffQuoteSnapshotApprovedInputs;
+  items: TakeoffItem[];
+  reviewEvents: TakeoffReviewEvent[];
+  approvedAt: string;
+}
+
 export type Quote = QuoteSummary & ({
   /**
      * Authenticated contractor-only customer identity used when revising a quote.
@@ -1541,6 +1631,7 @@ export type Quote = QuoteSummary & ({
   createdAt: string;
   proposalDecision: ProposalDecision | null;
   proposalDecisions: ProposalDecision[];
+  takeoffReview: TakeoffQuoteSnapshot | null;
 });
 
 export type QuoteUpdateResult = Quote & ({
@@ -1601,6 +1692,8 @@ export interface QuoteInput {
   sellingPriceOverride?: number | null;
   /** @minLength 1 */
   proposalDescription: string;
+  /** @minimum 1 */
+  takeoffId?: number;
 }
 
 export type QuotePreviewInputModule = typeof QuotePreviewInputModule[keyof typeof QuotePreviewInputModule];
@@ -1676,6 +1769,122 @@ export interface QuoteUpdate {
   sellingPriceOverride?: number | null;
   proposalDescription?: string;
   deliberateLossConfirmation?: DeliberateLossConfirmation;
+}
+
+export type TakeoffBuilderModule = typeof TakeoffBuilderModule[keyof typeof TakeoffBuilderModule];
+
+
+export const TakeoffBuilderModule = {
+  ADDITION: 'ADDITION',
+  NEW_HOUSE: 'NEW_HOUSE',
+} as const;
+
+export type TakeoffUploadRequestContentType = typeof TakeoffUploadRequestContentType[keyof typeof TakeoffUploadRequestContentType];
+
+
+export const TakeoffUploadRequestContentType = {
+  'application/pdf': 'application/pdf',
+} as const;
+
+export interface TakeoffUploadRequest {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /**
+     * @minimum 1
+     * @maximum 26214400
+     */
+  fileSize: number;
+  contentType: TakeoffUploadRequestContentType;
+}
+
+export interface TakeoffUploadResponse {
+  uploadURL: string;
+  /** @minLength 1 */
+  objectPath: string;
+}
+
+export type TakeoffInputContentType = typeof TakeoffInputContentType[keyof typeof TakeoffInputContentType];
+
+
+export const TakeoffInputContentType = {
+  'application/pdf': 'application/pdf',
+} as const;
+
+export type TakeoffInputBaseInputs = { [key: string]: unknown };
+
+export interface TakeoffInput {
+  module: TakeoffBuilderModule;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /**
+     * @minimum 1
+     * @maximum 26214400
+     */
+  fileSize: number;
+  contentType: TakeoffInputContentType;
+  /** @pattern ^/objects/uploads/[0-9]+/[A-Za-z0-9-]+$ */
+  objectPath: string;
+  baseInputs: TakeoffInputBaseInputs;
+}
+
+export interface TakeoffItemReview {
+  status: TakeoffItemStatus;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     * @nullable
+     */
+  approvedQuantity?: number | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  reviewerNote?: string | null;
+}
+
+export type TakeoffStatus = typeof TakeoffStatus[keyof typeof TakeoffStatus];
+
+
+export const TakeoffStatus = {
+  processing: 'processing',
+  ready: 'ready',
+  failed: 'failed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type TakeoffExtractionSummary = { [key: string]: unknown } | null;
+
+export type TakeoffApprovedInputs = {[key: string]: number};
+
+export interface Takeoff {
+  id: number;
+  module: TakeoffBuilderModule;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+  status: TakeoffStatus;
+  /** @nullable */
+  pageCount: number | null;
+  /** @nullable */
+  errorCode: string | null;
+  /** @nullable */
+  errorMessage: string | null;
+  /** @nullable */
+  extractionSummary: TakeoffExtractionSummary;
+  items: TakeoffItem[];
+  reviewEvents: TakeoffReviewEvent[];
+  approvedInputs: TakeoffApprovedInputs;
+  createdAt: string;
+  /** @nullable */
+  completedAt: string | null;
 }
 
 export type QuoteExportRequestDestination = typeof QuoteExportRequestDestination[keyof typeof QuoteExportRequestDestination];

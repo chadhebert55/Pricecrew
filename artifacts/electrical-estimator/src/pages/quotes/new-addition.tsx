@@ -1,6 +1,7 @@
 import { type AdditionCircuitEntry, type AdditionInputs, useGetSettings, usePreviewQuote } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { CustomerPicker } from "@/components/customer-picker"
+import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -92,6 +93,7 @@ export function NewAdditionQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<AdditionInputs>(initialInputs)
+  const [takeoffId, setTakeoffId] = useState<number | undefined>()
   const revision = useQuoteRevisionPrefill("ADDITION", {
     setCustomerName,
     setCustomerEmail,
@@ -217,6 +219,7 @@ export function NewAdditionQuote() {
         proposalDescription,
         laborOverride: optionalAmount(laborOverride),
         sellingPriceOverride: optionalAmount(sellingPriceOverride),
+        takeoffId,
       },
     }, { onSuccess: (quote) => setLocation(`/quotes/${quote.id}`) })
   }
@@ -249,6 +252,18 @@ export function NewAdditionQuote() {
                 <div className="space-y-2 md:col-span-2"><Label htmlFor="addition-proposal">Customer-facing Proposal Description *</Label><Textarea id="addition-proposal" required value={proposalDescription} onChange={(event) => setProposalDescription(event.target.value)} /></div>
               </CardContent>
             </Card>
+
+            <PlanTakeoffReview
+              module="ADDITION"
+              baseInputs={inputs as unknown as Record<string, unknown>}
+              onTakeoffApplied={(reviewedInputs, reviewedTakeoffId) => {
+                setInputs((current) => ({
+                  ...current,
+                  ...reviewedInputs,
+                } as AdditionInputs))
+                setTakeoffId(reviewedTakeoffId)
+              }}
+            />
 
             <Card className="border-t-4 border-t-primary shadow-md">
               <CardHeader className="border-b border-primary/10 bg-primary/5">

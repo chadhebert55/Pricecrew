@@ -10,6 +10,7 @@ import type { PricingSummary } from './pricingSummary';
 import type { ProposalDecision } from './proposalDecision';
 import type { QuoteJobInputsSnapshot } from './quoteJobInputsSnapshot';
 import type { QuoteSummary } from './quoteSummary';
+import type { TakeoffQuoteSnapshot } from './takeoffQuoteSnapshot';
 
 export type Quote = QuoteSummary & ({
   /**
@@ -29,4 +30,5 @@ export type Quote = QuoteSummary & ({
   createdAt: Date;
   proposalDecision: ProposalDecision | null;
   proposalDecisions: ProposalDecision[];
+  takeoffReview: TakeoffQuoteSnapshot | null;
 });

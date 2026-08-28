@@ -16,6 +16,8 @@ tags:
     description: Estimating dashboard operations
   - name: quotes
     description: Quote and estimate operations
+  - name: takeoffs
+    description: Reviewable electrical plan PDF takeoffs
   - name: customers
     description: Company customer records and quote history
   - name: price-book
@@ -186,6 +188,118 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstimatePreview"
+  /takeoffs/upload-url:
+    post:
+      operationId: requestTakeoffUploadUrl
+      tags: [takeoffs]
+      summary: Request a direct upload URL for an electrical plan PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TakeoffUploadRequest"
+      responses:
+        "200":
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TakeoffUploadResponse"
+        "400":
+          description: Unsupported or oversized file
+  /takeoffs:
+    post:
+      operationId: createTakeoff
+      tags: [takeoffs]
+      summary: Extract reviewable quantities from an uploaded plan PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TakeoffInput"
+      responses:
+        "201":
+          description: Extracted takeoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Takeoff"
+        "422":
+          description: The PDF could not produce a safe takeoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+  /takeoffs/{id}:
+    get:
+      operationId: getTakeoff
+      tags: [takeoffs]
+      summary: Get a takeoff and its review trail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: number, multipleOf: 1 }
+      responses:
+        "200":
+          description: Takeoff detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Takeoff"
+        "404":
+          description: Takeoff not found
+  /takeoffs/{id}/document:
+    get:
+      operationId: getTakeoffDocument
+      tags: [takeoffs]
+      summary: Download the source plan PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: number, multipleOf: 1 }
+      responses:
+        "200":
+          description: Source PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Takeoff not found
+  /takeoffs/{id}/items/{itemId}:
+    patch:
+      operationId: reviewTakeoffItem
+      tags: [takeoffs]
+      summary: Accept, reject, edit, or leave a takeoff item unresolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: number, multipleOf: 1 }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: number, multipleOf: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TakeoffItemReview"
+      responses:
+        "200":
+          description: Updated takeoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Takeoff"
+        "404":
+          description: Takeoff item not found
   /proposals/{token}:
     get:
       security: []
@@ -830,6 +944,7 @@ components:
             - createdAt
             - proposalDecision
             - proposalDecisions
+            - takeoffReview
           properties:
             customerId:
               type: ["number", "null"]
@@ -861,6 +976,10 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/ProposalDecision"
+            takeoffReview:
+              oneOf:
+                - $ref: "#/components/schemas/TakeoffQuoteSnapshot"
+                - type: "null"
     QuoteUpdateResult:
       allOf:
         - $ref: "#/components/schemas/Quote"
@@ -934,6 +1053,10 @@ components:
         proposalDescription:
           type: string
           minLength: 1
+        takeoffId:
+          type: number
+          multipleOf: 1
+          minimum: 1
     QuoteJobInputsSnapshot:
       description: Immutable saved input snapshot. The open object branch keeps historical quote shapes readable without rewriting them.
       oneOf:
@@ -1022,6 +1145,208 @@ components:
           type: string
         deliberateLossConfirmation:
           $ref: "#/components/schemas/DeliberateLossConfirmation"
+    TakeoffBuilderModule:
+      type: string
+      enum: [ADDITION, NEW_HOUSE]
+    TakeoffItemStatus:
+      type: string
+      enum: [pending, accepted, rejected, unresolved]
+    TakeoffConfidence:
+      type: string
+      enum: [high, medium, low]
+    TakeoffUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [fileName, fileSize, contentType]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        fileSize:
+          type: number
+          multipleOf: 1
+          minimum: 1
+          maximum: 26214400
+        contentType:
+          type: string
+          enum: [application/pdf]
+    TakeoffUploadResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+          minLength: 1
+    TakeoffInput:
+      type: object
+      additionalProperties: false
+      required: [module, fileName, fileSize, contentType, objectPath, baseInputs]
+      properties:
+        module:
+          $ref: "#/components/schemas/TakeoffBuilderModule"
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        fileSize:
+          type: number
+          multipleOf: 1
+          minimum: 1
+          maximum: 26214400
+        contentType:
+          type: string
+          enum: [application/pdf]
+        objectPath:
+          type: string
+          pattern: "^/objects/uploads/[0-9]+/[A-Za-z0-9-]+$"
+        baseInputs:
+          type: object
+          additionalProperties: true
+    TakeoffItemReview:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/TakeoffItemStatus"
+        approvedQuantity:
+          type: ["number", "null"]
+          multipleOf: 1
+          minimum: 0
+          maximum: 100000
+        reviewerNote:
+          type: ["string", "null"]
+          maxLength: 1000
+    TakeoffItem:
+      type: object
+      required:
+        - id
+        - fieldKey
+        - label
+        - kind
+        - proposedQuantity
+        - approvedQuantity
+        - confidence
+        - sourceContext
+        - sourcePage
+        - status
+        - reviewerNote
+        - reviewedAt
+      properties:
+        id: { type: number, multipleOf: 1 }
+        fieldKey: { type: string }
+        label: { type: string }
+        kind:
+          type: string
+          enum: [quantity, circuit, dimension]
+        proposedQuantity: { type: number, minimum: 0, multipleOf: 1 }
+        approvedQuantity: { type: ["number", "null"], minimum: 0, multipleOf: 1 }
+        confidence:
+          $ref: "#/components/schemas/TakeoffConfidence"
+        sourceContext: { type: string }
+        sourcePage: { type: ["number", "null"], minimum: 1, multipleOf: 1 }
+        status:
+          $ref: "#/components/schemas/TakeoffItemStatus"
+        reviewerNote: { type: ["string", "null"] }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+    TakeoffReviewEvent:
+      type: object
+      required:
+        - id
+        - itemId
+        - action
+        - previousStatus
+        - nextStatus
+        - previousQuantity
+        - nextQuantity
+        - note
+        - reviewedAt
+      properties:
+        id: { type: number, multipleOf: 1 }
+        itemId: { type: number, multipleOf: 1 }
+        action:
+          type: string
+          enum: [accepted, rejected, unresolved, edited]
+        previousStatus:
+          $ref: "#/components/schemas/TakeoffItemStatus"
+        nextStatus:
+          $ref: "#/components/schemas/TakeoffItemStatus"
+        previousQuantity: { type: ["number", "null"], multipleOf: 1 }
+        nextQuantity: { type: ["number", "null"], multipleOf: 1 }
+        note: { type: ["string", "null"] }
+        reviewedAt: { type: string, format: date-time }
+    Takeoff:
+      type: object
+      required:
+        - id
+        - module
+        - fileName
+        - fileSize
+        - contentType
+        - status
+        - pageCount
+        - errorCode
+        - errorMessage
+        - extractionSummary
+        - items
+        - reviewEvents
+        - approvedInputs
+        - createdAt
+        - completedAt
+      properties:
+        id: { type: number, multipleOf: 1 }
+        module:
+          $ref: "#/components/schemas/TakeoffBuilderModule"
+        fileName: { type: string }
+        fileSize: { type: number, multipleOf: 1 }
+        contentType: { type: string }
+        status:
+          type: string
+          enum: [processing, ready, failed]
+        pageCount: { type: ["number", "null"], multipleOf: 1 }
+        errorCode: { type: ["string", "null"] }
+        errorMessage: { type: ["string", "null"] }
+        extractionSummary:
+          type: ["object", "null"]
+          additionalProperties: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TakeoffItem"
+        reviewEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/TakeoffReviewEvent"
+        approvedInputs:
+          type: object
+          additionalProperties:
+            type: number
+            multipleOf: 1
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+    TakeoffQuoteSnapshot:
+      type: object
+      required: [takeoffId, fileName, approvedInputs, items, reviewEvents, approvedAt]
+      properties:
+        takeoffId: { type: number, multipleOf: 1 }
+        fileName: { type: string }
+        approvedInputs:
+          type: object
+          additionalProperties:
+            type: number
+            multipleOf: 1
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TakeoffItem"
+        reviewEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/TakeoffReviewEvent"
+        approvedAt: { type: string, format: date-time }
     QuoteExportRequest:
       type: object
       required: [destination, format, mapping]

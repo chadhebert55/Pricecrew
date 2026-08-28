@@ -572,6 +572,14 @@ export type PricingRecord = {
   deliberateLossApproval?: DeliberateLossApproval | null;
 };
 
+export type TakeoffQuoteSnapshotRecord = {
+  takeoffId: number;
+  fileName: string;
+  approvedInputs: Record<string, number>;
+  items: Array<Record<string, unknown>>;
+  reviewEvents: Array<Record<string, unknown>>;
+  approvedAt: string;
+};
 export const companiesTable = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -582,6 +590,27 @@ export const companiesTable = pgTable("companies", {
     .defaultNow(),
 });
 
+export const planTakeoffsTable = pgTable("plan_takeoffs", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")
+    .notNull()
+    .references(() => companiesTable.id),
+  builderModule: text("builder_module").$type<TakeoffBuilderModule>().notNull(),
+  fileName: text("file_name").notNull(),
+  objectPath: text("object_path").notNull(),
+  fileSize: integer("file_size").notNull(),
+  contentType: text("content_type").notNull(),
+  pageCount: integer("page_count"),
+  status: text("status").$type<TakeoffDocumentStatus>().notNull().default("processing"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  baseInputs: jsonb("base_inputs").$type<Record<string, unknown>>().notNull(),
+  extractionSummary: jsonb("extraction_summary")
+    .$type<{ pages: number; sections: string[]; textCharacters: number } | null>()
+    .default(null),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
 /**
  * Clerk owns the user record. This table is the application-owned bridge that
  * grants a signed-in identity access to one estimating company.
@@ -821,6 +850,10 @@ export const quotesTable = pgTable("quotes", {
   assembly: jsonb("assembly").$type<AssemblyLineRecord[]>().notNull(),
   pricing: jsonb("pricing").$type<PricingRecord>().notNull(),
   proposalDescription: text("proposal_description").notNull(),
+  takeoffId: integer("takeoff_id").references(() => planTakeoffsTable.id),
+  takeoffReview: jsonb("takeoff_review")
+    .$type<TakeoffQuoteSnapshotRecord | null>()
+    .default(null),
   total: numeric("total", { precision: 12, scale: 2, mode: "number" })
     .notNull(),
   margin: numeric("margin", { precision: 16, scale: 4, mode: "number" })
@@ -878,3 +911,7 @@ export const proposalDecisionsTable = pgTable(
     ),
   ],
 );
+
+export type TakeoffBuilderModule = "ADDITION" | "NEW_HOUSE";
+
+export type TakeoffDocumentStatus = "processing" | "ready" | "failed";
