@@ -1314,6 +1314,8 @@ export interface NewHouseInputs {
   /** @minimum 0 */
   smokeCoQuantity: number;
   /** @minimum 0 */
+  bedroomCount: number;
+  /** @minimum 0 */
   bathroomQuantity: number;
   /** @minimum 0 */
   kitchenApplianceCircuitQuantity: number;

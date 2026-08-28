@@ -33,6 +33,7 @@ const initialInputs: NewHouseInputs = {
   fanSupply: "Customer supplied",
   panelManufacturer: "Siemens",
   smokeCoQuantity: 5,
+  bedroomCount: 3,
   bathroomQuantity: 2,
   kitchenApplianceCircuitQuantity: 5,
   laundryCircuitQuantity: 2,
@@ -85,7 +86,16 @@ export function NewHouseQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<NewHouseInputs>(initialInputs)
-  const revision = useQuoteRevisionPrefill("NEW_HOUSE", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
+  const revision = useQuoteRevisionPrefill("NEW_HOUSE", {
+    setCustomerName,
+    setCustomerEmail,
+    setCustomerId,
+    setProjectName,
+    setProposalDescription,
+    setInputs: (value: NewHouseInputs) =>
+      setInputs({ ...value, bedroomCount: value.bedroomCount ?? 0 }),
+    setSettingsLoaded,
+  })
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
@@ -291,8 +301,12 @@ export function NewHouseQuote() {
                   </div>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                     <div className="space-y-2">
-                      <Label htmlFor="nh-bathrooms">Bathrooms</Label>
-                      <Input id="nh-bathrooms" type="number" min="0" value={inputs.bathroomQuantity} onChange={(event) => setQuantity("bathroomQuantity", event.target.value)} data-testid="input-nh-bathrooms" />
+                      <Label htmlFor="nh-bedrooms">Bedroom Count</Label>
+                      <Input id="nh-bedrooms" type="number" min="0" step="1" value={inputs.bedroomCount} onChange={(event) => setQuantity("bedroomCount", event.target.value)} data-testid="input-nh-bedrooms" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nh-bathrooms">Bathroom Count</Label>
+                      <Input id="nh-bathrooms" type="number" min="0" step="1" value={inputs.bathroomQuantity} onChange={(event) => setQuantity("bathroomQuantity", event.target.value)} data-testid="input-nh-bathrooms" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="nh-kitchen">Kitchen App Circuits</Label>

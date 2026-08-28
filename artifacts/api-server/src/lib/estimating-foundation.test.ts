@@ -694,6 +694,7 @@ const newHouseInputs: NewHouseInputRecord = {
   fanSupply: "Builder / GC supplied",
   panelManufacturer: "Siemens",
   smokeCoQuantity: 5,
+  bedroomCount: 4,
   bathroomQuantity: 2,
   kitchenApplianceCircuitQuantity: 5,
   laundryCircuitQuantity: 2,
@@ -787,8 +788,8 @@ type QuoteRequest = {
   customerEmail?: string | null;
   projectName: string;
   proposalDescription: string;
-  module: "SERVICE_CALL";
-  jobInputs: ServiceCallInputRecord;
+  module: "SERVICE_CALL" | "NEW_HOUSE";
+  jobInputs: ServiceCallInputRecord | NewHouseInputRecord;
 };
 
 type CreatedQuote = {
@@ -925,6 +926,23 @@ async function postQuote(baseUrl: string, input: QuoteRequest) {
   );
   assert.equal(typeof body.id, "number");
   return body as CreatedQuote;
+}
+
+async function getQuote(baseUrl: string, id: number) {
+  const response = await fetch(`${baseUrl}/api/quotes/${id}`, {
+    headers: authenticatedHeaders(baseUrl),
+  });
+  const body = (await response.json()) as {
+    jobInputs: Record<string, unknown>;
+    pricing: { materialCost: number; laborCost: number };
+    error?: string;
+  };
+  assert.equal(
+    response.status,
+    200,
+    `Expected quote reload to succeed: ${JSON.stringify(body)}`,
+  );
+  return body;
 }
 
 async function postCustomer(
@@ -1957,6 +1975,60 @@ test("quote revisions retain source customer identity and reject reassignment", 
       ((await mismatchResponse.json()) as { error: string }).error,
       /retain the source quote customer/i,
     );
+  } finally {
+    await closeTestServer(server);
+  }
+});
+
+test("New House room counts persist through create, reload, duplicate, and legacy snapshot reads", async () => {
+  const marker = `New House room counts ${randomUUID()}`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const source = await postQuote(baseUrl, {
+      customerName: marker,
+      customerEmail: `${randomUUID()}@example.com`,
+      projectName: `${marker} source`,
+      proposalDescription: "Persist the informational room program.",
+      module: "NEW_HOUSE",
+      jobInputs: newHouseInputs,
+    });
+    const created = await getQuote(baseUrl, source.id);
+    assert.equal(created.jobInputs.bedroomCount, 4);
+    assert.equal(created.jobInputs.bathroomQuantity, 2);
+
+    const sourcePricing = created.pricing;
+    const duplicateResponse = await fetch(
+      `${baseUrl}/api/quotes/${source.id}/duplicate`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+      },
+    );
+    assert.equal(duplicateResponse.status, 201);
+    const duplicateBody = (await duplicateResponse.json()) as { id: number };
+    const duplicate = await getQuote(baseUrl, duplicateBody.id);
+    assert.equal(duplicate.jobInputs.bedroomCount, 4);
+    assert.equal(duplicate.jobInputs.bathroomQuantity, 2);
+    assert.deepEqual(duplicate.pricing, sourcePricing);
+
+    const [sourceRow] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, source.id));
+    assert.ok(sourceRow);
+    const { bedroomCount: _legacyBedroomCount, ...legacyInputs } =
+      sourceRow.jobInputs as NewHouseInputRecord;
+    await db
+      .update(quotesTable)
+      .set({
+        jobInputs: legacyInputs as unknown as typeof sourceRow.jobInputs,
+      })
+      .where(eq(quotesTable.id, source.id));
+
+    const legacy = await getQuote(baseUrl, source.id);
+    assert.equal(legacy.jobInputs.bathroomQuantity, 2);
+    assert.equal("bedroomCount" in legacy.jobInputs, false);
   } finally {
     await closeTestServer(server);
   }

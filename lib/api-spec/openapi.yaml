@@ -2301,6 +2301,7 @@ components:
         - fanSupply
         - panelManufacturer
         - smokeCoQuantity
+        - bedroomCount
         - bathroomQuantity
         - kitchenApplianceCircuitQuantity
         - laundryCircuitQuantity
@@ -2348,7 +2349,8 @@ components:
           type: string
           enum: [Siemens, Eaton, Square D]
         smokeCoQuantity: { type: number, minimum: 0 }
-        bathroomQuantity: { type: number, minimum: 0 }
+        bedroomCount: { type: number, minimum: 0, multipleOf: 1 }
+        bathroomQuantity: { type: number, minimum: 0, multipleOf: 1 }
         kitchenApplianceCircuitQuantity: { type: number, minimum: 0 }
         laundryCircuitQuantity: { type: number, minimum: 0 }
         exteriorReceptacleQuantity: { type: number, minimum: 0 }

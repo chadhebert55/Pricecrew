@@ -2757,6 +2757,7 @@ const newHouseInputs: NewHouseInputRecord = {
   fanSupply: "Contractor supplied",
   panelManufacturer: "Siemens",
   smokeCoQuantity: 0,
+  bedroomCount: 3,
   bathroomQuantity: 0,
   kitchenApplianceCircuitQuantity: 4,
   laundryCircuitQuantity: 1,
@@ -2837,6 +2838,55 @@ test("New House uses editable quantities, footage, allowances, and exact catalog
     ),
     true,
   );
+});
+
+test("New House room counts are whole-number inputs and bedroom count does not reprice", () => {
+  const validInputs = {
+    ...newHouseInputs,
+    bedroomCount: 4,
+    bathroomQuantity: 2,
+  };
+  assert.equal(
+    PreviewQuoteBody.safeParse({ module: "NEW_HOUSE", jobInputs: validInputs }).success,
+    true,
+  );
+  assert.equal(
+    CreateQuoteBody.safeParse({
+      customerName: "Room count validation",
+      projectName: "New House room counts",
+      module: "NEW_HOUSE",
+      jobInputs: validInputs,
+      proposalDescription: "Validate informational room counts.",
+    }).success,
+    true,
+  );
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "NEW_HOUSE",
+      jobInputs: { ...validInputs, bedroomCount: 2.5 },
+    }).success,
+    false,
+  );
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "NEW_HOUSE",
+      jobInputs: { ...validInputs, bathroomQuantity: 1.5 },
+    }).success,
+    false,
+  );
+
+  const withoutBedroom = calculateNewHouseEstimate(
+    { ...validInputs, bedroomCount: 0 },
+    settings,
+    newHousePriceBook,
+  );
+  const withBedroom = calculateNewHouseEstimate(
+    validInputs,
+    settings,
+    newHousePriceBook,
+  );
+  assert.deepEqual(withBedroom.assembly, withoutBedroom.assembly);
+  assert.deepEqual(withBedroom.pricing, withoutBedroom.pricing);
 });
 
 test("New House characteristics scale calculated task labor without creating a flat square-foot price", () => {

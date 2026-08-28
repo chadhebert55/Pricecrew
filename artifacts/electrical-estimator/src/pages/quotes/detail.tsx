@@ -464,9 +464,15 @@ export function QuoteDetail() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 text-sm">
                 {Object.entries(quote.jobInputs).map(([key, value]) => {
                   if (key === 'notes') return null;
+                  const label =
+                    key === "bedroomCount"
+                      ? "Bedroom Count"
+                      : key === "bathroomQuantity"
+                        ? "Bathroom Count"
+                        : key.replace(/([A-Z])/g, ' $1').trim()
                   return (
                     <div key={key} className="flex flex-col">
-                      <span className="text-muted-foreground text-xs uppercase tracking-wider truncate">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <span className="text-muted-foreground text-xs uppercase tracking-wider truncate">{label}</span>
                       <span className="font-medium truncate">{String(value)}</span>
                     </div>
                   )

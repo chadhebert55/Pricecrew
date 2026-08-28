@@ -545,7 +545,11 @@ export const createQuoteBodyJobInputsOneoneFanMaterialUnitCostOverrideMin = 0;
 
 export const createQuoteBodyJobInputsOneoneSmokeCoQuantityMin = 0;
 
+export const createQuoteBodyJobInputsOneoneBedroomCountMin = 0;
+export const createQuoteBodyJobInputsOneoneBedroomCountMultipleOf = 1;
+
 export const createQuoteBodyJobInputsOneoneBathroomQuantityMin = 0;
+export const createQuoteBodyJobInputsOneoneBathroomQuantityMultipleOf = 1;
 
 export const createQuoteBodyJobInputsOneoneKitchenApplianceCircuitQuantityMin = 0;
 
@@ -1000,7 +1004,8 @@ export const CreateQuoteBody = zod.object({
   "fanMaterialUnitCostOverride": zod.number().min(createQuoteBodyJobInputsOneoneFanMaterialUnitCostOverrideMin).optional(),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "smokeCoQuantity": zod.number().min(createQuoteBodyJobInputsOneoneSmokeCoQuantityMin),
-  "bathroomQuantity": zod.number().min(createQuoteBodyJobInputsOneoneBathroomQuantityMin),
+  "bedroomCount": zod.number().min(createQuoteBodyJobInputsOneoneBedroomCountMin).multipleOf(createQuoteBodyJobInputsOneoneBedroomCountMultipleOf),
+  "bathroomQuantity": zod.number().min(createQuoteBodyJobInputsOneoneBathroomQuantityMin).multipleOf(createQuoteBodyJobInputsOneoneBathroomQuantityMultipleOf),
   "kitchenApplianceCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOneoneKitchenApplianceCircuitQuantityMin),
   "laundryCircuitQuantity": zod.number().min(createQuoteBodyJobInputsOneoneLaundryCircuitQuantityMin),
   "exteriorReceptacleQuantity": zod.number().min(createQuoteBodyJobInputsOneoneExteriorReceptacleQuantityMin),
@@ -1409,7 +1414,11 @@ export const createQuoteResponseTwoJobInputsOneoneFanMaterialUnitCostOverrideMin
 
 export const createQuoteResponseTwoJobInputsOneoneSmokeCoQuantityMin = 0;
 
+export const createQuoteResponseTwoJobInputsOneoneBedroomCountMin = 0;
+export const createQuoteResponseTwoJobInputsOneoneBedroomCountMultipleOf = 1;
+
 export const createQuoteResponseTwoJobInputsOneoneBathroomQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsOneoneBathroomQuantityMultipleOf = 1;
 
 export const createQuoteResponseTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin = 0;
 
@@ -1876,7 +1885,8 @@ export const CreateQuoteResponse = zod.object({
   "fanMaterialUnitCostOverride": zod.number().min(createQuoteResponseTwoJobInputsOneoneFanMaterialUnitCostOverrideMin).optional(),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "smokeCoQuantity": zod.number().min(createQuoteResponseTwoJobInputsOneoneSmokeCoQuantityMin),
-  "bathroomQuantity": zod.number().min(createQuoteResponseTwoJobInputsOneoneBathroomQuantityMin),
+  "bedroomCount": zod.number().min(createQuoteResponseTwoJobInputsOneoneBedroomCountMin).multipleOf(createQuoteResponseTwoJobInputsOneoneBedroomCountMultipleOf),
+  "bathroomQuantity": zod.number().min(createQuoteResponseTwoJobInputsOneoneBathroomQuantityMin).multipleOf(createQuoteResponseTwoJobInputsOneoneBathroomQuantityMultipleOf),
   "kitchenApplianceCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin),
   "laundryCircuitQuantity": zod.number().min(createQuoteResponseTwoJobInputsOneoneLaundryCircuitQuantityMin),
   "exteriorReceptacleQuantity": zod.number().min(createQuoteResponseTwoJobInputsOneoneExteriorReceptacleQuantityMin),
@@ -2352,7 +2362,11 @@ export const previewQuoteBodyJobInputsOneoneFanMaterialUnitCostOverrideMin = 0;
 
 export const previewQuoteBodyJobInputsOneoneSmokeCoQuantityMin = 0;
 
+export const previewQuoteBodyJobInputsOneoneBedroomCountMin = 0;
+export const previewQuoteBodyJobInputsOneoneBedroomCountMultipleOf = 1;
+
 export const previewQuoteBodyJobInputsOneoneBathroomQuantityMin = 0;
+export const previewQuoteBodyJobInputsOneoneBathroomQuantityMultipleOf = 1;
 
 export const previewQuoteBodyJobInputsOneoneKitchenApplianceCircuitQuantityMin = 0;
 
@@ -2801,7 +2815,8 @@ export const PreviewQuoteBody = zod.object({
   "fanMaterialUnitCostOverride": zod.number().min(previewQuoteBodyJobInputsOneoneFanMaterialUnitCostOverrideMin).optional(),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "smokeCoQuantity": zod.number().min(previewQuoteBodyJobInputsOneoneSmokeCoQuantityMin),
-  "bathroomQuantity": zod.number().min(previewQuoteBodyJobInputsOneoneBathroomQuantityMin),
+  "bedroomCount": zod.number().min(previewQuoteBodyJobInputsOneoneBedroomCountMin).multipleOf(previewQuoteBodyJobInputsOneoneBedroomCountMultipleOf),
+  "bathroomQuantity": zod.number().min(previewQuoteBodyJobInputsOneoneBathroomQuantityMin).multipleOf(previewQuoteBodyJobInputsOneoneBathroomQuantityMultipleOf),
   "kitchenApplianceCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOneoneKitchenApplianceCircuitQuantityMin),
   "laundryCircuitQuantity": zod.number().min(previewQuoteBodyJobInputsOneoneLaundryCircuitQuantityMin),
   "exteriorReceptacleQuantity": zod.number().min(previewQuoteBodyJobInputsOneoneExteriorReceptacleQuantityMin),
@@ -3363,7 +3378,11 @@ export const getQuoteResponseTwoJobInputsOneoneFanMaterialUnitCostOverrideMin = 
 
 export const getQuoteResponseTwoJobInputsOneoneSmokeCoQuantityMin = 0;
 
+export const getQuoteResponseTwoJobInputsOneoneBedroomCountMin = 0;
+export const getQuoteResponseTwoJobInputsOneoneBedroomCountMultipleOf = 1;
+
 export const getQuoteResponseTwoJobInputsOneoneBathroomQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsOneoneBathroomQuantityMultipleOf = 1;
 
 export const getQuoteResponseTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin = 0;
 
@@ -3830,7 +3849,8 @@ export const GetQuoteResponse = zod.object({
   "fanMaterialUnitCostOverride": zod.number().min(getQuoteResponseTwoJobInputsOneoneFanMaterialUnitCostOverrideMin).optional(),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "smokeCoQuantity": zod.number().min(getQuoteResponseTwoJobInputsOneoneSmokeCoQuantityMin),
-  "bathroomQuantity": zod.number().min(getQuoteResponseTwoJobInputsOneoneBathroomQuantityMin),
+  "bedroomCount": zod.number().min(getQuoteResponseTwoJobInputsOneoneBedroomCountMin).multipleOf(getQuoteResponseTwoJobInputsOneoneBedroomCountMultipleOf),
+  "bathroomQuantity": zod.number().min(getQuoteResponseTwoJobInputsOneoneBathroomQuantityMin).multipleOf(getQuoteResponseTwoJobInputsOneoneBathroomQuantityMultipleOf),
   "kitchenApplianceCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin),
   "laundryCircuitQuantity": zod.number().min(getQuoteResponseTwoJobInputsOneoneLaundryCircuitQuantityMin),
   "exteriorReceptacleQuantity": zod.number().min(getQuoteResponseTwoJobInputsOneoneExteriorReceptacleQuantityMin),
@@ -4332,7 +4352,11 @@ export const updateQuoteResponseOneTwoJobInputsOneoneFanMaterialUnitCostOverride
 
 export const updateQuoteResponseOneTwoJobInputsOneoneSmokeCoQuantityMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsOneoneBedroomCountMin = 0;
+export const updateQuoteResponseOneTwoJobInputsOneoneBedroomCountMultipleOf = 1;
+
 export const updateQuoteResponseOneTwoJobInputsOneoneBathroomQuantityMin = 0;
+export const updateQuoteResponseOneTwoJobInputsOneoneBathroomQuantityMultipleOf = 1;
 
 export const updateQuoteResponseOneTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin = 0;
 
@@ -4799,7 +4823,8 @@ export const UpdateQuoteResponse = zod.object({
   "fanMaterialUnitCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneFanMaterialUnitCostOverrideMin).optional(),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "smokeCoQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneSmokeCoQuantityMin),
-  "bathroomQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneBathroomQuantityMin),
+  "bedroomCount": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneBedroomCountMin).multipleOf(updateQuoteResponseOneTwoJobInputsOneoneBedroomCountMultipleOf),
+  "bathroomQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneBathroomQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsOneoneBathroomQuantityMultipleOf),
   "kitchenApplianceCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin),
   "laundryCircuitQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneLaundryCircuitQuantityMin),
   "exteriorReceptacleQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsOneoneExteriorReceptacleQuantityMin),
@@ -5525,7 +5550,11 @@ export const duplicateQuoteResponseTwoJobInputsOneoneFanMaterialUnitCostOverride
 
 export const duplicateQuoteResponseTwoJobInputsOneoneSmokeCoQuantityMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsOneoneBedroomCountMin = 0;
+export const duplicateQuoteResponseTwoJobInputsOneoneBedroomCountMultipleOf = 1;
+
 export const duplicateQuoteResponseTwoJobInputsOneoneBathroomQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsOneoneBathroomQuantityMultipleOf = 1;
 
 export const duplicateQuoteResponseTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin = 0;
 
@@ -5992,7 +6021,8 @@ export const DuplicateQuoteResponse = zod.object({
   "fanMaterialUnitCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneFanMaterialUnitCostOverrideMin).optional(),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "smokeCoQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneSmokeCoQuantityMin),
-  "bathroomQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneBathroomQuantityMin),
+  "bedroomCount": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneBedroomCountMin).multipleOf(duplicateQuoteResponseTwoJobInputsOneoneBedroomCountMultipleOf),
+  "bathroomQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneBathroomQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsOneoneBathroomQuantityMultipleOf),
   "kitchenApplianceCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneKitchenApplianceCircuitQuantityMin),
   "laundryCircuitQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneLaundryCircuitQuantityMin),
   "exteriorReceptacleQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsOneoneExteriorReceptacleQuantityMin),

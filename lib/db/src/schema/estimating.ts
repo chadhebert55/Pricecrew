@@ -426,6 +426,7 @@ export type NewHouseInputRecord = {
   fanMaterialUnitCostOverride?: number;
   panelManufacturer: "Siemens" | "Eaton" | "Square D";
   smokeCoQuantity: number;
+  bedroomCount: number;
   bathroomQuantity: number;
   kitchenApplianceCircuitQuantity: number;
   laundryCircuitQuantity: number;
