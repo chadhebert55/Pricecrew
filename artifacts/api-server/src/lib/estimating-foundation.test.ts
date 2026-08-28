@@ -1201,6 +1201,163 @@ test("customer email edits normalize, preserve quote snapshots, and reject confl
   }
 });
 
+test("simultaneous customer email edits produce one conflict without partial updates", async () => {
+  const marker = `Concurrent customer edit ${randomUUID()}`;
+  const firstEmail = `${randomUUID()}@example.com`;
+  const secondEmail = `${randomUUID()}@example.com`;
+  const claimedEmail = `${randomUUID()}@example.com`;
+  const firstName = `${marker} first`;
+  const secondName = `${marker} second`;
+  const { server, baseUrl } = await startTestServer();
+
+  try {
+    const [first, second] = await Promise.all([
+      postCustomer(baseUrl, {
+        name: firstName,
+        email: `  ${firstEmail.toUpperCase()} `,
+      }),
+      postCustomer(baseUrl, {
+        name: secondName,
+        email: `  ${secondEmail.toUpperCase()} `,
+      }),
+    ]);
+    assert.equal(first.email, firstEmail);
+    assert.equal(second.email, secondEmail);
+
+    const historical = await Promise.all([
+      postQuote(baseUrl, {
+        customerName: firstName,
+        customerEmail: `  ${firstEmail.toUpperCase()} `,
+        projectName: `${marker} historical first`,
+        proposalDescription: "Concurrent customer edit snapshot first",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+      postQuote(baseUrl, {
+        customerName: secondName,
+        customerEmail: `  ${secondEmail.toUpperCase()} `,
+        projectName: `${marker} historical second`,
+        proposalDescription: "Concurrent customer edit snapshot second",
+        module: "SERVICE_CALL",
+        jobInputs: serviceCallInputs,
+      }),
+    ]);
+    const historicalBefore = (
+      await db
+        .select({
+          id: quotesTable.id,
+          customerId: quotesTable.customerId,
+          customerName: quotesTable.customerName,
+          customerEmail: quotesTable.customerEmail,
+        })
+        .from(quotesTable)
+        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+    ).sort((left, right) => left.id - right.id);
+    assert.deepEqual(
+      historicalBefore.map(({ customerId, customerName, customerEmail }) => ({
+        customerId,
+        customerName,
+        customerEmail,
+      })),
+      [
+        {
+          customerId: first.id,
+          customerName: firstName,
+          customerEmail: `  ${firstEmail.toUpperCase()} `,
+        },
+        {
+          customerId: second.id,
+          customerName: secondName,
+          customerEmail: `  ${secondEmail.toUpperCase()} `,
+        },
+      ].sort((left, right) => left.customerId - right.customerId),
+    );
+
+    const customersBefore = (
+      await db
+        .select({
+          id: customersTable.id,
+          name: customersTable.name,
+          email: customersTable.email,
+        })
+        .from(customersTable)
+        .where(inArray(customersTable.id, [first.id, second.id]))
+    ).sort((left, right) => left.id - right.id);
+
+    const updates = await Promise.all([
+      patchCustomer(baseUrl, first.id, {
+        name: `${marker} first claimed`,
+        email: `  ${claimedEmail.toUpperCase()} `,
+      }),
+      patchCustomer(baseUrl, second.id, {
+        name: `${marker} second claimed`,
+        email: `  ${claimedEmail.toUpperCase()} `,
+      }),
+    ]);
+    const successfulUpdates = updates.filter(
+      (update) => update.response.status === 200,
+    );
+    const conflicts = updates.filter((update) => update.response.status === 409);
+    assert.equal(successfulUpdates.length, 1);
+    assert.equal(conflicts.length, 1);
+    assert.deepEqual(conflicts[0]?.body, {
+      error: "A customer with this email already exists.",
+    });
+    assert.equal(successfulUpdates[0]?.body.email, claimedEmail);
+    assert.equal(
+      successfulUpdates[0]?.body.name,
+      successfulUpdates[0]?.body.id === first.id
+        ? `${marker} first claimed`
+        : `${marker} second claimed`,
+    );
+
+    const customersAfter = (
+      await db
+        .select({
+          id: customersTable.id,
+          name: customersTable.name,
+          email: customersTable.email,
+        })
+        .from(customersTable)
+        .where(inArray(customersTable.id, [first.id, second.id]))
+    ).sort((left, right) => left.id - right.id);
+    const winningCustomerId = successfulUpdates[0]?.body.id;
+    assert.equal(
+      customersAfter.filter((customer) => customer.email === claimedEmail)
+        .length,
+      1,
+    );
+    assert.equal(
+      customersAfter.find((customer) => customer.email === claimedEmail)?.id,
+      winningCustomerId,
+    );
+    const losingCustomer = customersAfter.find(
+      (customer) => customer.id !== winningCustomerId,
+    );
+    assert.ok(losingCustomer);
+    assert.deepEqual(
+      losingCustomer,
+      customersBefore.find((customer) => customer.id === losingCustomer?.id),
+    );
+
+    const historicalAfter = (
+      await db
+        .select({
+          id: quotesTable.id,
+          customerId: quotesTable.customerId,
+          customerName: quotesTable.customerName,
+          customerEmail: quotesTable.customerEmail,
+        })
+        .from(quotesTable)
+        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+    ).sort((left, right) => left.id - right.id);
+    assert.deepEqual(historicalAfter, historicalBefore);
+  } finally {
+    await closeTestServer(server);
+    await cleanupCustomerTest(marker, claimedEmail);
+  }
+});
+
 test("new builder preview and create contracts accept identical snapshots and reject invalid labor", () => {
   for (const [module, jobInputs] of [
     ["SERVICE_CALL", serviceCallInputs],
