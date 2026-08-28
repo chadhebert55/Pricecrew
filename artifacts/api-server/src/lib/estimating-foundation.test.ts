@@ -833,6 +833,17 @@ test("quotes with unresolved catalog prices cannot enter a ready state", () => {
   assert.equal(hasBlockingPricingWarnings(resolved.pricing.pricingWarnings), false);
 });
 
+test("legacy unresolved warning strings still block ready-state promotion", () => {
+  for (const warning of [
+    'Exact catalog selection "Selected row" for servicePanel is unavailable or unpriced. No generic catalog row was substituted.',
+    "Unresolved breaker: no exact Siemens 20A 1-pole GFCI breaker is available in the company price book.",
+    'Customer-supplied material "Selected fixture" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.',
+    'Active material selection "Selected material" has zero cost and is unresolved. Add a sourced price-book value or confirm the material before sending the quote.',
+  ]) {
+    assert.equal(hasBlockingPricingWarnings([warning]), true, warning);
+  }
+});
+
 test("customer proposal descriptions strip exact catalog identity", () => {
   assert.equal(
     customerMaterialDescription(

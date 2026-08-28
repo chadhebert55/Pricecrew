@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
 import {
+  auditPriceBookItem,
   calculateKitchenEstimate,
   calculatePanelReplacementEstimate,
   calculateRecessedLightingEstimate,
@@ -1563,6 +1564,105 @@ test("recessed lighting consumes the verified Juno 4-inch and 6-inch fixture row
   assert.equal(
     sixInch.assembly.find((line) => line.id === "recessed-fixtures")?.unitCost,
     34.006,
+  );
+});
+
+test("customer-supplied fixtures remain zero cost with a blocking audit warning", () => {
+  const result = calculateRecessedLightingEstimate(
+    { ...baseInputs, customerSuppliedFixtures: true },
+    settings,
+    priceBook,
+  );
+
+  assert.equal(
+    result.assembly.find((line) => line.id === "recessed-fixtures")?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "CUSTOMER_SUPPLIED_MATERIAL_REVIEW" &&
+        warning.severity === "error",
+    ),
+    true,
+  );
+});
+
+test("price-book audit identifies unresolved active selections by builder", () => {
+  const unresolvedBreaker = auditPriceBookItem(
+    catalogRow("Square D 50A 2-pole GFCI breaker", 0, {
+      category: "Protection",
+    }),
+  );
+  const verifiedFixture = auditPriceBookItem(
+    catalogRow("Juno WF4DREGSMAL 4-inch regressed wafer light", 30.605, {
+      category: "Lighting",
+    }),
+  );
+
+  assert.equal(unresolvedBreaker.isUnresolved, true);
+  assert.equal(unresolvedBreaker.activeSelection, true);
+  assert.deepEqual(unresolvedBreaker.builders, ["EV Charger"]);
+  assert.match(unresolvedBreaker.auditMessage ?? "", /sourced contractor cost/i);
+  assert.equal(verifiedFixture.isUnresolved, false);
+  assert.deepEqual(verifiedFixture.builders, ["Recessed Lighting"]);
+
+  const unresolvedPrimer = auditPriceBookItem(
+    catalogRow("PVCFIT clear quart primer — SKU 152609", 0, {
+      category: "Normal Stock",
+      supplierSku: "152609",
+    }),
+  );
+  const sharedRaceway = auditPriceBookItem(
+    catalogRow("PVCFIT 2-inch Sch40 PVC conduit — SKU 8891", 0, {
+      category: "Raceway",
+      supplierSku: "8891",
+    }),
+  );
+  assert.deepEqual(unresolvedPrimer.builders, ["Service Upgrade"]);
+  assert.deepEqual(sharedRaceway.builders, [
+    "Service Upgrade",
+    "Panel Replacement",
+  ]);
+
+  const legacyRows = [
+    ["4-square deep box", "Devices", ["Service Upgrade"]],
+    ["20A receptacle", "Devices", ["Service Upgrade"]],
+    ["20A receptacle plate", "Trim", ["Service Upgrade"]],
+    ["4x4x3/4 plywood", "Backing", ["Service Upgrade", "Panel Replacement"]],
+    ["2x4x8 stud", "Framing", ["Service Upgrade", "Panel Replacement"]],
+  ] as const;
+  for (const [item, category, expectedBuilders] of legacyRows) {
+    const audit = auditPriceBookItem(
+      catalogRow(item, 0, { category }),
+    );
+    for (const expectedBuilder of expectedBuilders) {
+      assert.equal(
+        audit.builders.includes(expectedBuilder),
+        true,
+        `${item} should be visible under ${expectedBuilder}`,
+      );
+    }
+    assert.deepEqual(audit.builders, [...expectedBuilders]);
+    assert.equal(audit.activeSelection, true);
+    assert.equal(audit.isUnresolved, true);
+  }
+
+  assert.deepEqual(
+    auditPriceBookItem(
+      catalogRow("PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", 0, {
+        category: "Raceway",
+        supplierSku: "512902",
+      }),
+    ).builders,
+    ["Service Upgrade"],
+  );
+  assert.deepEqual(
+    auditPriceBookItem(
+      catalogRow("service duct seal", 0, { category: "Normal Stock" }),
+    ).builders,
+    ["Service Upgrade"],
   );
 });
 

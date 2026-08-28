@@ -11,6 +11,7 @@ Catalog price date: 2026-08-25
 - Retained supplier, manufacturer, manufacturer part number, Northeast SKU, UPC, unit, and source date where the workbook supplied them.
 - Left uncertain products at zero cost. The estimator emits a structured, visible unresolved-price warning instead of silently substituting a generic product.
 - Seed reconciliation updates only recognized untouched starter rows. Contractor-edited rows are preserved.
+- Price-book management starts on unresolved rows and can narrow the audit by active V1 builder and material category. Each row identifies the builders that consume that exact canonical selection.
 
 ## Confident Northeast mappings
 

@@ -37,6 +37,13 @@ export type PriceBookItem = {
   isDefault: boolean;
 };
 
+export type PriceBookAudit = {
+  builders: string[];
+  activeSelection: boolean;
+  isUnresolved: boolean;
+  auditMessage: string | null;
+};
+
 export type EstimatingSettings = {
   residentialLaborSellRate: number;
   commercialLaborSellRate: number;
@@ -89,6 +96,29 @@ function warningMetadata(message: string): WarningMetadata {
       category: "planning",
       source: "time-materials",
       context: { rule: "confirm actual labor and material usage before invoicing" },
+    };
+  }
+  if (message.startsWith("Customer-supplied material")) {
+    return {
+      code: "CUSTOMER_SUPPLIED_MATERIAL_REVIEW",
+      severity: "error",
+      category: "missing-price",
+      source: "customer-supplied-material",
+      context: {
+        rule: "confirm the customer-provided material is available and excluded intentionally",
+      },
+    };
+  }
+  if (message.startsWith("Active material selection")) {
+    return {
+      code: "ACTIVE_MATERIAL_ZERO_COST",
+      severity: "error",
+      category: "missing-price",
+      source: "zero-cost-material-guard",
+      context: {
+        item: message.match(/"([^"]+)"/)?.[1] ?? null,
+        rule: "every active material selection requires a verified or explicitly confirmed cost",
+      },
     };
   }
   if (message.startsWith("Exact catalog selection")) {
@@ -423,6 +453,349 @@ function normalized(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+const BUILDER_NAMES = [
+  "EV Charger",
+  "Bathroom",
+  "Kitchen",
+  "Recessed Lighting",
+  "Service Upgrade",
+  "Panel Replacement",
+] as const;
+
+const EXACT_SELECTOR_SKU_BUILDERS: Record<
+  string,
+  Array<(typeof BUILDER_NAMES)[number]>
+> = {
+  "304898": ["Service Upgrade"],
+  "132873": ["Service Upgrade"],
+  "1552599": ["Service Upgrade"],
+  "79511": ["Service Upgrade", "Panel Replacement"],
+  "8891": ["Service Upgrade", "Panel Replacement"],
+  "512902": ["Service Upgrade"],
+  "15350": ["Service Upgrade"],
+  "152755": ["Service Upgrade"],
+  "26750": ["Service Upgrade"],
+  "25807": ["Service Upgrade"],
+  "18745": ["Service Upgrade"],
+  "26466": ["Service Upgrade", "Panel Replacement"],
+  "28551": ["Service Upgrade"],
+  "79651": ["Service Upgrade"],
+  "1266468": ["Service Upgrade"],
+  "239663": ["Service Upgrade"],
+  "300640": ["Service Upgrade"],
+  "17742": ["Service Upgrade", "Panel Replacement"],
+  "35113": ["Service Upgrade", "Panel Replacement"],
+  "86163": ["Service Upgrade", "Panel Replacement"],
+  "160523": ["Service Upgrade", "Panel Replacement"],
+  "31589": ["Service Upgrade"],
+  "9871": ["Service Upgrade"],
+  "30952": ["Service Upgrade"],
+  "1009903": ["Service Upgrade"],
+  "152609": ["Service Upgrade"],
+  "152791": ["Service Upgrade"],
+  "32650": ["Service Upgrade", "Panel Replacement"],
+  "21719": ["Service Upgrade", "Panel Replacement"],
+};
+
+const LEGACY_ITEM_BUILDER_USAGE: Record<
+  string,
+  Array<(typeof BUILDER_NAMES)[number]>
+> = {
+  "2 inch pvc mast raceway": ["Service Upgrade"],
+  "2 inch pvc weatherhead": ["Service Upgrade"],
+  "2 inch pvc expansion coupling": ["Service Upgrade"],
+  "2 inch pvc strap": ["Service Upgrade"],
+  "2 inch pvc hub": ["Service Upgrade"],
+  "2 inch pvc lb": ["Service Upgrade"],
+  "2 inch pvc 90": ["Service Upgrade"],
+  "2 inch pvc coupling": ["Service Upgrade"],
+  "2 inch pvc mast related parts": ["Service Upgrade"],
+  "3 4 inch pvc raceway": ["Service Upgrade"],
+  "3 4 inch pvc fittings": ["Service Upgrade"],
+  "intersystem bonding terminal": ["Service Upgrade"],
+  "water meter bonding clamp": ["Service Upgrade"],
+  "4 square deep box": ["Service Upgrade"],
+  "20a receptacle": ["Service Upgrade"],
+  "20a receptacle plate": ["Service Upgrade"],
+  "service duct seal": ["Service Upgrade"],
+  "pvc primer": ["Service Upgrade"],
+  "pvc glue": ["Service Upgrade"],
+  "panel replacement feeder raceway": ["Panel Replacement"],
+  "panel replacement feeder raceway fittings": ["Panel Replacement"],
+  "panel knockout seal": ["Panel Replacement"],
+  "4x4x3 4 plywood": ["Service Upgrade", "Panel Replacement"],
+  "2x4x8 stud": ["Service Upgrade", "Panel Replacement"],
+  "8 solid grounding conductor": ["Service Upgrade", "Panel Replacement"],
+  "4 green bonding conductor": ["Service Upgrade", "Panel Replacement"],
+  "anti oxidation compound": ["Service Upgrade", "Panel Replacement"],
+  "electrical tape": ["Service Upgrade", "Panel Replacement"],
+};
+
+function addBuilderIf(
+  builders: Set<string>,
+  builder: (typeof BUILDER_NAMES)[number],
+  condition: boolean,
+) {
+  if (condition) builders.add(builder);
+}
+
+export function auditPriceBookItem(
+  item: Pick<
+    PriceBookItem,
+    "category" | "item" | "unitCost" | "isDefault" | "supplierSku"
+  >,
+): PriceBookAudit {
+  const name = normalized(item.item);
+  const category = normalized(item.category);
+  const builders = new Set<string>();
+  const exactSelectorSku =
+    item.supplierSku?.trim() ??
+    item.item.match(/(?:SKU|Northeast #)\s*([A-Z0-9-]+)/i)?.[1];
+  const exactBuilders =
+    EXACT_SELECTOR_SKU_BUILDERS[exactSelectorSku ?? ""] ?? [];
+  const legacyBuilders = LEGACY_ITEM_BUILDER_USAGE[name] ?? [];
+  for (const builder of exactBuilders) {
+    builders.add(builder);
+  }
+  for (const builder of legacyBuilders) {
+    builders.add(builder);
+  }
+
+  addBuilderIf(
+    builders,
+    "EV Charger",
+    name.includes("ev charger") ||
+      name.includes("load management") ||
+      name.includes("local disconnect") ||
+      name.includes("nema 14 50") ||
+      name.includes("nema 6 50") ||
+      name.includes("1 in emt") ||
+      name.includes("1 in pvc"),
+  );
+  addBuilderIf(
+    builders,
+    "Bathroom",
+    name.includes("bathroom") ||
+      name.includes("vanity") ||
+      name.includes("fan light") ||
+      name.includes("heated floor"),
+  );
+  addBuilderIf(
+    builders,
+    "Kitchen",
+    name.includes("kitchen") ||
+      name.includes("refrigerator") ||
+      name.includes("dishwasher") ||
+      name.includes("disposal") ||
+      name.includes("range circuit") ||
+      name.includes("countertop") ||
+      name.includes("usb receptacle") ||
+      name.includes("sink light") ||
+      name.includes("island pendant") ||
+      name.includes("undercabinet"),
+  );
+  addBuilderIf(
+    builders,
+    "Recessed Lighting",
+    name.includes("juno") ||
+      name.includes("recessed") ||
+      name.includes("single pole switch") ||
+      name.includes("3 way switch") ||
+      name.includes("dimmer") ||
+      name.includes("wall plate"),
+  );
+  addBuilderIf(
+    builders,
+    "Service Upgrade",
+    name.includes("service") ||
+      name.includes("meter") ||
+      name.includes("mast") ||
+      name.includes("weatherhead") ||
+      name.includes("utility") ||
+      name.includes("xhhw") ||
+      name.includes("aluminum ser") ||
+      name.includes("copper service") ||
+      name.includes("ground rod") ||
+      name.includes("acorn clamp") ||
+      name.includes("bonding") ||
+      name.includes("duct seal"),
+  );
+  addBuilderIf(
+    builders,
+    "Panel Replacement",
+    name.includes("panel") ||
+      name.includes("feeder") ||
+      name.includes("ground bar") ||
+      name.includes("ground rod") ||
+      name.includes("acorn clamp") ||
+      name.includes("bonding") ||
+      name.includes("duct seal"),
+  );
+
+  if (category === "protection" && name.includes("breaker")) {
+    if (name.includes("50a") && name.includes("2 pole")) {
+      builders.add("EV Charger");
+    }
+    if (
+      (name.includes("15a") || name.includes("20a")) &&
+      name.includes("1 pole")
+    ) {
+      builders.add("Bathroom");
+      builders.add("Kitchen");
+      builders.add("Recessed Lighting");
+    }
+    if (
+      (name.includes("100a") ||
+        name.includes("150a") ||
+        name.includes("200a")) &&
+      name.includes("2 pole")
+    ) {
+      builders.add("Service Upgrade");
+      builders.add("Panel Replacement");
+    }
+  }
+  if (category === "conductor") {
+    if (
+      name.includes("12 2 nm b") ||
+      name.includes("14 2 nm b") ||
+      name.includes("14 3 nm b")
+    ) {
+      builders.add("Bathroom");
+      builders.add("Kitchen");
+      builders.add("Recessed Lighting");
+    }
+    if (
+      name.includes("8 3 nm b") ||
+      name.includes("8 2 nm b") ||
+      name.includes("6 3 nm b") ||
+      name.includes("8 2 ser") ||
+      name.includes("8 copper thhn") ||
+      name.includes("10 copper grounding")
+    ) {
+      builders.add("EV Charger");
+    }
+    if (
+      name.includes("xhhw") ||
+      name.includes("aluminum ser") ||
+      name.includes("copper service conductor")
+    ) {
+      builders.add("Service Upgrade");
+      builders.add("Panel Replacement");
+    }
+  }
+  if (
+    category === "devices" ||
+    category === "controls" ||
+    category === "lighting" ||
+    category === "ventilation" ||
+    category === "rough in" ||
+    category === "trim"
+  ) {
+    if (
+      (name.includes("receptacle") && !name.startsWith("20a receptacle")) ||
+      name.includes("single gang") ||
+      name.includes("device plate") ||
+      name.includes("exhaust fan")
+    ) {
+      builders.add("Bathroom");
+      builders.add("Kitchen");
+    }
+  }
+  if (category === "normal stock") {
+    addBuilderIf(
+      builders,
+      "Service Upgrade",
+      [
+        "plywood",
+        "stud",
+        "duct seal",
+        "primer",
+        "cement",
+        "anti oxidant",
+        "electrical tape",
+      ].some((term) => name.includes(term)),
+    );
+    addBuilderIf(
+      builders,
+      "Panel Replacement",
+      [
+        "plywood",
+        "stud",
+        "filler plate",
+        "knockout seal",
+        "anti oxidant",
+        "electrical tape",
+      ].some((term) => name.includes(term)),
+    );
+  }
+  if (category === "grounding") {
+    addBuilderIf(
+      builders,
+      "Service Upgrade",
+      ["ground bar", "ground rod", "acorn", "rod clamp", "grounding conductor"].some(
+        (term) => name.includes(term),
+      ),
+    );
+    addBuilderIf(
+      builders,
+      "Panel Replacement",
+      ["ground bar", "ground rod", "grounding conductor"].some((term) =>
+        name.includes(term),
+      ),
+    );
+  }
+  if (
+    category === "raceway" &&
+    (name.includes("2 inch") ||
+      name.includes("3 4 inch") ||
+      name.includes("pvcfit") ||
+      name.includes("ocal"))
+  ) {
+    builders.add("Service Upgrade");
+    builders.add("Panel Replacement");
+  }
+  if (
+    name.includes("primer") ||
+    name.includes("cement") ||
+    name.includes("anti oxidant") ||
+    name.includes("electrical tape")
+  ) {
+    builders.add("Service Upgrade");
+  }
+  if (name.includes("anti oxidant") || name.includes("electrical tape")) {
+    builders.add("Panel Replacement");
+  }
+  if (name.includes("whole home surge protection")) {
+    builders.add("EV Charger");
+    builders.add("Service Upgrade");
+  }
+  if (name.includes("permit allowance")) {
+    if (name.includes("service")) builders.add("Service Upgrade");
+    if (name.includes("panel")) builders.add("Panel Replacement");
+  }
+
+  if (exactBuilders.length > 0 || legacyBuilders.length > 0) {
+    builders.clear();
+    for (const builder of [...exactBuilders, ...legacyBuilders]) {
+      builders.add(builder);
+    }
+  }
+  const isUnresolved =
+    !Number.isFinite(item.unitCost) ||
+    item.unitCost <= 0 ||
+    item.isDefault ||
+    name.startsWith("unverified ");
+  const builderList = BUILDER_NAMES.filter((builder) => builders.has(builder));
+  return {
+    builders: builderList,
+    activeSelection: builderList.length > 0,
+    isUnresolved,
+    auditMessage: isUnresolved
+      ? `Set a sourced contractor cost before using this selection in ${builderList.join(", ") || "an estimator builder"}.`
+      : null,
+  };
+}
+
 function itemHasTerms(item: PriceBookItem, ...terms: string[]) {
   const name = normalized(item.item);
   return terms.every((term) => name.includes(normalized(term)));
@@ -629,6 +1002,29 @@ function finalizeEstimate(
   pricingWarnings: string[],
   requestedLaborRateType?: string,
 ): EstimateResult {
+  const zeroCostMaterialLines = assembly.filter(
+    (line) =>
+      line.quantity > 0 &&
+      line.unitCost <= 0 &&
+      line.source !== "Included labor scope",
+  );
+  for (const line of zeroCostMaterialLines) {
+    const hasLineWarning = pricingWarnings.some(
+      (warning) =>
+        warning.includes("No verified price is available") ||
+        warning.startsWith("Exact catalog selection") ||
+        warning.startsWith("Unresolved breaker:") ||
+        warning.includes("No cable cost was substituted") ||
+        warning.includes("zero cost") ||
+        warning.includes("customer-supplied") ||
+        warning.includes("is unresolved"),
+    );
+    if (!hasLineWarning) {
+      pricingWarnings.push(
+        `Active material selection "${line.description}" has zero cost and is unresolved. Add a sourced price-book value or confirm the material before sending the quote.`,
+      );
+    }
+  }
   const laborRateType = selectedLaborRateType(requestedLaborRateType);
   const laborSellRate =
     laborRateType === "commercial"
@@ -1004,7 +1400,12 @@ export function calculateBathroomEstimate(
     const safeQuantity = Math.max(0, Number(quantity) || 0);
     if (safeQuantity === 0) return;
     const price = customerSupplied
-      ? { value: 0, source: "Customer supplied fixture" }
+      ? (() => {
+          pricingWarnings.push(
+            `Customer-supplied material "${description}" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.`,
+          );
+          return { value: 0, source: "Customer supplied fixture" };
+        })()
       : unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,
@@ -1222,7 +1623,12 @@ export function calculateKitchenEstimate(
     const safeQuantity = Math.max(0, Number(quantity) || 0);
     if (safeQuantity === 0) return;
     const price = customerSupplied
-      ? { value: 0, source: "Customer supplied fixture" }
+      ? (() => {
+          pricingWarnings.push(
+            `Customer-supplied material "${description}" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.`,
+          );
+          return { value: 0, source: "Customer supplied fixture" };
+        })()
       : unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,
@@ -2774,7 +3180,12 @@ export function calculateRecessedLightingEstimate(
     const safeQuantity = Math.max(0, Number(quantity) || 0);
     if (safeQuantity === 0) return;
     const price = customerSupplied
-      ? { value: 0, source: "Customer supplied fixture" }
+      ? (() => {
+          pricingWarnings.push(
+            `Customer-supplied material "${description}" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.`,
+          );
+          return { value: 0, source: "Customer supplied fixture" };
+        })()
       : unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,

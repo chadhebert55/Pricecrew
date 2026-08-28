@@ -3723,6 +3723,10 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "poleCount": zod.number().nullish(),
   "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
+  "builders": zod.array(zod.string()),
+  "activeSelection": zod.boolean(),
+  "isUnresolved": zod.boolean(),
+  "auditMessage": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
 export const ListPriceBookItemsResponse = zod.array(ListPriceBookItemsResponseItem)
@@ -3755,6 +3759,10 @@ export const UpdatePriceBookItemResponse = zod.object({
   "poleCount": zod.number().nullish(),
   "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
+  "builders": zod.array(zod.string()),
+  "activeSelection": zod.boolean(),
+  "isUnresolved": zod.boolean(),
+  "auditMessage": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
 

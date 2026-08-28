@@ -31,5 +31,10 @@ export interface PriceBookItem {
   /** @nullable */
   protectionType?: string | null;
   isDefault: boolean;
+  builders: string[];
+  activeSelection: boolean;
+  isUnresolved: boolean;
+  /** @nullable */
+  auditMessage?: string | null;
   updatedAt: Date;
 }

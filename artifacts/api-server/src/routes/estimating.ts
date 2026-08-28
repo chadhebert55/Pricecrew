@@ -63,6 +63,7 @@ import {
   calculateServiceCallEstimate,
   calculateServiceUpgradeEstimate,
   calculateTimeMaterialsEstimate,
+  auditPriceBookItem,
   normalizePricingWarnings,
 } from "../lib/estimating-engine";
 
@@ -429,10 +430,8 @@ export function pricingForQuoteUpdate(
 export function hasBlockingPricingWarnings(
   warnings: PricingRecord["pricingWarnings"],
 ) {
-  return warnings.some((warning) =>
-    typeof warning === "string"
-      ? warning.startsWith("No verified price is available")
-      : warning.severity === "error",
+  return normalizePricingWarnings(warnings).some(
+    (warning) => warning.severity === "error",
   );
 }
 
@@ -1120,6 +1119,7 @@ router.get("/price-book", async (_req, res): Promise<void> => {
     ListPriceBookItemsResponse.parse(
       items.map((item) => ({
         ...item,
+        ...auditPriceBookItem(item),
         updatedAt: item.updatedAt.toISOString(),
       })),
     ),
@@ -1158,6 +1158,7 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
   res.json(
     UpdatePriceBookItemResponse.parse({
       ...item,
+      ...auditPriceBookItem(item),
       updatedAt: item.updatedAt.toISOString(),
     }),
   );

@@ -1859,6 +1859,9 @@ components:
         - unit
         - unitCost
         - isDefault
+        - builders
+        - activeSelection
+        - isUnresolved
         - updatedAt
       properties:
         id:
@@ -1891,6 +1894,16 @@ components:
           type: ["string", "null"]
         isDefault:
           type: boolean
+        builders:
+          type: array
+          items:
+            type: string
+        activeSelection:
+          type: boolean
+        isUnresolved:
+          type: boolean
+        auditMessage:
+          type: ["string", "null"]
         updatedAt:
           type: string
           format: date-time
