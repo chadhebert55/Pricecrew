@@ -7,15 +7,17 @@ import {
   companiesTable,
   companyMembersTable,
   companySettingsTable,
+  customersTable,
   db,
   priceBookItemsTable,
+  proposalDecisionsTable,
   quotesTable,
 } from "@workspace/db";
 import app from "../app";
 import {
   createProposalShareToken,
 } from "../routes/estimating";
-import { ensureEstimatorSeed } from "./estimating-seed";
+import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "./estimating-seed";
 import {
   isPublicProposalPath,
   resolveEstimatorAuthorization,
@@ -76,16 +78,24 @@ test("only customer proposal reads and signed decision submissions bypass estima
 test("API authorization hides cross-company quotes and rejects invalid or draft proposal tokens", async () => {
   await ensureEstimatorSeed();
   const marker = randomUUID();
-  const [template] = await db.select().from(quotesTable).limit(1);
+  const [template] = await db
+    .select()
+    .from(quotesTable)
+    .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID))
+    .limit(1);
   assert.ok(template);
 
-  const [companyA, companyB] = await db
+  const companyAName = `Authorization A ${marker}`;
+  const companyBName = `Authorization B ${marker}`;
+  const companies = await db
     .insert(companiesTable)
     .values([
-      { name: `Authorization A ${marker}` },
-      { name: `Authorization B ${marker}` },
+      { name: companyAName },
+      { name: companyBName },
     ])
     .returning();
+  const companyA = companies.find((company) => company.name === companyAName);
+  const companyB = companies.find((company) => company.name === companyBName);
   assert.ok(companyA);
   assert.ok(companyB);
 
@@ -310,25 +320,29 @@ test("API authorization hides cross-company quotes and rejects invalid or draft 
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );
+    const companyIds = [
+      companyA.id,
+      companyB.id,
+      ...(isolatedCompanyId ? [isolatedCompanyId] : []),
+    ];
+    await db
+      .delete(proposalDecisionsTable)
+      .where(inArray(proposalDecisionsTable.companyId, companyIds));
     await db
       .delete(quotesTable)
-      .where(inArray(quotesTable.id, [quoteA.id, readyQuoteB.id, draftQuoteB.id]));
+      .where(inArray(quotesTable.companyId, companyIds));
+    await db
+      .delete(customersTable)
+      .where(inArray(customersTable.companyId, companyIds));
+    await db
+      .delete(priceBookItemsTable)
+      .where(inArray(priceBookItemsTable.companyId, companyIds));
+    await db
+      .delete(companySettingsTable)
+      .where(inArray(companySettingsTable.companyId, companyIds));
     await db
       .delete(companyMembersTable)
-      .where(eq(companyMembersTable.userId, userA));
-    if (isolatedCompanyId) {
-      await db
-        .delete(priceBookItemsTable)
-        .where(eq(priceBookItemsTable.companyId, isolatedCompanyId));
-      await db
-        .delete(companySettingsTable)
-        .where(eq(companySettingsTable.companyId, isolatedCompanyId));
-      await db
-        .delete(companiesTable)
-        .where(eq(companiesTable.id, isolatedCompanyId));
-    }
-    await db
-      .delete(companiesTable)
-      .where(inArray(companiesTable.id, [companyA.id, companyB.id]));
+      .where(inArray(companyMembersTable.companyId, companyIds));
+    await db.delete(companiesTable).where(inArray(companiesTable.id, companyIds));
   }
 });

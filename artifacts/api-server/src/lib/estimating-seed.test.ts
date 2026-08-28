@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   companiesTable,
   companySettingsTable,
-  customersTable,
   db,
   priceBookItemsTable,
   quotesTable,
@@ -16,23 +16,28 @@ class RollbackFreshSeedTest extends Error {}
 test("fresh seed promotes verified pricing and inserts editable service and panel rows without overwriting edits", async () => {
   try {
     await db.transaction(async (transaction) => {
-      await transaction.delete(quotesTable);
-      await transaction.delete(priceBookItemsTable);
-      await transaction.delete(customersTable);
-      await transaction.delete(companySettingsTable);
-      await transaction.delete(companiesTable);
-
-      await seedEstimatorData(transaction as unknown as typeof db);
+      const [company] = await transaction
+        .insert(companiesTable)
+        .values({ name: `Fresh seed test ${randomUUID()}` })
+        .returning();
+      assert.ok(company);
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
 
       const [seededSettings] = await transaction
         .select()
-        .from(companySettingsTable);
+        .from(companySettingsTable)
+        .where(eq(companySettingsTable.companyId, company.id));
       assert.equal(seededSettings?.serviceUpgradeCrewSize, 2);
       assert.equal(seededSettings?.serviceUpgradeHoursPerPerson, 16);
       assert.equal(seededSettings?.panelReplacementCrewSize, 2);
       assert.equal(seededSettings?.panelReplacementHoursPerPerson, 10);
 
-      const seededRows = await transaction.select().from(priceBookItemsTable);
+      const seededRows = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, company.id));
       const surge = seededRows.find(
         (row) => row.item === "Whole-home surge protection",
       );
@@ -214,7 +219,10 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         (row) => row.item === "Siemens 200A panel replacement enclosure",
       );
       assert.ok(editableRow);
-      const [quoteBeforeReseed] = await transaction.select().from(quotesTable);
+      const [quoteBeforeReseed] = await transaction
+        .select()
+        .from(quotesTable)
+        .where(eq(quotesTable.companyId, company.id));
       assert.ok(quoteBeforeReseed);
       const immutableSnapshotBeforeReseed = JSON.stringify({
         jobInputs: quoteBeforeReseed.jobInputs,
@@ -226,7 +234,9 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         .set({ unitCost: 999, isDefault: false })
         .where(eq(priceBookItemsTable.id, editableRow.id));
 
-      await seedEstimatorData(transaction as unknown as typeof db);
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
       const [preserved] = await transaction
         .select()
         .from(priceBookItemsTable)
@@ -259,7 +269,9 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
           isDefault: false,
         })
         .where(eq(priceBookItemsTable.id, exactCatalogRow.id));
-      await seedEstimatorData(transaction as unknown as typeof db);
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
       const [preservedExactCatalogRow] = await transaction
         .select()
         .from(priceBookItemsTable)
@@ -279,17 +291,14 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
 test("known prior system catalog rows upgrade while contractor catalog edits survive reseeding", async () => {
   try {
     await db.transaction(async (transaction) => {
-      await transaction.delete(quotesTable);
-      await transaction.delete(priceBookItemsTable);
-      await transaction.delete(customersTable);
-      await transaction.delete(companySettingsTable);
-      await transaction.delete(companiesTable);
-      await transaction
+      const [company] = await transaction
         .insert(companiesTable)
-        .values({ id: 1, name: "Catalog reconciliation test" });
+        .values({ name: `Catalog reconciliation test ${randomUUID()}` })
+        .returning();
+      assert.ok(company);
       await transaction.insert(priceBookItemsTable).values([
         {
-          companyId: 1,
+          companyId: company.id,
           category: "Conductor",
           item: "12/2 NM-B cable",
           unit: "ft",
@@ -299,7 +308,7 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
           isDefault: false,
         },
         {
-          companyId: 1,
+          companyId: company.id,
           category: "Conductor",
           item: "14/2 NM-B cable",
           unit: "ft",
@@ -309,7 +318,7 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
           isDefault: false,
         },
         {
-          companyId: 1,
+          companyId: company.id,
           category: "Protection",
           item: "Siemens Q115 15A 1-pole standard breaker",
           unit: "ea",
@@ -325,7 +334,7 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
           isDefault: false,
         },
         {
-          companyId: 1,
+          companyId: company.id,
           category: "Raceway",
           item: "PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 20-ft stick — SKU 8891",
           unit: "ft",
@@ -340,8 +349,13 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
         },
       ]);
 
-      await seedEstimatorData(transaction as unknown as typeof db);
-      const rows = await transaction.select().from(priceBookItemsTable);
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
+      const rows = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, company.id));
       const upgraded = rows.find((row) => row.item === "12/2 NM-B cable");
       assert.equal(upgraded?.unitCost, 0.562271);
       assert.equal(upgraded?.manufacturer, "Wic.");
@@ -386,17 +400,14 @@ test("known prior system catalog rows upgrade while contractor catalog edits sur
 test("an untouched seeded Northeast row gains its catalog UPC without overwriting a contractor edit", async () => {
   try {
     await db.transaction(async (transaction) => {
-      await transaction.delete(quotesTable);
-      await transaction.delete(priceBookItemsTable);
-      await transaction.delete(customersTable);
-      await transaction.delete(companySettingsTable);
-      await transaction.delete(companiesTable);
-      await transaction
+      const [company] = await transaction
         .insert(companiesTable)
-        .values({ id: 1, name: "UPC reconciliation test" });
+        .values({ name: `UPC reconciliation test ${randomUUID()}` })
+        .returning();
+      assert.ok(company);
       await transaction.insert(priceBookItemsTable).values([
         {
-          companyId: 1,
+          companyId: company.id,
           category: "Conductor",
           item: "12/2 NM-B cable",
           unit: "ft",
@@ -409,7 +420,7 @@ test("an untouched seeded Northeast row gains its catalog UPC without overwritin
           isDefault: false,
         },
         {
-          companyId: 1,
+          companyId: company.id,
           category: "Conductor",
           item: "14/2 NM-B cable",
           unit: "ft",
@@ -423,8 +434,13 @@ test("an untouched seeded Northeast row gains its catalog UPC without overwritin
         },
       ]);
 
-      await seedEstimatorData(transaction as unknown as typeof db);
-      const rows = await transaction.select().from(priceBookItemsTable);
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
+      const rows = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, company.id));
       assert.equal(
         rows.find((row) => row.item === "12/2 NM-B cable")?.upc,
         "98010026305",
@@ -449,17 +465,13 @@ test("an untouched seeded Northeast row gains its catalog UPC without overwritin
 test("legacy contractor-edited starter surge cost is preserved and becomes resolvable", async () => {
   try {
     await db.transaction(async (transaction) => {
-      await transaction.delete(quotesTable);
-      await transaction.delete(priceBookItemsTable);
-      await transaction.delete(customersTable);
-      await transaction.delete(companySettingsTable);
-      await transaction.delete(companiesTable);
-
-      await transaction
+      const [company] = await transaction
         .insert(companiesTable)
-        .values({ id: 1, name: "Legacy seed test" });
+        .values({ name: `Legacy seed test ${randomUUID()}` })
+        .returning();
+      assert.ok(company);
       await transaction.insert(priceBookItemsTable).values({
-        companyId: 1,
+        companyId: company.id,
         category: "Protection",
         item: "Whole-home surge protection",
         unit: "ea",
@@ -467,11 +479,18 @@ test("legacy contractor-edited starter surge cost is preserved and becomes resol
         isDefault: true,
       });
 
-      await seedEstimatorData(transaction as unknown as typeof db);
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
       const [surge] = await transaction
         .select()
         .from(priceBookItemsTable)
-        .where(eq(priceBookItemsTable.item, "Whole-home surge protection"));
+        .where(
+          and(
+            eq(priceBookItemsTable.companyId, company.id),
+            eq(priceBookItemsTable.item, "Whole-home surge protection"),
+          ),
+        );
       assert.equal(surge?.unitCost, 222);
       assert.equal(surge?.isDefault, false);
 

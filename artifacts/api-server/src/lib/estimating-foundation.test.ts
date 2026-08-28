@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
-import test, { after } from "node:test";
+import test from "node:test";
 import type {
   BathroomInputRecord,
   CustomInputRecord,
@@ -14,12 +14,16 @@ import type {
   TimeMaterialsInputRecord,
 } from "@workspace/db";
 import {
+  companiesTable,
   customersTable,
   companyMembersTable,
+  companySettingsTable,
   db,
+  priceBookItemsTable,
+  proposalDecisionsTable,
   quotesTable,
 } from "@workspace/db";
-import { and, eq, inArray, like, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import {
   CreateQuoteBody,
   PreviewQuoteBody,
@@ -56,6 +60,7 @@ import {
 } from "../routes/estimating";
 import {
   ensureEstimatorSeed,
+  seedEstimatorData,
   SIEMENS_QF250A_SEED_COST,
 } from "./estimating-seed";
 
@@ -807,35 +812,37 @@ type CustomerSummary = {
   email: string | null;
 };
 
-const authenticatedHeaders = {
-  "content-type": "application/json",
-  "x-test-clerk-user-id": "user_estimator_integration_tests",
-};
+const testServerContexts = new Map<
+  Server,
+  { userId: string; baseUrl: string }
+>();
+const authenticatedHeadersByBaseUrl = new Map<string, Record<string, string>>();
 
-after(async () => {
-  await db
-    .delete(companyMembersTable)
-    .where(
-      eq(
-        companyMembersTable.userId,
-        "user_estimator_integration_tests",
-      ),
-    );
-});
+function authenticatedHeaders(baseUrl: string) {
+  const headers = authenticatedHeadersByBaseUrl.get(baseUrl);
+  if (!headers) throw new Error(`No test authentication registered for ${baseUrl}`);
+  return headers;
+}
 
 async function startTestServer() {
   await ensureEstimatorSeed();
-  await db
-    .insert(companyMembersTable)
-    .values({
-      userId: "user_estimator_integration_tests",
-      companyId: 1,
-      role: "member",
-    })
-    .onConflictDoUpdate({
-      target: companyMembersTable.userId,
-      set: { companyId: 1, role: "member" },
+  const userId = `user_estimator_integration_${randomUUID()}`;
+  const [company] = await db
+    .insert(companiesTable)
+    .values({ name: `Estimator integration test ${randomUUID()}` })
+    .returning();
+  if (!company) throw new Error("Unable to create isolated test company");
+  try {
+    await ensureTestCompanySeed(company.id);
+    await db.insert(companyMembersTable).values({
+      userId,
+      companyId: company.id,
+      role: "owner",
     });
+  } catch (error) {
+    await cleanupTestCompany(company.id, userId);
+    throw error;
+  }
   const server = await new Promise<Server>((resolve, reject) => {
     const candidate = app.listen(0, () => resolve(candidate));
     candidate.once("error", reject);
@@ -845,22 +852,67 @@ async function startTestServer() {
     server.close();
     throw new Error("Test server did not expose a TCP address");
   }
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  testServerContexts.set(server, { userId, baseUrl });
+  authenticatedHeadersByBaseUrl.set(baseUrl, {
+    "content-type": "application/json",
+    "x-test-clerk-user-id": userId,
+  });
   return {
     server,
-    baseUrl: `http://127.0.0.1:${address.port}`,
+    baseUrl,
   };
 }
 
 async function closeTestServer(server: Server) {
+  const context = testServerContexts.get(server);
   await new Promise<void>((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
+  testServerContexts.delete(server);
+  if (!context) return;
+  authenticatedHeadersByBaseUrl.delete(context.baseUrl);
+
+  const [membership] = await db
+    .select({ companyId: companyMembersTable.companyId })
+    .from(companyMembersTable)
+    .where(eq(companyMembersTable.userId, context.userId));
+  if (!membership) return;
+  await cleanupTestCompany(membership.companyId, context.userId);
+}
+
+async function cleanupTestCompany(companyId: number, userId: string) {
+  await db
+    .delete(proposalDecisionsTable)
+    .where(eq(proposalDecisionsTable.companyId, companyId));
+  await db
+    .delete(quotesTable)
+    .where(eq(quotesTable.companyId, companyId));
+  await db
+    .delete(customersTable)
+    .where(eq(customersTable.companyId, companyId));
+  await db
+    .delete(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, companyId));
+  await db
+    .delete(companySettingsTable)
+    .where(eq(companySettingsTable.companyId, companyId));
+  await db
+    .delete(companyMembersTable)
+    .where(eq(companyMembersTable.userId, userId));
+  await db
+    .delete(companiesTable)
+    .where(eq(companiesTable.id, companyId));
+}
+
+async function ensureTestCompanySeed(companyId: number) {
+  await seedEstimatorData(db, { companyId });
 }
 
 async function postQuote(baseUrl: string, input: QuoteRequest) {
   const response = await fetch(`${baseUrl}/api/quotes`, {
     method: "POST",
-    headers: authenticatedHeaders,
+    headers: authenticatedHeaders(baseUrl),
     body: JSON.stringify(input),
   });
   const body = (await response.json()) as Partial<CreatedQuote> & {
@@ -895,7 +947,7 @@ async function postCustomerRequest(
 ) {
   const response = await fetch(`${baseUrl}/api/customers`, {
     method: "POST",
-    headers: authenticatedHeaders,
+    headers: authenticatedHeaders(baseUrl),
     body: JSON.stringify(input),
   });
   const body = (await response.json()) as CustomerSummary & { error?: string };
@@ -909,37 +961,13 @@ async function patchCustomer(
 ) {
   const response = await fetch(`${baseUrl}/api/customers/${id}`, {
     method: "PATCH",
-    headers: authenticatedHeaders,
+    headers: authenticatedHeaders(baseUrl),
     body: JSON.stringify(input),
   });
   const body = (await response.json()) as Partial<CustomerSummary> & {
     error?: string;
   };
   return { response, body };
-}
-
-async function cleanupCustomerTest(marker: string, email: string) {
-  const customers = await db
-    .select({ id: customersTable.id })
-    .from(customersTable)
-    .where(
-      and(
-        eq(customersTable.companyId, 1),
-        or(
-          like(customersTable.name, `${marker}%`),
-          eq(customersTable.email, email),
-        ),
-      ),
-    );
-  const customerIds = customers.map((customer) => customer.id);
-  if (customerIds.length === 0) return;
-
-  await db
-    .delete(quotesTable)
-    .where(inArray(quotesTable.customerId, customerIds));
-  await db
-    .delete(customersTable)
-    .where(inArray(customersTable.id, customerIds));
 }
 
 test("simultaneous same-email quotes share one persisted customer", async () => {
@@ -964,7 +992,8 @@ test("simultaneous same-email quotes share one persisted customer", async () => 
     const quotes = await db
       .select()
       .from(quotesTable)
-      .where(inArray(quotesTable.id, created.map((quote) => quote.id)));
+      .where(inArray(quotesTable.id, created.map((quote) => quote.id)))
+      .then((rows) => rows.sort((left, right) => left.id - right.id));
     assert.equal(quotes.length, 2);
     assert.equal(quotes[0]?.customerId, quotes[1]?.customerId);
 
@@ -972,16 +1001,12 @@ test("simultaneous same-email quotes share one persisted customer", async () => 
       .select()
       .from(customersTable)
       .where(
-        and(
-          eq(customersTable.companyId, 1),
-          eq(customersTable.email, email),
-        ),
+        eq(customersTable.email, email),
       );
     assert.equal(customers.length, 1);
     assert.equal(quotes[0]?.customerId, customers[0]?.id);
   } finally {
     await closeTestServer(server);
-    await cleanupCustomerTest(marker, email);
   }
 });
 
@@ -1025,18 +1050,12 @@ test("simultaneous customer creation produces one normalized-email conflict", as
         email: customersTable.email,
       })
       .from(customersTable)
-      .where(
-        and(
-          eq(customersTable.companyId, 1),
-          eq(customersTable.email, email),
-        ),
-      );
+      .where(eq(customersTable.email, email));
     assert.equal(customers.length, 1);
     assert.equal(customers[0]?.id, successful[0]?.body.id);
     assert.equal(customers[0]?.name, successful[0]?.body.name);
   } finally {
     await closeTestServer(server);
-    await cleanupCustomerTest(marker, email);
   }
 });
 
@@ -1082,12 +1101,9 @@ test("simultaneous email claims converge on one customer without rewriting histo
       .select()
       .from(customersTable)
       .where(
-        and(
-          eq(customersTable.companyId, 1),
-          or(
-            eq(customersTable.name, firstName),
-            eq(customersTable.name, secondName),
-          ),
+        or(
+          eq(customersTable.name, firstName),
+          eq(customersTable.name, secondName),
         ),
       );
     assert.equal(existingCustomers.length, 2);
@@ -1118,7 +1134,8 @@ test("simultaneous email claims converge on one customer without rewriting histo
     const claimedQuotes = await db
       .select()
       .from(quotesTable)
-      .where(inArray(quotesTable.id, claimed.map((quote) => quote.id)));
+      .where(inArray(quotesTable.id, claimed.map((quote) => quote.id)))
+      .then((rows) => rows.sort((left, right) => left.id - right.id));
     assert.equal(claimedQuotes.length, 2);
     assert.equal(claimedQuotes[0]?.customerId, claimedQuotes[1]?.customerId);
 
@@ -1126,14 +1143,7 @@ test("simultaneous email claims converge on one customer without rewriting histo
       .select()
       .from(customersTable)
       .where(
-        and(
-          eq(customersTable.companyId, 1),
-          or(
-            eq(customersTable.name, firstName),
-            eq(customersTable.name, secondName),
-            eq(customersTable.email, email),
-          ),
-        ),
+        inArray(customersTable.name, [firstName, secondName]),
       );
     assert.equal(customersAfter.length, 2);
     assert.equal(
@@ -1162,7 +1172,6 @@ test("simultaneous email claims converge on one customer without rewriting histo
     assert.deepEqual(historicalAfter, historicalBefore);
   } finally {
     await closeTestServer(server);
-    await cleanupCustomerTest(marker, email);
   }
 });
 
@@ -1262,7 +1271,6 @@ test("customer email edits normalize, preserve quote snapshots, and reject confl
     assert.deepEqual(historicalAfter, historicalBefore);
   } finally {
     await closeTestServer(server);
-    await cleanupCustomerTest(marker, originalEmail);
   }
 });
 
@@ -1323,7 +1331,7 @@ test("simultaneous customer email edits produce one conflict without partial upd
         customerId,
         customerName,
         customerEmail,
-      })),
+      })).sort((left, right) => (left.customerId ?? 0) - (right.customerId ?? 0)),
       [
         {
           customerId: first.id,
@@ -1419,7 +1427,6 @@ test("simultaneous customer email edits produce one conflict without partial upd
     assert.deepEqual(historicalAfter, historicalBefore);
   } finally {
     await closeTestServer(server);
-    await cleanupCustomerTest(marker, claimedEmail);
   }
 });
 
@@ -1933,7 +1940,7 @@ test("quote revisions retain source customer identity and reject reassignment", 
     });
     const mismatchResponse = await fetch(`${baseUrl}/api/quotes`, {
       method: "POST",
-      headers: authenticatedHeaders,
+      headers: authenticatedHeaders(baseUrl),
       body: JSON.stringify({
         customerId: other.id,
         sourceQuoteId: source.id,
@@ -1952,7 +1959,5 @@ test("quote revisions retain source customer identity and reject reassignment", 
     );
   } finally {
     await closeTestServer(server);
-    await cleanupCustomerTest(marker, email);
-    await cleanupCustomerTest(marker, `renamed-${email}`);
   }
 });

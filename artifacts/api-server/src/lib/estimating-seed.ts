@@ -113,19 +113,25 @@ export function ensureEstimatorSeed(): Promise<void> {
 
 export async function seedEstimatorData(
   database: typeof db = db,
+  options: { companyId?: number } = {},
 ): Promise<void> {
-  const [existingCompany] = await database
-    .select()
-    .from(companiesTable)
-    .limit(1);
+  const [existingCompany] = options.companyId
+    ? await database
+        .select()
+        .from(companiesTable)
+        .where(eq(companiesTable.id, options.companyId))
+        .limit(1)
+    : await database.select().from(companiesTable).limit(1);
   const company =
     existingCompany ??
-    (
-      await database
-        .insert(companiesTable)
-        .values({ id: DEFAULT_COMPANY_ID, name: "Starter Electrical Co." })
-        .returning()
-    )[0];
+    (options.companyId
+      ? undefined
+      : (
+          await database
+            .insert(companiesTable)
+            .values({ id: DEFAULT_COMPANY_ID, name: "Starter Electrical Co." })
+            .returning()
+        )[0]);
 
   if (!company) {
     throw new Error("Unable to create starter estimating company");
