@@ -862,7 +862,7 @@ test("addition prices a mixed circuit schedule with independent quantities and v
     catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
     catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
     catalogRow("Contractor-supplied ceiling fan", 180, { category: "Equipment" }),
-    catalogRow("10/2 NM-B cable", 1.25, { category: "Conductor" }),
+    catalogRow("10/3 NM-B cable", 1.25, { category: "Conductor" }),
     catalogRow("Siemens Q230 30A 2-pole standard breaker", 25, {
       category: "Protection",
       manufacturer: "Siemens",
@@ -894,7 +894,7 @@ test("addition prices a mixed circuit schedule with independent quantities and v
         amperage: 30,
         poleCount: 2,
         protectionType: "Standard",
-        cableType: "10/2 NM-B",
+        cableType: "10/3 NM-B",
         quantity: 1,
       },
     ],
@@ -926,6 +926,15 @@ test("addition prices a mixed circuit schedule with independent quantities and v
     result.assembly.find((line) => line.id === "addition-circuit-3-cable")
       ?.unitCost,
     1.25,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-3-cable")
+      ?.description,
+    "30A 2-pole 10/3 NM-B branch-circuit cable",
+  );
+  assert.equal(
+    result.assembly.some((line) => line.description.includes("10/2 NM-B")),
+    false,
   );
   assert.equal(
     result.assembly.find((line) => line.id === "addition-circuit-3-cable")
@@ -1047,7 +1056,8 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
     ...priceBook,
     catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
     catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
-    catalogRow("10/2 NM-B cable", 1.25, { category: "Conductor" }),
+    catalogRow("10/3 NM-B cable", 1.25, { category: "Conductor" }),
+    catalogRow("10/2 NM-B cable", 0.75, { category: "Conductor" }),
   ];
   const result = calculateAdditionEstimate(
     {
@@ -1057,7 +1067,7 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
           amperage: 30,
           poleCount: 2,
           protectionType: "Standard",
-          cableType: "12/2 NM-B",
+          cableType: "10/2 NM-B" as never,
           quantity: 1,
         },
       ],
@@ -1070,6 +1080,11 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
     result.assembly.find((line) => line.id === "addition-circuit-1-cable")
       ?.unitCost,
     0,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-circuit-1-cable")
+      ?.description,
+    "30A 2-pole 10/2 NM-B cable — unresolved compatibility",
   );
   assert.equal(
     result.assembly.find((line) => line.id === "addition-circuit-1-breaker")
@@ -1117,7 +1132,7 @@ test("addition mixed circuit schedules have preview and create validation parity
         amperage: 30 as const,
         poleCount: 2 as const,
         protectionType: "Standard" as const,
-        cableType: "10/2 NM-B" as const,
+        cableType: "10/3 NM-B" as const,
         quantity: 1,
       },
     ],
@@ -1187,10 +1202,10 @@ test("addition price-book audit includes mixed-circuit breaker and cable rows", 
   assert.equal(
     auditPriceBookItem({
       category: "Conductor",
-      item: "10/2 NM-B cable",
+      item: "10/3 NM-B cable",
       unitCost: 1.25,
       isDefault: false,
-      supplierSku: "10-2-NMB",
+      supplierSku: "10-3-NMB",
     }).builders.includes("Addition"),
     true,
   );

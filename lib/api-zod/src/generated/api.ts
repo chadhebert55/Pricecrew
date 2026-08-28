@@ -729,7 +729,7 @@ export const CreateQuoteBody = zod.object({
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
-  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
@@ -1619,7 +1619,7 @@ export const CreateQuoteResponse = zod.object({
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
-  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
@@ -2558,7 +2558,7 @@ export const PreviewQuoteBody = zod.object({
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
-  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
@@ -3601,7 +3601,7 @@ export const GetQuoteResponse = zod.object({
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
-  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
@@ -4584,7 +4584,7 @@ export const UpdateQuoteResponse = zod.object({
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
-  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),
@@ -5791,7 +5791,7 @@ export const DuplicateQuoteResponse = zod.object({
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
-  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B']),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/3 NM-B']),
   "quantity": zod.number().min(1)
 }).describe('One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.')).min(1).optional().describe('Optional repeatable circuit schedule. Omit for legacy single-circuit snapshots.'),
   "crewSize": zod.number().min(1),

@@ -1355,7 +1355,7 @@ components:
           enum: [Standard, GFCI, AFCI, Dual Function]
         cableType:
           type: string
-          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/2 NM-B]
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/3 NM-B]
         quantity:
           type: number
           minimum: 1

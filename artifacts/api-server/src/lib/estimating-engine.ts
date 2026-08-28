@@ -741,7 +741,7 @@ export function auditPriceBookItem(
     if (name.includes("10 2 nm b") || name.includes("8 2 nm b")) {
       builders.add("New House");
     }
-    if (name.includes("10 2 nm b")) {
+    if (name.includes("10 3 nm b")) {
       builders.add("Addition");
     }
     if (
@@ -2490,7 +2490,7 @@ export function calculateAdditionEstimate(
         entry.cableType === "14/3 NM-B"
       : entry.amperage === 20
         ? entry.cableType === "12/2 NM-B"
-        : entry.cableType === "10/2 NM-B";
+        : entry.cableType === "10/3 NM-B";
 
   if (circuitEntries) {
     let commonRouteAllocated = false;
@@ -2503,7 +2503,7 @@ export function calculateAdditionEstimate(
       const compatible = additionCableCompatible(entry);
       if (!compatible) {
         pricingWarnings.push(
-          `Addition circuit compatibility is unresolved: ${entry.cableType} cannot be used for a ${entry.amperage}A circuit. Select 12/2 NM-B for 20A circuits, 10/2 NM-B for 30A circuits, or 12/2/14/2/14/3 NM-B for 15A circuits; no cable cost was substituted.`,
+          `Addition circuit compatibility is unresolved: ${entry.cableType} cannot be used for a ${entry.amperage}A circuit. Select 12/2 NM-B for 20A circuits, 10/3 NM-B for 30A circuits, or 12/2/14/2/14/3 NM-B for 15A circuits; no cable cost was substituted.`,
         );
       }
       if (footage) {

@@ -175,7 +175,7 @@ export type AdditionCircuitEntry = {
   amperage: 15 | 20 | 30;
   poleCount: 1 | 2;
   protectionType: "Standard" | "GFCI" | "AFCI" | "Dual Function";
-  cableType: "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B" | "10/2 NM-B";
+  cableType: "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B" | "10/3 NM-B";
   quantity: number;
 };
 

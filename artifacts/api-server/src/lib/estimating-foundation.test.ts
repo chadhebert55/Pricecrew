@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import test from "node:test";
 import type {
+  AdditionInputRecord,
   BathroomInputRecord,
   CustomInputRecord,
   EvChargerInputRecord,
@@ -788,8 +789,8 @@ type QuoteRequest = {
   customerEmail?: string | null;
   projectName: string;
   proposalDescription: string;
-  module: "SERVICE_CALL" | "NEW_HOUSE";
-  jobInputs: ServiceCallInputRecord | NewHouseInputRecord;
+  module: "SERVICE_CALL" | "NEW_HOUSE" | "ADDITION";
+  jobInputs: ServiceCallInputRecord | NewHouseInputRecord | AdditionInputRecord;
 };
 
 type CreatedQuote = {
@@ -934,6 +935,12 @@ async function getQuote(baseUrl: string, id: number) {
   });
   const body = (await response.json()) as {
     jobInputs: Record<string, unknown>;
+    assembly: Array<{
+      id: string;
+      description: string;
+      unitCost: number;
+      extendedCost: number;
+    }>;
     pricing: { materialCost: number; laborCost: number };
     error?: string;
   };
@@ -944,6 +951,97 @@ async function getQuote(baseUrl: string, id: number) {
   );
   return body;
 }
+
+test("saved Addition 30A circuits retain and price 10/3 NM-B without falling back to 10/2", async () => {
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const context = testServerContexts.get(server);
+    assert.ok(context);
+    const [membership] = await db
+      .select({ companyId: companyMembersTable.companyId })
+      .from(companyMembersTable)
+      .where(eq(companyMembersTable.userId, context.userId));
+    assert.ok(membership);
+    await db.insert(priceBookItemsTable).values([
+      {
+        companyId: membership.companyId,
+        category: "Conductor",
+        item: "10/3 NM-B cable",
+        unit: "ft",
+        unitCost: 1.25,
+        supplier: "Regression catalog",
+        manufacturer: "Test Wire",
+        manufacturerPartNumber: "TEST-10-3",
+        supplierSku: "TEST-10-3",
+        sourceDate: "2026-08-28",
+        isDefault: false,
+      },
+      {
+        companyId: membership.companyId,
+        category: "Conductor",
+        item: "10/2 NM-B cable",
+        unit: "ft",
+        unitCost: 0.75,
+        supplier: "Regression catalog",
+        manufacturer: "Test Wire",
+        manufacturerPartNumber: "TEST-10-2",
+        supplierSku: "TEST-10-2",
+        sourceDate: "2026-08-28",
+        isDefault: false,
+      },
+    ]);
+    const jobInputs: AdditionInputRecord = {
+      length: 20,
+      width: 16,
+      receptacles: 0,
+      switches: 0,
+      dimmers: 0,
+      recessedLights: 0,
+      ceilingFans: 0,
+      customerSuppliedFans: true,
+      circuitCount: 1,
+      routeLength: 50,
+      homeRunLength: 35,
+      panelManufacturer: "Siemens",
+      breakerAmperage: 20,
+      breakerPoleCount: 1,
+      breakerProtectionType: "Standard",
+      cableType: "12/2 NM-B",
+      circuitEntries: [{
+        amperage: 30,
+        poleCount: 2,
+        protectionType: "Standard",
+        cableType: "10/3 NM-B",
+        quantity: 1,
+      }],
+      crewSize: 1,
+      crewHours: 1,
+      notes: "",
+    };
+    const created = await postQuote(baseUrl, {
+      customerName: `Addition 10/3 ${randomUUID()}`,
+      projectName: "30A Addition circuit",
+      proposalDescription: "Install the configured 30A branch circuit.",
+      module: "ADDITION",
+      jobInputs,
+    });
+    const saved = await getQuote(baseUrl, created.id);
+    const savedEntries = saved.jobInputs.circuitEntries as AdditionInputRecord["circuitEntries"];
+    assert.equal(savedEntries?.[0]?.cableType, "10/3 NM-B");
+    const cableLine = saved.assembly.find(
+      (line) => line.id === "addition-circuit-1-cable",
+    );
+    assert.equal(cableLine?.description, "30A 2-pole 10/3 NM-B branch-circuit cable");
+    assert.equal(cableLine?.unitCost, 1.25);
+    assert.equal(cableLine?.extendedCost, 106.25);
+    assert.equal(
+      saved.assembly.some((line) => line.description.includes("10/2 NM-B")),
+      false,
+    );
+  } finally {
+    await closeTestServer(server);
+  }
+});
 
 async function postCustomer(
   baseUrl: string,
