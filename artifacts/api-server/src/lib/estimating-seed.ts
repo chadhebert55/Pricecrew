@@ -16,6 +16,63 @@ export const USER_VERIFIED_4_0_SER_SEED_COST = 4.4198;
 
 export const DEFAULT_COMPANY_ID = 1;
 
+const requiredAdditionSubpanelItems = [
+  {
+    category: "Conductor",
+    item: "10/2 NM-B cable",
+    unit: "ft",
+    unitCost: 0,
+    supplier: "Company default — set current cost",
+    sourceDate: "2026-08-25",
+    isDefault: false,
+  },
+  {
+    category: "Conductor",
+    item: "10/3 NM-B cable",
+    unit: "ft",
+    unitCost: 0,
+    supplier: "Company default — set current cost",
+    sourceDate: "2026-08-25",
+    isDefault: false,
+  },
+  {
+    category: "Conductor",
+    item: "#6 copper SER cable",
+    unit: "ft",
+    unitCost: 0,
+    supplier: "Company default — set current cost",
+    sourceDate: "2026-08-25",
+    isDefault: false,
+  },
+  {
+    category: "Conductor",
+    item: "#1 aluminum SER cable",
+    unit: "ft",
+    unitCost: 0,
+    supplier: "Company default — set current cost",
+    sourceDate: "2026-08-25",
+    isDefault: false,
+  },
+  {
+    category: "Panel",
+    item: "60A subpanel load center",
+    unit: "ea",
+    unitCost: 0,
+    supplier: "Company default — set current cost",
+    sourceDate: "2026-08-25",
+    isDefault: false,
+  },
+  {
+    category: "Panel",
+    item: "100A subpanel load center",
+    unit: "ea",
+    unitCost: 0,
+    supplier: "Company default — set current cost",
+    sourceDate: "2026-08-25",
+    isDefault: false,
+  },
+] as const;
+
 let seedPromise: Promise<void> | undefined;
 
 const starterInputs: EvChargerInputRecord = {
@@ -107,8 +164,52 @@ const starterPricing: PricingRecord = {
 };
 
 export function ensureEstimatorSeed(): Promise<void> {
-  seedPromise ??= seedEstimatorData();
+  seedPromise ??= (async () => {
+    await seedEstimatorData();
+    await reconcileRequiredEstimatingItems();
+  })();
   return seedPromise;
+}
+
+async function reconcileRequiredItemsForCompany(
+  database: typeof db,
+  companyId: number,
+) {
+  const existingRows = await database
+    .select({ item: priceBookItemsTable.item })
+    .from(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, companyId));
+  const existingItemNames = new Set(
+    existingRows.map(({ item }) => item.toLowerCase()),
+  );
+  const missingItems = requiredAdditionSubpanelItems.filter(
+    (item) => !existingItemNames.has(item.item.toLowerCase()),
+  );
+
+  if (missingItems.length > 0) {
+    await database.insert(priceBookItemsTable).values(
+      missingItems.map((item) => ({
+        companyId,
+        ...item,
+      })),
+    );
+  }
+}
+
+/**
+ * Add the minimum catalog rows needed by Addition and New House to every
+ * existing company. This is deliberately insert-only: an existing row is
+ * contractor-owned, even when its current cost is zero.
+ */
+export async function reconcileRequiredEstimatingItems(
+  database: typeof db = db,
+): Promise<void> {
+  const companies = await database
+    .select({ id: companiesTable.id })
+    .from(companiesTable);
+  for (const company of companies) {
+    await reconcileRequiredItemsForCompany(database, company.id);
+  }
 }
 
 export async function seedEstimatorData(
@@ -2044,6 +2145,8 @@ export async function seedEstimatorData(
       isDefault: true,
     });
   }
+
+  await reconcileRequiredItemsForCompany(database, company.id);
 
   const [existingQuote] = await database
     .select()

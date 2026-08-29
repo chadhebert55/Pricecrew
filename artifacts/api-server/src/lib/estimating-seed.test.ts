@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   companiesTable,
   companySettingsTable,
@@ -9,7 +9,10 @@ import {
   priceBookItemsTable,
   quotesTable,
 } from "@workspace/db";
-import { seedEstimatorData } from "./estimating-seed";
+import {
+  reconcileRequiredEstimatingItems,
+  seedEstimatorData,
+} from "./estimating-seed";
 
 class RollbackFreshSeedTest extends Error {}
 
@@ -334,6 +337,134 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       throw new RollbackFreshSeedTest();
     });
     assert.fail("Expected the fresh-seed transaction to roll back");
+  } catch (error) {
+    if (!(error instanceof RollbackFreshSeedTest)) throw error;
+  }
+});
+
+test("required Addition and New House rows reconcile across existing companies without changing edits or snapshots", async () => {
+  const requiredItems = [
+    "10/2 NM-B cable",
+    "10/3 NM-B cable",
+    "#6 copper SER cable",
+    "#1 aluminum SER cable",
+    "60A subpanel load center",
+    "100A subpanel load center",
+  ];
+
+  try {
+    await db.transaction(async (transaction) => {
+      const [legacyCompany, emptyCompany] = await transaction
+        .insert(companiesTable)
+        .values([
+          { name: `Legacy required rows ${randomUUID()}` },
+          { name: `Empty required rows ${randomUUID()}` },
+        ])
+        .returning();
+      assert.ok(legacyCompany);
+      assert.ok(emptyCompany);
+
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: legacyCompany.id,
+      });
+      const [quoteBefore] = await transaction
+        .select()
+        .from(quotesTable)
+        .where(eq(quotesTable.companyId, legacyCompany.id));
+      assert.ok(quoteBefore);
+      const snapshotBefore = JSON.stringify({
+        jobInputs: quoteBefore.jobInputs,
+        assembly: quoteBefore.assembly,
+        pricing: quoteBefore.pricing,
+        total: quoteBefore.total,
+        margin: quoteBefore.margin,
+      });
+
+      await transaction
+        .update(priceBookItemsTable)
+        .set({
+          unitCost: 7.125,
+          supplier: "Contractor SER supplier",
+          isDefault: false,
+        })
+        .where(
+          and(
+            eq(priceBookItemsTable.companyId, legacyCompany.id),
+            eq(priceBookItemsTable.item, "#6 copper SER cable"),
+          ),
+        );
+      await transaction
+        .delete(priceBookItemsTable)
+        .where(
+          and(
+            eq(priceBookItemsTable.companyId, legacyCompany.id),
+            inArray(
+              priceBookItemsTable.item,
+              requiredItems.filter((item) => item !== "#6 copper SER cable"),
+            ),
+          ),
+        );
+
+      await reconcileRequiredEstimatingItems(
+        transaction as unknown as typeof db,
+      );
+      await reconcileRequiredEstimatingItems(
+        transaction as unknown as typeof db,
+      );
+
+      for (const company of [legacyCompany, emptyCompany]) {
+        const rows = await transaction
+          .select()
+          .from(priceBookItemsTable)
+          .where(eq(priceBookItemsTable.companyId, company.id));
+        for (const item of requiredItems) {
+          assert.equal(
+            rows.filter((row) => row.item === item).length,
+            1,
+            `${company.name} should have one ${item} row`,
+          );
+          const row = rows.find((candidate) => candidate.item === item);
+          assert.equal(row?.isDefault, false);
+          if (item !== "#6 copper SER cable") {
+            assert.equal(row?.unitCost, 0);
+            assert.equal(
+              row?.supplier,
+              "Company default — set current cost",
+            );
+          }
+        }
+      }
+
+      const [editedSer] = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(
+          and(
+            eq(priceBookItemsTable.companyId, legacyCompany.id),
+            eq(priceBookItemsTable.item, "#6 copper SER cable"),
+          ),
+        );
+      assert.equal(editedSer?.unitCost, 7.125);
+      assert.equal(editedSer?.supplier, "Contractor SER supplier");
+
+      const [quoteAfter] = await transaction
+        .select()
+        .from(quotesTable)
+        .where(eq(quotesTable.id, quoteBefore.id));
+      assert.equal(
+        JSON.stringify({
+          jobInputs: quoteAfter?.jobInputs,
+          assembly: quoteAfter?.assembly,
+          pricing: quoteAfter?.pricing,
+          total: quoteAfter?.total,
+          margin: quoteAfter?.margin,
+        }),
+        snapshotBefore,
+      );
+
+      throw new RollbackFreshSeedTest();
+    });
+    assert.fail("Expected the required-row reconciliation transaction to roll back");
   } catch (error) {
     if (!(error instanceof RollbackFreshSeedTest)) throw error;
   }
