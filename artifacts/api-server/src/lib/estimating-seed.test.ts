@@ -49,6 +49,8 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         ["8/3 NM-B cable", 2.682868, "Wic.", "WIC. ROMEX 8/3", "19117", "98010026338"],
         ["8/2 NM-B cable", 1.89096, "Wic.", "WIC. ROMEX 8/2", "22923", "98010026315"],
         ["6/3 NM-B cable", 3.921784, "Wic.", "WIC. ROMEX 6/3", "25138", "98010026371"],
+        ["10/2 NM-B cable", 1.071856, "Wic.", "WIC. ROMEX 10/2", "5096", "98010026310"],
+        ["10/3 NM-B cable", 1.334639, "Wic.", "WIC. ROMEX 10/3", "4093", "98010026360"],
         ["12/2 NM-B cable", 0.562271, "Wic.", "WIC. ROMEX 12/2", "3873", "98010026305"],
         ["14/2 NM-B cable", 0.379697, "Wic.", "WIC. ROMEX 14/2", "27892", "98010026300"],
         ["14/3 NM-B cable", 0.53995, "Wic.", "WIC. ROMEX 14/3", "10802", "98010026350"],
@@ -58,6 +60,7 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         ["4/0 aluminum XHHW conductor", 1.191903, "Wia.", "WIA. XHHW 4/0 S", "392124", "980120S0174"],
         ["1/0 aluminum SER cable", 2.631865, "Wia.", "WIA. SER 1/0-1/", "295793", "980120S0025"],
         ["3/0 aluminum SER cable", 3.930704, "Wia.", "WIA. SER 3/0-3/", "239619", "980120S0034"],
+        ["#1 aluminum SER cable", 2.417841, "Wia.", "WIA. SER 1-1-1-", "295809", "980120S0024"],
       ] as const;
       for (const [item, unitCost, manufacturer, manufacturerPartNumber, supplierSku, upc] of expectedNortheastCatalog) {
         const row = seededRows.find((candidate) => candidate.item === item);
@@ -152,6 +155,12 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         ["Square D Homeline HOM115 15A 1-pole standard breaker", 13.321, "15367", "SQD HOM115"],
         ["Square D Homeline HOM115GFI 15A 1-pole GFCI breaker", 133.568, "8508", "SQD HOM115GFI"],
         ["Square D 50A 2-pole GFCI breaker", 278.491, "87379", "SQD HOM250GFI"],
+        ["Siemens 60A 2-pole Standard breaker", 21.1, "25268", "ITE Q260"],
+        ["Siemens 100A 2-pole Standard breaker", 71.885, "4387", "ITE Q2100"],
+        ["Eaton 60A 2-pole Standard breaker", 64.692, "26831", "C-H BR260"],
+        ["Eaton 100A 2-pole Standard breaker", 210.849, "20884", "C-H BR2100"],
+        ["Square D 60A 2-pole Standard breaker", 31.599, "26680", "SQD HOM260"],
+        ["Square D 100A 2-pole Standard breaker", 126.035, "94557", "SQD HOM2100"],
       ] as const) {
         const row = seededRows.find((candidate) => candidate.item === item);
         assert.equal(row?.unitCost, unitCost);
@@ -165,14 +174,27 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         "2/0 copper service conductor alternative",
         "4/0 copper service conductor alternative",
         "#6 copper SER cable",
-        "#1 aluminum SER cable",
-        "60A subpanel load center",
-        "100A subpanel load center",
       ]) {
         assert.equal(
           seededRows.find((row) => row.item === item)?.unitCost,
           0,
         );
+      }
+      assert.equal(
+        seededRows.find((row) => row.item === "#6 copper SER cable")?.supplier,
+        "Unresolved — no exact verified source price",
+      );
+      for (const item of [
+        "60A subpanel load center",
+        "100A subpanel load center",
+      ]) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, 151.625);
+        assert.equal(row?.supplier, "Northeast Electrical");
+        assert.equal(row?.manufacturer, "Square D");
+        assert.equal(row?.manufacturerPartNumber, "SQD HOM612L100R");
+        assert.equal(row?.supplierSku, null);
+        assert.equal(row?.upc, "78590106120");
       }
 
       for (const amperage of [100, 150, 200]) {
@@ -283,6 +305,31 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       assert.equal(preservedExactCatalogRow?.unitCost, 7.654321);
       assert.equal(preservedExactCatalogRow?.supplier, "Contractor SER supplier");
       assert.equal(preservedExactCatalogRow?.upc, "contractor-stock-reference");
+
+      const requiredBreaker = seededRows.find(
+        (row) => row.item === "Siemens 60A 2-pole Standard breaker",
+      );
+      assert.ok(requiredBreaker);
+      await transaction
+        .update(priceBookItemsTable)
+        .set({
+          unitCost: 88.88,
+          supplier: "Contractor feeder supplier",
+          isDefault: false,
+        })
+        .where(eq(priceBookItemsTable.id, requiredBreaker.id));
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
+      const [preservedRequiredBreaker] = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.id, requiredBreaker.id));
+      assert.equal(preservedRequiredBreaker?.unitCost, 88.88);
+      assert.equal(
+        preservedRequiredBreaker?.supplier,
+        "Contractor feeder supplier",
+      );
 
       throw new RollbackFreshSeedTest();
     });

@@ -952,86 +952,9 @@ async function getQuote(baseUrl: string, id: number) {
   return body;
 }
 
-test("saved Addition subpanel preview stays identical and retains the 30A 10/3 NM-B circuit", async () => {
+test("saved Addition subpanel resolves seeded source prices identically across preview, create, and reload", async () => {
   const { server, baseUrl } = await startTestServer();
   try {
-    const context = testServerContexts.get(server);
-    assert.ok(context);
-    const [membership] = await db
-      .select({ companyId: companyMembersTable.companyId })
-      .from(companyMembersTable)
-      .where(eq(companyMembersTable.userId, context.userId));
-    assert.ok(membership);
-    await db.insert(priceBookItemsTable).values([
-      {
-        companyId: membership.companyId,
-        category: "Conductor",
-        item: "10/3 NM-B cable",
-        unit: "ft",
-        unitCost: 1.25,
-        supplier: "Regression catalog",
-        manufacturer: "Test Wire",
-        manufacturerPartNumber: "TEST-10-3",
-        supplierSku: "TEST-10-3",
-        sourceDate: "2026-08-28",
-        isDefault: false,
-      },
-      {
-        companyId: membership.companyId,
-        category: "Conductor",
-        item: "10/2 NM-B cable",
-        unit: "ft",
-        unitCost: 0.75,
-        supplier: "Regression catalog",
-        manufacturer: "Test Wire",
-        manufacturerPartNumber: "TEST-10-2",
-        supplierSku: "TEST-10-2",
-        sourceDate: "2026-08-28",
-        isDefault: false,
-      },
-      {
-        companyId: membership.companyId,
-        category: "Conductor",
-        item: "#6 copper SER cable",
-        unit: "ft",
-        unitCost: 3,
-        supplier: "Regression catalog",
-        manufacturer: "Test Wire",
-        manufacturerPartNumber: "TEST-6-CU-SER",
-        supplierSku: "TEST-6-CU-SER",
-        sourceDate: "2026-08-28",
-        isDefault: false,
-      },
-      {
-        companyId: membership.companyId,
-        category: "Panel",
-        item: "60A subpanel load center",
-        unit: "ea",
-        unitCost: 120,
-        supplier: "Regression catalog",
-        manufacturer: "Test Panel",
-        manufacturerPartNumber: "TEST-60-PANEL",
-        supplierSku: "TEST-60-PANEL",
-        sourceDate: "2026-08-28",
-        isDefault: false,
-      },
-      {
-        companyId: membership.companyId,
-        category: "Protection",
-        item: "Siemens 60A 2-pole Standard breaker",
-        unit: "ea",
-        unitCost: 40,
-        supplier: "Regression catalog",
-        manufacturer: "Siemens",
-        manufacturerPartNumber: "TEST-60-BREAKER",
-        supplierSku: "TEST-60-BREAKER",
-        sourceDate: "2026-08-28",
-        amperage: 60,
-        poleCount: 2,
-        protectionType: "Standard",
-        isDefault: false,
-      },
-    ]);
     const jobInputs: AdditionInputRecord = {
       length: 20,
       width: 16,
@@ -1056,7 +979,7 @@ test("saved Addition subpanel preview stays identical and retains the 30A 10/3 N
         cableType: "10/3 NM-B",
         quantity: 1,
       }],
-      subpanelOption: "60A Subpanel",
+      subpanelOption: "100A Subpanel",
       feederDistance: 45,
       crewSize: 1,
       crewHours: 1,
@@ -1083,7 +1006,7 @@ test("saved Addition subpanel preview stays identical and retains the 30A 10/3 N
       jobInputs,
     });
     const saved = await getQuote(baseUrl, created.id);
-    assert.equal(saved.jobInputs.subpanelOption, "60A Subpanel");
+    assert.equal(saved.jobInputs.subpanelOption, "100A Subpanel");
     assert.equal(saved.jobInputs.feederDistance, 45);
     const savedEntries = saved.jobInputs.circuitEntries as AdditionInputRecord["circuitEntries"];
     assert.equal(savedEntries?.[0]?.cableType, "10/3 NM-B");
@@ -1091,25 +1014,28 @@ test("saved Addition subpanel preview stays identical and retains the 30A 10/3 N
       (line) => line.id === "addition-circuit-1-cable",
     );
     assert.equal(cableLine?.description, "30A 2-pole 10/3 NM-B branch-circuit cable");
-    assert.equal(cableLine?.unitCost, 1.25);
-    assert.equal(cableLine?.extendedCost, 106.25);
+    assert.equal(cableLine?.unitCost, 1.334639);
+    assert.equal(cableLine?.extendedCost, 113.444);
     const feederLine = saved.assembly.find(
       (line) => line.id === "addition-subpanel-feeder",
     );
-    assert.equal(feederLine?.description.includes("#6 copper SER 4-wire"), true);
-    assert.equal(feederLine?.unitCost, 3);
-    assert.equal(feederLine?.extendedCost, 135);
+    assert.equal(
+      feederLine?.description.includes("#1 aluminum SER 4-wire"),
+      true,
+    );
+    assert.equal(feederLine?.unitCost, 2.417841);
+    assert.equal(feederLine?.extendedCost, 108.803);
     assert.equal(
       saved.assembly.find(
         (line) => line.id === "addition-subpanel-feeder-breaker",
       )?.unitCost,
-      40,
+      71.885,
     );
     assert.equal(
       saved.assembly.find(
         (line) => line.id === "addition-subpanel-load-center",
       )?.unitCost,
-      120,
+      151.625,
     );
     assert.deepEqual(saved.assembly, preview.assembly);
     assert.deepEqual(saved.pricing, preview.pricing);

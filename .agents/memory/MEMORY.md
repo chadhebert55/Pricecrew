@@ -12,3 +12,4 @@
 - [PDF parser bundling](pdf-parser-bundling.md) — keep pdf-parse external to the API bundle so its runtime worker and native canvas files remain resolvable.
 - [Proposal revision constraints](proposal-revision-constraints.md) — create the quote revision unique index before its FK, and preserve database timestamp precision during decision inserts.
 - [Workflow port conflicts](workflow-port-conflicts.md) — a failed managed restart can coexist with a serving stale process when the configured port is already occupied.
+- [Subpanel catalog ratings](subpanel-catalog-ratings.md) — a verified 100A-rated MLO load center may serve 60A- and 100A-fed Addition subpanels; feeder protection sets the supplied rating.
