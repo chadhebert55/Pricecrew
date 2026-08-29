@@ -163,6 +163,9 @@ function PriceBookRow({
   const [cost, setCost] = useState(item.unitCost.toString())
   const [isDirty, setIsDirty] = useState(false)
   const isPending = updateItem.isPending
+  const isCompanyAllowance =
+    item.item.toLowerCase().startsWith("unverified allowance") ||
+    item.item.toLowerCase().startsWith("unverified starter allowance")
 
   const handleSave = () => {
     const numCost = parseFloat(cost)
@@ -183,7 +186,9 @@ function PriceBookRow({
         <div className="space-y-1.5">
           <div>{item.item}</div>
           <div className="flex flex-wrap gap-1.5">
-            {item.isUnresolved ? (
+            {isCompanyAllowance ? (
+              <Badge variant="outline">Company allowance</Badge>
+            ) : item.isUnresolved ? (
               <Badge variant="warning">Unresolved</Badge>
             ) : (
               <Badge variant="success">
@@ -194,8 +199,10 @@ function PriceBookRow({
             {item.activeSelection && <Badge variant="outline">Active selection</Badge>}
           </div>
           {item.auditMessage && (
-            <p className="max-w-xl text-xs font-normal text-amber-800">
-              {item.auditMessage}
+            <p className={`max-w-xl text-xs font-normal ${isCompanyAllowance ? "text-muted-foreground" : "text-amber-800"}`}>
+              {isCompanyAllowance
+                ? "Editable planning allowance; not a sourced catalog price."
+                : item.auditMessage}
             </p>
           )}
         </div>

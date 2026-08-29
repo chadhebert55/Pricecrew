@@ -1557,6 +1557,12 @@ export function calculateBathroomEstimate(
       unit,
       unitCost: price.value,
       source: price.source,
+      ...(customerSupplied
+        ? {
+            intentionalExclusionReason:
+              "Customer is supplying this fixture; contractor material cost is intentionally excluded.",
+          }
+        : {}),
     });
   };
 
@@ -1814,6 +1820,12 @@ export function calculateKitchenEstimate(
       unit,
       unitCost: price.value,
       source: price.source,
+      ...(customerSupplied
+        ? {
+            intentionalExclusionReason:
+              "Customer is supplying this fixture; contractor material cost is intentionally excluded.",
+          }
+        : {}),
     });
   };
 
@@ -2505,6 +2517,12 @@ export function calculateAdditionEstimate(
         : "Contractor-supplied ceiling fans",
       quantity: fans, unit: "ea", unitCost: fanPrice.value,
       source: fanPrice.source,
+      ...(inputs.customerSuppliedFans
+        ? {
+            intentionalExclusionReason:
+              "Customer is supplying the ceiling fans; contractor material cost is intentionally excluded.",
+          }
+        : {}),
     });
   }
 
@@ -3645,6 +3663,12 @@ export function calculateRecessedLightingEstimate(
       unit,
       unitCost: price.value,
       source: price.source,
+      ...(customerSupplied
+        ? {
+            intentionalExclusionReason:
+              "Customer is supplying this fixture; contractor material cost is intentionally excluded.",
+          }
+        : {}),
     });
   };
 
@@ -4147,6 +4171,7 @@ export function calculateNewHouseEstimate(
         unit: "ea",
         unitCost: 0,
         source: "Included labor scope",
+        intentionalExclusionReason: `${inputs.fanSupply} fixture supply is intentionally excluded from contractor material cost.`,
       });
       pricingWarnings.push(
         `New House ceiling fan fixtures are ${inputs.fanSupply.toLowerCase()} and excluded from contractor material cost. Confirm supply responsibility and final fixture specifications.`,

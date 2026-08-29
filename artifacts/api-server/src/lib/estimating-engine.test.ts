@@ -2464,6 +2464,11 @@ test("customer-supplied fixtures remain zero cost with a blocking audit warning"
     result.assembly.find((line) => line.id === "recessed-fixtures")?.unitCost,
     0,
   );
+  assert.match(
+    result.assembly.find((line) => line.id === "recessed-fixtures")
+      ?.intentionalExclusionReason ?? "",
+    /customer is supplying/i,
+  );
   assert.equal(
     result.pricing.pricingWarnings.some(
       (warning) =>

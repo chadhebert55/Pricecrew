@@ -501,6 +501,19 @@ export async function seedEstimatorData(
     },
   ];
   let verifiedItems: SeedPriceBookItem[] = [
+    {
+      category: "Life Safety",
+      item: "standard smoke/CO detector",
+      unit: "ea",
+      unitCost: 55.312,
+      supplier: "Northeast Electrical",
+      manufacturer: "BRK",
+      manufacturerPartNumber: "SMICO100-AC",
+      supplierSku: "122462",
+      upc: "02905402297",
+      sourceDate,
+      isDefault: false,
+    },
     ...[
       ["Equipment", "Milbank U3990-XL-200 200A meter-main — SKU 304898", "ea", 441.525, "Milbank", "U3990-XL-200", "304898", 200],
       ["Panel", "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599", "ea", 294.625, "Siemens", "PN4040B1200C", "1552599", 200],
@@ -580,9 +593,6 @@ export async function seedEstimatorData(
       amperage: typeof amperage === "number" ? amperage : undefined,
       sourceDate, isDefault: false,
     })),
-    ...additionalServiceItems,
-    ...additionalPanelReplacementItems,
-    ...additionalAdditionSubpanelItems,
     {
       category: "Protection",
       item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
@@ -1685,6 +1695,12 @@ export async function seedEstimatorData(
       sourceDate,
       isDefault: false,
     },
+    // Insert sourced rows before editable zero-cost placeholders. When a
+    // canonical item exists in both lists, the sourced row wins for new
+    // companies and upgrades only a recognizable untouched legacy placeholder.
+    ...additionalServiceItems,
+    ...additionalPanelReplacementItems,
+    ...additionalAdditionSubpanelItems,
   ];
 
   // UPCs are transcribed from the uploaded Northeast Electrical Supplier Catalog.
@@ -1741,7 +1757,9 @@ export async function seedEstimatorData(
   };
   verifiedItems = verifiedItems.map((item) => ({
     ...item,
-    upc: item.supplierSku ? northeastUpcs[item.supplierSku] : item.upc,
+    upc: item.supplierSku
+      ? (northeastUpcs[item.supplierSku] ?? item.upc)
+      : item.upc,
   }));
 
   const legacySmartKitName =

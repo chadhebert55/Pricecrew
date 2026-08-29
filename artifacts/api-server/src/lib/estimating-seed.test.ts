@@ -199,6 +199,27 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.supplierSku, null);
         assert.equal(row?.upc, "78590106120");
       }
+      for (const item of [
+        "10/2 NM-B cable",
+        "10/3 NM-B cable",
+        "Siemens 60A 2-pole Standard breaker",
+        "Siemens 100A 2-pole Standard breaker",
+        "60A subpanel load center",
+        "100A subpanel load center",
+      ]) {
+        const matches = seededRows.filter((row) => row.item === item);
+        assert.equal(matches.length, 1, `${item} must have one canonical row`);
+        assert.ok(matches[0].unitCost > 0, `${item} must be positively priced`);
+        assert.equal(matches[0].supplier, "Northeast Electrical");
+        assert.equal(matches[0].isDefault, false);
+      }
+      const smokeCo = seededRows.find(
+        (row) => row.item === "standard smoke/CO detector",
+      );
+      assert.equal(smokeCo?.unitCost, 55.312);
+      assert.equal(smokeCo?.supplierSku, "122462");
+      assert.equal(smokeCo?.manufacturerPartNumber, "SMICO100-AC");
+      assert.equal(smokeCo?.upc, "02905402297");
 
       for (const amperage of [100, 150, 200]) {
         assert.equal(

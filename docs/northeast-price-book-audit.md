@@ -5,7 +5,7 @@ Catalog price date: 2026-08-25
 
 ## Audit rules
 
-- Reviewed every material key requested by the six active builders: EV Charger, Bathroom, Kitchen, Recessed Lighting, Service Upgrade, and Panel Replacement.
+- Reviewed material keys used by all active builders, including Addition and New House.
 - Accepted only exact product rows or confidently mapped wire families from the Northeast `Material Database`, `Material Options`, and `Supplier Catalog` sheets.
 - Converted catalog `m` wire pricing to dollars per foot only where the product family and size were explicit. A selected exact supplier SKU can also normalize an `m` 4/0 SER variant per thousand feet; no `c` pricing is normalized unless its canonical selector label explicitly states a 100-unit or 100-foot package.
 - Retained supplier, manufacturer, manufacturer part number, Northeast SKU, UPC, unit, and source date where the workbook supplied them.
@@ -22,6 +22,8 @@ Catalog price date: 2026-08-25
 | 8/3 NM-B cable | 19117 | WIC. ROMEX 8/3 | m | $2.682868/ft |
 | 8/2 NM-B cable | 22923 | WIC. ROMEX 8/2 | m | $1.890960/ft |
 | 6/3 NM-B cable | 25138 | WIC. ROMEX 6/3 | m | $3.921784/ft |
+| 10/2 NM-B cable | 5096 | WIC. ROMEX 10/2 | m | $1.071856/ft |
+| 10/3 NM-B cable | 4093 | WIC. ROMEX 10/3 | m | $1.334639/ft |
 | 12/2 NM-B cable | 3873 | WIC. ROMEX 12/2 | m | $0.562271/ft |
 | 14/2 NM-B cable | 27892 | WIC. ROMEX 14/2 | m | $0.379697/ft |
 | 14/3 NM-B cable | 10802 | WIC. ROMEX 14/3 | m | $0.539950/ft |
@@ -36,7 +38,7 @@ The workbook contains additional rows for several wire sizes. The seeded row is 
 
 ### Devices and breakers
 
-The seed retains exact Northeast rows for the workbook-mapped Pass & Seymour tamper-resistant receptacles and self-test GFCIs, Panasonic FV-0511VF1 fan, Siemens 20A standard/GFCI/dual-function breakers, Eaton BR 20A standard/AFCI/dual-function breakers, Square D Homeline 20A standard/GFCI/dual-function breakers, and Siemens/Square D 50A two-pole GFCI breakers.
+The seed retains exact Northeast rows for the workbook-mapped Pass & Seymour tamper-resistant receptacles and self-test GFCIs, Panasonic FV-0511VF1 fan, Siemens 20A standard/GFCI/dual-function breakers, Eaton BR 20A standard/AFCI/dual-function breakers, Square D Homeline 20A standard/GFCI/dual-function breakers, and Siemens/Square D 50A two-pole GFCI breakers. It also maps the BRK SMICO100-AC hardwired smoke/CO combination alarm.
 
 Exact 15A rows were added for:
 
@@ -94,6 +96,12 @@ resolution for historical snapshots.
 Mapped: the same exact supported conductor and breaker rows used by the service and branch-circuit builders.
 
 Unresolved: panel enclosures and mains without an exact selected product family; feeder variants not confidently mapped; existing-breaker inventories outside the exact manufacturer/amperage/pole/protection tuples; grounding, raceway, fitting, permit, and miscellaneous allowances.
+
+### Addition and New House
+
+Mapped: 10/2 and 10/3 NM-B; exact Siemens 30A, 60A, and 100A standard breakers; 60A and 100A Square D MLO subpanel selections; four-wire feeder conductors; and the BRK hardwired smoke/CO combination alarm.
+
+Customer-supplied fixture lines carry an explicit intentional-exclusion reason while retaining a visible review warning. Positive starter planning values are labeled as company allowances in Price Book management and remain editable; they are not presented as sourced catalog prices.
 
 ## Intentionally rejected substitutions
 
