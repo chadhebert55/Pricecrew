@@ -289,6 +289,8 @@ export const createQuoteBodyJobInputsFourRouteLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourHomeRunLengthMin = 0;
 
+export const createQuoteBodyJobInputsFourCircuitEntriesItemLabelMax = 80;
+
 
 
 export const createQuoteBodyJobInputsFourFeederDistanceMin = 0;
@@ -730,6 +732,7 @@ export const CreateQuoteBody = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "label": zod.string().max(createQuoteBodyJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
@@ -1173,6 +1176,8 @@ export const createQuoteResponseTwoJobInputsFourCircuitCountMin = 0;
 export const createQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
 
 
 
@@ -1647,6 +1652,7 @@ export const CreateQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "label": zod.string().max(createQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
@@ -2188,6 +2194,8 @@ export const previewQuoteBodyJobInputsFourRouteLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourHomeRunLengthMin = 0;
 
+export const previewQuoteBodyJobInputsFourCircuitEntriesItemLabelMax = 80;
+
 
 
 export const previewQuoteBodyJobInputsFourFeederDistanceMin = 0;
@@ -2621,6 +2629,7 @@ export const PreviewQuoteBody = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "label": zod.string().max(previewQuoteBodyJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
@@ -3525,6 +3534,8 @@ export const getQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
+export const getQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
+
 
 
 export const getQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
@@ -3998,6 +4009,7 @@ export const GetQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "label": zod.string().max(getQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
@@ -4565,6 +4577,8 @@ export const updateQuoteResponseOneTwoJobInputsFourRouteLengthMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFourHomeRunLengthMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
+
 
 
 export const updateQuoteResponseOneTwoJobInputsFourFeederDistanceMin = 0;
@@ -5038,6 +5052,7 @@ export const UpdateQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "label": zod.string().max(updateQuoteResponseOneTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
@@ -5829,6 +5844,8 @@ export const duplicateQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
+
 
 
 export const duplicateQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
@@ -6302,6 +6319,7 @@ export const DuplicateQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "label": zod.string().max(duplicateQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
   "protectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),

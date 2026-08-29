@@ -564,6 +564,11 @@ export const AdditionCircuitEntryCableType = {
  * One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.
  */
 export interface AdditionCircuitEntry {
+  /**
+     * Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.
+     * @maxLength 80
+     */
+  label?: string;
   amperage: AdditionCircuitEntryAmperage;
   poleCount: AdditionCircuitEntryPoleCount;
   protectionType: AdditionCircuitEntryProtectionType;

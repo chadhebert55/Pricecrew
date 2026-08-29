@@ -1669,6 +1669,10 @@ components:
         - cableType
         - quantity
       properties:
+        label:
+          type: string
+          maxLength: 80
+          description: Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.
         amperage:
           type: number
           enum: [15, 20, 30]

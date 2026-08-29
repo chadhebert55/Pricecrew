@@ -488,7 +488,7 @@ export function QuoteDetail() {
                     <div className="mt-3 grid gap-2 text-sm">
                       {additionCircuitEntries.map((entry, index) => (
                         <div key={index} className="flex flex-col gap-1 rounded-md border bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="font-medium">{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span>
+                          <span className="font-medium">{entry.label ? <><span className="font-semibold">{entry.label}</span>{" · "}</> : null}{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span>
                           <span className="text-muted-foreground">{entry.cableType}</span>
                         </div>
                       ))}

@@ -856,6 +856,43 @@ test("addition preserves parity, editable pricing, audit, and cable safety", () 
   }).builders.includes("Addition"), true);
 });
 
+test("addition circuit labels are optional descriptive snapshot data", () => {
+  const labeledInputs: AdditionInputRecord = {
+    ...additionInputs,
+    circuitEntries: [{
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "AFCI",
+      cableType: "14/2 NM-B",
+      quantity: 2,
+      label: "Bedroom",
+    }],
+  };
+  const unlabeled = calculateAdditionEstimate(
+    { ...labeledInputs, circuitEntries: labeledInputs.circuitEntries?.map(({ label: _label, ...entry }) => entry) },
+    settings,
+    priceBook,
+  );
+  const labeled = calculateAdditionEstimate(labeledInputs, settings, priceBook);
+
+  assert.deepEqual(labeled.assembly, unlabeled.assembly);
+  assert.deepEqual(labeled.pricing, unlabeled.pricing);
+  assert.equal(
+    PreviewQuoteBody.safeParse({ module: "ADDITION", jobInputs: labeledInputs }).success,
+    true,
+  );
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "ADDITION",
+      jobInputs: {
+        ...labeledInputs,
+        circuitEntries: [{ ...labeledInputs.circuitEntries?.[0], label: "x".repeat(81) }],
+      },
+    }).success,
+    false,
+  );
+});
+
 test("addition prices a mixed circuit schedule with independent quantities and verified sources", () => {
   const book = [
     ...priceBook,
