@@ -272,7 +272,7 @@ export function schemaPreflightError(result: DatabaseSchemaPreflightResult) {
     [
       "API database schema preflight failed: the development database is not synchronized with the Drizzle schema.",
       ...missing,
-      "Run `pnpm --filter @workspace/db run push` against the development database, then rerun the API tests.",
+      "Run `pnpm --filter @workspace/db run push` against the development database. The dependency-aware sync creates referenced unique keys before dependent foreign keys.",
       "This preflight only ran read-only catalog queries; no database data was modified.",
     ].join("\n"),
   );

@@ -8,6 +8,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -882,7 +883,9 @@ export const quotesTable = pgTable("quotes", {
     foreignColumns: [table.id],
     name: "quotes_source_quote_id_quotes_id_fk",
   }),
-  uniqueIndex("quotes_id_updated_at_unique").on(table.id, table.updatedAt),
+  // Keep referenced composite keys as table constraints. PostgreSQL creates
+  // their backing unique indexes with the table, before dependent FKs.
+  unique("quotes_id_updated_at_unique").on(table.id, table.updatedAt),
   uniqueIndex("quotes_company_quote_number_unique").on(table.companyId, table.quoteNumber),
 ]);
 

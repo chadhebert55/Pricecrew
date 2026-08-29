@@ -3,11 +3,11 @@ name: Proposal revision constraints
 description: Ordering and timestamp-precision rules for signed proposal revision constraints.
 ---
 
-Create the quote revision composite unique index before adding the proposal-decision foreign key that references it.
+Declare the quote revision key as a table-level UNIQUE constraint, and prepare or adopt its backing index before adding the proposal-decision foreign key that references it.
 
 **Why:** Drizzle schema push can emit the foreign key before the supporting unique index, which PostgreSQL rejects even when both objects are declared correctly.
 
-**How to apply:** Before synchronizing a fresh or drifted database, verify the composite unique index exists first, then add the foreign key. Check for duplicate or orphaned rows before either operation.
+**How to apply:** Route supported schema pushes through a dependency-preparation phase that checks duplicates, safely adopts compatible legacy indexes, and serializes the entire push. Run schema preflight immediately afterward.
 
 Proposal decisions must store the exact database `updated_at` value referenced by the foreign key rather than round-tripping it through a JavaScript `Date`.
 
