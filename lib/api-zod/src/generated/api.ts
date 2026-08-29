@@ -3068,6 +3068,21 @@ export const createTakeoffResponseFileSizeMultipleOf = 1;
 
 export const createTakeoffResponsePageCountMultipleOf = 1;
 
+export const createTakeoffResponseExtractionSummaryOnePagesMultipleOf = 1;
+
+export const createTakeoffResponseExtractionSummaryOneTextCharactersMin = 0;
+export const createTakeoffResponseExtractionSummaryOneTextCharactersMultipleOf = 1;
+
+export const createTakeoffResponseExtractionSummaryOneOcrPagesItemMultipleOf = 1;
+
+export const createTakeoffResponseExtractionSummaryOneOcrSkippedPagesItemMultipleOf = 1;
+
+export const createTakeoffResponseExtractionSummaryOneOcrCharactersMin = 0;
+export const createTakeoffResponseExtractionSummaryOneOcrCharactersMultipleOf = 1;
+
+export const createTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMin = 0;
+export const createTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMax = 1;
+
 export const createTakeoffResponseItemsItemIdMultipleOf = 1;
 
 export const createTakeoffResponseItemsItemProposedQuantityMin = 0;
@@ -3100,7 +3115,17 @@ export const CreateTakeoffResponse = zod.object({
   "pageCount": zod.number().multipleOf(createTakeoffResponsePageCountMultipleOf).nullable(),
   "errorCode": zod.string().nullable(),
   "errorMessage": zod.string().nullable(),
-  "extractionSummary": zod.record(zod.string(), zod.unknown()).nullable(),
+  "extractionSummary": zod.union([zod.object({
+  "pages": zod.number().min(1).multipleOf(createTakeoffResponseExtractionSummaryOnePagesMultipleOf).optional(),
+  "sections": zod.array(zod.string()).optional(),
+  "textCharacters": zod.number().min(createTakeoffResponseExtractionSummaryOneTextCharactersMin).multipleOf(createTakeoffResponseExtractionSummaryOneTextCharactersMultipleOf).optional(),
+  "ocrUsed": zod.boolean().optional(),
+  "ocrPages": zod.array(zod.number().min(1).multipleOf(createTakeoffResponseExtractionSummaryOneOcrPagesItemMultipleOf)).optional(),
+  "ocrSkippedPages": zod.array(zod.number().min(1).multipleOf(createTakeoffResponseExtractionSummaryOneOcrSkippedPagesItemMultipleOf)).optional(),
+  "ocrWarning": zod.string().nullish(),
+  "ocrCharacters": zod.number().min(createTakeoffResponseExtractionSummaryOneOcrCharactersMin).multipleOf(createTakeoffResponseExtractionSummaryOneOcrCharactersMultipleOf).optional(),
+  "ocrAverageConfidence": zod.number().min(createTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMin).max(createTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMax).nullish()
+}),zod.null()]),
   "items": zod.array(zod.object({
   "id": zod.number().multipleOf(createTakeoffResponseItemsItemIdMultipleOf),
   "fieldKey": zod.string(),
@@ -3149,6 +3174,21 @@ export const getTakeoffResponseFileSizeMultipleOf = 1;
 
 export const getTakeoffResponsePageCountMultipleOf = 1;
 
+export const getTakeoffResponseExtractionSummaryOnePagesMultipleOf = 1;
+
+export const getTakeoffResponseExtractionSummaryOneTextCharactersMin = 0;
+export const getTakeoffResponseExtractionSummaryOneTextCharactersMultipleOf = 1;
+
+export const getTakeoffResponseExtractionSummaryOneOcrPagesItemMultipleOf = 1;
+
+export const getTakeoffResponseExtractionSummaryOneOcrSkippedPagesItemMultipleOf = 1;
+
+export const getTakeoffResponseExtractionSummaryOneOcrCharactersMin = 0;
+export const getTakeoffResponseExtractionSummaryOneOcrCharactersMultipleOf = 1;
+
+export const getTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMin = 0;
+export const getTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMax = 1;
+
 export const getTakeoffResponseItemsItemIdMultipleOf = 1;
 
 export const getTakeoffResponseItemsItemProposedQuantityMin = 0;
@@ -3181,7 +3221,17 @@ export const GetTakeoffResponse = zod.object({
   "pageCount": zod.number().multipleOf(getTakeoffResponsePageCountMultipleOf).nullable(),
   "errorCode": zod.string().nullable(),
   "errorMessage": zod.string().nullable(),
-  "extractionSummary": zod.record(zod.string(), zod.unknown()).nullable(),
+  "extractionSummary": zod.union([zod.object({
+  "pages": zod.number().min(1).multipleOf(getTakeoffResponseExtractionSummaryOnePagesMultipleOf).optional(),
+  "sections": zod.array(zod.string()).optional(),
+  "textCharacters": zod.number().min(getTakeoffResponseExtractionSummaryOneTextCharactersMin).multipleOf(getTakeoffResponseExtractionSummaryOneTextCharactersMultipleOf).optional(),
+  "ocrUsed": zod.boolean().optional(),
+  "ocrPages": zod.array(zod.number().min(1).multipleOf(getTakeoffResponseExtractionSummaryOneOcrPagesItemMultipleOf)).optional(),
+  "ocrSkippedPages": zod.array(zod.number().min(1).multipleOf(getTakeoffResponseExtractionSummaryOneOcrSkippedPagesItemMultipleOf)).optional(),
+  "ocrWarning": zod.string().nullish(),
+  "ocrCharacters": zod.number().min(getTakeoffResponseExtractionSummaryOneOcrCharactersMin).multipleOf(getTakeoffResponseExtractionSummaryOneOcrCharactersMultipleOf).optional(),
+  "ocrAverageConfidence": zod.number().min(getTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMin).max(getTakeoffResponseExtractionSummaryOneOcrAverageConfidenceMax).nullish()
+}),zod.null()]),
   "items": zod.array(zod.object({
   "id": zod.number().multipleOf(getTakeoffResponseItemsItemIdMultipleOf),
   "fieldKey": zod.string(),
@@ -3261,6 +3311,21 @@ export const reviewTakeoffItemResponseFileSizeMultipleOf = 1;
 
 export const reviewTakeoffItemResponsePageCountMultipleOf = 1;
 
+export const reviewTakeoffItemResponseExtractionSummaryOnePagesMultipleOf = 1;
+
+export const reviewTakeoffItemResponseExtractionSummaryOneTextCharactersMin = 0;
+export const reviewTakeoffItemResponseExtractionSummaryOneTextCharactersMultipleOf = 1;
+
+export const reviewTakeoffItemResponseExtractionSummaryOneOcrPagesItemMultipleOf = 1;
+
+export const reviewTakeoffItemResponseExtractionSummaryOneOcrSkippedPagesItemMultipleOf = 1;
+
+export const reviewTakeoffItemResponseExtractionSummaryOneOcrCharactersMin = 0;
+export const reviewTakeoffItemResponseExtractionSummaryOneOcrCharactersMultipleOf = 1;
+
+export const reviewTakeoffItemResponseExtractionSummaryOneOcrAverageConfidenceMin = 0;
+export const reviewTakeoffItemResponseExtractionSummaryOneOcrAverageConfidenceMax = 1;
+
 export const reviewTakeoffItemResponseItemsItemIdMultipleOf = 1;
 
 export const reviewTakeoffItemResponseItemsItemProposedQuantityMin = 0;
@@ -3293,7 +3358,17 @@ export const ReviewTakeoffItemResponse = zod.object({
   "pageCount": zod.number().multipleOf(reviewTakeoffItemResponsePageCountMultipleOf).nullable(),
   "errorCode": zod.string().nullable(),
   "errorMessage": zod.string().nullable(),
-  "extractionSummary": zod.record(zod.string(), zod.unknown()).nullable(),
+  "extractionSummary": zod.union([zod.object({
+  "pages": zod.number().min(1).multipleOf(reviewTakeoffItemResponseExtractionSummaryOnePagesMultipleOf).optional(),
+  "sections": zod.array(zod.string()).optional(),
+  "textCharacters": zod.number().min(reviewTakeoffItemResponseExtractionSummaryOneTextCharactersMin).multipleOf(reviewTakeoffItemResponseExtractionSummaryOneTextCharactersMultipleOf).optional(),
+  "ocrUsed": zod.boolean().optional(),
+  "ocrPages": zod.array(zod.number().min(1).multipleOf(reviewTakeoffItemResponseExtractionSummaryOneOcrPagesItemMultipleOf)).optional(),
+  "ocrSkippedPages": zod.array(zod.number().min(1).multipleOf(reviewTakeoffItemResponseExtractionSummaryOneOcrSkippedPagesItemMultipleOf)).optional(),
+  "ocrWarning": zod.string().nullish(),
+  "ocrCharacters": zod.number().min(reviewTakeoffItemResponseExtractionSummaryOneOcrCharactersMin).multipleOf(reviewTakeoffItemResponseExtractionSummaryOneOcrCharactersMultipleOf).optional(),
+  "ocrAverageConfidence": zod.number().min(reviewTakeoffItemResponseExtractionSummaryOneOcrAverageConfidenceMin).max(reviewTakeoffItemResponseExtractionSummaryOneOcrAverageConfidenceMax).nullish()
+}),zod.null()]),
   "items": zod.array(zod.object({
   "id": zod.number().multipleOf(reviewTakeoffItemResponseItemsItemIdMultipleOf),
   "fieldKey": zod.string(),

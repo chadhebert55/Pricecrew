@@ -1862,12 +1862,31 @@ export const TakeoffStatus = {
   failed: 'failed',
 } as const;
 
-/**
- * @nullable
- */
-export type TakeoffExtractionSummary = { [key: string]: unknown } | null;
-
 export type TakeoffApprovedInputs = {[key: string]: number};
+
+export interface TakeoffExtractionSummary {
+  /** @minimum 1 */
+  pages?: number;
+  sections?: string[];
+  /** @minimum 0 */
+  textCharacters?: number;
+  ocrUsed?: boolean;
+  /** @items.minimum 1 */
+  ocrPages?: number[];
+  /** @items.minimum 1 */
+  ocrSkippedPages?: number[];
+  /** @nullable */
+  ocrWarning?: string | null;
+  /** @minimum 0 */
+  ocrCharacters?: number;
+  /**
+     * @minimum 0
+     * @maximum 1
+     * @nullable
+     */
+  ocrAverageConfidence?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface Takeoff {
   id: number;
@@ -1882,8 +1901,7 @@ export interface Takeoff {
   errorCode: string | null;
   /** @nullable */
   errorMessage: string | null;
-  /** @nullable */
-  extractionSummary: TakeoffExtractionSummary;
+  extractionSummary: TakeoffExtractionSummary | null;
   items: TakeoffItem[];
   reviewEvents: TakeoffReviewEvent[];
   approvedInputs: TakeoffApprovedInputs;

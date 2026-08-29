@@ -17,7 +17,7 @@ tags:
   - name: quotes
     description: Quote and estimate operations
   - name: takeoffs
-    description: Reviewable electrical plan PDF takeoffs
+    description: Reviewable electrical plan PDF takeoffs. Scanned sheets are OCR'd automatically within bounded page and rendered-image limits; OCR suggestions remain pending until review.
   - name: customers
     description: Company customer records and quote history
   - name: price-book
@@ -227,7 +227,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Takeoff"
         "422":
-          description: The PDF could not produce a safe takeoff
+          description: The PDF could not produce a safe takeoff, including when OCR quality is too low or its bounded limits are exceeded
           content:
             application/json:
               schema:
@@ -1310,8 +1310,9 @@ components:
         errorCode: { type: ["string", "null"] }
         errorMessage: { type: ["string", "null"] }
         extractionSummary:
-          type: ["object", "null"]
-          additionalProperties: true
+          anyOf:
+            - $ref: "#/components/schemas/TakeoffExtractionSummary"
+            - type: "null"
         items:
           type: array
           items:
@@ -1327,6 +1328,28 @@ components:
             multipleOf: 1
         createdAt: { type: string, format: date-time }
         completedAt: { type: ["string", "null"], format: date-time }
+    TakeoffExtractionSummary:
+      type: object
+      additionalProperties: true
+      properties:
+        pages: { type: number, multipleOf: 1, minimum: 1 }
+        sections:
+          type: array
+          items: { type: string }
+        textCharacters: { type: number, multipleOf: 1, minimum: 0 }
+        ocrUsed: { type: boolean }
+        ocrPages:
+          type: array
+          items: { type: number, multipleOf: 1, minimum: 1 }
+        ocrSkippedPages:
+          type: array
+          items: { type: number, multipleOf: 1, minimum: 1 }
+        ocrWarning: { type: ["string", "null"] }
+        ocrCharacters: { type: number, multipleOf: 1, minimum: 0 }
+        ocrAverageConfidence:
+          type: ["number", "null"]
+          minimum: 0
+          maximum: 1
     TakeoffQuoteSnapshot:
       type: object
       required: [takeoffId, fileName, approvedInputs, items, reviewEvents, approvedAt]

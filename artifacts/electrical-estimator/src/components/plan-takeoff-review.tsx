@@ -185,7 +185,7 @@ export function PlanTakeoffReview({
               Blueprint Takeoff
             </CardTitle>
             <CardDescription className="mt-1">
-              Upload a text-searchable electrical plan PDF. Review every suggestion before it can enter this quote.
+              Upload a searchable or scanned electrical plan PDF. Scans are OCR&apos;d automatically, and every suggestion must be reviewed before it can enter this quote.
             </CardDescription>
           </div>
           {takeoff && (
@@ -209,7 +209,7 @@ export function PlanTakeoffReview({
             data-testid={`input-takeoff-${module.toLowerCase()}`}
           />
           <p className="mt-2 text-xs text-muted-foreground">
-            PDF only, up to 25 MB. Scanned-only plans must be OCR’d first. Large sets can be split by electrical sheets.
+            PDF only, up to 25 MB. Automatic OCR is bounded to 12 scanned pages and 8 MB of rendered page images. Split larger sets by electrical sheets.
           </p>
           {isBusy && (
             <div className="mt-3 flex items-center gap-2 text-sm text-primary">

@@ -101,6 +101,11 @@ async function buildAll() {
       "puppeteer-core",
       "electron",
       "pdf-parse",
+      "@gutenye/ocr-node",
+      "@gutenye/ocr-common",
+      "@gutenye/ocr-models",
+      "onnxruntime-node",
+      "sharp",
     ],
     sourcemap: "linked",
     plugins: [

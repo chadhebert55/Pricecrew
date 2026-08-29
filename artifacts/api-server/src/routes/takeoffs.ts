@@ -25,7 +25,10 @@ import {
   downloadTakeoffObject,
   requestTakeoffUploadUrl,
 } from "../lib/pdf-storage";
-import { extractTakeoff } from "../lib/takeoff-extractor";
+import {
+  extractTakeoff,
+  TakeoffExtractionError,
+} from "../lib/takeoff-extractor";
 import {
   requestCompanyId,
   requireEstimatorAuth,
@@ -190,6 +193,7 @@ router.post("/takeoffs", async (req, res): Promise<void> => {
         extraction.items.map((item) => ({
           takeoffId: takeoff.id,
           ...item,
+          status: "pending" as const,
         })),
       );
       return tx
@@ -201,6 +205,12 @@ router.post("/takeoffs", async (req, res): Promise<void> => {
             pages: extraction.pageCount,
             sections: extraction.sections,
             textCharacters: extraction.textCharacters,
+            ocrUsed: extraction.ocrUsed,
+            ocrPages: extraction.ocrPages,
+            ocrSkippedPages: extraction.ocrSkippedPages,
+            ocrWarning: extraction.ocrWarning,
+            ocrCharacters: extraction.ocrCharacters,
+            ocrAverageConfidence: extraction.ocrAverageConfidence,
           },
           completedAt,
         })
@@ -223,7 +233,10 @@ router.post("/takeoffs", async (req, res): Promise<void> => {
       .update(planTakeoffsTable)
       .set({
         status: "failed",
-        errorCode: "PDF_EXTRACTION_FAILED",
+        errorCode:
+          error instanceof TakeoffExtractionError
+            ? error.code
+            : "PDF_EXTRACTION_FAILED",
         errorMessage: message,
         completedAt: new Date(),
       })

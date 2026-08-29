@@ -6,7 +6,26 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type TakeoffExtractionSummary = { [key: string]: unknown } | null;
+export interface TakeoffExtractionSummary {
+  /** @minimum 1 */
+  pages?: number;
+  sections?: string[];
+  /** @minimum 0 */
+  textCharacters?: number;
+  ocrUsed?: boolean;
+  /** @items.minimum 1 */
+  ocrPages?: number[];
+  /** @items.minimum 1 */
+  ocrSkippedPages?: number[];
+  /** @nullable */
+  ocrWarning?: string | null;
+  /** @minimum 0 */
+  ocrCharacters?: number;
+  /**
+     * @minimum 0
+     * @maximum 1
+     * @nullable
+     */
+  ocrAverageConfidence?: number | null;
+  [key: string]: unknown;
+ }

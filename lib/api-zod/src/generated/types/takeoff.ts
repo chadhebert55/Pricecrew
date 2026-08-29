@@ -25,8 +25,7 @@ export interface Takeoff {
   errorCode: string | null;
   /** @nullable */
   errorMessage: string | null;
-  /** @nullable */
-  extractionSummary: TakeoffExtractionSummary;
+  extractionSummary: TakeoffExtractionSummary | null;
   items: TakeoffItem[];
   reviewEvents: TakeoffReviewEvent[];
   approvedInputs: TakeoffApprovedInputs;

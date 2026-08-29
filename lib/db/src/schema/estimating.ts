@@ -607,7 +607,17 @@ export const planTakeoffsTable = pgTable("plan_takeoffs", {
   errorMessage: text("error_message"),
   baseInputs: jsonb("base_inputs").$type<Record<string, unknown>>().notNull(),
   extractionSummary: jsonb("extraction_summary")
-    .$type<{ pages: number; sections: string[]; textCharacters: number } | null>()
+    .$type<{
+      pages: number;
+      sections: string[];
+      textCharacters: number;
+      ocrUsed?: boolean;
+      ocrPages?: number[];
+      ocrSkippedPages?: number[];
+      ocrWarning?: string | null;
+      ocrCharacters?: number;
+      ocrAverageConfidence?: number | null;
+    } | null>()
     .default(null),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
