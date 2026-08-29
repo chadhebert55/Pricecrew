@@ -64,6 +64,14 @@ test("only customer proposal reads and signed decision submissions bypass estima
   );
   assert.equal(
     isPublicProposalPath({
+      method: "GET",
+      path: "/api/proposals/high-entropy-token",
+      originalUrl: "/api/proposals/high-entropy-token?source=email",
+    } as never),
+    true,
+  );
+  assert.equal(
+    isPublicProposalPath({
       method: "PATCH",
       path: "/proposals/high-entropy-token",
     } as never),
@@ -71,6 +79,14 @@ test("only customer proposal reads and signed decision submissions bypass estima
   );
   assert.equal(
     isPublicProposalPath({ method: "GET", path: "/quotes/12" } as never),
+    false,
+  );
+  assert.equal(
+    isPublicProposalPath({
+      method: "GET",
+      path: "/api/proposals/high-entropy-token/internal",
+      originalUrl: "/api/proposals/high-entropy-token/internal",
+    } as never),
     false,
   );
 });

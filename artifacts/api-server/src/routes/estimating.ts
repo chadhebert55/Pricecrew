@@ -651,17 +651,19 @@ async function decisionForTokenContext(input: {
   companyId: number;
   tokenIssuedAt: Date;
 }) {
-  const [decision] = await db
+  const decisions = await db
     .select()
     .from(proposalDecisionsTable)
     .where(
       and(
         eq(proposalDecisionsTable.quoteId, input.quoteId),
         eq(proposalDecisionsTable.companyId, input.companyId),
-        eq(proposalDecisionsTable.tokenIssuedAt, input.tokenIssuedAt),
       ),
     );
-  return decision;
+  return decisions.find(
+    (decision) =>
+      decision.tokenIssuedAt.getTime() === input.tokenIssuedAt.getTime(),
+  );
 }
 
 async function isQuoteSuperseded(quote: typeof quotesTable.$inferSelect) {
@@ -716,16 +718,19 @@ async function recordProposalDecision(input: {
       return { stale: true as const };
     }
 
-    const [existing] = await tx
+    const existingDecisions = await tx
       .select()
       .from(proposalDecisionsTable)
       .where(
         and(
           eq(proposalDecisionsTable.quoteId, input.quote.id),
           eq(proposalDecisionsTable.companyId, input.quote.companyId),
-          eq(proposalDecisionsTable.tokenIssuedAt, input.tokenIssuedAt),
         ),
       );
+    const existing = existingDecisions.find(
+      (decision) =>
+        decision.tokenIssuedAt.getTime() === input.tokenIssuedAt.getTime(),
+    );
     if (existing) {
       return matchesDecisionInput(existing, input.decision)
         ? { decision: existing, conflict: false as const, stale: false as const }
@@ -738,7 +743,11 @@ async function recordProposalDecision(input: {
         quoteId: input.quote.id,
         companyId: input.quote.companyId,
         revisionNumber: input.quote.revisionNumber,
-        tokenIssuedAt: input.tokenIssuedAt,
+        tokenIssuedAt: sql`(
+          select ${quotesTable.updatedAt}
+          from ${quotesTable}
+          where ${quotesTable.id} = ${input.quote.id}
+        )`,
         ...input.decision,
       })
       .returning();

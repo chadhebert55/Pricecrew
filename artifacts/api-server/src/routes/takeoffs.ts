@@ -33,7 +33,7 @@ import {
 
 const router: IRouter = Router();
 
-router.use((req, res, next) => {
+router.use("/takeoffs", (req, res, next) => {
   void requireEstimatorAuth(req, res, next);
 });
 
