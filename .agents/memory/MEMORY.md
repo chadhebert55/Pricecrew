@@ -11,3 +11,4 @@
 - [Quote export fidelity](quote-export-fidelity.md) — provider exports preserve the saved final total while keeping unsnapshotted selling, tax, and discount values blank.
 - [PDF parser bundling](pdf-parser-bundling.md) — keep pdf-parse external to the API bundle so its runtime worker and native canvas files remain resolvable.
 - [Proposal revision constraints](proposal-revision-constraints.md) — create the quote revision unique index before its FK, and preserve database timestamp precision during decision inserts.
+- [Workflow port conflicts](workflow-port-conflicts.md) — a failed managed restart can coexist with a serving stale process when the configured port is already occupied.
