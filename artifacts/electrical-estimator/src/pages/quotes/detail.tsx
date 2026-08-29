@@ -2,6 +2,7 @@ import {
   getGetDashboardSummaryQueryKey,
   getGetQuoteQueryKey,
   getListQuotesQueryKey,
+  type Takeoff,
   type AdditionCircuitEntry,
   type QuoteStatus,
   useGetQuote,
@@ -24,6 +25,7 @@ import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { quoteBuilderRoute } from "@/lib/quote-builder-routes"
 import { QuoteExportCard } from "@/components/quote-export-card"
+import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
 
 export function QuoteDetail() {
   const params = useParams<{ id: string }>()
@@ -66,6 +68,8 @@ export function QuoteDetail() {
   const [proposalDesc, setProposalDesc] = useState<string>("")
   const [deliberateLossConfirmed, setDeliberateLossConfirmed] = useState(false)
   const [deliberateLossReason, setDeliberateLossReason] = useState("")
+  const [isTakeoffReviewOpen, setIsTakeoffReviewOpen] = useState(false)
+  const [proposedTakeoffCorrection, setProposedTakeoffCorrection] = useState<Takeoff | null>(null)
   const baseline = useRef("")
 
   useEffect(() => {
@@ -77,6 +81,8 @@ export function QuoteDetail() {
       setProposalDesc(quote.proposalDescription)
       setDeliberateLossConfirmed(Boolean(quote.pricing.deliberateLossApproval))
       setDeliberateLossReason(quote.pricing.deliberateLossApproval?.reason ?? "")
+      setIsTakeoffReviewOpen(false)
+      setProposedTakeoffCorrection(null)
       baseline.current = JSON.stringify({ laborOverride: quote.pricing.laborOverride?.toString() || "", priceOverride: quote.pricing.sellingPriceOverride?.toString() || "", status: quote.status, proposalDesc: quote.proposalDescription, deliberateLossConfirmed: Boolean(quote.pricing.deliberateLossApproval), deliberateLossReason: quote.pricing.deliberateLossApproval?.reason ?? "" })
     }
   }, [quote])
@@ -510,10 +516,10 @@ export function QuoteDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText size={20} className="text-primary" />
-                  Blueprint Takeoff Review
+                   Blueprint Takeoff Review · Original Saved Approval
                 </CardTitle>
                 <CardDescription>
-                  Approved plan quantities and the immutable review trail saved with this quote.
+                   Approved plan quantities and the immutable review trail saved with this quote. Reopened corrections are kept separate from this original snapshot.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -570,13 +576,90 @@ export function QuoteDetail() {
                           {event.nextQuantity !== null ? ` · quantity ${event.nextQuantity}` : ""}
                         </span>
                         <span>{new Date(event.reviewedAt).toLocaleString()}</span>
+                         {event.note && (
+                           <span className="whitespace-pre-wrap sm:max-w-[45%] sm:text-right">
+                             Note: {event.note}
+                           </span>
+                         )}
                       </div>
                     ))}
                   </div>
                 </div>
+                 <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                   <p className="max-w-2xl text-sm text-muted-foreground">
+                     Need to correct a saved approval? Reopen the live blueprint review to stage it, then explicitly confirm the new audit entry. The original quote snapshot above is never rewritten.
+                   </p>
+                   <Button
+                     type="button"
+                     variant="outline"
+                     onClick={() => setIsTakeoffReviewOpen((current) => !current)}
+                     data-testid="button-reopen-takeoff-review"
+                   >
+                     {isTakeoffReviewOpen ? "Hide correction review" : "Reopen saved review"}
+                   </Button>
+                 </div>
               </CardContent>
             </Card>
           )}
+           {quote.takeoffReview && proposedTakeoffCorrection && (
+             <Card data-testid="quote-takeoff-proposed-correction" className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+               <CardHeader>
+                 <CardTitle className="flex items-center gap-2">
+                   <TriangleAlert size={20} className="text-amber-600" />
+                   Later Proposed Correction
+                 </CardTitle>
+                 <CardDescription>
+                   This is the current takeoff review after a confirmed correction. It is intentionally separate from the original saved quote approval above.
+                 </CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-3">
+                 {proposedTakeoffCorrection.items
+                   .filter((item) => {
+                     const original = quote.takeoffReview?.items.find((candidate) => candidate.id === item.id)
+                     return (
+                       !original ||
+                       original.status !== item.status ||
+                       original.approvedQuantity !== item.approvedQuantity ||
+                       original.reviewerNote !== item.reviewerNote
+                     )
+                   })
+                   .map((item) => (
+                     <div key={item.id} className="rounded-md border border-amber-300/70 bg-background/70 p-3 text-sm">
+                       <div className="flex flex-wrap items-center justify-between gap-2">
+                         <span className="font-medium">{item.label}</span>
+                         <Badge variant="outline">{item.status}</Badge>
+                       </div>
+                       <p className="mt-1 text-xs text-muted-foreground">
+                         Original: {quote.takeoffReview?.items.find((candidate) => candidate.id === item.id)?.status ?? "not recorded"}
+                         {" · "}Current: {item.status}
+                         {item.approvedQuantity !== null ? ` · quantity ${item.approvedQuantity}` : ""}
+                       </p>
+                       {item.reviewerNote && (
+                         <p className="mt-2 rounded bg-muted/40 p-2 text-xs">Note: {item.reviewerNote}</p>
+                       )}
+                     </div>
+                   ))}
+                 <p className="text-xs text-muted-foreground">
+                   Confirmed {new Date(proposedTakeoffCorrection.items
+                     .map((item) => item.reviewedAt)
+                      .filter((reviewedAt): reviewedAt is string => reviewedAt !== null)
+                      .map((reviewedAt) => new Date(reviewedAt).getTime())
+                      .sort((left, right) => right - left)[0] ?? proposedTakeoffCorrection.createdAt).toLocaleString()}
+                   {" · "}{proposedTakeoffCorrection.reviewEvents.length} total audit events
+                 </p>
+               </CardContent>
+             </Card>
+           )}
+           {quote.takeoffReview && isTakeoffReviewOpen && (
+             <PlanTakeoffReview
+               module={quote.module === "ADDITION" ? "ADDITION" : "NEW_HOUSE"}
+               baseInputs={quote.jobInputs as unknown as Record<string, unknown>}
+               savedTakeoffId={quote.takeoffReview.takeoffId}
+               onTakeoffApplied={() => undefined}
+               onCorrectionConfirmed={setProposedTakeoffCorrection}
+               onClose={() => setIsTakeoffReviewOpen(false)}
+             />
+           )}
         </div>
 
         {/* Right Col - Pricing & Overrides */}
