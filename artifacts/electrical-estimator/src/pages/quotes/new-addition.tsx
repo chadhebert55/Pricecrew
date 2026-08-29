@@ -182,7 +182,7 @@ export function NewAdditionQuote() {
         breakerAmperage: first.amperage === 30 ? 20 : first.amperage,
         breakerPoleCount: first.poleCount === 2 ? 1 : first.poleCount,
         breakerProtectionType: first.protectionType,
-        cableType: first.cableType === "10/3 NM-B" ? "12/2 NM-B" : first.cableType,
+        cableType: first.cableType === "10/2 NM-B" || first.cableType === "10/3 NM-B" ? "12/2 NM-B" : first.cableType,
       } : {}),
     }))
   }
@@ -196,7 +196,7 @@ export function NewAdditionQuote() {
       ? "10/3 NM-B"
       : amperage === 20
         ? "12/2 NM-B"
-        : current.cableType === "10/3 NM-B" ? "14/2 NM-B" : current.cableType
+        : current.cableType === "10/2 NM-B" || current.cableType === "10/3 NM-B" ? "14/2 NM-B" : current.cableType
     updateCircuitEntry(index, {
       amperage,
       cableType,
@@ -352,7 +352,7 @@ export function NewAdditionQuote() {
                             <div className="space-y-2">
                               <Label htmlFor={`addition-circuit-${index}-cable`}>Cable</Label>
                               <select id={`addition-circuit-${index}-cable`} aria-label={`Circuit ${index + 1} cable`} value={entry.cableType} onChange={(event) => updateCircuitEntry(index, { cableType: event.target.value as AdditionCircuitEntry["cableType"] })} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value="14/2 NM-B">14/2 NM-B</option><option value="12/2 NM-B">12/2 NM-B</option><option value="14/3 NM-B">14/3 NM-B</option><option value="10/3 NM-B">10/3 NM-B</option>
+                                <option value="14/2 NM-B">14/2 NM-B</option><option value="12/2 NM-B">12/2 NM-B</option><option value="14/3 NM-B">14/3 NM-B</option><option value="10/2 NM-B">10/2 NM-B</option><option value="10/3 NM-B">10/3 NM-B</option>
                               </select>
                             </div>
                             <div className="space-y-2">

@@ -1094,7 +1094,6 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
     catalogRow("Pass & Seymour TM870-W 15A single-pole switch", 1.85),
     catalogRow("Lutron DVCL-153P-WH Diva LED+ dimmer", 30.28),
     catalogRow("10/3 NM-B cable", 1.25, { category: "Conductor" }),
-    catalogRow("10/2 NM-B cable", 0.75, { category: "Conductor" }),
   ];
   const result = calculateAdditionEstimate(
     {
@@ -1104,7 +1103,7 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
           amperage: 30,
           poleCount: 2,
           protectionType: "Standard",
-          cableType: "10/2 NM-B" as never,
+          cableType: "14/2 NM-B",
           quantity: 1,
         },
       ],
@@ -1121,7 +1120,7 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
   assert.equal(
     result.assembly.find((line) => line.id === "addition-circuit-1-cable")
       ?.description,
-    "30A 2-pole 10/2 NM-B cable — unresolved compatibility",
+    "30A 2-pole 14/2 NM-B cable — unresolved compatibility",
   );
   assert.equal(
     result.assembly.find((line) => line.id === "addition-circuit-1-breaker")
@@ -1145,6 +1144,61 @@ test("addition leaves incompatible or unverified circuit entries unresolved", ()
     ),
     true,
   );
+});
+
+test("addition prices both 10/2 and 10/3 as selectable 30A branch-circuit cables", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("10/2 NM-B cable", 0.75, { category: "Conductor" }),
+    catalogRow("10/3 NM-B cable", 1.25, { category: "Conductor" }),
+  ];
+
+  for (const [cableType, unitCost] of [
+    ["10/2 NM-B", 0.75],
+    ["10/3 NM-B", 1.25],
+  ] as const) {
+    const jobInputs: AdditionInputRecord = {
+      ...additionInputs,
+      circuitEntries: [
+        {
+          amperage: 30,
+          poleCount: 2,
+          protectionType: "Standard",
+          cableType,
+          quantity: 2,
+        },
+      ],
+    };
+    const result = calculateAdditionEstimate(jobInputs, settings, book);
+    const cable = result.assembly.find(
+      (line) => line.id === "addition-circuit-1-cable",
+    );
+    assert.equal(cable?.description, `30A 2-pole ${cableType} branch-circuit cable`);
+    assert.equal(cable?.quantity, 120);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "ADDITION_CIRCUIT_COMPATIBILITY_REVIEW",
+      ),
+      false,
+    );
+    assert.equal(
+      PreviewQuoteBody.safeParse({ module: "ADDITION", jobInputs }).success,
+      true,
+    );
+    assert.equal(
+      CreateQuoteBody.safeParse({
+        customerName: "Addition wire parity",
+        projectName: `30A ${cableType}`,
+        module: "ADDITION",
+        jobInputs,
+        proposalDescription: "Install the selected 30A branch circuit.",
+      }).success,
+      true,
+    );
+  }
 });
 
 test("addition mixed circuit schedules have preview and create validation parity", () => {
@@ -3416,6 +3470,10 @@ const newHouseInputs: NewHouseInputRecord = {
 
 const newHousePriceBook: PriceBookItem[] = [
   ...priceBook,
+  catalogRow("10/2 NM-B cable", 1.071856),
+  catalogRow("10/3 NM-B cable", 1.334639),
+  catalogRow("8/2 NM-B cable", 1.89096),
+  catalogRow("8/3 NM-B cable", 2.682868),
   catalogRow(
     "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",
     1.85,
@@ -3621,6 +3679,116 @@ test("New House refuses to price under-ampacity circuit cable selections", () =>
         warning.severity === "error" &&
         warning.message.includes("incompatible"),
     ).length >= 1,
+  );
+});
+
+test("New House prices compatible 2-wire and 3-wire heavy equipment cables from exact per-foot rows", () => {
+  const selections = [
+    [30, "10/2 NM-B", 1.071856],
+    [30, "10/3 NM-B", 1.334639],
+    [40, "8/2 NM-B", 1.89096],
+    [40, "8/3 NM-B", 2.682868],
+  ] as const;
+
+  for (const [amperage, cableType, unitCost] of selections) {
+    const result = calculateNewHouseEstimate(
+      {
+        ...newHouseInputs,
+        hvacEquipmentCircuitQuantity: 2,
+        miniSplitCircuitQuantity: 1,
+        equipmentCircuitFootage: 25,
+        equipmentCircuitAmperage: amperage,
+        equipmentCircuitCableType: cableType,
+      },
+      settings,
+      newHousePriceBook,
+    );
+    const cable = result.assembly.find(
+      (line) => line.id === "new-house-equipment-cable",
+    );
+    assert.equal(cable?.description.startsWith(cableType), true);
+    assert.equal(cable?.quantity, 75);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "NEW_HOUSE_COMPATIBILITY_REVIEW" &&
+          warning.message.includes("equipment-circuit cable"),
+      ),
+      false,
+    );
+  }
+});
+
+test("New House keeps a compatible 3-wire heavy cable unresolved when its exact catalog row is missing", () => {
+  const result = calculateNewHouseEstimate(
+    {
+      ...newHouseInputs,
+      hvacEquipmentCircuitQuantity: 1,
+      equipmentCircuitFootage: 40,
+      equipmentCircuitAmperage: 30,
+      equipmentCircuitCableType: "10/3 NM-B",
+    },
+    settings,
+    newHousePriceBook.filter((row) => row.item !== "10/3 NM-B cable"),
+  );
+  const cable = result.assembly.find(
+    (line) => line.id === "new-house-equipment-cable",
+  );
+  assert.equal(cable?.quantity, 40);
+  assert.equal(cable?.unitCost, 0);
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "PRICE_BOOK_ITEM_UNRESOLVED" &&
+        warning.context.itemKey === "10/3 NM-B cable",
+    ),
+    true,
+  );
+});
+
+test("New House preview and create accept the same heavy 2-wire and 3-wire cable selections", () => {
+  for (const [amperage, cableType] of [
+    [30, "10/2 NM-B"],
+    [30, "10/3 NM-B"],
+    [40, "8/2 NM-B"],
+    [40, "8/3 NM-B"],
+  ] as const) {
+    const jobInputs = {
+      ...newHouseInputs,
+      hvacEquipmentCircuitQuantity: 1,
+      equipmentCircuitFootage: 25,
+      equipmentCircuitAmperage: amperage,
+      equipmentCircuitCableType: cableType,
+    };
+    assert.equal(
+      PreviewQuoteBody.safeParse({ module: "NEW_HOUSE", jobInputs }).success,
+      true,
+    );
+    assert.equal(
+      CreateQuoteBody.safeParse({
+        customerName: "New House wire parity",
+        projectName: `${amperage}A ${cableType}`,
+        module: "NEW_HOUSE",
+        jobInputs,
+        proposalDescription: "Install the selected heavy branch circuit.",
+      }).success,
+      true,
+    );
+  }
+
+  assert.equal(
+    PreviewQuoteBody.safeParse({
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseInputs,
+        equipmentCircuitAmperage: 30,
+        equipmentCircuitCableType: "6/3 NM-B",
+      },
+    }).success,
+    false,
   );
 });
 

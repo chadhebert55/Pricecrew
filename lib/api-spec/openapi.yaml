@@ -1783,7 +1783,7 @@ components:
           enum: [Standard, GFCI, AFCI, Dual Function]
         cableType:
           type: string
-          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/3 NM-B]
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/2 NM-B, 10/3 NM-B]
         quantity:
           type: number
           minimum: 1
@@ -2845,7 +2845,7 @@ components:
           enum: [Standard, GFCI, AFCI, Dual Function]
         equipmentCircuitCableType:
           type: string
-          enum: [12/2 NM-B, 10/2 NM-B, 8/2 NM-B]
+          enum: [12/2 NM-B, 10/2 NM-B, 10/3 NM-B, 8/2 NM-B, 8/3 NM-B]
         crewSize: { type: number, minimum: 1, multipleOf: 1 }
         crewHours: { type: number, minimum: 0 }
         laborAdjustmentHours: { type: number, minimum: 0 }

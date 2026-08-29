@@ -743,7 +743,7 @@ const newHouseInputs: NewHouseInputRecord = {
   equipmentCircuitAmperage: 30,
   equipmentCircuitPoleCount: 2,
   equipmentCircuitProtectionType: "Standard",
-  equipmentCircuitCableType: "10/2 NM-B",
+  equipmentCircuitCableType: "10/3 NM-B",
   crewSize: 2,
   crewHours: 80,
   laborAdjustmentHours: 0,
@@ -2485,6 +2485,15 @@ test("New House room counts persist through create, reload, duplicate, and legac
     const created = await getQuote(baseUrl, source.id);
     assert.equal(created.jobInputs.bedroomCount, 4);
     assert.equal(created.jobInputs.bathroomQuantity, 2);
+    assert.equal(created.jobInputs.equipmentCircuitCableType, "10/3 NM-B");
+    const createdEquipmentCable = created.assembly.find(
+      (line) => line.id === "new-house-equipment-cable",
+    );
+    assert.equal(
+      (createdEquipmentCable as { quantity?: number } | undefined)?.quantity,
+      80,
+    );
+    assert.equal(createdEquipmentCable?.unitCost, 1.334639);
 
     const sourcePricing = created.pricing;
     const duplicateResponse = await fetch(
@@ -2499,6 +2508,8 @@ test("New House room counts persist through create, reload, duplicate, and legac
     const duplicate = await getQuote(baseUrl, duplicateBody.id);
     assert.equal(duplicate.jobInputs.bedroomCount, 4);
     assert.equal(duplicate.jobInputs.bathroomQuantity, 2);
+    assert.equal(duplicate.jobInputs.equipmentCircuitCableType, "10/3 NM-B");
+    assert.deepEqual(duplicate.assembly, created.assembly);
     assert.deepEqual(duplicate.pricing, sourcePricing);
 
     const [sourceRow] = await db

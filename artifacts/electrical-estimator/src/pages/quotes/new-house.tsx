@@ -55,7 +55,7 @@ const initialInputs: NewHouseInputs = {
   equipmentCircuitAmperage: 30,
   equipmentCircuitPoleCount: 2,
   equipmentCircuitProtectionType: "Standard",
-  equipmentCircuitCableType: "10/2 NM-B",
+  equipmentCircuitCableType: "10/3 NM-B",
   crewSize: 2,
   crewHours: 80,
   laborAdjustmentHours: 0,
@@ -143,6 +143,20 @@ export function NewHouseQuote() {
     setInputs((current) => ({
       ...current,
       [key]: Math.max(0, Number(value) || 0),
+    }))
+  }
+
+  const setEquipmentCircuitAmperage = (value: string) => {
+    const amperage = Number(value) as NewHouseInputs["equipmentCircuitAmperage"]
+    const cableType = amperage === 20
+      ? "12/2 NM-B"
+      : amperage === 30
+        ? "10/3 NM-B"
+        : "8/3 NM-B"
+    setInputs((current) => ({
+      ...current,
+      equipmentCircuitAmperage: amperage,
+      equipmentCircuitCableType: cableType,
     }))
   }
 
@@ -417,7 +431,7 @@ export function NewHouseQuote() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-equip-amp">Amperage</Label>
-                          <select id="nh-equip-amp" value={inputs.equipmentCircuitAmperage} onChange={(event) => setQuantity("equipmentCircuitAmperage", event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-equip-amp"><option value="20">20A</option><option value="30">30A</option><option value="40">40A</option></select>
+                          <select id="nh-equip-amp" value={inputs.equipmentCircuitAmperage} onChange={(event) => setEquipmentCircuitAmperage(event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-equip-amp"><option value="20">20A</option><option value="30">30A</option><option value="40">40A</option></select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-equip-poles">Pole Count</Label>
@@ -435,10 +449,11 @@ export function NewHouseQuote() {
                         <div className="space-y-2">
                           <Label htmlFor="nh-equip-cable">Cable Type</Label>
                           <select id="nh-equip-cable" value={inputs.equipmentCircuitCableType} onChange={(event) => setInputs(c => ({...c, equipmentCircuitCableType: event.target.value as NewHouseInputs["equipmentCircuitCableType"]}))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-equip-cable">
-                            <option value="12/2 NM-B">12/2 NM-B</option>
-                             <option value="10/2 NM-B">10/2 NM-B</option>
-                             <option value="8/2 NM-B">8/2 NM-B</option>
+                            {inputs.equipmentCircuitAmperage === 20 && <option value="12/2 NM-B">12/2 NM-B</option>}
+                            {inputs.equipmentCircuitAmperage === 30 && <><option value="10/3 NM-B">10/3 NM-B</option><option value="10/2 NM-B">10/2 NM-B</option></>}
+                            {inputs.equipmentCircuitAmperage === 40 && <><option value="8/3 NM-B">8/3 NM-B</option><option value="8/2 NM-B">8/2 NM-B</option></>}
                           </select>
+                          <p className="text-xs text-muted-foreground">Use 3-wire for equipment that requires a neutral; keep 2-wire for straight 240V loads that do not.</p>
                         </div>
                       </div>
                     </div>

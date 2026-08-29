@@ -575,6 +575,7 @@ export const AdditionCircuitEntryCableType = {
   '12/2_NM-B': '12/2 NM-B',
   '14/2_NM-B': '14/2 NM-B',
   '14/3_NM-B': '14/3 NM-B',
+  '10/2_NM-B': '10/2 NM-B',
   '10/3_NM-B': '10/3 NM-B',
 } as const;
 
@@ -1379,7 +1380,9 @@ export type NewHouseInputsEquipmentCircuitCableType = typeof NewHouseInputsEquip
 export const NewHouseInputsEquipmentCircuitCableType = {
   '12/2_NM-B': '12/2 NM-B',
   '10/2_NM-B': '10/2 NM-B',
+  '10/3_NM-B': '10/3 NM-B',
   '8/2_NM-B': '8/2 NM-B',
+  '8/3_NM-B': '8/3 NM-B',
 } as const;
 
 export interface NewHouseInputs {

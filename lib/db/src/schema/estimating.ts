@@ -19,7 +19,9 @@ export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
 export type NewHouseCircuitCableType =
   | CableType
   | "10/2 NM-B"
-  | "8/2 NM-B";
+  | "10/3 NM-B"
+  | "8/2 NM-B"
+  | "8/3 NM-B";
 export type EvCableType = "8/3 NM-B" | "8/2 NM-B" | "6/3 NM-B" | "8/2 SER";
 export type RecessedLightSize = "4-inch" | "6-inch";
 export type ServiceUpgradeServiceSize = "100A" | "150A" | "200A";
@@ -177,7 +179,12 @@ export type AdditionCircuitEntry = {
   amperage: 15 | 20 | 30;
   poleCount: 1 | 2;
   protectionType: "Standard" | "GFCI" | "AFCI" | "Dual Function";
-  cableType: "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B" | "10/3 NM-B";
+  cableType:
+    | "12/2 NM-B"
+    | "14/2 NM-B"
+    | "14/3 NM-B"
+    | "10/2 NM-B"
+    | "10/3 NM-B";
   quantity: number;
 };
 
