@@ -20,11 +20,10 @@ import type {
   TimeMaterialsInputRecord,
 } from "@workspace/db";
 
-const JUNO_WF4_VERIFIED =
-  "Juno WF4DREGSMAL 4-inch regressed wafer light";
-const JUNO_WF6_VERIFIED =
-  "Juno WF6-DREG 6-inch regressed wafer light";
+const JUNO_WF4_VERIFIED = "Juno WF4DREGSMAL 4-inch regressed wafer light";
+const JUNO_WF6_VERIFIED = "Juno WF6-DREG 6-inch regressed wafer light";
 export type PriceBookItem = {
+  id?: number;
   category: string;
   item: string;
   unitCost: number;
@@ -114,7 +113,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "field-verification",
       source: "service-call",
-      context: { rule: "confirm service conditions and final repair scope in the field" },
+      context: {
+        rule: "confirm service conditions and final repair scope in the field",
+      },
     };
   }
   if (message.startsWith("Time & Materials")) {
@@ -123,7 +124,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "planning",
       source: "time-materials",
-      context: { rule: "confirm actual labor and material usage before invoicing" },
+      context: {
+        rule: "confirm actual labor and material usage before invoicing",
+      },
     };
   }
   if (message.startsWith("Customer-supplied material")) {
@@ -158,7 +161,9 @@ function warningMetadata(message: string): WarningMetadata {
         ? "EXACT_CATALOG_SELECTION_INCOMPATIBLE"
         : "EXACT_CATALOG_SELECTION_UNSUPPORTED",
       severity: "error",
-      category: message.includes("incompatible") ? "compatibility" : "missing-price",
+      category: message.includes("incompatible")
+        ? "compatibility"
+        : "missing-price",
       source: "exact-catalog-selection",
       context: { item: match?.[1] ?? null, group: match?.[2] ?? null },
     };
@@ -217,7 +222,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "planning",
       source: "service-upgrade-allowance",
-      context: { rule: "local permit, inspection, or miscellaneous amount requires confirmation" },
+      context: {
+        rule: "local permit, inspection, or miscellaneous amount requires confirmation",
+      },
     };
   }
   if (message.startsWith("Panel Replacement allowance")) {
@@ -226,7 +233,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "planning",
       source: "panel-replacement-allowance",
-      context: { rule: "local permit, inspection, or miscellaneous amount requires confirmation" },
+      context: {
+        rule: "local permit, inspection, or miscellaneous amount requires confirmation",
+      },
     };
   }
   if (message.includes("Panel Replacement assumptions")) {
@@ -235,7 +244,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "field-verification",
       source: "panel-replacement-configuration",
-      context: { rule: "verify existing panel, feeder routing, working clearances, and field conditions" },
+      context: {
+        rule: "verify existing panel, feeder routing, working clearances, and field conditions",
+      },
     };
   }
   if (message.includes("does not meet the selected breaker amperage")) {
@@ -244,16 +255,23 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "error",
       category: "compatibility",
       source: "panel-replacement-feeder",
-      context: { rule: "selected feeder conductor must be explicitly compatible with the selected overcurrent protection" },
+      context: {
+        rule: "selected feeder conductor must be explicitly compatible with the selected overcurrent protection",
+      },
     };
   }
-  if (message.includes("service configuration") || message.includes("field conditions")) {
+  if (
+    message.includes("service configuration") ||
+    message.includes("field conditions")
+  ) {
     return {
       code: "SERVICE_UPGRADE_FIELD_REVIEW",
       severity: "warning",
       category: "field-verification",
       source: "service-upgrade-configuration",
-      context: { rule: "verify utility arrangement, existing service, and field conditions" },
+      context: {
+        rule: "verify utility arrangement, existing service, and field conditions",
+      },
     };
   }
   if (message.includes("copper alternative")) {
@@ -262,7 +280,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "compatibility",
       source: "service-upgrade-conductor",
-      context: { rule: "confirm the explicitly selected copper service conductor with the company price book" },
+      context: {
+        rule: "confirm the explicitly selected copper service conductor with the company price book",
+      },
     };
   }
   if (message.includes("does not match the selected service size")) {
@@ -271,7 +291,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "compatibility",
       source: "service-upgrade-size",
-      context: { rule: "confirm service equipment and protection match the selected service size" },
+      context: {
+        rule: "confirm service equipment and protection match the selected service size",
+      },
     };
   }
   if (
@@ -292,7 +314,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "rule",
       source: "conductor-rule",
-      context: { rule: "wire run plus wiring allowance must be greater than zero" },
+      context: {
+        rule: "wire run plus wiring allowance must be greater than zero",
+      },
     };
   }
   if (
@@ -324,7 +348,10 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "rule",
       source: "circuit-rule",
-      context: { conductor: "12/2 NM-B", rule: "home run length must be greater than zero" },
+      context: {
+        conductor: "12/2 NM-B",
+        rule: "home run length must be greater than zero",
+      },
     };
   }
   if (message.includes("route length is unresolved")) {
@@ -336,13 +363,18 @@ function warningMetadata(message: string): WarningMetadata {
       context: { rule: "route length is required to price common wiring" },
     };
   }
-  if (message.includes("existing circuit") || message.includes("Existing bathroom circuit")) {
+  if (
+    message.includes("existing circuit") ||
+    message.includes("Existing bathroom circuit")
+  ) {
     return {
       code: "EXISTING_CIRCUIT_FIELD_REVIEW",
       severity: "warning",
       category: "field-verification",
       source: "circuit-rule",
-      context: { rule: "verify existing circuit capacity and protection in the field" },
+      context: {
+        rule: "verify existing circuit capacity and protection in the field",
+      },
     };
   }
   if (message.includes("Verify Lutron Diva")) {
@@ -360,7 +392,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "info",
       category: "planning",
       source: "lighting-planning",
-      context: { rule: "fixture spacing is planning guidance, not code compliance" },
+      context: {
+        rule: "fixture spacing is planning guidance, not code compliance",
+      },
     };
   }
   if (message.includes("Room dimensions are incomplete")) {
@@ -378,7 +412,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "field-verification",
       source: "lighting-planning",
-      context: { rule: "verify ceiling layout, obstructions, insulation, and fire rating" },
+      context: {
+        rule: "verify ceiling layout, obstructions, insulation, and fire rating",
+      },
     };
   }
   if (message.includes("Lutron")) {
@@ -406,7 +442,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "rule",
       source: "breaker-quantity-rule",
-      context: { rule: "selected circuit amperage must be represented by a configured breaker quantity" },
+      context: {
+        rule: "selected circuit amperage must be represented by a configured breaker quantity",
+      },
     };
   }
   if (message.includes("Electric-range breaker")) {
@@ -442,7 +480,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "missing-price",
       source: "appliance-circuit-rule",
-      context: { rule: "confirm appliance specifications and exact catalog requirements" },
+      context: {
+        rule: "confirm appliance specifications and exact catalog requirements",
+      },
     };
   }
   if (message.includes("Dedicated-circuit and control requirements")) {
@@ -451,7 +491,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "field-verification",
       source: "bathroom-equipment-rule",
-      context: { rule: "verify heat-producing equipment circuit and control requirements" },
+      context: {
+        rule: "verify heat-producing equipment circuit and control requirements",
+      },
     };
   }
   if (message.includes("Bathroom box, plate")) {
@@ -460,7 +502,9 @@ function warningMetadata(message: string): WarningMetadata {
       severity: "warning",
       category: "field-verification",
       source: "bathroom-layout-rule",
-      context: { rule: "verify box, plate, and wiring quantities against final layout" },
+      context: {
+        rule: "verify box, plate, and wiring quantities against final layout",
+      },
     };
   }
   const inferredCategory: PricingWarningCategory =
@@ -500,7 +544,61 @@ export function normalizePricingWarnings(
 }
 
 function normalized(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function comparePriceBookItems(
+  left: PriceBookItem,
+  right: PriceBookItem,
+): number {
+  const textFields: Array<
+    keyof Pick<
+      PriceBookItem,
+      | "sourceDate"
+      | "supplierSku"
+      | "manufacturerPartNumber"
+      | "manufacturer"
+      | "supplier"
+      | "upc"
+      | "protectionType"
+      | "category"
+      | "item"
+    >
+  > = [
+    "sourceDate",
+    "supplierSku",
+    "manufacturerPartNumber",
+    "manufacturer",
+    "supplier",
+    "upc",
+    "protectionType",
+    "category",
+    "item",
+  ];
+  for (const field of textFields) {
+    const comparison = (right[field] ?? "").localeCompare(left[field] ?? "");
+    if (comparison !== 0) return comparison;
+  }
+  const numericFields: Array<
+    keyof Pick<PriceBookItem, "amperage" | "poleCount" | "unitCost">
+  > = ["amperage", "poleCount", "unitCost"];
+  for (const field of numericFields) {
+    const comparison = Number(left[field] ?? 0) - Number(right[field] ?? 0);
+    if (comparison !== 0) return comparison;
+  }
+  if (left.isDefault !== right.isDefault) return left.isDefault ? 1 : -1;
+  return (left.id ?? Number.MAX_SAFE_INTEGER) -
+    (right.id ?? Number.MAX_SAFE_INTEGER);
+}
+
+function deterministicPriceBookMatch(
+  priceBook: PriceBookItem[],
+  predicate: (item: PriceBookItem) => boolean,
+): PriceBookItem | undefined {
+  return priceBook.filter(predicate).sort(comparePriceBookItems)[0];
 }
 
 const BUILDER_NAMES = [
@@ -838,9 +936,13 @@ export function auditPriceBookItem(
     addBuilderIf(
       builders,
       "Service Upgrade",
-      ["ground bar", "ground rod", "acorn", "rod clamp", "grounding conductor"].some(
-        (term) => name.includes(term),
-      ),
+      [
+        "ground bar",
+        "ground rod",
+        "acorn",
+        "rod clamp",
+        "grounding conductor",
+      ].some((term) => name.includes(term)),
     );
     addBuilderIf(
       builders,
@@ -920,9 +1022,7 @@ function catalogSource(item: PriceBookItem) {
   const parts = [
     item.supplier,
     item.manufacturer,
-    item.manufacturerPartNumber
-      ? `MPN ${item.manufacturerPartNumber}`
-      : null,
+    item.manufacturerPartNumber ? `MPN ${item.manufacturerPartNumber}` : null,
     item.supplierSku ? `SKU ${item.supplierSku}` : null,
     item.upc ? `UPC ${item.upc}` : null,
     item.sourceDate,
@@ -936,7 +1036,8 @@ function unitCost(
   pricingWarnings: string[],
   expectedCategory?: string,
 ): { value: number; source: string } {
-  const match = priceBook.find(
+  const match = deterministicPriceBookMatch(
+    priceBook,
     (item) =>
       normalized(item.item) === normalized(key) &&
       (!expectedCategory || itemInCategory(item, expectedCategory)) &&
@@ -970,24 +1071,30 @@ function exactCatalogCost(
   compatible: (item: PriceBookItem) => boolean = () => true,
 ) {
   if (!selection?.trim()) return null;
-  const selectedSku = selection.match(/(?:SKU|Northeast #)\s*([A-Z0-9-]+)/i)?.[1];
+  const selectedSku = selection.match(
+    /(?:SKU|Northeast #)\s*([A-Z0-9-]+)/i,
+  )?.[1];
   const isSelectable = (item: PriceBookItem) =>
-    !item.isDefault &&
-    !normalized(item.item).startsWith("unverified ");
-  const selected = priceBook.find(
-    (item) =>
-      normalized(item.item) === normalized(selection) &&
-      isSelectable(item),
-  ) ?? (
-    selectedSku
-      ? priceBook.find(
+    !item.isDefault && !normalized(item.item).startsWith("unverified ");
+  const selected =
+    deterministicPriceBookMatch(
+      priceBook,
+      (item) =>
+        normalized(item.item) === normalized(selection) && isSelectable(item),
+    ) ??
+    (selectedSku
+      ? deterministicPriceBookMatch(
+          priceBook,
           (item) =>
             normalized(item.supplierSku ?? "") === normalized(selectedSku) &&
             isSelectable(item),
         )
-      : undefined
-  );
-  if (!selected || !Number.isFinite(selected.unitCost) || selected.unitCost <= 0) {
+      : undefined);
+  if (
+    !selected ||
+    !Number.isFinite(selected.unitCost) ||
+    selected.unitCost <= 0
+  ) {
     pricingWarnings.push(
       `Exact catalog selection "${selection}" for ${selector} is unavailable or unpriced. No generic catalog row was substituted.`,
     );
@@ -997,7 +1104,10 @@ function exactCatalogCost(
     pricingWarnings.push(
       `Exact catalog selection "${selection}" is incompatible with the selected configuration for ${selector}. No generic catalog row was substituted.`,
     );
-    return { value: 0, source: "Unresolved incompatible exact catalog selection" };
+    return {
+      value: 0,
+      source: "Unresolved incompatible exact catalog selection",
+    };
   }
   return { value: selected.unitCost, source: catalogSource(selected) };
 }
@@ -1022,10 +1132,7 @@ function protectionType(value: string): string | null {
   }
   if (selection.split(" ").includes("afci")) return "AFCI";
   if (selection.split(" ").includes("gfci")) return "GFCI";
-  if (
-    selection === "standard" ||
-    selection.endsWith(" standard breaker")
-  ) {
+  if (selection === "standard" || selection.endsWith(" standard breaker")) {
     return "Standard";
   }
   return null;
@@ -1054,12 +1161,15 @@ function resolveBreaker(
       source: "Unresolved exact breaker — select supported protection",
     };
   }
-  const match = priceBook.find(
+  const match = deterministicPriceBookMatch(
+    priceBook,
     (item) =>
-      normalized(item.manufacturer ?? "") === normalized(selection.manufacturer) &&
+      normalized(item.manufacturer ?? "") ===
+        normalized(selection.manufacturer) &&
       item.amperage === selection.amperage &&
       item.poleCount === selection.poleCount &&
-      normalized(item.protectionType ?? "") === normalized(exactProtectionType) &&
+      normalized(item.protectionType ?? "") ===
+        normalized(exactProtectionType) &&
       !item.isDefault &&
       !normalized(item.item).startsWith("unverified ") &&
       Number.isFinite(item.unitCost) &&
@@ -1181,7 +1291,11 @@ function finalizeEstimate(
   };
 }
 
-function percentage(value: number | undefined, fallback: number, maximum: number) {
+function percentage(
+  value: number | undefined,
+  fallback: number,
+  maximum: number,
+) {
   return Number.isFinite(Number(value))
     ? Math.min(maximum, Math.max(0, Number(value))) / 100
     : fallback;
@@ -1199,7 +1313,8 @@ function configuredEstimateSettings(
 ): EstimatingSettings {
   const selectedType = selectedLaborRateType(inputs.laborRateType);
   const sellRate =
-    Number.isFinite(Number(inputs.laborSellRate)) && Number(inputs.laborSellRate) >= 0
+    Number.isFinite(Number(inputs.laborSellRate)) &&
+    Number(inputs.laborSellRate) >= 0
       ? Number(inputs.laborSellRate)
       : selectedType === "commercial"
         ? settings.commercialLaborSellRate
@@ -1212,10 +1327,18 @@ function configuredEstimateSettings(
         ? Number(inputs.loadedLaborCost)
         : settings.loadedLaborCost,
     residentialLaborSellRate:
-      selectedType === "residential" ? sellRate : settings.residentialLaborSellRate,
+      selectedType === "residential"
+        ? sellRate
+        : settings.residentialLaborSellRate,
     commercialLaborSellRate:
-      selectedType === "commercial" ? sellRate : settings.commercialLaborSellRate,
-    materialMarkup: percentage(inputs.materialMarkup, settings.materialMarkup, 500),
+      selectedType === "commercial"
+        ? sellRate
+        : settings.commercialLaborSellRate,
+    materialMarkup: percentage(
+      inputs.materialMarkup,
+      settings.materialMarkup,
+      500,
+    ),
     targetMargin: percentage(inputs.targetMargin, settings.targetMargin, 99.99),
   };
 }
@@ -1288,15 +1411,25 @@ export function calculateEvChargerEstimate(
     ? 50
     : Number.parseInt(inputs.circuitAmps, 10) || 50;
   const difficultyMultiplier =
-    inputs.difficulty === "Extreme" ? 2.2 : inputs.difficulty === "Hard" ? 1.5 : 1;
-  const accessHours = /limited|occupied|difficult/i.test(inputs.access) ? 0.75 : 0;
+    inputs.difficulty === "Extreme"
+      ? 2.2
+      : inputs.difficulty === "Hard"
+        ? 1.5
+        : 1;
+  const accessHours = /limited|occupied|difficult/i.test(inputs.access)
+    ? 0.75
+    : 0;
 
-  const breaker = resolveBreaker({
-    manufacturer: inputs.panelManufacturer,
-    amperage: circuitAmps,
-    poleCount: /single|1[- ]?pole/i.test(inputs.breakerRequirement) ? 1 : 2,
-    protectionType: inputs.breakerRequirement,
-  }, priceBook, pricingWarnings);
+  const breaker = resolveBreaker(
+    {
+      manufacturer: inputs.panelManufacturer,
+      amperage: circuitAmps,
+      poleCount: /single|1[- ]?pole/i.test(inputs.breakerRequirement) ? 1 : 2,
+      protectionType: inputs.breakerRequirement,
+    },
+    priceBook,
+    pricingWarnings,
+  );
   addLine(assembly, {
     id: "breaker",
     category: "Protection",
@@ -1413,11 +1546,7 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.loadManagement !== "None") {
-    const item = unitCost(
-      "load management device",
-      priceBook,
-      pricingWarnings,
-    );
+    const item = unitCost("load management device", priceBook, pricingWarnings);
     addLine(assembly, {
       id: "load-management",
       category: "Controls",
@@ -1921,7 +2050,11 @@ export function calculateKitchenEstimate(
     if (footage !== undefined) {
       const safeFootage = safeNumber(footage);
       if (safeFootage > 0) {
-        const cable = unitCost(`${cableType} cable`, priceBook, pricingWarnings);
+        const cable = unitCost(
+          `${cableType} cable`,
+          priceBook,
+          pricingWarnings,
+        );
         addLine(assembly, {
           id: `${id}-cable`,
           category: "Conductor",
@@ -1949,12 +2082,39 @@ export function calculateKitchenEstimate(
     }
   };
 
-  const circuitItems: Array<[keyof KitchenInputRecord, string, string, string]> = [
-    ["refrigeratorCircuits", "Unverified allowance — refrigerator circuit materials", "Refrigerator circuit allowance — exact breaker/conductor unresolved", "Circuit"],
-    ["dishwasherCircuits", "Unverified allowance — dishwasher circuit materials", "Dishwasher circuit allowance — exact breaker/conductor unresolved", "Circuit"],
-    ["disposalCircuits", "Unverified allowance — disposal circuit materials", "Disposal circuit allowance — exact breaker/conductor unresolved", "Circuit"],
-    ["gasRangeCircuits", "Unverified allowance — gas range circuit materials", "Gas range circuit allowance — exact breaker/conductor unresolved", "Circuit"],
-    ["additionalDedicatedCircuits", "Unverified allowance — additional dedicated circuit materials", "Additional dedicated circuit allowance — exact breaker/conductor unresolved", "Circuit"],
+  const circuitItems: Array<
+    [keyof KitchenInputRecord, string, string, string]
+  > = [
+    [
+      "refrigeratorCircuits",
+      "Unverified allowance — refrigerator circuit materials",
+      "Refrigerator circuit allowance — exact breaker/conductor unresolved",
+      "Circuit",
+    ],
+    [
+      "dishwasherCircuits",
+      "Unverified allowance — dishwasher circuit materials",
+      "Dishwasher circuit allowance — exact breaker/conductor unresolved",
+      "Circuit",
+    ],
+    [
+      "disposalCircuits",
+      "Unverified allowance — disposal circuit materials",
+      "Disposal circuit allowance — exact breaker/conductor unresolved",
+      "Circuit",
+    ],
+    [
+      "gasRangeCircuits",
+      "Unverified allowance — gas range circuit materials",
+      "Gas range circuit allowance — exact breaker/conductor unresolved",
+      "Circuit",
+    ],
+    [
+      "additionalDedicatedCircuits",
+      "Unverified allowance — additional dedicated circuit materials",
+      "Additional dedicated circuit allowance — exact breaker/conductor unresolved",
+      "Circuit",
+    ],
   ];
   for (const [field, key, description, category] of circuitItems) {
     addPricedItem(field, category, key, description, inputs[field] as number);
@@ -2163,9 +2323,7 @@ export function calculateKitchenEstimate(
     smallApplianceQuantity + microwaveQuantity;
   const usesSharedApplianceHomeRun =
     inputs.applianceHomeRun12_2Length !== undefined;
-  const applianceHomeRunLength = safeNumber(
-    inputs.applianceHomeRun12_2Length,
-  );
+  const applianceHomeRunLength = safeNumber(inputs.applianceHomeRun12_2Length);
   const applianceHomeRunFootage =
     applianceHomeRunLength * selectedApplianceCircuitCount;
   if (inputs.smallApplianceCircuits !== undefined) {
@@ -2198,7 +2356,10 @@ export function calculateKitchenEstimate(
         "Small-appliance Circuit 1 company-configured device assumption",
     });
   }
-  if (inputs.smallApplianceCircuits === undefined && inputs.smallApplianceCircuit2) {
+  if (
+    inputs.smallApplianceCircuits === undefined &&
+    inputs.smallApplianceCircuit2
+  ) {
     addConfiguredCircuit({
       id: "kitchen-small-appliance-circuit-2",
       label: "Small-appliance Circuit 2",
@@ -2300,11 +2461,7 @@ export function calculateKitchenEstimate(
 
   if (usesSharedApplianceHomeRun && selectedApplianceCircuitCount > 0) {
     if (applianceHomeRunFootage > 0) {
-      const cable = unitCost(
-        "12/2 NM-B cable",
-        priceBook,
-        pricingWarnings,
-      );
+      const cable = unitCost("12/2 NM-B cable", priceBook, pricingWarnings);
       addLine(assembly, {
         id: "kitchen-appliance-home-run-cable",
         category: "Conductor",
@@ -2332,12 +2489,16 @@ export function calculateKitchenEstimate(
     );
   }
   if (inputs.countertopReceptacles > 0 && !usesBreakerSection) {
-    const breaker = resolveBreaker({
-      manufacturer: inputs.panelManufacturer ?? "",
-      amperage: inputs.breakerAmperage ?? 0,
-      poleCount: inputs.breakerPoleCount ?? 0,
-      protectionType: inputs.breakerProtectionType ?? "GFCI",
-    }, priceBook, pricingWarnings);
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer ?? "",
+        amperage: inputs.breakerAmperage ?? 0,
+        poleCount: inputs.breakerPoleCount ?? 0,
+        protectionType: inputs.breakerProtectionType ?? "GFCI",
+      },
+      priceBook,
+      pricingWarnings,
+    );
     addLine(assembly, {
       id: "kitchen-countertop-circuit-protection",
       category: "Protection",
@@ -2409,8 +2570,7 @@ export function calculateKitchenEstimate(
     inputs.undercabinetLighting * 1.2 +
     inputs.recessedLights * 0.9 +
     inputs.threeWayOptions * 0.75 +
-    fourWayLocations *
-      safeNumber(inputs.fourWayLaborHoursPerLocation ?? 0.75) +
+    fourWayLocations * safeNumber(inputs.fourWayLaborHoursPerLocation ?? 0.75) +
     (fourWayLocations > 0 ? safeNumber(inputs.fourWayCableFootage) / 40 : 0) +
     inputs.dimmers * 0.35 +
     inputs.usbReceptacles * 0.45 +
@@ -2468,22 +2628,44 @@ export function calculateAdditionEstimate(
     if (!n(quantity)) return;
     const price = unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
-      id, category, description, quantity: n(quantity), unit: "ea",
-      unitCost: price.value, source: price.source,
+      id,
+      category,
+      description,
+      quantity: n(quantity),
+      unit: "ea",
+      unitCost: price.value,
+      source: price.source,
     });
   };
-  catalogLine("addition-receptacles", "Devices",
+  catalogLine(
+    "addition-receptacles",
+    "Devices",
     "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
-    "Tamper-resistant receptacles", inputs.receptacles);
-  catalogLine("addition-switches", "Controls",
+    "Tamper-resistant receptacles",
+    inputs.receptacles,
+  );
+  catalogLine(
+    "addition-switches",
+    "Controls",
     "Pass & Seymour TM870-W 15A single-pole switch",
-    "Single-pole switches", inputs.switches);
-  catalogLine("addition-dimmers", "Controls",
-    "Lutron DVCL-153P-WH Diva LED+ dimmer", "LED dimmers", inputs.dimmers);
+    "Single-pole switches",
+    inputs.switches,
+  );
+  catalogLine(
+    "addition-dimmers",
+    "Controls",
+    "Lutron DVCL-153P-WH Diva LED+ dimmer",
+    "LED dimmers",
+    inputs.dimmers,
+  );
   const size = inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch";
-  catalogLine("addition-recessed-lights", "Lighting",
+  catalogLine(
+    "addition-recessed-lights",
+    "Lighting",
     size === "6-inch" ? JUNO_WF6_VERIFIED : JUNO_WF4_VERIFIED,
-    `${size} recessed lights`, inputs.recessedLights);
+    `${size} recessed lights`,
+    inputs.recessedLights,
+  );
 
   const fans = n(inputs.ceilingFans);
   if (fans) {
@@ -2507,15 +2689,20 @@ export function calculateAdditionEstimate(
       fanPrice.source = "Unresolved quote-local material cost override";
     } else {
       fanPrice = unitCost(
-        "Contractor-supplied ceiling fan", priceBook, pricingWarnings,
+        "Contractor-supplied ceiling fan",
+        priceBook,
+        pricingWarnings,
       );
     }
     addLine(assembly, {
-      id: "addition-ceiling-fans", category: "Equipment",
+      id: "addition-ceiling-fans",
+      category: "Equipment",
       description: inputs.customerSuppliedFans
         ? "Customer-supplied ceiling fans"
         : "Contractor-supplied ceiling fans",
-      quantity: fans, unit: "ea", unitCost: fanPrice.value,
+      quantity: fans,
+      unit: "ea",
+      unitCost: fanPrice.value,
       source: fanPrice.source,
       ...(inputs.customerSuppliedFans
         ? {
@@ -2543,7 +2730,9 @@ export function calculateAdditionEstimate(
     for (const [index, entry] of circuitEntries.entries()) {
       const quantity = n(entry.quantity);
       if (!quantity) continue;
-      const commonRouteFootage = commonRouteAllocated ? 0 : n(inputs.routeLength);
+      const commonRouteFootage = commonRouteAllocated
+        ? 0
+        : n(inputs.routeLength);
       commonRouteAllocated = true;
       const footage = commonRouteFootage + n(inputs.homeRunLength) * quantity;
       const compatible = additionCableCompatible(entry);
@@ -2557,7 +2746,8 @@ export function calculateAdditionEstimate(
           ? unitCost(`${entry.cableType} cable`, priceBook, pricingWarnings)
           : {
               value: 0,
-              source: "Unresolved — breaker amperage and cable type are incompatible",
+              source:
+                "Unresolved — breaker amperage and cable type are incompatible",
             };
         addLine(assembly, {
           id: `addition-circuit-${index + 1}-cable`,
@@ -2608,13 +2798,21 @@ export function calculateAdditionEstimate(
       }
       const cable = compatible
         ? unitCost(`${inputs.cableType} cable`, priceBook, pricingWarnings)
-        : { value: 0, source: "Unresolved — breaker amperage and cable type are incompatible" };
+        : {
+            value: 0,
+            source:
+              "Unresolved — breaker amperage and cable type are incompatible",
+          };
       addLine(assembly, {
-        id: "addition-cable", category: "Conductor",
+        id: "addition-cable",
+        category: "Conductor",
         description: compatible
           ? `${inputs.cableType} branch-circuit cable`
           : `${inputs.cableType} / ${inputs.breakerAmperage}A circuit — unresolved compatibility`,
-        quantity: footage, unit: "ft", unitCost: cable.value, source: cable.source,
+        quantity: footage,
+        unit: "ft",
+        unitCost: cable.value,
+        source: cable.source,
       });
     } else if (circuits) {
       pricingWarnings.push(
@@ -2622,16 +2820,24 @@ export function calculateAdditionEstimate(
       );
     }
     if (circuits) {
-      const breaker = resolveBreaker({
-        manufacturer: inputs.panelManufacturer,
-        amperage: inputs.breakerAmperage,
-        poleCount: inputs.breakerPoleCount,
-        protectionType: inputs.breakerProtectionType,
-      }, priceBook, pricingWarnings);
+      const breaker = resolveBreaker(
+        {
+          manufacturer: inputs.panelManufacturer,
+          amperage: inputs.breakerAmperage,
+          poleCount: inputs.breakerPoleCount,
+          protectionType: inputs.breakerProtectionType,
+        },
+        priceBook,
+        pricingWarnings,
+      );
       addLine(assembly, {
-        id: "addition-breakers", category: "Protection",
-        description: breaker.description, quantity: circuits, unit: "ea",
-        unitCost: breaker.value, source: breaker.source,
+        id: "addition-breakers",
+        category: "Protection",
+        description: breaker.description,
+        quantity: circuits,
+        unit: "ea",
+        unitCost: breaker.value,
+        source: breaker.source,
       });
     }
   }
@@ -2641,9 +2847,7 @@ export function calculateAdditionEstimate(
     const feederDistance = n(inputs.feederDistance);
     const subpanelAmperage = subpanelOption === "60A Subpanel" ? 60 : 100;
     const feederKey =
-      subpanelAmperage === 60
-        ? "#6 copper SER cable"
-        : "#1 aluminum SER cable";
+      subpanelAmperage === 60 ? "#6 copper SER cable" : "#1 aluminum SER cable";
     const feederDescription =
       subpanelAmperage === 60
         ? "#6 copper SER 4-wire feeder"
@@ -2656,12 +2860,7 @@ export function calculateAdditionEstimate(
       );
     }
 
-    const feeder = unitCost(
-      feederKey,
-      priceBook,
-      pricingWarnings,
-      "Conductor",
-    );
+    const feeder = unitCost(feederKey, priceBook, pricingWarnings, "Conductor");
     addLine(assembly, {
       id: "addition-subpanel-feeder",
       category: "Conductor",
@@ -2708,15 +2907,26 @@ export function calculateAdditionEstimate(
     ? circuitEntries.reduce((sum, entry) => sum + n(entry.quantity), 0)
     : n(inputs.circuitCount);
   const taskHours =
-    n(inputs.receptacles) * 0.45 + n(inputs.switches) * 0.4 +
-    n(inputs.dimmers) * 0.5 + n(inputs.recessedLights) +
-    fans * 1.75 + circuits * 2.5;
+    n(inputs.receptacles) * 0.45 +
+    n(inputs.switches) * 0.4 +
+    n(inputs.dimmers) * 0.5 +
+    n(inputs.recessedLights) +
+    fans * 1.75 +
+    circuits * 2.5;
   const adjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
-    ? Number(inputs.laborAdjustmentHours) : 0;
+    ? Number(inputs.laborAdjustmentHours)
+    : 0;
   return finalizeEstimate(
     assembly,
-    Math.max(0, taskHours + Math.max(1, n(inputs.crewSize)) * n(inputs.crewHours) + adjustment),
-    settings, pricingWarnings, inputs.laborRateType,
+    Math.max(
+      0,
+      taskHours +
+        Math.max(1, n(inputs.crewSize)) * n(inputs.crewHours) +
+        adjustment,
+    ),
+    settings,
+    pricingWarnings,
+    inputs.laborRateType,
   );
 }
 
@@ -2771,7 +2981,15 @@ export function calculateServiceUpgradeEstimate(
         pricingWarnings,
         compatible,
       ) ?? unitCost(legacyKey, priceBook, pricingWarnings);
-    addLine(assembly, { id, category, description, quantity: safeQuantity, unit, unitCost: price.value, source: price.source });
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit,
+      unitCost: price.value,
+      source: price.source,
+    });
   };
 
   const addAllowance = (
@@ -2873,7 +3091,8 @@ export function calculateServiceUpgradeEstimate(
     "ea",
     (item) =>
       itemInCategory(item, "Panel") &&
-      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
+      normalized(item.manufacturer ?? "") ===
+        normalized(inputs.panelManufacturer) &&
       item.amperage === Number.parseInt(inputs.serviceSize, 10) &&
       (itemHasTerms(item, "panel") || itemHasTerms(item, "load center")),
   );
@@ -2974,8 +3193,7 @@ export function calculateServiceUpgradeEstimate(
       inputs.lbQuantity,
       "ea",
       (item) =>
-        itemInCategory(item, "Raceway") &&
-        itemHasTerms(item, "2 inch", "lb"),
+        itemInCategory(item, "Raceway") && itemHasTerms(item, "2 inch", "lb"),
     );
     addExactOrLegacy(
       "mast-90",
@@ -2986,8 +3204,7 @@ export function calculateServiceUpgradeEstimate(
       inputs.ninetyQuantity,
       "ea",
       (item) =>
-        itemInCategory(item, "Raceway") &&
-        itemHasTerms(item, "2 inch", "90"),
+        itemInCategory(item, "Raceway") && itemHasTerms(item, "2 inch", "90"),
     );
     addExactOrLegacy(
       "mast-couplings",
@@ -3019,19 +3236,20 @@ export function calculateServiceUpgradeEstimate(
     );
   }
 
-  const serviceConductorKey = {
-    "1/0 aluminum SER": "1/0 aluminum SER cable",
-    "1/0 copper alternative": "1/0 copper service conductor alternative",
-    "3/0 aluminum SER": "3/0 aluminum SER cable",
-    "2/0 copper alternative": "2/0 copper service conductor alternative",
-    "4/0 aluminum XHHW in raceway": "4/0 aluminum XHHW conductor",
-    "4/0 aluminum SER": "4/0 aluminum SER cable",
-    "4/0 copper alternative": "4/0 copper service conductor alternative",
-    "Other configured conductor": "other configured service conductor",
-  }[inputs.serviceToPanelConductor] ?? "other configured service conductor";
+  const serviceConductorKey =
+    {
+      "1/0 aluminum SER": "1/0 aluminum SER cable",
+      "1/0 copper alternative": "1/0 copper service conductor alternative",
+      "3/0 aluminum SER": "3/0 aluminum SER cable",
+      "2/0 copper alternative": "2/0 copper service conductor alternative",
+      "4/0 aluminum XHHW in raceway": "4/0 aluminum XHHW conductor",
+      "4/0 aluminum SER": "4/0 aluminum SER cable",
+      "4/0 copper alternative": "4/0 copper service conductor alternative",
+      "Other configured conductor": "other configured service conductor",
+    }[inputs.serviceToPanelConductor] ?? "other configured service conductor";
   const serviceConductor =
     inputs.serviceToPanelConductor === "4/0 aluminum SER"
-      ? exactCatalogCost(
+      ? (exactCatalogCost(
           inputs.exactCatalogParts?.serviceToPanelConductor,
           "serviceToPanelConductor",
           priceBook,
@@ -3040,7 +3258,7 @@ export function calculateServiceUpgradeEstimate(
             itemInCategory(item, "Conductor") &&
             normalized(item.item).includes("4 0") &&
             normalized(item.item).includes("ser"),
-        ) ?? unitCost(serviceConductorKey, priceBook, pricingWarnings)
+        ) ?? unitCost(serviceConductorKey, priceBook, pricingWarnings))
       : inputs.exactCatalogParts?.serviceToPanelConductor
         ? exactCatalogCost(
             inputs.exactCatalogParts.serviceToPanelConductor,
@@ -3049,7 +3267,7 @@ export function calculateServiceUpgradeEstimate(
             pricingWarnings,
             () => false,
           )!
-      : unitCost(serviceConductorKey, priceBook, pricingWarnings);
+        : unitCost(serviceConductorKey, priceBook, pricingWarnings);
   addLine(assembly, {
     id: "service-to-panel-conductor",
     category: "Conductor",
@@ -3083,9 +3301,52 @@ export function calculateServiceUpgradeEstimate(
     );
   }
 
-  addExactOrLegacy("ground-bars", "Grounding", "groundBar", "ground bar", "Ground bars", inputs.groundBarQuantity, "ea", (item) => itemInCategory(item, "Grounding") && itemHasTerms(item, "ground bar") && (normalized(item.manufacturer ?? "") === "ge" || !["siemens", "square d"].includes(normalized(item.manufacturer ?? "")) || normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer)));
-  addExactOrLegacy("ground-rods", "Grounding", "groundRod", "ground rod", "Ground rods", inputs.groundRodQuantity, "ea", (item) => itemInCategory(item, "Grounding") && normalized(item.item).includes("ground") && normalized(item.item).includes("rod") && normalized(item.item).includes("5 8"));
-  addExactOrLegacy("acorn-clamps", "Grounding", "acornClamp", "acorn clamp", "Acorn clamps", inputs.acornClampQuantity, "ea", (item) => itemInCategory(item, "Grounding") && (normalized(item.item).includes("acorn") || normalized(item.item).includes("rod clamp")) && normalized(item.item).includes("5 8"));
+  addExactOrLegacy(
+    "ground-bars",
+    "Grounding",
+    "groundBar",
+    "ground bar",
+    "Ground bars",
+    inputs.groundBarQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Grounding") &&
+      itemHasTerms(item, "ground bar") &&
+      (normalized(item.manufacturer ?? "") === "ge" ||
+        !["siemens", "square d"].includes(
+          normalized(item.manufacturer ?? ""),
+        ) ||
+        normalized(item.manufacturer ?? "") ===
+          normalized(inputs.panelManufacturer)),
+  );
+  addExactOrLegacy(
+    "ground-rods",
+    "Grounding",
+    "groundRod",
+    "ground rod",
+    "Ground rods",
+    inputs.groundRodQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Grounding") &&
+      normalized(item.item).includes("ground") &&
+      normalized(item.item).includes("rod") &&
+      normalized(item.item).includes("5 8"),
+  );
+  addExactOrLegacy(
+    "acorn-clamps",
+    "Grounding",
+    "acornClamp",
+    "acorn clamp",
+    "Acorn clamps",
+    inputs.acornClampQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Grounding") &&
+      (normalized(item.item).includes("acorn") ||
+        normalized(item.item).includes("rod clamp")) &&
+      normalized(item.item).includes("5 8"),
+  );
   addPricedItem(
     "intersystem-bonding",
     "Bonding",
@@ -3117,9 +3378,8 @@ export function calculateServiceUpgradeEstimate(
     "3/4-inch PVC / raceway",
     inputs.pvcThreeQuarterFootage,
     "ft",
-      (item) =>
-        itemInCategory(item, "Raceway") &&
-        itemHasTerms(item, "3 4", "conduit"),
+    (item) =>
+      itemInCategory(item, "Raceway") && itemHasTerms(item, "3 4", "conduit"),
   );
   addExactOrLegacy(
     "grounding-pvc-fittings",
@@ -3128,10 +3388,9 @@ export function calculateServiceUpgradeEstimate(
     "3/4-inch PVC fittings",
     "3/4-inch PVC fittings",
     inputs.pvcThreeQuarterFittingsQuantity,
-      "ea",
-      (item) =>
-        itemInCategory(item, "Raceway") &&
-        itemHasTerms(item, "3 4", "coupling"),
+    "ea",
+    (item) =>
+      itemInCategory(item, "Raceway") && itemHasTerms(item, "3 4", "coupling"),
   );
   addPricedItem(
     "water-meter-bonding",
@@ -3149,16 +3408,98 @@ export function calculateServiceUpgradeEstimate(
     "ft",
   );
 
-  addPricedItem("four-square-box", "Devices", "4-square deep box", "4-square deep box", inputs.fourSquareBoxQuantity);
-  addPricedItem("receptacle-20a", "Devices", "20A receptacle", "20A receptacle", inputs.receptacle20AQuantity);
-  addPricedItem("receptacle-plate", "Trim", "20A receptacle plate", "20A receptacle plate", inputs.receptaclePlateQuantity);
-  addPricedItem("plywood-backing", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
-  addPricedItem("studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
-  addExactOrLegacy("duct-seal", "Normal Stock", "ductSeal", "service duct seal", "Service / duct seal", inputs.ductSealQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "duct seal"));
-  addExactOrLegacy("pvc-primer", "Normal Stock", "pvcPrimer", "PVC primer", "PVC primer", inputs.pvcPrimerQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "primer"));
-  addExactOrLegacy("pvc-glue", "Normal Stock", "pvcGlue", "PVC glue", "PVC glue", inputs.pvcGlueQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "cement"));
-  addExactOrLegacy("anti-oxidant", "Normal Stock", "antiOxidant", "anti-oxidation compound", "Anti-oxidation compound", inputs.antiOxidantQuantity ?? 0, "ea", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "anti oxidant"));
-  addExactOrLegacy("electrical-tape", "Normal Stock", "electricalTape", "electrical tape", "Electrical tape", inputs.electricalTapeQuantity ?? 0, "roll", (item) => itemInCategory(item, "Normal Stock") && itemHasTerms(item, "electrical tape"));
+  addPricedItem(
+    "four-square-box",
+    "Devices",
+    "4-square deep box",
+    "4-square deep box",
+    inputs.fourSquareBoxQuantity,
+  );
+  addPricedItem(
+    "receptacle-20a",
+    "Devices",
+    "20A receptacle",
+    "20A receptacle",
+    inputs.receptacle20AQuantity,
+  );
+  addPricedItem(
+    "receptacle-plate",
+    "Trim",
+    "20A receptacle plate",
+    "20A receptacle plate",
+    inputs.receptaclePlateQuantity,
+  );
+  addPricedItem(
+    "plywood-backing",
+    "Backing",
+    "4x4x3/4 plywood",
+    "4x4x3/4 plywood backing",
+    inputs.plywoodQuantity,
+  );
+  addPricedItem(
+    "studs",
+    "Framing",
+    "2x4x8 stud",
+    "2x4x8 studs",
+    inputs.studsQuantity,
+  );
+  addExactOrLegacy(
+    "duct-seal",
+    "Normal Stock",
+    "ductSeal",
+    "service duct seal",
+    "Service / duct seal",
+    inputs.ductSealQuantity ?? 0,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Normal Stock") && itemHasTerms(item, "duct seal"),
+  );
+  addExactOrLegacy(
+    "pvc-primer",
+    "Normal Stock",
+    "pvcPrimer",
+    "PVC primer",
+    "PVC primer",
+    inputs.pvcPrimerQuantity ?? 0,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Normal Stock") && itemHasTerms(item, "primer"),
+  );
+  addExactOrLegacy(
+    "pvc-glue",
+    "Normal Stock",
+    "pvcGlue",
+    "PVC glue",
+    "PVC glue",
+    inputs.pvcGlueQuantity ?? 0,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Normal Stock") && itemHasTerms(item, "cement"),
+  );
+  addExactOrLegacy(
+    "anti-oxidant",
+    "Normal Stock",
+    "antiOxidant",
+    "anti-oxidation compound",
+    "Anti-oxidation compound",
+    inputs.antiOxidantQuantity ?? 0,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Normal Stock") &&
+      itemHasTerms(item, "anti oxidant"),
+  );
+  addExactOrLegacy(
+    "electrical-tape",
+    "Normal Stock",
+    "electricalTape",
+    "electrical tape",
+    "Electrical tape",
+    inputs.electricalTapeQuantity ?? 0,
+    "roll",
+    (item) =>
+      itemInCategory(item, "Normal Stock") &&
+      itemHasTerms(item, "electrical tape"),
+  );
   addLine(assembly, {
     id: "panel-directory-labeling",
     category: "Closeout",
@@ -3169,7 +3510,9 @@ export function calculateServiceUpgradeEstimate(
     source: "Included labor scope",
   });
 
-  for (const [index, existingBreaker] of (inputs.existingBreakers ?? []).entries()) {
+  for (const [index, existingBreaker] of (
+    inputs.existingBreakers ?? []
+  ).entries()) {
     const quantity = safeNumber(existingBreaker.quantity);
     if (quantity === 0) continue;
     const resolved = resolveBreaker(
@@ -3200,15 +3543,30 @@ export function calculateServiceUpgradeEstimate(
     inputs.existingOtherBreakerQuantity ?? 0,
   );
 
-  addAllowance("permit-allowance", "Permit", "service upgrade permit allowance", inputs.permitAllowance);
-  addAllowance("inspection-allowance", "Inspection", "service upgrade inspection allowance", inputs.inspectionAllowance);
+  addAllowance(
+    "permit-allowance",
+    "Permit",
+    "service upgrade permit allowance",
+    inputs.permitAllowance,
+  );
+  addAllowance(
+    "inspection-allowance",
+    "Inspection",
+    "service upgrade inspection allowance",
+    inputs.inspectionAllowance,
+  );
   addAllowance(
     "utility-coordination-allowance",
     "Utility",
     "service upgrade utility coordination allowance",
     inputs.utilityCoordinationAllowance ?? 0,
   );
-  addAllowance("miscellaneous-allowance", "Miscellaneous", "service upgrade miscellaneous allowance", inputs.miscellaneousAllowance);
+  addAllowance(
+    "miscellaneous-allowance",
+    "Miscellaneous",
+    "service upgrade miscellaneous allowance",
+    inputs.miscellaneousAllowance,
+  );
 
   pricingWarnings.push(
     "Service configuration and existing utility conditions require field verification; selections are configurable estimating assumptions, not universal code requirements.",
@@ -3233,10 +3591,7 @@ export function calculateServiceUpgradeEstimate(
       total + (Number.isFinite(Number(value)) ? Number(value) : 0),
     0,
   );
-  const personHours = Math.max(
-    0,
-    crewSize * crewHours + fieldConditionHours,
-  );
+  const personHours = Math.max(0, crewSize * crewHours + fieldConditionHours);
 
   return finalizeEstimate(
     assembly,
@@ -3291,9 +3646,22 @@ export function calculatePanelReplacementEstimate(
     const safeQuantity = safeNumber(quantity);
     if (safeQuantity === 0) return;
     const price =
-      exactCatalogCost(inputs.exactCatalogParts?.[selector], selector, priceBook, pricingWarnings, compatible) ??
-      unitCost(legacyKey, priceBook, pricingWarnings);
-    addLine(assembly, { id, category, description, quantity: safeQuantity, unit, unitCost: price.value, source: price.source });
+      exactCatalogCost(
+        inputs.exactCatalogParts?.[selector],
+        selector,
+        priceBook,
+        pricingWarnings,
+        compatible,
+      ) ?? unitCost(legacyKey, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id,
+      category,
+      description,
+      quantity: safeQuantity,
+      unit,
+      unitCost: price.value,
+      source: price.source,
+    });
   };
 
   const addAllowance = (
@@ -3363,7 +3731,8 @@ export function calculatePanelReplacementEstimate(
     "ea",
     (item) =>
       itemInCategory(item, "Panel") &&
-      normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer) &&
+      normalized(item.manufacturer ?? "") ===
+        normalized(inputs.panelManufacturer) &&
       item.amperage === panelAmperage &&
       catalogSpaceCount(item) === inputs.panelSpaceCount &&
       (itemHasTerms(item, "panel") || itemHasTerms(item, "load center")),
@@ -3412,7 +3781,8 @@ export function calculatePanelReplacementEstimate(
     ) ??
       false);
   const feederQuantity =
-    safeNumber(inputs.feederLength) * safeNumber(inputs.feederConductorQuantity);
+    safeNumber(inputs.feederLength) *
+    safeNumber(inputs.feederConductorQuantity);
   if (!feederIsCompatible) {
     pricingWarnings.push(
       `The selected panel/breaker/feeder tuple (${panelAmperage}A panel, ${breakerAmperage}A ${breakerPoleCount}-pole breaker, ${inputs.feederConductorQuantity} × ${inputs.feederConductor}) does not meet the selected breaker amperage and supported configuration. No feeder conductor cost was substituted; confirm an exact compatible tuple before quoting.`,
@@ -3463,8 +3833,38 @@ export function calculatePanelReplacementEstimate(
       itemHasTerms(item, "2 inch", "coupling"),
   );
 
-  addExactOrLegacy("panel-ground-bars", "Grounding", "groundBar", "ground bar", "Ground bars", inputs.groundBarQuantity, "ea", (item) => itemInCategory(item, "Grounding") && itemHasTerms(item, "ground bar") && (normalized(item.manufacturer ?? "") === "ge" || !["siemens", "square d"].includes(normalized(item.manufacturer ?? "")) || normalized(item.manufacturer ?? "") === normalized(inputs.panelManufacturer)));
-  addExactOrLegacy("panel-ground-rods", "Grounding", "groundRod", "ground rod", "Ground rods", inputs.groundRodQuantity, "ea", (item) => itemInCategory(item, "Grounding") && normalized(item.item).includes("ground") && normalized(item.item).includes("rod") && normalized(item.item).includes("5 8"));
+  addExactOrLegacy(
+    "panel-ground-bars",
+    "Grounding",
+    "groundBar",
+    "ground bar",
+    "Ground bars",
+    inputs.groundBarQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Grounding") &&
+      itemHasTerms(item, "ground bar") &&
+      (normalized(item.manufacturer ?? "") === "ge" ||
+        !["siemens", "square d"].includes(
+          normalized(item.manufacturer ?? ""),
+        ) ||
+        normalized(item.manufacturer ?? "") ===
+          normalized(inputs.panelManufacturer)),
+  );
+  addExactOrLegacy(
+    "panel-ground-rods",
+    "Grounding",
+    "groundRod",
+    "ground rod",
+    "Ground rods",
+    inputs.groundRodQuantity,
+    "ea",
+    (item) =>
+      itemInCategory(item, "Grounding") &&
+      normalized(item.item).includes("ground") &&
+      normalized(item.item).includes("rod") &&
+      normalized(item.item).includes("5 8"),
+  );
   addPricedItem(
     "panel-grounding-conductor",
     "Grounding",
@@ -3481,8 +3881,20 @@ export function calculatePanelReplacementEstimate(
     inputs.bondingConductorFootage,
     "ft",
   );
-  addPricedItem("panel-plywood", "Backing", "4x4x3/4 plywood", "4x4x3/4 plywood backing", inputs.plywoodQuantity);
-  addPricedItem("panel-studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity);
+  addPricedItem(
+    "panel-plywood",
+    "Backing",
+    "4x4x3/4 plywood",
+    "4x4x3/4 plywood backing",
+    inputs.plywoodQuantity,
+  );
+  addPricedItem(
+    "panel-studs",
+    "Framing",
+    "2x4x8 stud",
+    "2x4x8 studs",
+    inputs.studsQuantity,
+  );
   addExactOrLegacy(
     "panel-anti-oxidant",
     "Normal Stock",
@@ -3508,7 +3920,9 @@ export function calculatePanelReplacementEstimate(
       itemHasTerms(item, "electrical tape"),
   );
 
-  for (const [index, existingBreaker] of (inputs.existingBreakers ?? []).entries()) {
+  for (const [index, existingBreaker] of (
+    inputs.existingBreakers ?? []
+  ).entries()) {
     const quantity = safeNumber(existingBreaker.quantity);
     if (quantity === 0) continue;
     const resolved = resolveBreaker(
@@ -3539,7 +3953,12 @@ export function calculatePanelReplacementEstimate(
     inputs.existingOtherBreakerQuantity ?? 0,
   );
 
-  addAllowance("panel-permit-allowance", "Permit", "panel replacement permit allowance", inputs.permitAllowance);
+  addAllowance(
+    "panel-permit-allowance",
+    "Permit",
+    "panel replacement permit allowance",
+    inputs.permitAllowance,
+  );
   addAllowance(
     "panel-inspection-allowance",
     "Inspection",
@@ -3606,7 +4025,10 @@ export function calculateRecessedLightingEstimate(
     Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
   const roomLength = safeNumber(inputs.roomLength);
   const roomWidth = safeNumber(inputs.roomWidth);
-  const fixtureQuantity = Math.max(1, Math.round(safeNumber(inputs.fixtureQuantity)));
+  const fixtureQuantity = Math.max(
+    1,
+    Math.round(safeNumber(inputs.fixtureQuantity)),
+  );
   const additionalLights = Math.round(safeNumber(inputs.additionalLights));
   const additionalSwitches = Math.round(safeNumber(inputs.additionalSwitches));
   const wireRunLength = safeNumber(inputs.wireRunLength);
@@ -3614,7 +4036,9 @@ export function calculateRecessedLightingEstimate(
   const traditionalThreeWayFootage = safeNumber(
     inputs.traditionalThreeWayFootage ?? 0,
   );
-  const laborAdjustmentHours = Number.isFinite(Number(inputs.laborAdjustmentHours))
+  const laborAdjustmentHours = Number.isFinite(
+    Number(inputs.laborAdjustmentHours),
+  )
     ? Number(inputs.laborAdjustmentHours)
     : 0;
   const isNewWiring = /new/i.test(inputs.wiringOption);
@@ -3631,9 +4055,7 @@ export function calculateRecessedLightingEstimate(
     switchingMethod ===
       "Lutron Diva Smart Dimmer 3-way kit with Pico paddle remote";
   const fixtureKey =
-    inputs.fixtureSize === "6-inch"
-      ? JUNO_WF6_VERIFIED
-      : JUNO_WF4_VERIFIED;
+    inputs.fixtureSize === "6-inch" ? JUNO_WF6_VERIFIED : JUNO_WF4_VERIFIED;
   const fixtureLabel = inputs.fixtureSize === "6-inch" ? "6-inch" : "4-inch";
 
   const addPricedItem = (
@@ -3715,10 +4137,7 @@ export function calculateRecessedLightingEstimate(
     "Additional Pass & Seymour single-pole switches",
     additionalSwitches,
   );
-  if (
-    !isSmartKit &&
-    /include|yes|selected/i.test(inputs.dimmerSelection)
-  ) {
+  if (!isSmartKit && /include|yes|selected/i.test(inputs.dimmerSelection)) {
     addPricedItem(
       "dimmer",
       "Controls",
@@ -3756,18 +4175,22 @@ export function calculateRecessedLightingEstimate(
             : "New wiring is selected but the approximate wire run is zero. Add a run length and/or wiring allowance so cable can be priced.",
         );
       } else {
-      const cable = unitCost(`${selectedCable} cable`, priceBook, pricingWarnings);
-      addLine(assembly, {
-        id: "recessed-wiring",
-        category: "Conductor",
+        const cable = unitCost(
+          `${selectedCable} cable`,
+          priceBook,
+          pricingWarnings,
+        );
+        addLine(assembly, {
+          id: "recessed-wiring",
+          category: "Conductor",
           description: isTraditionalThreeWay
             ? "14/3 NM-B cable — contractor-entered 3-way footage plus wiring allowance"
             : `${selectedCable} cable — approximate run plus wiring allowance`,
           quantity: Number((cableFootage + wiringAllowanceFeet).toFixed(2)),
-        unit: "ft",
-        unitCost: cable.value,
-        source: cable.source,
-      });
+          unit: "ft",
+          unitCost: cable.value,
+          source: cable.source,
+        });
         if (isTraditionalThreeWay && cableFootage === 0) {
           pricingWarnings.push(
             "Traditional 3-way switching has zero contractor-entered 14/3 NM-B footage. Confirm the entered footage before the quote is sent.",
@@ -3844,25 +4267,21 @@ export function calculateRecessedLightingEstimate(
       : 0.5;
   const taskLaborHours =
     1.25 +
-      fixtureQuantity * 0.85 +
-      additionalLights * 0.65 +
-      (isTraditionalThreeWay ? 1.25 : isSmartKit ? 1 : 0.5) +
-      additionalSwitches * 0.45 +
-      (!isSmartKit &&
-      /include|yes|selected/i.test(inputs.dimmerSelection)
-        ? 0.5
-        : 0) +
-      (isNewWiring
-        ? ((isTraditionalThreeWay
-            ? traditionalThreeWayFootage
-            : wireRunLength) +
-            wiringAllowanceFeet) /
-          40
-        : 0) +
-      (isNewCircuit ? 2.5 : 0) +
-      accessHours;
-  const laborHours =
-    taskLaborHours * ceilingMultiplier + laborAdjustmentHours;
+    fixtureQuantity * 0.85 +
+    additionalLights * 0.65 +
+    (isTraditionalThreeWay ? 1.25 : isSmartKit ? 1 : 0.5) +
+    additionalSwitches * 0.45 +
+    (!isSmartKit && /include|yes|selected/i.test(inputs.dimmerSelection)
+      ? 0.5
+      : 0) +
+    (isNewWiring
+      ? ((isTraditionalThreeWay ? traditionalThreeWayFootage : wireRunLength) +
+          wiringAllowanceFeet) /
+        40
+      : 0) +
+    (isNewCircuit ? 2.5 : 0) +
+    accessHours;
+  const laborHours = taskLaborHours * ceilingMultiplier + laborAdjustmentHours;
 
   return finalizeEstimate(
     assembly,
@@ -4278,8 +4697,7 @@ export function calculateNewHouseEstimate(
 
   if (equipmentCircuitCount > 0) {
     const averageEquipmentFootage = quantity(inputs.equipmentCircuitFootage);
-    const equipmentFootage =
-      averageEquipmentFootage * equipmentCircuitCount;
+    const equipmentFootage = averageEquipmentFootage * equipmentCircuitCount;
     const compatibleEquipmentCable: Record<number, string> = {
       20: "12/2 NM-B",
       30: "10/2 NM-B",
@@ -4357,8 +4775,7 @@ export function calculateNewHouseEstimate(
         ? 1.12
         : 1.06
       : 1;
-  const garageMultiplier =
-    quantity(inputs.garageSquareFootage) > 0 ? 1.04 : 1;
+  const garageMultiplier = quantity(inputs.garageSquareFootage) > 0 ? 1.04 : 1;
   const squareFootageMultiplier = Math.min(
     1.5,
     Math.max(0.75, quantity(inputs.finishedSquareFootage) / 2000),
@@ -4385,8 +4802,7 @@ export function calculateNewHouseEstimate(
     quantity(inputs.hvacEquipmentCircuitQuantity) * 1.5 +
     quantity(inputs.miniSplitCircuitQuantity) * 2 +
     quantity(inputs.commonBranchCircuitQuantity) * 1;
-  const crewLaborHours =
-    quantity(inputs.crewSize) * quantity(inputs.crewHours);
+  const crewLaborHours = quantity(inputs.crewSize) * quantity(inputs.crewHours);
   const laborHours =
     crewLaborHours +
     scopeLaborHours * characteristicMultiplier +

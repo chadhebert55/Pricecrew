@@ -136,7 +136,11 @@ type EstimateModule =
   | "NEW_HOUSE";
 
 export function normalizeEstimateModule(value: string): EstimateModule | null {
-  const key = value.trim().toUpperCase().replace(/&/g, "AND").replace(/[^A-Z0-9]/g, "");
+  const key = value
+    .trim()
+    .toUpperCase()
+    .replace(/&/g, "AND")
+    .replace(/[^A-Z0-9]/g, "");
   const aliases: Record<string, EstimateModule> = {
     EVCHARGER: "EV_CHARGER",
     EVCHARGERBUILDER: "EV_CHARGER",
@@ -187,9 +191,7 @@ export function validateOverrideValues(values: {
     (value) =>
       value === undefined ||
       value === null ||
-      (Number.isFinite(value) &&
-        value >= 0 &&
-        value <= MAX_OVERRIDE_VALUE),
+      (Number.isFinite(value) && value >= 0 && value <= MAX_OVERRIDE_VALUE),
   );
 }
 
@@ -301,7 +303,8 @@ async function validateTakeoffSnapshotForQuote({
     return {
       ok: false,
       status: 409,
-      error: takeoff.errorMessage ?? "Blueprint takeoff is not ready for quoting.",
+      error:
+        takeoff.errorMessage ?? "Blueprint takeoff is not ready for quoting.",
     };
   }
   const [items, events] = await Promise.all([
@@ -323,7 +326,8 @@ async function validateTakeoffSnapshotForQuote({
     return {
       ok: false,
       status: 409,
-      error: "Accept at least one blueprint takeoff item before creating the quote.",
+      error:
+        "Accept at least one blueprint takeoff item before creating the quote.",
     };
   }
   const submittedInputs = jobInputs as unknown as Record<string, unknown>;
@@ -431,8 +435,12 @@ function serializeCustomerSummary(
   customer: typeof customersTable.$inferSelect,
   quotes: Array<typeof quotesTable.$inferSelect>,
 ) {
-  const customerQuotes = quotes.filter((quote) => quote.customerId === customer.id);
-  const latestQuote = customerQuotes.reduce<typeof quotesTable.$inferSelect | null>(
+  const customerQuotes = quotes.filter(
+    (quote) => quote.customerId === customer.id,
+  );
+  const latestQuote = customerQuotes.reduce<
+    typeof quotesTable.$inferSelect | null
+  >(
     (latest, quote) =>
       !latest || quote.updatedAt > latest.updatedAt ? quote : latest,
     null,
@@ -515,19 +523,19 @@ async function findOrCreateCustomer(input: {
           .returning();
       } catch (error) {
         if (isUniqueConstraintError(error)) {
-           const concurrentEmailMatch = await customerByNormalizedEmail(
-             input.companyId,
-             email,
-           );
+          const concurrentEmailMatch = await customerByNormalizedEmail(
+            input.companyId,
+            email,
+          );
           if (concurrentEmailMatch) return concurrentEmailMatch;
         }
         throw error;
       }
       if (updated) return updated;
-       const concurrentEmailMatch = await customerByNormalizedEmail(
-         input.companyId,
-         email,
-       );
+      const concurrentEmailMatch = await customerByNormalizedEmail(
+        input.companyId,
+        email,
+      );
       if (concurrentEmailMatch) return concurrentEmailMatch;
     }
     if (!match.shouldSetEmail) return match.customer;
@@ -546,10 +554,10 @@ async function findOrCreateCustomer(input: {
     return customer;
   } catch (error) {
     if (email && isUniqueConstraintError(error)) {
-       const concurrentEmailMatch = await customerByNormalizedEmail(
-         input.companyId,
-         email,
-       );
+      const concurrentEmailMatch = await customerByNormalizedEmail(
+        input.companyId,
+        email,
+      );
       if (concurrentEmailMatch) return concurrentEmailMatch;
     }
     throw error;
@@ -562,10 +570,7 @@ function proposalSecret() {
   return secret;
 }
 
-export function createProposalShareToken(
-  quoteId: number,
-  updatedAt: Date,
-) {
+export function createProposalShareToken(quoteId: number, updatedAt: Date) {
   const payload = `${quoteId}.${updatedAt.getTime()}`;
   const signature = createHmac("sha256", proposalSecret())
     .update(payload)
@@ -687,71 +692,77 @@ async function recordProposalDecision(input: {
 }) {
   try {
     return await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(${input.quote.id})`,
-      );
-    const [currentQuote] = await tx
-      .select()
-      .from(quotesTable)
-      .where(
-        and(
-          eq(quotesTable.id, input.quote.id),
-          eq(quotesTable.companyId, input.quote.companyId),
-        ),
-      );
-    const [newerRevision] = await tx
-      .select({ id: quotesTable.id })
-      .from(quotesTable)
-      .where(
-        and(
-          eq(quotesTable.companyId, input.quote.companyId),
-          eq(quotesTable.sourceQuoteId, input.quote.id),
-        ),
-      )
-      .limit(1);
-    if (
-      !currentQuote ||
-      normalizeQuoteStatus(currentQuote.status) !== "ready" ||
-      currentQuote.updatedAt.getTime() !== input.tokenIssuedAt.getTime() ||
-      newerRevision
-    ) {
-      return { stale: true as const };
-    }
+      await tx.execute(sql`select pg_advisory_xact_lock(${input.quote.id})`);
+      const [currentQuote] = await tx
+        .select()
+        .from(quotesTable)
+        .where(
+          and(
+            eq(quotesTable.id, input.quote.id),
+            eq(quotesTable.companyId, input.quote.companyId),
+          ),
+        );
+      const [newerRevision] = await tx
+        .select({ id: quotesTable.id })
+        .from(quotesTable)
+        .where(
+          and(
+            eq(quotesTable.companyId, input.quote.companyId),
+            eq(quotesTable.sourceQuoteId, input.quote.id),
+          ),
+        )
+        .limit(1);
+      if (
+        !currentQuote ||
+        normalizeQuoteStatus(currentQuote.status) !== "ready" ||
+        currentQuote.updatedAt.getTime() !== input.tokenIssuedAt.getTime() ||
+        newerRevision
+      ) {
+        return { stale: true as const };
+      }
 
-    const existingDecisions = await tx
-      .select()
-      .from(proposalDecisionsTable)
-      .where(
-        and(
-          eq(proposalDecisionsTable.quoteId, input.quote.id),
-          eq(proposalDecisionsTable.companyId, input.quote.companyId),
-        ),
+      const existingDecisions = await tx
+        .select()
+        .from(proposalDecisionsTable)
+        .where(
+          and(
+            eq(proposalDecisionsTable.quoteId, input.quote.id),
+            eq(proposalDecisionsTable.companyId, input.quote.companyId),
+          ),
+        );
+      const existing = existingDecisions.find(
+        (decision) =>
+          decision.tokenIssuedAt.getTime() === input.tokenIssuedAt.getTime(),
       );
-    const existing = existingDecisions.find(
-      (decision) =>
-        decision.tokenIssuedAt.getTime() === input.tokenIssuedAt.getTime(),
-    );
-    if (existing) {
-      return matchesDecisionInput(existing, input.decision)
-        ? { decision: existing, conflict: false as const, stale: false as const }
-        : { decision: existing, conflict: true as const, stale: false as const };
-    }
+      if (existing) {
+        return matchesDecisionInput(existing, input.decision)
+          ? {
+              decision: existing,
+              conflict: false as const,
+              stale: false as const,
+            }
+          : {
+              decision: existing,
+              conflict: true as const,
+              stale: false as const,
+            };
+      }
 
-    const [decision] = await tx
-      .insert(proposalDecisionsTable)
-      .values({
-        quoteId: input.quote.id,
-        companyId: input.quote.companyId,
-        revisionNumber: input.quote.revisionNumber,
-        tokenIssuedAt: sql`(
+      const [decision] = await tx
+        .insert(proposalDecisionsTable)
+        .values({
+          quoteId: input.quote.id,
+          companyId: input.quote.companyId,
+          revisionNumber: input.quote.revisionNumber,
+          tokenIssuedAt: sql`(
           select ${quotesTable.updatedAt}
           from ${quotesTable}
           where ${quotesTable.id} = ${input.quote.id}
         )`,
-        ...input.decision,
-      })
-      .returning();
-    if (!decision) throw new Error("Unable to record proposal decision");
+          ...input.decision,
+        })
+        .returning();
+      if (!decision) throw new Error("Unable to record proposal decision");
       return { decision, conflict: false as const, stale: false as const };
     });
   } catch (error) {
@@ -773,10 +784,16 @@ export function customerMaterialDescription(
   line?: { id?: string; category?: string; source?: string },
 ) {
   const rules: Array<[RegExp, string]> = [
-    [/^Milbank .*200A meter-main.*$/i, "200A meter-main with built-in disconnect"],
+    [
+      /^Milbank .*200A meter-main.*$/i,
+      "200A meter-main with built-in disconnect",
+    ],
     [/^Siemens .*200A .*panel.*$/i, "200A Siemens panel"],
     [/^Square D .*100A .*load center.*$/i, "100A Square D panel"],
-    [/^.*intersystem bonding (?:terminal|connector).*$/i, "Intersystem bonding connector"],
+    [
+      /^.*intersystem bonding (?:terminal|connector).*$/i,
+      "Intersystem bonding connector",
+    ],
     [/^#8 solid grounding conductor$/i, "#8 bare copper"],
     [/^#4 green bonding conductor$/i, "#4 green copper"],
     [/^.*Pass & Seymour.*traditional 3-way switches.*$/i, "3-way switches"],
@@ -799,15 +816,18 @@ export function customerMaterialDescription(
       ? `${breaker[1]} ${breaker[2]}-pole ${breaker[3]} breaker`
       : "Circuit breaker";
   }
-  const genericForCategory =
-    line?.category?.toLocaleLowerCase().includes("labor")
-      ? "Electrical labor"
-      : line?.category?.toLocaleLowerCase().includes("permit")
-        ? "Permit and inspection allowance"
-        : "Electrical material";
+  const genericForCategory = line?.category
+    ?.toLocaleLowerCase()
+    .includes("labor")
+    ? "Electrical labor"
+    : line?.category?.toLocaleLowerCase().includes("permit")
+      ? "Permit and inspection allowance"
+      : "Electrical material";
   const catalogOrigin =
     Boolean(line?.source) &&
-    !/customer supplied|allowance|custom|manual|labor/i.test(line?.source ?? "");
+    !/customer supplied|allowance|custom|manual|labor/i.test(
+      line?.source ?? "",
+    );
   // Catalog names, SKUs, URLs, supplier product codes, and unknown
   // supplier-origin descriptions are contractor-only.
   if (
@@ -822,8 +842,12 @@ export function customerMaterialDescription(
   // An initial capitalized vendor/brand token followed by a material is a
   // catalog-style name even when it has no URL or part number (for example,
   // “Acme Electrical conduit”). Keep ordinary human-entered scope useful.
-  if (/^[A-Z][A-Za-z&.'-]+(?:\s+[A-Z][A-Za-z&.'-]+){0,2}\s+(?:conduit|wire|cable|panel|breaker|receptacle|switch|fixture|fitting|material)s?$/.test(description) &&
-      /^[A-Z]/.test(description)) {
+  if (
+    /^[A-Z][A-Za-z&.'-]+(?:\s+[A-Z][A-Za-z&.'-]+){0,2}\s+(?:conduit|wire|cable|panel|breaker|receptacle|switch|fixture|fitting|material)s?$/.test(
+      description,
+    ) &&
+    /^[A-Z]/.test(description)
+  ) {
     return genericForCategory;
   }
   return description.trim() || genericForCategory;
@@ -877,10 +901,7 @@ export function pricingForQuoteUpdate(
     sellingPriceOverride?: number | null;
   },
 ) {
-  if (
-    !("laborOverride" in update) &&
-    !("sellingPriceOverride" in update)
-  ) {
+  if (!("laborOverride" in update) && !("sellingPriceOverride" in update)) {
     return pricing;
   }
 
@@ -957,9 +978,9 @@ function currentDeliberateLossApproval(
   const approval = pricing.deliberateLossApproval;
   return Boolean(
     approval &&
-      approval.reason.trim().length >= 10 &&
-      approval.costAtConfirmation === totalCost &&
-      approval.sellingPriceAtConfirmation === pricing.finalSellingPrice,
+    approval.reason.trim().length >= 10 &&
+    approval.costAtConfirmation === totalCost &&
+    approval.sellingPriceAtConfirmation === pricing.finalSellingPrice,
   );
 }
 
@@ -1015,10 +1036,7 @@ export function evaluateCustomerReadyPricing({
     }
 
     const reason = deliberateLossConfirmation?.reason.trim() ?? "";
-    if (
-      deliberateLossConfirmation?.confirmed !== true ||
-      reason.length < 10
-    ) {
+    if (deliberateLossConfirmation?.confirmed !== true || reason.length < 10) {
       return {
         allowed: false,
         error:
@@ -1062,6 +1080,7 @@ async function calculateEstimate(
   const settings = await companySettings(companyId);
   const priceBook = await db
     .select({
+      id: priceBookItemsTable.id,
       category: priceBookItemsTable.category,
       item: priceBookItemsTable.item,
       unitCost: priceBookItemsTable.unitCost,
@@ -1130,7 +1149,9 @@ function isBathroomInput(
 function isKitchenInput(
   jobInputs: QuoteJobInputsRecord,
 ): jobInputs is KitchenInputRecord {
-  return "refrigeratorCircuits" in jobInputs && "countertopReceptacles" in jobInputs;
+  return (
+    "refrigeratorCircuits" in jobInputs && "countertopReceptacles" in jobInputs
+  );
 }
 
 function isAdditionInput(
@@ -1164,7 +1185,10 @@ function isPanelReplacementInput(
 function isServiceCallInput(
   jobInputs: QuoteJobInputsRecord,
 ): jobInputs is ServiceCallInputRecord {
-  return "visitQuantity" in jobInputs && "trReceptacleReplacementQuantity" in jobInputs;
+  return (
+    "visitQuantity" in jobInputs &&
+    "trReceptacleReplacementQuantity" in jobInputs
+  );
 }
 
 function isTimeMaterialsInput(
@@ -1197,13 +1221,13 @@ function moduleMatchesInputs(
     (module === "BATHROOM" && isBathroomInput(jobInputs)) ||
     (module === "KITCHEN" && isKitchenInput(jobInputs)) ||
     (module === "ADDITION" && isAdditionInput(jobInputs)) ||
-    (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs))
-    || (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs))
-    || (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs))
-    || (module === "SERVICE_CALL" && isServiceCallInput(jobInputs))
-    || (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs))
-    || (module === "CUSTOM" && isCustomInput(jobInputs))
-    || (module === "NEW_HOUSE" && isNewHouseInput(jobInputs))
+    (module === "RECESSED_LIGHTING" && isRecessedLightingInput(jobInputs)) ||
+    (module === "SERVICE_UPGRADE" && isServiceUpgradeInput(jobInputs)) ||
+    (module === "PANEL_REPLACEMENT" && isPanelReplacementInput(jobInputs)) ||
+    (module === "SERVICE_CALL" && isServiceCallInput(jobInputs)) ||
+    (module === "TIME_MATERIALS" && isTimeMaterialsInput(jobInputs)) ||
+    (module === "CUSTOM" && isCustomInput(jobInputs)) ||
+    (module === "NEW_HOUSE" && isNewHouseInput(jobInputs))
   );
 }
 
@@ -1217,10 +1241,14 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     .orderBy(desc(quotesTable.updatedAt));
 
   const operatingQuotes = quotes.filter((quote) => !quote.isDemo);
-  const totalQuoted = operatingQuotes.reduce((sum, quote) => sum + quote.total, 0);
+  const totalQuoted = operatingQuotes.reduce(
+    (sum, quote) => sum + quote.total,
+    0,
+  );
   const averageMargin =
     operatingQuotes.length > 0
-      ? operatingQuotes.reduce((sum, quote) => sum + quote.margin, 0) / operatingQuotes.length
+      ? operatingQuotes.reduce((sum, quote) => sum + quote.margin, 0) /
+        operatingQuotes.length
       : 0;
   const data = GetDashboardSummaryResponse.parse({
     totalQuotes: operatingQuotes.length,
@@ -1260,10 +1288,7 @@ router.get("/customers", async (req, res): Promise<void> => {
       .from(customersTable)
       .where(eq(customersTable.companyId, companyId))
       .orderBy(customersTable.name),
-    db
-      .select()
-      .from(quotesTable)
-      .where(eq(quotesTable.companyId, companyId)),
+    db.select().from(quotesTable).where(eq(quotesTable.companyId, companyId)),
   ]);
   const search = parsedQuery.data.search?.trim().toLocaleLowerCase();
   const filtered = search
@@ -1301,7 +1326,9 @@ router.post("/customers", async (req, res): Promise<void> => {
         (customer) => normalizeCustomerEmail(customer.email) === email,
       )
     ) {
-      res.status(409).json({ error: "A customer with this email already exists." });
+      res
+        .status(409)
+        .json({ error: "A customer with this email already exists." });
       return;
     }
   }
@@ -1318,7 +1345,9 @@ router.post("/customers", async (req, res): Promise<void> => {
       .returning();
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      res.status(409).json({ error: "A customer with this email already exists." });
+      res
+        .status(409)
+        .json({ error: "A customer with this email already exists." });
       return;
     }
     throw error;
@@ -1416,7 +1445,9 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
         normalizeCustomerEmail(customer.email) === email,
     );
     if (conflict) {
-      res.status(409).json({ error: "A customer with this email already exists." });
+      res
+        .status(409)
+        .json({ error: "A customer with this email already exists." });
       return;
     }
   }
@@ -1426,8 +1457,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
     [customer] = await db
       .update(customersTable)
       .set({
-        name:
-          parsed.data.name?.trim().replace(/\s+/g, " ") ?? existing.name,
+        name: parsed.data.name?.trim().replace(/\s+/g, " ") ?? existing.name,
         email,
       })
       .where(
@@ -1439,7 +1469,9 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
       .returning();
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      res.status(409).json({ error: "A customer with this email already exists." });
+      res
+        .status(409)
+        .json({ error: "A customer with this email already exists." });
       return;
     }
     throw error;
@@ -1550,7 +1582,9 @@ router.post("/quotes", async (req, res): Promise<void> => {
       return;
     }
     if (normalizeEstimateModule(source.module) !== parsed.data.module) {
-      res.status(400).json({ error: "Source quote module does not match this builder" });
+      res
+        .status(400)
+        .json({ error: "Source quote module does not match this builder" });
       return;
     }
     if (
@@ -1573,7 +1607,8 @@ router.post("/quotes", async (req, res): Promise<void> => {
   let customer: typeof customersTable.$inferSelect;
   let quoteCustomerName = parsed.data.customerName;
   let quoteCustomerEmail = parsed.data.customerEmail;
-  const effectiveCustomerId = parsed.data.customerId ?? source?.customerId ?? undefined;
+  const effectiveCustomerId =
+    parsed.data.customerId ?? source?.customerId ?? undefined;
   if (effectiveCustomerId !== undefined) {
     const [selectedCustomer] = await db
       .select()
@@ -1613,28 +1648,31 @@ router.post("/quotes", async (req, res): Promise<void> => {
       .where(eq(companiesTable.id, companyId))
       .returning({ nextQuoteSequence: companiesTable.nextQuoteSequence });
     if (!company) return undefined;
-    const [newQuote] = await tx.insert(quotesTable).values({
-      companyId,
-      customerId: customer.id,
-      quoteNumber: formatQuoteNumber(company.nextQuoteSequence - 1),
-      // Selected customer identity is authoritative. Legacy create/match
-      // continues to preserve the caller's immutable quote snapshot.
-      customerName: quoteCustomerName,
-      customerEmail: quoteCustomerEmail,
-      projectName: parsed.data.projectName,
-      module: parsed.data.module,
-      status: "draft",
-      jobInputs: parsed.data.jobInputs,
-      assembly: estimate.assembly,
-      pricing,
-      proposalDescription: parsed.data.proposalDescription,
-      takeoffId: takeoffReview?.takeoffId,
-      takeoffReview,
-      total: pricing.finalSellingPrice,
-      margin: pricing.grossMargin,
-      sourceQuoteId: source?.id,
-      revisionNumber: source ? source.revisionNumber + 1 : 0,
-    }).returning();
+    const [newQuote] = await tx
+      .insert(quotesTable)
+      .values({
+        companyId,
+        customerId: customer.id,
+        quoteNumber: formatQuoteNumber(company.nextQuoteSequence - 1),
+        // Selected customer identity is authoritative. Legacy create/match
+        // continues to preserve the caller's immutable quote snapshot.
+        customerName: quoteCustomerName,
+        customerEmail: quoteCustomerEmail,
+        projectName: parsed.data.projectName,
+        module: parsed.data.module,
+        status: "draft",
+        jobInputs: parsed.data.jobInputs,
+        assembly: estimate.assembly,
+        pricing,
+        proposalDescription: parsed.data.proposalDescription,
+        takeoffId: takeoffReview?.takeoffId,
+        takeoffReview,
+        total: pricing.finalSellingPrice,
+        margin: pricing.grossMargin,
+        sourceQuoteId: source?.id,
+        revisionNumber: source ? source.revisionNumber + 1 : 0,
+      })
+      .returning();
     return newQuote;
   });
 
@@ -1648,6 +1686,7 @@ router.post("/quotes", async (req, res): Promise<void> => {
 
 router.post("/quotes/preview", async (req, res): Promise<void> => {
   const companyId = requestCompanyId(req);
+  await ensureEstimatorSeed();
   const parsed = PreviewQuoteBody.safeParse(req.body);
   if (!parsed.success) {
     req.log.warn({ errors: parsed.error.message }, "Invalid quote preview");
@@ -1722,8 +1761,16 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
     return;
   }
   const [settings, company, decision] = await Promise.all([
-    db.select().from(companySettingsTable).where(eq(companySettingsTable.companyId, quote.companyId)).then(([row]) => row),
-    db.select().from(companiesTable).where(eq(companiesTable.id, quote.companyId)).then(([row]) => row),
+    db
+      .select()
+      .from(companySettingsTable)
+      .where(eq(companySettingsTable.companyId, quote.companyId))
+      .then(([row]) => row),
+    db
+      .select()
+      .from(companiesTable)
+      .where(eq(companiesTable.id, quote.companyId))
+      .then(([row]) => row),
     decisionForTokenContext({
       quoteId: quote.id,
       companyId: quote.companyId,
@@ -1830,39 +1877,48 @@ router.post("/quotes/:id/duplicate", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [source] = await db.select().from(quotesTable).where(and(
-    eq(quotesTable.id, params.data.id),
-    eq(quotesTable.companyId, companyId),
-  ));
+  const [source] = await db
+    .select()
+    .from(quotesTable)
+    .where(
+      and(
+        eq(quotesTable.id, params.data.id),
+        eq(quotesTable.companyId, companyId),
+      ),
+    );
   if (!source) {
     res.status(404).json({ error: "Quote not found" });
     return;
   }
   const draft = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(${source.id})`);
-    const [company] = await tx.update(companiesTable)
+    const [company] = await tx
+      .update(companiesTable)
       .set({ nextQuoteSequence: sql`${companiesTable.nextQuoteSequence} + 1` })
       .where(eq(companiesTable.id, companyId))
       .returning({ nextQuoteSequence: companiesTable.nextQuoteSequence });
     if (!company) return undefined;
-    const [quote] = await tx.insert(quotesTable).values({
-      companyId,
-      customerId: source.customerId,
-      quoteNumber: formatQuoteNumber(company.nextQuoteSequence - 1),
-      customerName: source.customerName,
-      customerEmail: source.customerEmail,
-      projectName: source.projectName,
-      module: source.module,
-      status: "draft",
-      jobInputs: source.jobInputs,
-      assembly: source.assembly,
-      pricing: source.pricing,
-      proposalDescription: source.proposalDescription,
-      total: source.total,
-      margin: source.margin,
-      sourceQuoteId: source.id,
-      revisionNumber: source.revisionNumber + 1,
-    }).returning();
+    const [quote] = await tx
+      .insert(quotesTable)
+      .values({
+        companyId,
+        customerId: source.customerId,
+        quoteNumber: formatQuoteNumber(company.nextQuoteSequence - 1),
+        customerName: source.customerName,
+        customerEmail: source.customerEmail,
+        projectName: source.projectName,
+        module: source.module,
+        status: "draft",
+        jobInputs: source.jobInputs,
+        assembly: source.assembly,
+        pricing: source.pricing,
+        proposalDescription: source.proposalDescription,
+        total: source.total,
+        margin: source.margin,
+        sourceQuoteId: source.id,
+        revisionNumber: source.revisionNumber + 1,
+      })
+      .returning();
     return quote;
   });
   if (!draft) throw new Error("Unable to duplicate quote");
@@ -1934,7 +1990,9 @@ router.post("/quotes/:id/decision", async (req, res): Promise<void> => {
     return;
   }
   if (normalizeQuoteStatus(quote.status) !== "ready") {
-    res.status(409).json({ error: "Only ready quotes can receive a decision." });
+    res
+      .status(409)
+      .json({ error: "Only ready quotes can receive a decision." });
     return;
   }
   if (await isQuoteSuperseded(quote)) {
@@ -1978,133 +2036,139 @@ router.post("/quotes/:id/decision", async (req, res): Promise<void> => {
   );
 });
 
-router.post("/quotes/:id/exports/preflight", async (req, res): Promise<void> => {
-  const companyId = requestCompanyId(req);
-  const params = PreflightQuoteExportParams.safeParse(req.params);
-  const parsed = PreflightQuoteExportBody.safeParse(req.body);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+router.post(
+  "/quotes/:id/exports/preflight",
+  async (req, res): Promise<void> => {
+    const companyId = requestCompanyId(req);
+    const params = PreflightQuoteExportParams.safeParse(req.params);
+    const parsed = PreflightQuoteExportBody.safeParse(req.body);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
 
-  const [quote] = await db
-    .select()
-    .from(quotesTable)
-    .where(
-      and(
-        eq(quotesTable.id, params.data.id),
-        eq(quotesTable.companyId, companyId),
-      ),
-    );
-  if (!quote) {
-    res.status(404).json({ error: "Quote not found" });
-    return;
-  }
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.id, params.data.id),
+          eq(quotesTable.companyId, companyId),
+        ),
+      );
+    if (!quote) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
 
-  const adapter =
-    parsed.data.destination === QUICKBOOKS_DESTINATION
-      ? {
-          destination: QUICKBOOKS_DESTINATION,
-          format: QUICKBOOKS_CSV_FORMAT,
-          issues: QUOTE_EXPORT_ADAPTERS_V1.quickbooks.preflight(
-            quote,
-            parsed.data.mapping,
-          ),
-          lineItemCount: 1,
-        }
-      : parsed.data.destination === HOUSECALL_PRO_DESTINATION
+    const adapter =
+      parsed.data.destination === QUICKBOOKS_DESTINATION
         ? {
-            destination: HOUSECALL_PRO_DESTINATION,
-            format: HOUSECALL_PRO_CSV_FORMAT,
-            issues: QUOTE_EXPORT_ADAPTERS_V1.housecall_pro.preflight(
+            destination: QUICKBOOKS_DESTINATION,
+            format: QUICKBOOKS_CSV_FORMAT,
+            issues: QUOTE_EXPORT_ADAPTERS_V1.quickbooks.preflight(
               quote,
               parsed.data.mapping,
             ),
             lineItemCount: 1,
           }
-        : {
-            destination: JOBBER_DESTINATION,
-            format: JOBBER_CSV_FORMAT,
-            issues: QUOTE_EXPORT_ADAPTERS_V1.jobber.preflight(
-              quote,
-              parsed.data.mapping,
-            ),
-            lineItemCount: Array.isArray(quote.assembly)
-              ? quote.assembly.length + 1
-              : 0,
-          };
-  res.json(
-    PreflightQuoteExportResponse.parse({
-      destination: adapter.destination,
-      format: adapter.format,
-      ready: adapter.issues.length === 0,
-      issues: adapter.issues,
-      lineItemCount: adapter.lineItemCount,
-      quoteTotal: Number.isFinite(quote.pricing?.finalSellingPrice)
-        ? quote.pricing.finalSellingPrice
-        : null,
-      filename: quoteExportFilename(quote, adapter.destination),
-    }),
-  );
-});
-
-router.post("/quotes/:id/exports/jobber.csv", async (req, res): Promise<void> => {
-  const companyId = requestCompanyId(req);
-  const params = ExportJobberQuoteCsvParams.safeParse(req.params);
-  const parsed = ExportJobberQuoteCsvBody.safeParse(req.body);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  if (!parsed.success || parsed.data.destination !== JOBBER_DESTINATION) {
-    res.status(400).json({
-      error: parsed.success
-        ? "Jobber export requires the jobber destination."
-        : parsed.error.message,
-    });
-    return;
-  }
-
-  const [quote] = await db
-    .select()
-    .from(quotesTable)
-    .where(
-      and(
-        eq(quotesTable.id, params.data.id),
-        eq(quotesTable.companyId, companyId),
-      ),
+        : parsed.data.destination === HOUSECALL_PRO_DESTINATION
+          ? {
+              destination: HOUSECALL_PRO_DESTINATION,
+              format: HOUSECALL_PRO_CSV_FORMAT,
+              issues: QUOTE_EXPORT_ADAPTERS_V1.housecall_pro.preflight(
+                quote,
+                parsed.data.mapping,
+              ),
+              lineItemCount: 1,
+            }
+          : {
+              destination: JOBBER_DESTINATION,
+              format: JOBBER_CSV_FORMAT,
+              issues: QUOTE_EXPORT_ADAPTERS_V1.jobber.preflight(
+                quote,
+                parsed.data.mapping,
+              ),
+              lineItemCount: Array.isArray(quote.assembly)
+                ? quote.assembly.length + 1
+                : 0,
+            };
+    res.json(
+      PreflightQuoteExportResponse.parse({
+        destination: adapter.destination,
+        format: adapter.format,
+        ready: adapter.issues.length === 0,
+        issues: adapter.issues,
+        lineItemCount: adapter.lineItemCount,
+        quoteTotal: Number.isFinite(quote.pricing?.finalSellingPrice)
+          ? quote.pricing.finalSellingPrice
+          : null,
+        filename: quoteExportFilename(quote, adapter.destination),
+      }),
     );
-  if (!quote) {
-    res.status(404).json({ error: "Quote not found" });
-    return;
-  }
+  },
+);
 
-  const result = QUOTE_EXPORT_ADAPTERS_V1.jobber.build(
-    quote,
-    parsed.data.mapping,
-  );
-  if (!result.csv) {
-    res.status(422).json({
-      error: "Quote export is blocked until the listed issues are resolved.",
-      issues: result.issues,
-    });
-    return;
-  }
+router.post(
+  "/quotes/:id/exports/jobber.csv",
+  async (req, res): Promise<void> => {
+    const companyId = requestCompanyId(req);
+    const params = ExportJobberQuoteCsvParams.safeParse(req.params);
+    const parsed = ExportJobberQuoteCsvBody.safeParse(req.body);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (!parsed.success || parsed.data.destination !== JOBBER_DESTINATION) {
+      res.status(400).json({
+        error: parsed.success
+          ? "Jobber export requires the jobber destination."
+          : parsed.error.message,
+      });
+      return;
+    }
 
-  const filename = quoteExportFilename(quote);
-  res
-    .status(200)
-    .set({
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "X-Content-Type-Options": "nosniff",
-    })
-    .send(result.csv);
-});
+    const [quote] = await db
+      .select()
+      .from(quotesTable)
+      .where(
+        and(
+          eq(quotesTable.id, params.data.id),
+          eq(quotesTable.companyId, companyId),
+        ),
+      );
+    if (!quote) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    const result = QUOTE_EXPORT_ADAPTERS_V1.jobber.build(
+      quote,
+      parsed.data.mapping,
+    );
+    if (!result.csv) {
+      res.status(422).json({
+        error: "Quote export is blocked until the listed issues are resolved.",
+        issues: result.issues,
+      });
+      return;
+    }
+
+    const filename = quoteExportFilename(quote);
+    res
+      .status(200)
+      .set({
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "X-Content-Type-Options": "nosniff",
+      })
+      .send(result.csv);
+  },
+);
 
 router.post(
   "/quotes/:id/exports/quickbooks.csv",
@@ -2172,7 +2236,10 @@ router.post(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (!parsed.success || parsed.data.destination !== HOUSECALL_PRO_DESTINATION) {
+    if (
+      !parsed.success ||
+      parsed.data.destination !== HOUSECALL_PRO_DESTINATION
+    ) {
       res.status(400).json({
         error: parsed.success
           ? "Housecall Pro export requires the housecall_pro destination."
@@ -2481,9 +2548,11 @@ router.patch("/settings", async (req, res): Promise<void> => {
         currentSettings.commercialLaborSellRate,
       loadedLaborCost:
         parsed.data.loadedLaborCost ?? currentSettings.loadedLaborCost,
-      materialMarkup: parsed.data.materialMarkup ?? currentSettings.materialMarkup,
+      materialMarkup:
+        parsed.data.materialMarkup ?? currentSettings.materialMarkup,
       targetMargin: parsed.data.targetMargin ?? currentSettings.targetMargin,
-      defaultTaxRate: parsed.data.defaultTaxRate ?? currentSettings.defaultTaxRate,
+      defaultTaxRate:
+        parsed.data.defaultTaxRate ?? currentSettings.defaultTaxRate,
       evLaborAdjustmentHours:
         parsed.data.evLaborAdjustmentHours ??
         currentSettings.evLaborAdjustmentHours,
@@ -2513,29 +2582,75 @@ router.patch("/settings", async (req, res): Promise<void> => {
       panelReplacementHoursPerPerson:
         parsed.data.panelReplacementHoursPerPerson ??
         currentSettings.panelReplacementHoursPerPerson,
-      serviceCallVisitQuantity: parsed.data.serviceCallVisitQuantity ?? currentSettings.serviceCallVisitQuantity,
-      serviceCallCrewSize: parsed.data.serviceCallCrewSize ?? currentSettings.serviceCallCrewSize,
-      serviceCallHoursPerVisit: parsed.data.serviceCallHoursPerVisit ?? currentSettings.serviceCallHoursPerVisit,
-      timeMaterialsCrewSize: parsed.data.timeMaterialsCrewSize ?? currentSettings.timeMaterialsCrewSize,
-      timeMaterialsHours: parsed.data.timeMaterialsHours ?? currentSettings.timeMaterialsHours,
-      timeMaterialsLaborRateType: parsed.data.timeMaterialsLaborRateType ?? currentSettings.timeMaterialsLaborRateType,
-      timeMaterialsLaborSellRate: parsed.data.timeMaterialsLaborSellRate ?? currentSettings.timeMaterialsLaborSellRate,
-      timeMaterialsLoadedLaborCost: parsed.data.timeMaterialsLoadedLaborCost ?? currentSettings.timeMaterialsLoadedLaborCost,
-      timeMaterialsMaterialMarkup: parsed.data.timeMaterialsMaterialMarkup === undefined ? currentSettings.timeMaterialsMaterialMarkup : normalizePercentageSetting(parsed.data.timeMaterialsMaterialMarkup),
-      timeMaterialsTargetMargin: parsed.data.timeMaterialsTargetMargin === undefined ? currentSettings.timeMaterialsTargetMargin : normalizePercentageSetting(parsed.data.timeMaterialsTargetMargin),
-      customLaborHours: parsed.data.customLaborHours ?? currentSettings.customLaborHours,
-      customLaborRateType: parsed.data.customLaborRateType ?? currentSettings.customLaborRateType,
-      customLaborSellRate: parsed.data.customLaborSellRate ?? currentSettings.customLaborSellRate,
-      customLoadedLaborCost: parsed.data.customLoadedLaborCost ?? currentSettings.customLoadedLaborCost,
-      customMaterialMarkup: parsed.data.customMaterialMarkup === undefined ? currentSettings.customMaterialMarkup : normalizePercentageSetting(parsed.data.customMaterialMarkup),
-      customTargetMargin: parsed.data.customTargetMargin === undefined ? currentSettings.customTargetMargin : normalizePercentageSetting(parsed.data.customTargetMargin),
-      newHouseCrewSize: parsed.data.newHouseCrewSize ?? currentSettings.newHouseCrewSize,
-      newHouseHoursPerPerson: parsed.data.newHouseHoursPerPerson ?? currentSettings.newHouseHoursPerPerson,
-      newHouseLaborAdjustmentHours: parsed.data.newHouseLaborAdjustmentHours ?? currentSettings.newHouseLaborAdjustmentHours,
-      contactPhone: "contactPhone" in parsed.data ? parsed.data.contactPhone : currentSettings.contactPhone,
-      contactEmail: "contactEmail" in parsed.data ? parsed.data.contactEmail : currentSettings.contactEmail,
-      contactAddress: "contactAddress" in parsed.data ? parsed.data.contactAddress : currentSettings.contactAddress,
-      proposalAccentColor: parsed.data.proposalAccentColor ?? currentSettings.proposalAccentColor,
+      serviceCallVisitQuantity:
+        parsed.data.serviceCallVisitQuantity ??
+        currentSettings.serviceCallVisitQuantity,
+      serviceCallCrewSize:
+        parsed.data.serviceCallCrewSize ?? currentSettings.serviceCallCrewSize,
+      serviceCallHoursPerVisit:
+        parsed.data.serviceCallHoursPerVisit ??
+        currentSettings.serviceCallHoursPerVisit,
+      timeMaterialsCrewSize:
+        parsed.data.timeMaterialsCrewSize ??
+        currentSettings.timeMaterialsCrewSize,
+      timeMaterialsHours:
+        parsed.data.timeMaterialsHours ?? currentSettings.timeMaterialsHours,
+      timeMaterialsLaborRateType:
+        parsed.data.timeMaterialsLaborRateType ??
+        currentSettings.timeMaterialsLaborRateType,
+      timeMaterialsLaborSellRate:
+        parsed.data.timeMaterialsLaborSellRate ??
+        currentSettings.timeMaterialsLaborSellRate,
+      timeMaterialsLoadedLaborCost:
+        parsed.data.timeMaterialsLoadedLaborCost ??
+        currentSettings.timeMaterialsLoadedLaborCost,
+      timeMaterialsMaterialMarkup:
+        parsed.data.timeMaterialsMaterialMarkup === undefined
+          ? currentSettings.timeMaterialsMaterialMarkup
+          : normalizePercentageSetting(parsed.data.timeMaterialsMaterialMarkup),
+      timeMaterialsTargetMargin:
+        parsed.data.timeMaterialsTargetMargin === undefined
+          ? currentSettings.timeMaterialsTargetMargin
+          : normalizePercentageSetting(parsed.data.timeMaterialsTargetMargin),
+      customLaborHours:
+        parsed.data.customLaborHours ?? currentSettings.customLaborHours,
+      customLaborRateType:
+        parsed.data.customLaborRateType ?? currentSettings.customLaborRateType,
+      customLaborSellRate:
+        parsed.data.customLaborSellRate ?? currentSettings.customLaborSellRate,
+      customLoadedLaborCost:
+        parsed.data.customLoadedLaborCost ??
+        currentSettings.customLoadedLaborCost,
+      customMaterialMarkup:
+        parsed.data.customMaterialMarkup === undefined
+          ? currentSettings.customMaterialMarkup
+          : normalizePercentageSetting(parsed.data.customMaterialMarkup),
+      customTargetMargin:
+        parsed.data.customTargetMargin === undefined
+          ? currentSettings.customTargetMargin
+          : normalizePercentageSetting(parsed.data.customTargetMargin),
+      newHouseCrewSize:
+        parsed.data.newHouseCrewSize ?? currentSettings.newHouseCrewSize,
+      newHouseHoursPerPerson:
+        parsed.data.newHouseHoursPerPerson ??
+        currentSettings.newHouseHoursPerPerson,
+      newHouseLaborAdjustmentHours:
+        parsed.data.newHouseLaborAdjustmentHours ??
+        currentSettings.newHouseLaborAdjustmentHours,
+      contactPhone:
+        "contactPhone" in parsed.data
+          ? parsed.data.contactPhone
+          : currentSettings.contactPhone,
+      contactEmail:
+        "contactEmail" in parsed.data
+          ? parsed.data.contactEmail
+          : currentSettings.contactEmail,
+      contactAddress:
+        "contactAddress" in parsed.data
+          ? parsed.data.contactAddress
+          : currentSettings.contactAddress,
+      proposalAccentColor:
+        parsed.data.proposalAccentColor ?? currentSettings.proposalAccentColor,
       proposalTerms: parsed.data.proposalTerms ?? currentSettings.proposalTerms,
     })
     .where(eq(companySettingsTable.id, currentSettings.id))

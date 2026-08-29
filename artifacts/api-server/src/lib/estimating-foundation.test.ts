@@ -10,8 +10,10 @@ import type {
   KitchenInputRecord,
   NewHouseInputRecord,
   PricingWarningRecord,
+  QuoteJobInputsRecord,
   RecessedLightingInputRecord,
   ServiceCallInputRecord,
+  ServiceUpgradeInputRecord,
   TimeMaterialsInputRecord,
 } from "@workspace/db";
 import {
@@ -182,7 +184,10 @@ test("EV uses the selected non-conduit cable key and route footage per charger",
     [qf250a, catalogRow("6/3 NM-B cable", 9.5)],
   );
   const cable = result.assembly.find((line) => line.id === "cable");
-  assert.equal(cable?.description, "6/3 NM-B cable — verify conductor sizing and route");
+  assert.equal(
+    cable?.description,
+    "6/3 NM-B cable — verify conductor sizing and route",
+  );
   assert.equal(cable?.quantity, 50);
   assert.equal(cable?.unitCost, 9.5);
 });
@@ -204,9 +209,18 @@ test("EV cable selection precedence is job override, company default, then syste
     [catalogRow("8/3 NM-B cable", 2.682868)],
   );
 
-  assert.equal(companyDefault.assembly.find((line) => line.id === "cable")?.unitCost, 3.921784);
-  assert.equal(jobOverride.assembly.find((line) => line.id === "cable")?.unitCost, 1.89096);
-  assert.equal(systemFallback.assembly.find((line) => line.id === "cable")?.unitCost, 2.682868);
+  assert.equal(
+    companyDefault.assembly.find((line) => line.id === "cable")?.unitCost,
+    3.921784,
+  );
+  assert.equal(
+    jobOverride.assembly.find((line) => line.id === "cable")?.unitCost,
+    1.89096,
+  );
+  assert.equal(
+    systemFallback.assembly.find((line) => line.id === "cable")?.unitCost,
+    2.682868,
+  );
 });
 
 test("EV preview and create validate the same cable snapshot", () => {
@@ -311,8 +325,18 @@ test("EV legacy cable snapshots resolve by their original wiring method", () => 
     settings,
     [qf250a],
   );
-  assert.equal(romex.assembly.find((line) => line.id === "cable")?.description.startsWith("8/3 NM-B cable"), true);
-  assert.equal(ser.assembly.find((line) => line.id === "cable")?.description.startsWith("8/2 SER cable"), true);
+  assert.equal(
+    romex.assembly
+      .find((line) => line.id === "cable")
+      ?.description.startsWith("8/3 NM-B cable"),
+    true,
+  );
+  assert.equal(
+    ser.assembly
+      .find((line) => line.id === "cable")
+      ?.description.startsWith("8/2 SER cable"),
+    true,
+  );
 });
 
 test("EV does not substitute a generic breaker for the wrong manufacturer", () => {
@@ -391,7 +415,7 @@ const recessedInputs: RecessedLightingInputRecord = {
   roomWidth: 0,
   fixtureQuantity: 1,
   fixtureSize: "4-inch",
-  wiringOption: "Use existing switch leg / lighting box",
+  wiringOption: "Existing switch leg / lighting box",
   circuitOption: "Reuse existing circuit",
   switchType: "Single-pole",
   switchingMethod: "single-pole",
@@ -608,7 +632,10 @@ test("override validation rejects negative, non-finite, and oversized values", (
     true,
   );
   assert.equal(validateOverrideValues({ laborOverride: -0.01 }), false);
-  assert.equal(validateOverrideValues({ sellingPriceOverride: Infinity }), false);
+  assert.equal(
+    validateOverrideValues({ sellingPriceOverride: Infinity }),
+    false,
+  );
   assert.equal(
     validateOverrideValues({ laborOverride: MAX_OVERRIDE_VALUE + 0.01 }),
     false,
@@ -724,6 +751,68 @@ const newHouseInputs: NewHouseInputRecord = {
   notes: "",
 };
 
+const serviceUpgradeInputs: ServiceUpgradeInputRecord = {
+  serviceSize: "200A",
+  serviceConfiguration: "Overhead mast",
+  serviceDisconnect: "Meter-main combination",
+  panelManufacturer: "Siemens",
+  breakerAmperage: 200,
+  breakerPoleCount: 2,
+  breakerProtectionType: "Standard",
+  meterDisconnectEquipment: "200A meter-main with built-in outdoor disconnect",
+  surgeProtection: "Whole-home surge protection",
+  includeOverheadMast: true,
+  mastFootage: 10,
+  weatherheadQuantity: 1,
+  hubQuantity: 1,
+  lbQuantity: 1,
+  ninetyQuantity: 1,
+  couplingQuantity: 2,
+  mastRelatedPartsQuantity: 1,
+  mastConductor: "4/0 aluminum XHHW conductor",
+  mastConductorQuantity: 3,
+  mastConductorFootage: 10,
+  serviceToPanelConductor: "4/0 aluminum SER",
+  serviceToPanelFootage: 15,
+  groundBarQuantity: 2,
+  groundRodQuantity: 2,
+  acornClampQuantity: 2,
+  intersystemBondingQuantity: 1,
+  groundingConductorFootage: 30,
+  bondingConductorFootage: 20,
+  pvcThreeQuarterFootage: 10,
+  pvcThreeQuarterFittingsQuantity: 4,
+  waterMeterBondingQuantity: 2,
+  waterMeterBondingFootage: 20,
+  fourSquareBoxQuantity: 1,
+  receptacle20AQuantity: 1,
+  receptaclePlateQuantity: 1,
+  plywoodQuantity: 1,
+  studsQuantity: 2,
+  ductSealQuantity: 1,
+  pvcPrimerQuantity: 1,
+  pvcGlueQuantity: 1,
+  antiOxidantQuantity: 1,
+  electricalTapeQuantity: 2,
+  permitAllowance: 150,
+  inspectionAllowance: 75,
+  utilityCoordinationAllowance: 0,
+  miscellaneousAllowance: 100,
+  crewSize: 2,
+  crewHours: 16,
+  relocationLaborHours: 0,
+  accessDifficultyLaborHours: 0,
+  groundingReworkLaborHours: 0,
+  feederDistanceLaborHours: 0,
+  serviceConditionLaborHours: 0,
+  utilityCoordinationLaborHours: 0,
+  generalLaborAdjustmentHours: 0,
+  existingBreakers: [],
+  existingOtherBreakerQuantity: 0,
+  laborRateType: "residential",
+  notes: "",
+};
+
 test("Service Call uses verified device rows and visibly preserves unresolved materials", () => {
   const result = calculateServiceCallEstimate(serviceCallInputs, settings, [
     catalogRow("Pass & Seymour 3232-TRW 15A TR duplex receptacle", 1.25),
@@ -735,8 +824,9 @@ test("Service Call uses verified device rows and visibly preserves unresolved ma
     1.25,
   );
   assert.equal(
-    result.assembly.find((line) => line.id === "standard-receptacle-replacement")
-      ?.unitCost,
+    result.assembly.find(
+      (line) => line.id === "standard-receptacle-replacement",
+    )?.unitCost,
     0,
   );
   assert.equal(result.pricing.materialMarkup, 0.3);
@@ -777,7 +867,10 @@ test("Custom Items uses exact quote-local labor, materials, markup, and margin a
   assert.equal(result.pricing.laborSellAmount, 720);
   assert.equal(result.pricing.materialMarkup, 0.2);
   assert.equal(result.pricing.finalSellingPrice, 792);
-  assert.equal(result.assembly[0]?.description, "Owner-selected decorative fixture");
+  assert.equal(
+    result.assembly[0]?.description,
+    "Owner-selected decorative fixture",
+  );
   assert.equal(result.assembly[0]?.extendedCost, 50);
   assert.deepEqual(result.pricing.pricingWarnings, []);
 });
@@ -789,8 +882,18 @@ type QuoteRequest = {
   customerEmail?: string | null;
   projectName: string;
   proposalDescription: string;
-  module: "SERVICE_CALL" | "NEW_HOUSE" | "ADDITION";
-  jobInputs: ServiceCallInputRecord | NewHouseInputRecord | AdditionInputRecord;
+  module:
+    | "EV_CHARGER"
+    | "BATHROOM"
+    | "KITCHEN"
+    | "ADDITION"
+    | "RECESSED_LIGHTING"
+    | "SERVICE_UPGRADE"
+    | "SERVICE_CALL"
+    | "TIME_MATERIALS"
+    | "CUSTOM"
+    | "NEW_HOUSE";
+  jobInputs: QuoteJobInputsRecord;
 };
 
 type CreatedQuote = {
@@ -816,13 +919,14 @@ type CustomerSummary = {
 
 const testServerContexts = new Map<
   Server,
-  { userId: string; baseUrl: string }
+  { userId: string; companyId: number; baseUrl: string }
 >();
 const authenticatedHeadersByBaseUrl = new Map<string, Record<string, string>>();
 
 function authenticatedHeaders(baseUrl: string) {
   const headers = authenticatedHeadersByBaseUrl.get(baseUrl);
-  if (!headers) throw new Error(`No test authentication registered for ${baseUrl}`);
+  if (!headers)
+    throw new Error(`No test authentication registered for ${baseUrl}`);
   return headers;
 }
 
@@ -855,7 +959,7 @@ async function startTestServer() {
     throw new Error("Test server did not expose a TCP address");
   }
   const baseUrl = `http://127.0.0.1:${address.port}`;
-  testServerContexts.set(server, { userId, baseUrl });
+  testServerContexts.set(server, { userId, companyId: company.id, baseUrl });
   authenticatedHeadersByBaseUrl.set(baseUrl, {
     "content-type": "application/json",
     "x-test-clerk-user-id": userId,
@@ -887,9 +991,7 @@ async function cleanupTestCompany(companyId: number, userId: string) {
   await db
     .delete(proposalDecisionsTable)
     .where(eq(proposalDecisionsTable.companyId, companyId));
-  await db
-    .delete(quotesTable)
-    .where(eq(quotesTable.companyId, companyId));
+  await db.delete(quotesTable).where(eq(quotesTable.companyId, companyId));
   await db
     .delete(customersTable)
     .where(eq(customersTable.companyId, companyId));
@@ -902,9 +1004,7 @@ async function cleanupTestCompany(companyId: number, userId: string) {
   await db
     .delete(companyMembersTable)
     .where(eq(companyMembersTable.userId, userId));
-  await db
-    .delete(companiesTable)
-    .where(eq(companiesTable.id, companyId));
+  await db.delete(companiesTable).where(eq(companiesTable.id, companyId));
 }
 
 async function ensureTestCompanySeed(companyId: number) {
@@ -929,6 +1029,24 @@ async function postQuote(baseUrl: string, input: QuoteRequest) {
   return body as CreatedQuote;
 }
 
+async function previewQuote(
+  baseUrl: string,
+  input: Pick<QuoteRequest, "module" | "jobInputs">,
+) {
+  const response = await fetch(`${baseUrl}/api/quotes/preview`, {
+    method: "POST",
+    headers: authenticatedHeaders(baseUrl),
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json()) as Awaited<ReturnType<typeof getQuote>>;
+  assert.equal(
+    response.status,
+    200,
+    `Expected quote preview to succeed: ${JSON.stringify(body)}`,
+  );
+  return body;
+}
+
 async function getQuote(baseUrl: string, id: number) {
   const response = await fetch(`${baseUrl}/api/quotes/${id}`, {
     headers: authenticatedHeaders(baseUrl),
@@ -940,6 +1058,7 @@ async function getQuote(baseUrl: string, id: number) {
       description: string;
       unitCost: number;
       extendedCost: number;
+      source: string;
     }>;
     pricing: { materialCost: number; laborCost: number };
     error?: string;
@@ -951,6 +1070,235 @@ async function getQuote(baseUrl: string, id: number) {
   );
   return body;
 }
+
+test("requested builders preserve seeded pricing across preview, create, and reload", async () => {
+  const { server, baseUrl } = await startTestServer();
+  const cases: Array<{
+    label: string;
+    module: QuoteRequest["module"];
+    jobInputs: QuoteJobInputsRecord;
+  }> = [
+    {
+      label: "EV",
+      module: "EV_CHARGER",
+      jobInputs: {
+        ...evInputs,
+        wiringMethod: "Romex (NM-B)",
+        cableType: "8/3 NM-B",
+      },
+    },
+    { label: "Bathroom", module: "BATHROOM", jobInputs: bathroomInputs },
+    {
+      label: "Kitchen",
+      module: "KITCHEN",
+      jobInputs: {
+        ...kitchenInputs,
+        sinkLights: 0,
+        recessedLights: 1,
+        customerSuppliedFixtures: false,
+      },
+    },
+    {
+      label: "Recessed Lighting",
+      module: "RECESSED_LIGHTING",
+      jobInputs: { ...recessedInputs, customerSuppliedFixtures: false },
+    },
+    {
+      label: "Service Upgrade",
+      module: "SERVICE_UPGRADE",
+      jobInputs: serviceUpgradeInputs,
+    },
+    {
+      label: "Service Call",
+      module: "SERVICE_CALL",
+      jobInputs: serviceCallInputs,
+    },
+    {
+      label: "T&M",
+      module: "TIME_MATERIALS",
+      jobInputs: timeMaterialsInputs,
+    },
+    { label: "Custom", module: "CUSTOM", jobInputs: customInputs },
+    { label: "New House", module: "NEW_HOUSE", jobInputs: newHouseInputs },
+  ];
+
+  try {
+    for (const quoteCase of cases) {
+      const preview = await previewQuote(baseUrl, quoteCase);
+      const created = await postQuote(baseUrl, {
+        customerName: `${quoteCase.label} parity ${randomUUID()}`,
+        projectName: `${quoteCase.label} persisted pricing parity`,
+        proposalDescription: `Persist the ${quoteCase.label} estimate snapshot.`,
+        module: quoteCase.module,
+        jobInputs: quoteCase.jobInputs,
+      });
+      const saved = await getQuote(baseUrl, created.id);
+      assert.ok(
+        saved.assembly.length > 0,
+        `${quoteCase.label} has assembly rows`,
+      );
+      assert.deepEqual(
+        saved.assembly,
+        preview.assembly,
+        `${quoteCase.label} assembly changed between preview and reload`,
+      );
+      assert.deepEqual(
+        saved.pricing,
+        preview.pricing,
+        `${quoteCase.label} pricing changed between preview and reload`,
+      );
+    }
+  } finally {
+    await closeTestServer(server);
+  }
+});
+
+test("company prices stay isolated, normalized duplicates are deterministic, and saved snapshots remain immutable", async () => {
+  const first = await startTestServer();
+  const second = await startTestServer();
+  const fixtureName = "Juno WF4DREGSMAL 4-inch regressed wafer light";
+  const jobInputs: RecessedLightingInputRecord = {
+    ...recessedInputs,
+    customerSuppliedFixtures: false,
+  };
+
+  try {
+    const firstContext = testServerContexts.get(first.server);
+    const secondContext = testServerContexts.get(second.server);
+    assert.ok(firstContext);
+    assert.ok(secondContext);
+    const companyRows = await db
+      .select()
+      .from(priceBookItemsTable)
+      .where(
+        and(
+          inArray(priceBookItemsTable.companyId, [
+            firstContext.companyId,
+            secondContext.companyId,
+          ]),
+          eq(priceBookItemsTable.item, fixtureName),
+        ),
+      );
+    const firstFixture = companyRows.find(
+      (row) => row.companyId === firstContext.companyId,
+    );
+    const secondFixture = companyRows.find(
+      (row) => row.companyId === secondContext.companyId,
+    );
+    assert.ok(firstFixture);
+    assert.ok(secondFixture);
+
+    await Promise.all([
+      db
+        .update(priceBookItemsTable)
+        .set({ unitCost: 41.25, isDefault: false })
+        .where(eq(priceBookItemsTable.id, firstFixture.id)),
+      db
+        .update(priceBookItemsTable)
+        .set({ unitCost: 73.5, isDefault: false })
+        .where(eq(priceBookItemsTable.id, secondFixture.id)),
+    ]);
+
+    const [firstPreview, secondPreview] = await Promise.all([
+      previewQuote(first.baseUrl, {
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+      }),
+      previewQuote(second.baseUrl, {
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+      }),
+    ]);
+    assert.equal(
+      firstPreview.assembly.find((line) => line.id === "recessed-fixtures")
+        ?.unitCost,
+      41.25,
+    );
+    assert.equal(
+      secondPreview.assembly.find((line) => line.id === "recessed-fixtures")
+        ?.unitCost,
+      73.5,
+    );
+
+    const [firstCreated, secondCreated] = await Promise.all([
+      postQuote(first.baseUrl, {
+        customerName: `Tenant A ${randomUUID()}`,
+        projectName: "Tenant A fixture pricing",
+        proposalDescription: "Preserve tenant A pricing.",
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+      }),
+      postQuote(second.baseUrl, {
+        customerName: `Tenant B ${randomUUID()}`,
+        projectName: "Tenant B fixture pricing",
+        proposalDescription: "Preserve tenant B pricing.",
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+      }),
+    ]);
+    const firstSavedBeforeEdit = await getQuote(first.baseUrl, firstCreated.id);
+    const secondSaved = await getQuote(second.baseUrl, secondCreated.id);
+    assert.deepEqual(firstSavedBeforeEdit.pricing, firstPreview.pricing);
+    assert.deepEqual(secondSaved.pricing, secondPreview.pricing);
+
+    await db.insert(priceBookItemsTable).values([
+      {
+        companyId: firstContext.companyId,
+        category: firstFixture.category,
+        item: `  ${fixtureName.toUpperCase()}  `,
+        unit: firstFixture.unit,
+        unitCost: 99.75,
+        supplier: "Newer deterministic duplicate",
+        upc: "11111111111",
+        sourceDate: "2099-01-01",
+        isDefault: false,
+      },
+      {
+        companyId: firstContext.companyId,
+        category: firstFixture.category,
+        item: fixtureName.toLowerCase(),
+        unit: firstFixture.unit,
+        unitCost: 99.75,
+        supplier: "Newer deterministic duplicate",
+        upc: "99999999999",
+        sourceDate: "2099-01-01",
+        isDefault: false,
+      },
+    ]);
+    const duplicatePreview = await previewQuote(first.baseUrl, {
+      module: "RECESSED_LIGHTING",
+      jobInputs,
+    });
+    assert.equal(
+      duplicatePreview.assembly.find(
+        (line) => line.id === "recessed-fixtures",
+      )?.unitCost,
+      99.75,
+    );
+    assert.match(
+      duplicatePreview.assembly.find(
+        (line) => line.id === "recessed-fixtures",
+      )?.source ?? "",
+      /UPC 99999999999/,
+    );
+
+    await db
+      .update(priceBookItemsTable)
+      .set({ unitCost: 125 })
+      .where(eq(priceBookItemsTable.id, firstFixture.id));
+    const firstSavedAfterEdit = await getQuote(first.baseUrl, firstCreated.id);
+    assert.deepEqual(
+      firstSavedAfterEdit.assembly,
+      firstSavedBeforeEdit.assembly,
+    );
+    assert.deepEqual(firstSavedAfterEdit.pricing, firstSavedBeforeEdit.pricing);
+  } finally {
+    await Promise.all([
+      closeTestServer(first.server),
+      closeTestServer(second.server),
+    ]);
+  }
+});
 
 test("saved Addition subpanel resolves seeded source prices identically across preview, create, and reload", async () => {
   const { server, baseUrl } = await startTestServer();
@@ -972,13 +1320,15 @@ test("saved Addition subpanel resolves seeded source prices identically across p
       breakerPoleCount: 1,
       breakerProtectionType: "Standard",
       cableType: "12/2 NM-B",
-      circuitEntries: [{
-        amperage: 30,
-        poleCount: 2,
-        protectionType: "Standard",
-        cableType: "10/3 NM-B",
-        quantity: 1,
-      }],
+      circuitEntries: [
+        {
+          amperage: 30,
+          poleCount: 2,
+          protectionType: "Standard",
+          cableType: "10/3 NM-B",
+          quantity: 1,
+        },
+      ],
       subpanelOption: "100A Subpanel",
       feederDistance: 45,
       crewSize: 1,
@@ -1008,12 +1358,16 @@ test("saved Addition subpanel resolves seeded source prices identically across p
     const saved = await getQuote(baseUrl, created.id);
     assert.equal(saved.jobInputs.subpanelOption, "100A Subpanel");
     assert.equal(saved.jobInputs.feederDistance, 45);
-    const savedEntries = saved.jobInputs.circuitEntries as AdditionInputRecord["circuitEntries"];
+    const savedEntries = saved.jobInputs
+      .circuitEntries as AdditionInputRecord["circuitEntries"];
     assert.equal(savedEntries?.[0]?.cableType, "10/3 NM-B");
     const cableLine = saved.assembly.find(
       (line) => line.id === "addition-circuit-1-cable",
     );
-    assert.equal(cableLine?.description, "30A 2-pole 10/3 NM-B branch-circuit cable");
+    assert.equal(
+      cableLine?.description,
+      "30A 2-pole 10/3 NM-B branch-circuit cable",
+    );
     assert.equal(cableLine?.unitCost, 1.334639);
     assert.equal(cableLine?.extendedCost, 113.444);
     const feederLine = saved.assembly.find(
@@ -1032,9 +1386,8 @@ test("saved Addition subpanel resolves seeded source prices identically across p
       71.885,
     );
     assert.equal(
-      saved.assembly.find(
-        (line) => line.id === "addition-subpanel-load-center",
-      )?.unitCost,
+      saved.assembly.find((line) => line.id === "addition-subpanel-load-center")
+        ?.unitCost,
       151.625,
     );
     assert.deepEqual(saved.assembly, preview.assembly);
@@ -1113,7 +1466,12 @@ test("simultaneous same-email quotes share one persisted customer", async () => 
     const quotes = await db
       .select()
       .from(quotesTable)
-      .where(inArray(quotesTable.id, created.map((quote) => quote.id)))
+      .where(
+        inArray(
+          quotesTable.id,
+          created.map((quote) => quote.id),
+        ),
+      )
       .then((rows) => rows.sort((left, right) => left.id - right.id));
     assert.equal(quotes.length, 2);
     assert.equal(quotes[0]?.customerId, quotes[1]?.customerId);
@@ -1121,9 +1479,7 @@ test("simultaneous same-email quotes share one persisted customer", async () => 
     const customers = await db
       .select()
       .from(customersTable)
-      .where(
-        eq(customersTable.email, email),
-      );
+      .where(eq(customersTable.email, email));
     assert.equal(customers.length, 1);
     assert.equal(quotes[0]?.customerId, customers[0]?.id);
   } finally {
@@ -1210,7 +1566,12 @@ test("simultaneous email claims converge on one customer without rewriting histo
       await db
         .select()
         .from(quotesTable)
-        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+        .where(
+          inArray(
+            quotesTable.id,
+            historical.map((quote) => quote.id),
+          ),
+        )
     ).sort((left, right) => left.id - right.id);
     assert.equal(historicalBefore.length, 2);
     assert.equal(
@@ -1255,7 +1616,12 @@ test("simultaneous email claims converge on one customer without rewriting histo
     const claimedQuotes = await db
       .select()
       .from(quotesTable)
-      .where(inArray(quotesTable.id, claimed.map((quote) => quote.id)))
+      .where(
+        inArray(
+          quotesTable.id,
+          claimed.map((quote) => quote.id),
+        ),
+      )
       .then((rows) => rows.sort((left, right) => left.id - right.id));
     assert.equal(claimedQuotes.length, 2);
     assert.equal(claimedQuotes[0]?.customerId, claimedQuotes[1]?.customerId);
@@ -1263,9 +1629,7 @@ test("simultaneous email claims converge on one customer without rewriting histo
     const customersAfter = await db
       .select()
       .from(customersTable)
-      .where(
-        inArray(customersTable.name, [firstName, secondName]),
-      );
+      .where(inArray(customersTable.name, [firstName, secondName]));
     assert.equal(customersAfter.length, 2);
     assert.equal(
       customersAfter.filter((customer) => customer.email === email).length,
@@ -1288,7 +1652,12 @@ test("simultaneous email claims converge on one customer without rewriting histo
       await db
         .select()
         .from(quotesTable)
-        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+        .where(
+          inArray(
+            quotesTable.id,
+            historical.map((quote) => quote.id),
+          ),
+        )
     ).sort((left, right) => left.id - right.id);
     assert.deepEqual(historicalAfter, historicalBefore);
   } finally {
@@ -1445,14 +1814,23 @@ test("simultaneous customer email edits produce one conflict without partial upd
           customerEmail: quotesTable.customerEmail,
         })
         .from(quotesTable)
-        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+        .where(
+          inArray(
+            quotesTable.id,
+            historical.map((quote) => quote.id),
+          ),
+        )
     ).sort((left, right) => left.id - right.id);
     assert.deepEqual(
-      historicalBefore.map(({ customerId, customerName, customerEmail }) => ({
-        customerId,
-        customerName,
-        customerEmail,
-      })).sort((left, right) => (left.customerId ?? 0) - (right.customerId ?? 0)),
+      historicalBefore
+        .map(({ customerId, customerName, customerEmail }) => ({
+          customerId,
+          customerName,
+          customerEmail,
+        }))
+        .sort(
+          (left, right) => (left.customerId ?? 0) - (right.customerId ?? 0),
+        ),
       [
         {
           customerId: first.id,
@@ -1491,7 +1869,9 @@ test("simultaneous customer email edits produce one conflict without partial upd
     const successfulUpdates = updates.filter(
       (update) => update.response.status === 200,
     );
-    const conflicts = updates.filter((update) => update.response.status === 409);
+    const conflicts = updates.filter(
+      (update) => update.response.status === 409,
+    );
     assert.equal(successfulUpdates.length, 1);
     assert.equal(conflicts.length, 1);
     assert.deepEqual(conflicts[0]?.body, {
@@ -1543,7 +1923,12 @@ test("simultaneous customer email edits produce one conflict without partial upd
           customerEmail: quotesTable.customerEmail,
         })
         .from(quotesTable)
-        .where(inArray(quotesTable.id, historical.map((quote) => quote.id)))
+        .where(
+          inArray(
+            quotesTable.id,
+            historical.map((quote) => quote.id),
+          ),
+        )
     ).sort((left, right) => left.id - right.id);
     assert.deepEqual(historicalAfter, historicalBefore);
   } finally {
@@ -1827,10 +2212,7 @@ test("an explicit material exclusion reason is stored and permits readiness", ()
     ],
   };
   const estimate = calculateTimeMaterialsEstimate(jobInputs, settings, []);
-  assert.equal(
-    estimate.assembly[0]?.intentionalExclusionReason,
-    reason,
-  );
+  assert.equal(estimate.assembly[0]?.intentionalExclusionReason, reason);
   assert.equal(
     evaluateCustomerReadyPricing({
       pricing: estimate.pricing,
@@ -1933,7 +2315,11 @@ test("below-cost quotes require and record a deliberate-loss confirmation", () =
 });
 
 test("quotes with unresolved catalog prices cannot enter a ready state", () => {
-  const unresolved = calculateServiceCallEstimate(serviceCallInputs, settings, []);
+  const unresolved = calculateServiceCallEstimate(
+    serviceCallInputs,
+    settings,
+    [],
+  );
   assert.equal(
     hasBlockingPricingWarnings(unresolved.pricing.pricingWarnings),
     true,
@@ -1943,7 +2329,10 @@ test("quotes with unresolved catalog prices cannot enter a ready state", () => {
     settings,
     [],
   );
-  assert.equal(hasBlockingPricingWarnings(resolved.pricing.pricingWarnings), false);
+  assert.equal(
+    hasBlockingPricingWarnings(resolved.pricing.pricingWarnings),
+    false,
+  );
 });
 
 test("legacy unresolved warning strings still block ready-state promotion", () => {
@@ -2013,10 +2402,7 @@ test("customer proposal tokens are high entropy, tamper evident, and rotate with
     quoteId: 42,
     timestamp: firstUpdate.getTime(),
   });
-  assert.equal(
-    parseProposalShareToken(`${first.slice(0, -1)}x`),
-    null,
-  );
+  assert.equal(parseProposalShareToken(`${first.slice(0, -1)}x`), null);
 });
 
 test("quote revisions retain source customer identity and reject reassignment", async () => {
