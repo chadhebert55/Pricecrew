@@ -17,6 +17,7 @@ import {
   ExportQuickBooksQuoteCsvBody,
   ExportQuickBooksQuoteCsvParams,
   GetDashboardSummaryResponse,
+  GetNotificationsResponse,
   GetCustomerProposalParams,
   GetCustomerProposalResponse,
   GetQuoteParams,
@@ -27,6 +28,8 @@ import {
   ListQuotesResponse,
   ListCustomersQueryParams,
   ListCustomersResponse,
+  MarkNotificationReadParams,
+  MarkNotificationReadResponse,
   PreviewQuoteBody,
   PreviewQuoteResponse,
   PreflightQuoteExportBody,
@@ -58,6 +61,7 @@ import {
   priceBookItemsTable,
   planTakeoffsTable,
   proposalDecisionsTable,
+  proposalNotificationsTable,
   quotesTable,
   takeoffItemsTable,
   takeoffReviewEventsTable,
@@ -206,6 +210,7 @@ export function formatQuoteNumber(
 }
 
 type ProposalDecisionRow = typeof proposalDecisionsTable.$inferSelect;
+type ProposalNotificationRow = typeof proposalNotificationsTable.$inferSelect;
 
 function serializeProposalDecision(decision: ProposalDecisionRow) {
   return {
@@ -226,6 +231,20 @@ function serializePublicProposalDecision(decision: ProposalDecisionRow) {
     decision: decision.decision,
     customerName: decision.customerName,
     decidedAt: decision.decidedAt.toISOString(),
+  };
+}
+
+function serializeProposalNotification(notification: ProposalNotificationRow) {
+  return {
+    id: notification.id,
+    quoteId: notification.quoteId,
+    quoteNumber: notification.quoteNumber,
+    customerName: notification.customerName,
+    projectName: notification.projectName,
+    revisionNumber: notification.revisionNumber,
+    decision: notification.decision,
+    createdAt: notification.createdAt.toISOString(),
+    readAt: notification.readAt?.toISOString() ?? null,
   };
 }
 
@@ -735,6 +754,23 @@ async function recordProposalDecision(input: {
           decision.tokenIssuedAt.getTime() === input.tokenIssuedAt.getTime(),
       );
       if (existing) {
+        if (matchesDecisionInput(existing, input.decision)) {
+          await tx
+            .insert(proposalNotificationsTable)
+            .values({
+              companyId: currentQuote.companyId,
+              proposalDecisionId: existing.id,
+              quoteId: currentQuote.id,
+              revisionNumber: currentQuote.revisionNumber,
+              decision: existing.decision,
+              customerName: currentQuote.customerName,
+              quoteNumber: currentQuote.quoteNumber,
+              projectName: currentQuote.projectName,
+            })
+            .onConflictDoNothing({
+              target: proposalNotificationsTable.proposalDecisionId,
+            });
+        }
         return matchesDecisionInput(existing, input.decision)
           ? {
               decision: existing,
@@ -763,6 +799,21 @@ async function recordProposalDecision(input: {
         })
         .returning();
       if (!decision) throw new Error("Unable to record proposal decision");
+      await tx
+        .insert(proposalNotificationsTable)
+        .values({
+          companyId: currentQuote.companyId,
+          proposalDecisionId: decision.id,
+          quoteId: currentQuote.id,
+          revisionNumber: currentQuote.revisionNumber,
+          decision: decision.decision,
+          customerName: currentQuote.customerName,
+          quoteNumber: currentQuote.quoteNumber,
+          projectName: currentQuote.projectName,
+        })
+        .onConflictDoNothing({
+          target: proposalNotificationsTable.proposalDecisionId,
+        });
       return { decision, conflict: false as const, stale: false as const };
     });
   } catch (error) {
@@ -1868,6 +1919,72 @@ router.post("/proposals/:token", async (req, res): Promise<void> => {
     ),
   );
 });
+
+router.get("/notifications", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const [notifications, [unreadResult]] = await Promise.all([
+    db
+      .select()
+      .from(proposalNotificationsTable)
+      .where(eq(proposalNotificationsTable.companyId, companyId))
+      .orderBy(
+        desc(proposalNotificationsTable.createdAt),
+        desc(proposalNotificationsTable.id),
+      )
+      .limit(50),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(proposalNotificationsTable)
+      .where(
+        and(
+          eq(proposalNotificationsTable.companyId, companyId),
+          isNull(proposalNotificationsTable.readAt),
+        ),
+      ),
+  ]);
+
+  res.json(
+    GetNotificationsResponse.parse({
+      notifications: notifications.map(serializeProposalNotification),
+      unreadCount: Number(unreadResult?.count ?? 0),
+    }),
+  );
+});
+
+router.post(
+  "/notifications/:id/read",
+  async (req, res): Promise<void> => {
+    const companyId = requestCompanyId(req);
+    const params = MarkNotificationReadParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const [result] = await db
+      .update(proposalNotificationsTable)
+      .set({
+        readAt: sql`coalesce(${proposalNotificationsTable.readAt}, now())`,
+      })
+      .where(
+        and(
+          eq(proposalNotificationsTable.id, params.data.id),
+          eq(proposalNotificationsTable.companyId, companyId),
+        ),
+      )
+      .returning();
+    if (!result) {
+      res.status(404).json({ error: "Notification not found" });
+      return;
+    }
+
+    res.json(
+      MarkNotificationReadResponse.parse(
+        serializeProposalNotification(result),
+      ),
+    );
+  },
+);
 
 router.post("/quotes/:id/duplicate", async (req, res): Promise<void> => {
   const companyId = requestCompanyId(req);

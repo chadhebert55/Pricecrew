@@ -3482,6 +3482,46 @@ export const SubmitProposalDecisionResponse = zod.object({
 
 
 /**
+ * Lists recent proposal decisions for the authenticated company.
+ * @summary List contractor proposal notifications
+ */
+export const GetNotificationsResponse = zod.object({
+  "notifications": zod.array(zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "quoteNumber": zod.string(),
+  "customerName": zod.string(),
+  "projectName": zod.string(),
+  "revisionNumber": zod.number(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullable()
+})),
+  "unreadCount": zod.number()
+})
+
+
+/**
+ * @summary Mark a contractor notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MarkNotificationReadResponse = zod.object({
+  "id": zod.number(),
+  "quoteId": zod.number(),
+  "quoteNumber": zod.string(),
+  "customerName": zod.string(),
+  "projectName": zod.string(),
+  "revisionNumber": zod.number(),
+  "decision": zod.enum(['accepted', 'declined']),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Get a quote
  */
 export const GetQuoteParams = zod.object({

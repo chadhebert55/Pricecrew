@@ -157,6 +157,24 @@ export interface ProposalDecision {
   decidedAt: string;
 }
 
+export interface ProposalNotification {
+  id: number;
+  quoteId: number;
+  quoteNumber: string;
+  customerName: string;
+  projectName: string;
+  revisionNumber: number;
+  decision: ProposalDecisionType;
+  createdAt: string;
+  /** @nullable */
+  readAt: string | null;
+}
+
+export interface NotificationsResponse {
+  notifications: ProposalNotification[];
+  unreadCount: number;
+}
+
 export type EvChargerInputsCableType = typeof EvChargerInputsCableType[keyof typeof EvChargerInputsCableType];
 
 

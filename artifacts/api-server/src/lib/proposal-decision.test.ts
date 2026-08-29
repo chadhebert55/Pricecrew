@@ -8,6 +8,7 @@ import {
   companyMembersTable,
   db,
   proposalDecisionsTable,
+  proposalNotificationsTable,
   quotesTable,
 } from "@workspace/db";
 import app from "../app";
@@ -33,6 +34,23 @@ type ProposalJson = {
 type QuoteDetailJson = {
   proposalDecision: DecisionJson;
   proposalDecisions: DecisionJson[];
+};
+
+type NotificationJson = {
+  id: number;
+  quoteId: number;
+  quoteNumber: string;
+  customerName: string;
+  projectName: string;
+  revisionNumber: number;
+  decision: "accepted" | "declined";
+  createdAt: string;
+  readAt: string | null;
+};
+
+type NotificationsJson = {
+  notifications: NotificationJson[];
+  unreadCount: number;
 };
 
 async function startServer() {
@@ -63,11 +81,19 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
   assert.ok(companyA);
   assert.ok(companyB);
   const userA = `user_decision_a_${marker}`;
-  await db.insert(companyMembersTable).values({
-    userId: userA,
-    companyId: companyA.id,
-    role: "member",
-  });
+  const userB = `user_decision_b_${marker}`;
+  await db.insert(companyMembersTable).values([
+    {
+      userId: userA,
+      companyId: companyA.id,
+      role: "member",
+    },
+    {
+      userId: userB,
+      companyId: companyB.id,
+      role: "member",
+    },
+  ]);
 
   const quoteValues = {
     customerName: template.customerName,
@@ -89,6 +115,7 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
           ...quoteValues,
           companyId: companyA.id,
           quoteNumber: `DECISION-ACCEPT-${marker}`,
+          revisionNumber: 3,
           status: "ready",
         },
         {
@@ -145,6 +172,10 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
     "x-test-clerk-user-id": userA,
     "content-type": "application/json",
   };
+  const foreignAuthHeaders = {
+    "x-test-clerk-user-id": userB,
+    "content-type": "application/json",
+  };
 
   try {
     const acceptedToken = createProposalShareToken(
@@ -191,6 +222,34 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
     assert.equal(firstDecision.decision, "accepted");
     assert.equal(firstDecision.customerName, "Alex Customer");
     assert.equal(firstDecision.signature, "Alex Customer");
+    assert.equal(firstDecision.id > 0, true);
+
+    const acceptedNotifications = await db
+      .select()
+      .from(proposalNotificationsTable)
+      .where(
+        eq(
+          proposalNotificationsTable.proposalDecisionId,
+          firstDecision.id,
+        ),
+      );
+    assert.equal(acceptedNotifications.length, 1);
+    assert.equal(acceptedNotifications[0]?.companyId, companyA.id);
+    assert.equal(acceptedNotifications[0]?.quoteId, acceptedQuote.id);
+    assert.equal(acceptedNotifications[0]?.revisionNumber, 3);
+    assert.equal(
+      acceptedNotifications[0]?.quoteNumber,
+      acceptedQuote.quoteNumber,
+    );
+    assert.equal(
+      acceptedNotifications[0]?.customerName,
+      acceptedQuote.customerName,
+    );
+    assert.equal(
+      acceptedNotifications[0]?.projectName,
+      acceptedQuote.projectName,
+    );
+    assert.equal(acceptedNotifications[0]?.decision, "accepted");
 
     const retryAcceptance = await fetch(
       `${baseUrl}/api/proposals/${acceptedToken}`,
@@ -226,6 +285,15 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
       .from(proposalDecisionsTable)
       .where(eq(proposalDecisionsTable.quoteId, acceptedQuote.id));
     assert.equal(acceptedRows.length, 1);
+    assert.equal(
+      (
+        await db
+          .select()
+          .from(proposalNotificationsTable)
+          .where(eq(proposalNotificationsTable.quoteId, acceptedQuote.id))
+      ).length,
+      1,
+    );
 
     const decidedProposal = await fetch(
       `${baseUrl}/api/proposals/${acceptedToken}`,
@@ -294,6 +362,76 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
     assert.equal(declined.decision, "declined");
     assert.equal(declined.customerName, null);
     assert.equal(declined.signature, null);
+
+    const notificationResponse = await fetch(
+      `${baseUrl}/api/notifications`,
+      { headers: authHeaders },
+    );
+    assert.equal(notificationResponse.status, 200);
+    const notificationList =
+      (await notificationResponse.json()) as NotificationsJson;
+    assert.equal(notificationList.unreadCount, 2);
+    assert.equal(notificationList.notifications.length, 2);
+    const acceptedNotification = notificationList.notifications.find(
+      (notification) => notification.quoteId === acceptedQuote.id,
+    );
+    const declinedNotification = notificationList.notifications.find(
+      (notification) => notification.quoteId === declinedQuote.id,
+    );
+    assert.ok(acceptedNotification);
+    assert.ok(declinedNotification);
+    assert.equal(acceptedNotification.decision, "accepted");
+    assert.equal(acceptedNotification.revisionNumber, 3);
+    assert.equal(declinedNotification.decision, "declined");
+    assert.equal(declinedNotification.revisionNumber, 0);
+
+    const [markReadResponse, markReadRetry] = await Promise.all([
+      fetch(
+        `${baseUrl}/api/notifications/${acceptedNotification.id}/read`,
+        { method: "POST", headers: authHeaders },
+      ),
+      fetch(
+        `${baseUrl}/api/notifications/${acceptedNotification.id}/read`,
+        { method: "POST", headers: authHeaders },
+      ),
+    ]);
+    assert.equal(markReadResponse.status, 200);
+    assert.equal(markReadRetry.status, 200);
+    const markedRead = (await markReadResponse.json()) as NotificationJson;
+    assert.ok(markedRead.readAt);
+    assert.equal(
+      ((await markReadRetry.json()) as NotificationJson).readAt,
+      markedRead.readAt,
+    );
+
+    const afterReadResponse = await fetch(
+      `${baseUrl}/api/notifications`,
+      { headers: authHeaders },
+    );
+    assert.equal(afterReadResponse.status, 200);
+    assert.equal(
+      ((await afterReadResponse.json()) as NotificationsJson).unreadCount,
+      1,
+    );
+
+    const foreignNotificationResponse = await fetch(
+      `${baseUrl}/api/notifications`,
+      { headers: foreignAuthHeaders },
+    );
+    assert.equal(foreignNotificationResponse.status, 200);
+    assert.deepEqual(
+      await foreignNotificationResponse.json(),
+      { notifications: [], unreadCount: 0 },
+    );
+    assert.equal(
+      (
+        await fetch(
+          `${baseUrl}/api/notifications/${acceptedNotification.id}/read`,
+          { method: "POST", headers: foreignAuthHeaders },
+        )
+      ).status,
+      404,
+    );
 
     const draftToken = createProposalShareToken(
       draftQuote.id,
@@ -396,12 +534,15 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
   } finally {
     await closeServer(server);
     await db
+      .delete(proposalNotificationsTable)
+      .where(inArray(proposalNotificationsTable.quoteId, quoteIds));
+    await db
       .delete(proposalDecisionsTable)
       .where(inArray(proposalDecisionsTable.quoteId, quoteIds));
     await db.delete(quotesTable).where(inArray(quotesTable.id, quoteIds));
     await db
       .delete(companyMembersTable)
-      .where(eq(companyMembersTable.userId, userA));
+      .where(inArray(companyMembersTable.userId, [userA, userB]));
     await db
       .delete(companiesTable)
       .where(inArray(companiesTable.id, [companyA.id, companyB.id]));

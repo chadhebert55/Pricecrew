@@ -358,6 +358,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: List contractor proposal notifications
+      description: Lists recent proposal decisions for the authenticated company.
+      responses:
+        "200":
+          description: Company-scoped proposal notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationsResponse"
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a contractor notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Updated company-scoped notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalNotification"
+        "404":
+          description: Notification not found
   /quotes/{id}:
     get:
       operationId: getQuote
@@ -917,6 +950,49 @@ components:
         decidedAt:
           type: string
           format: date-time
+    ProposalNotification:
+      type: object
+      required:
+        - id
+        - quoteId
+        - quoteNumber
+        - customerName
+        - projectName
+        - revisionNumber
+        - decision
+        - createdAt
+        - readAt
+      properties:
+        id:
+          type: number
+        quoteId:
+          type: number
+        quoteNumber:
+          type: string
+        customerName:
+          type: string
+        projectName:
+          type: string
+        revisionNumber:
+          type: number
+        decision:
+          $ref: "#/components/schemas/ProposalDecisionType"
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: ["string", "null"]
+          format: date-time
+    NotificationsResponse:
+      type: object
+      required: [notifications, unreadCount]
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProposalNotification"
+        unreadCount:
+          type: number
     ProposalCompanyPresentation:
       type: object
       required: [displayName, accentColor]

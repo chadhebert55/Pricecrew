@@ -1,6 +1,13 @@
 import { Link, useLocation } from "wouter"
 import { useClerk, useUser } from "@clerk/react"
 import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, Zap, LogOut } from "lucide-react"
+import { lazy, Suspense } from "react"
+
+const ProposalNotificationCenter = lazy(() =>
+  import("@/components/proposal-notification-center").then((module) => ({
+    default: module.ProposalNotificationCenter,
+  })),
+)
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation()
@@ -62,6 +69,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
+        <header className="flex min-h-16 items-center justify-end border-b border-border px-4 md:px-6">
+          <Suspense
+            fallback={
+              <div
+                aria-hidden="true"
+                className="h-10 w-10 animate-pulse rounded-md border border-border bg-muted"
+              />
+            }
+          >
+            <ProposalNotificationCenter />
+          </Suspense>
+        </header>
         <div className="flex-1 p-6 overflow-auto">
           <div className="max-w-6xl mx-auto w-full">
             {children}

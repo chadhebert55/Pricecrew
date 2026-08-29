@@ -926,6 +926,41 @@ export const proposalDecisionsTable = pgTable(
   ],
 );
 
+/**
+ * One contractor-facing notification for one immutable customer decision.
+ * The decision foreign key plus unique index makes delivery idempotent.
+ */
+export const proposalNotificationsTable = pgTable(
+  "proposal_notifications",
+  {
+    id: serial("id").primaryKey(),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companiesTable.id),
+    proposalDecisionId: integer("proposal_decision_id").notNull(),
+    quoteId: integer("quote_id").notNull(),
+    revisionNumber: integer("revision_number").notNull(),
+    decision: text("decision").$type<ProposalDecisionType>().notNull(),
+    customerName: text("customer_name").notNull(),
+    quoteNumber: text("quote_number").notNull(),
+    projectName: text("project_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.proposalDecisionId],
+      foreignColumns: [proposalDecisionsTable.id],
+      name: "proposal_notifications_decision_fk",
+    }).onDelete("cascade"),
+    uniqueIndex("proposal_notifications_decision_unique").on(
+      table.proposalDecisionId,
+    ),
+  ],
+);
+
 export type TakeoffBuilderModule = "ADDITION" | "NEW_HOUSE";
 
 export type TakeoffDocumentStatus = "processing" | "ready" | "failed";

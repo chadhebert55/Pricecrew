@@ -35,6 +35,7 @@ export const requiredTables = [
   "price_book_items",
   "quotes",
   "proposal_decisions",
+  "proposal_notifications",
   "takeoff_items",
   "takeoff_review_events",
 ] as const;
@@ -98,6 +99,17 @@ export const requiredForeignKeys: ForeignKeyRequirement[] = [
       "FOREIGN KEY (quote_id, token_issued_at) REFERENCES quotes(id, updated_at)",
   },
   {
+    name: "proposal_notifications_company_id_companies_id_fk",
+    table: "proposal_notifications",
+    definition: "FOREIGN KEY (company_id) REFERENCES companies(id)",
+  },
+  {
+    name: "proposal_notifications_decision_fk",
+    table: "proposal_notifications",
+    definition:
+      "FOREIGN KEY (proposal_decision_id) REFERENCES proposal_decisions(id) ON DELETE CASCADE",
+  },
+  {
     name: "takeoff_items_takeoff_id_plan_takeoffs_id_fk",
     table: "takeoff_items",
     definition:
@@ -153,6 +165,11 @@ export const requiredUniqueIndexes: UniqueIndexRequirement[] = [
     name: "proposal_decisions_quote_token_unique",
     table: "proposal_decisions",
     definitionIncludes: "USING btree (quote_id, token_issued_at)",
+  },
+  {
+    name: "proposal_notifications_decision_unique",
+    table: "proposal_notifications",
+    definitionIncludes: "USING btree (proposal_decision_id)",
   },
 ];
 
