@@ -19,11 +19,12 @@ Catalog price date: 2026-08-25
 
 | Price-book item | Northeast SKU | Catalog product | Catalog UOM | Normalized cost |
 | --- | ---: | --- | --- | ---: |
-| 8/3 NM-B cable | 19117 | WIC. ROMEX 8/3 | m | $2.682868/ft |
+| 8/3 NM-B cable | 210481 | WIC. ROMEX 8/3 | m | $2.682868/ft |
 | 8/2 NM-B cable | 22923 | WIC. ROMEX 8/2 | m | $1.890960/ft |
-| 6/3 NM-B cable | 25138 | WIC. ROMEX 6/3 | m | $3.921784/ft |
+| 6/2 NM-B cable | 20262 | WIC. ROMEX 6/2 | m | $2.670663/ft |
+| 6/3 NM-B cable | 301447 | WIC. ROMEX 6/3 | m | $3.921784/ft |
 | 10/2 NM-B cable | 5096 | WIC. ROMEX 10/2 | m | $1.071856/ft |
-| 10/3 NM-B cable | 4093 | WIC. ROMEX 10/3 | m | $1.334639/ft |
+| 10/3 NM-B cable | 301392 | WIC. ROMEX 10/3 | m | $1.350184/ft |
 | 12/2 NM-B cable | 3873 | WIC. ROMEX 12/2 | m | $0.562271/ft |
 | 14/2 NM-B cable | 27892 | WIC. ROMEX 14/2 | m | $0.379697/ft |
 | 14/3 NM-B cable | 10802 | WIC. ROMEX 14/3 | m | $0.539950/ft |
@@ -35,7 +36,7 @@ Catalog price date: 2026-08-25
 | 3/0 aluminum SER | 239619 | WIA. SER 3/0-3/ | m | $3.930704/ft |
 | #1 aluminum SER | 295809 | WIA. SER 1-1-1- | m | $2.417841/ft |
 
-The workbook contains additional rows for several wire sizes. The seeded row is a specific editable Northeast SKU, not a claim that it is the only valid color, reel, or packaging variant.
+The workbook contains additional rows for several wire sizes. The canonical 14/2, 12/2, 10/2, 8/2, and 6/2 rows use the verified package-derived purchasing costs. The 10/3, 8/3, and 6/3 rows retain the selected cut-to-length policy; alternate coil observations remain source references and do not replace those canonical rows. Each seeded row is a specific editable Northeast SKU, not a claim that it is the only valid color, reel, or packaging variant.
 
 ### Devices and breakers
 

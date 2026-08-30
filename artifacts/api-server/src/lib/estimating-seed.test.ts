@@ -49,11 +49,12 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       assert.equal(surge?.isDefault, false);
 
       const expectedNortheastCatalog = [
-        ["8/3 NM-B cable", 2.682868, "Wic.", "WIC. ROMEX 8/3", "19117", "98010026338"],
+        ["8/3 NM-B cable", 2.682868, "Wic.", "WIC. ROMEX 8/3", "210481", "98010066369"],
         ["8/2 NM-B cable", 1.89096, "Wic.", "WIC. ROMEX 8/2", "22923", "98010026315"],
-        ["6/3 NM-B cable", 3.921784, "Wic.", "WIC. ROMEX 6/3", "25138", "98010026371"],
+        ["6/2 NM-B cable", 2.670663, "Wic.", "WIC. ROMEX 6/2", "20262", "98010026320"],
+        ["6/3 NM-B cable", 3.921784, "Wic.", "WIC. ROMEX 6/3", "301447", "98010066372"],
         ["10/2 NM-B cable", 1.071856, "Wic.", "WIC. ROMEX 10/2", "5096", "98010026310"],
-        ["10/3 NM-B cable", 1.334639, "Wic.", "WIC. ROMEX 10/3", "4093", "98010026360"],
+        ["10/3 NM-B cable", 1.350184, "Wic.", "WIC. ROMEX 10/3", "301392", "98010026379"],
         ["12/2 NM-B cable", 0.562271, "Wic.", "WIC. ROMEX 12/2", "3873", "98010026305"],
         ["14/2 NM-B cable", 0.379697, "Wic.", "WIC. ROMEX 14/2", "27892", "98010026300"],
         ["14/3 NM-B cable", 0.53995, "Wic.", "WIC. ROMEX 14/3", "10802", "98010026350"],

@@ -1302,10 +1302,10 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       lineId: "addition-circuit-1-cable",
       descriptionIncludes: "10/3 NM-B",
       quantity: 85,
-      unitCost: 1.334639,
-      extendedCost: 113.444,
-      materialCost: 134.54,
-      sellingPrice: 693.18,
+      unitCost: 1.350184,
+      extendedCost: 114.766,
+      materialCost: 135.87,
+      sellingPrice: 694.84,
       hasBlockingWarning: false,
     },
     {
@@ -1336,10 +1336,10 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       lineId: "new-house-equipment-cable",
       descriptionIncludes: "10/3 NM-B",
       quantity: 80,
-      unitCost: 1.334639,
-      extendedCost: 106.771,
-      materialCost: 127.87,
-      sellingPrice: 534.84,
+      unitCost: 1.350184,
+      extendedCost: 108.015,
+      materialCost: 129.12,
+      sellingPrice: 536.4,
       hasBlockingWarning: false,
     },
     {
@@ -1672,8 +1672,8 @@ test("saved Addition subpanel resolves seeded source prices identically across p
       cableLine?.description,
       "30A 2-pole 10/3 NM-B branch-circuit cable",
     );
-    assert.equal(cableLine?.unitCost, 1.334639);
-    assert.equal(cableLine?.extendedCost, 113.444);
+    assert.equal(cableLine?.unitCost, 1.350184);
+    assert.equal(cableLine?.extendedCost, 114.766);
     const feederLine = saved.assembly.find(
       (line) => line.id === "addition-subpanel-feeder",
     );
@@ -2829,7 +2829,7 @@ test("New House room counts persist through create, reload, duplicate, and legac
       (createdEquipmentCable as { quantity?: number } | undefined)?.quantity,
       80,
     );
-    assert.equal(createdEquipmentCable?.unitCost, 1.334639);
+    assert.equal(createdEquipmentCable?.unitCost, 1.350184);
 
     const sourcePricing = created.pricing;
     const duplicateResponse = await fetch(

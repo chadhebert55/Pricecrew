@@ -3675,7 +3675,7 @@ const newHouseInputs: NewHouseInputRecord = {
 const newHousePriceBook: PriceBookItem[] = [
   ...priceBook,
   catalogRow("10/2 NM-B cable", 1.071856),
-  catalogRow("10/3 NM-B cable", 1.334639),
+  catalogRow("10/3 NM-B cable", 1.350184),
   catalogRow("8/2 NM-B cable", 1.89096),
   catalogRow("8/3 NM-B cable", 2.682868),
   catalogRow(
@@ -3889,7 +3889,7 @@ test("New House refuses to price under-ampacity circuit cable selections", () =>
 test("New House prices compatible 2-wire and 3-wire heavy equipment cables from exact per-foot rows", () => {
   const selections = [
     [30, "10/2 NM-B", 1.071856],
-    [30, "10/3 NM-B", 1.334639],
+    [30, "10/3 NM-B", 1.350184],
     [40, "8/2 NM-B", 1.89096],
     [40, "8/3 NM-B", 2.682868],
   ] as const;
@@ -4077,7 +4077,7 @@ test("equivalent Addition 30A wires preserve distinct exact takeoff and selling 
   const book = [
     ...priceBook,
     catalogRow("10/2 NM-B cable", 1.071856, { category: "Conductor" }),
-    catalogRow("10/3 NM-B cable", 1.334639, { category: "Conductor" }),
+    catalogRow("10/3 NM-B cable", 1.350184, { category: "Conductor" }),
     catalogRow("Siemens Q230 30A 2-pole standard breaker", 25, {
       category: "Protection",
       manufacturer: "Siemens",
@@ -4089,7 +4089,7 @@ test("equivalent Addition 30A wires preserve distinct exact takeoff and selling 
   ];
   const expected = [
     ["10/2 NM-B" as const, 1.071856, 85, 91.108, 116.11, 670.14],
-    ["10/3 NM-B" as const, 1.334639, 85, 113.444, 138.44, 698.05],
+    ["10/3 NM-B" as const, 1.350184, 85, 114.766, 139.77, 699.71],
   ] as const;
 
   for (const [cableType, unitCost, footage, extendedCost, materialCost, sellingPrice] of expected) {
@@ -4161,7 +4161,7 @@ test("equivalent New House heavy wires preserve distinct exact takeoff and selli
   ];
   const expected = [
     [30, "10/2 NM-B" as const, 1.071856, 85.748, 110.75, 513.44],
-    [30, "10/3 NM-B" as const, 1.334639, 106.771, 131.77, 539.71],
+    [30, "10/3 NM-B" as const, 1.350184, 108.015, 133.01, 541.26],
     [40, "8/2 NM-B" as const, 1.89096, 151.277, 186.28, 607.85],
     [40, "8/3 NM-B" as const, 2.682868, 214.629, 249.63, 687.04],
   ] as const;
