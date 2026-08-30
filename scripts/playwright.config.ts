@@ -13,7 +13,7 @@ const chromiumExecutable = (() => {
 
 export default defineConfig({
   testDir: "./src",
-  testMatch: "takeoff-history.browser.test.ts",
+  testMatch: "**/*.browser.test.ts",
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,

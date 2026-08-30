@@ -21,7 +21,7 @@ import {
   Router as WouterRouter,
 } from 'wouter';
 
-import { Shell } from '@/components/layout/shell';
+import { E2eShell, Shell } from '@/components/layout/shell';
 
 const Dashboard = lazy(() =>
   import('@/pages/dashboard').then(({ Dashboard }) => ({ default: Dashboard })),
@@ -364,9 +364,16 @@ function E2eProviderWithRoutes() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <RoutedErrorBoundary>
-          <PrivateRouteSwitch />
-        </RoutedErrorBoundary>
+        <Switch>
+          <Route path="/proposals/:token" component={QuoteProposal} />
+          <Route>
+            <E2eShell>
+              <RoutedErrorBoundary>
+                <PrivateRouteSwitch />
+              </RoutedErrorBoundary>
+            </E2eShell>
+          </Route>
+        </Switch>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

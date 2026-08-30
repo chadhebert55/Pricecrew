@@ -112,7 +112,7 @@ export function QuoteProposal() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-16">
       <div className="flex justify-end print:hidden">
-        <Button disabled={!canPrint} onClick={() => window.print()}>
+        <Button className="w-full sm:w-auto" disabled={!canPrint} onClick={() => window.print()}>
           <Printer size={16} className="mr-2" /> Print proposal
         </Button>
       </div>

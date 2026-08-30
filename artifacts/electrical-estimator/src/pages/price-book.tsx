@@ -123,7 +123,7 @@ export function PriceBook() {
                   <div className="bg-secondary/5 px-4 py-2 font-bold text-sm text-secondary-foreground border-b border-border uppercase tracking-wider">
                     {category}
                   </div>
-                  <Table>
+                  <Table className="min-w-[58rem]">
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
                         <TableHead>Item Description</TableHead>

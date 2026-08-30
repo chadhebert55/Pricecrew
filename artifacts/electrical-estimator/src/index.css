@@ -140,10 +140,16 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    overflow-x: hidden;
   }
 }
 
 /* Base custom styles for our tables and forms to look "dense and practical" */
+.table-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
 table {
   @apply w-full text-sm text-left;
 }

@@ -249,8 +249,8 @@ export function QuoteDetail() {
           <Button variant="ghost" size="sm" className="mb-2 -ml-3 text-muted-foreground" onClick={() => setLocation("/quotes")}>
             <ArrowLeft size={16} className="mr-1" /> Back to Quotes
           </Button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">{quote.projectName}</h1>
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="break-words text-3xl font-bold tracking-tight text-foreground">{quote.projectName}</h1>
             <Badge variant={status === 'ready' ? 'success' : 'secondary'} className="text-sm capitalize">
               {status}
             </Badge>
@@ -261,25 +261,26 @@ export function QuoteDetail() {
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button
+            className="w-full sm:w-auto"
             data-testid="button-export-quote-header"
             onClick={() => document.getElementById("quote-integrations-exports")?.scrollIntoView({ behavior: "smooth", block: "start" })}
           >
             <Download size={16} className="mr-2" /> Export Quote
           </Button>
-          <Button data-testid="button-duplicate-quote" variant="outline" onClick={handleDuplicate}>
+          <Button className="w-full sm:w-auto" data-testid="button-duplicate-quote" variant="outline" onClick={handleDuplicate}>
             <Copy size={16} className="mr-2" /> Duplicate / Revise
           </Button>
-          <Button variant="outline" onClick={handleOpenProposal} disabled={status !== "ready" || hasBlockingWarnings || updateQuote.isPending} title={status !== "ready" ? "Mark this quote ready before opening the customer proposal" : undefined}>
+          <Button className="w-full sm:w-auto" variant="outline" onClick={handleOpenProposal} disabled={status !== "ready" || hasBlockingWarnings || updateQuote.isPending} title={status !== "ready" ? "Mark this quote ready before opening the customer proposal" : undefined}>
             <ExternalLink size={16} className="mr-2" /> Customer Proposal
           </Button>
           {status !== 'ready' && (
-            <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={handleMarkReady} disabled={updateQuote.isPending || hasBlockingWarnings} title={hasBlockingWarnings ? "Resolve pricing errors before marking ready" : undefined}>
+             <Button variant="outline" className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50 sm:w-auto" onClick={handleMarkReady} disabled={updateQuote.isPending || hasBlockingWarnings} title={hasBlockingWarnings ? "Resolve pricing errors before marking ready" : undefined}>
               <Check size={16} className="mr-2" /> Mark Ready
             </Button>
           )}
-          <Button data-testid="button-save-quote" onClick={handleSaveOverrides} disabled={updateQuote.isPending}>
+          <Button className="w-full sm:w-auto" data-testid="button-save-quote" onClick={handleSaveOverrides} disabled={updateQuote.isPending}>
             <Save size={16} className="mr-2" /> {updateQuote.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
@@ -439,7 +440,7 @@ export function QuoteDetail() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
+              <Table className="min-w-[38rem]">
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <TableHead>Category</TableHead>

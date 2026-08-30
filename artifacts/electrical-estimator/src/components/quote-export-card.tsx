@@ -159,7 +159,7 @@ export function QuoteExportCard({
               Prepare a provider-friendly file from this saved quote. This is a download for import—not a direct sync, connection, or send action.
             </CardDescription>
           </div>
-          <Button data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy || pricingBlocked}>
+           <Button className="w-full sm:w-auto" data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy || pricingBlocked}>
             <Download size={16} className="mr-2" />
             {busy ? "Checking export..." : "Export Quote"}
           </Button>
