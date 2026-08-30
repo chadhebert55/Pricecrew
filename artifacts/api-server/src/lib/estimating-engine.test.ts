@@ -6,6 +6,7 @@ import {
   auditPriceBookItem,
   calculateAdditionEstimate,
   calculateBathroomEstimate,
+  calculateEvChargerEstimate,
   calculateKitchenEstimate,
   calculateNewHouseEstimate,
   calculatePanelReplacementEstimate,
@@ -17,6 +18,7 @@ import {
 import type {
   AdditionInputRecord,
   BathroomInputRecord,
+  EvChargerInputRecord,
   KitchenInputRecord,
   NewHouseInputRecord,
   PanelReplacementInputRecord,
@@ -3867,4 +3869,221 @@ test("New House never substitutes exhaust fans for ceiling fans or omits exterio
     ),
     true,
   );
+});
+
+test("equivalent Addition 30A wires preserve distinct exact takeoff and selling totals", () => {
+  const book = [
+    ...priceBook,
+    catalogRow("10/2 NM-B cable", 1.071856, { category: "Conductor" }),
+    catalogRow("10/3 NM-B cable", 1.334639, { category: "Conductor" }),
+    catalogRow("Siemens Q230 30A 2-pole standard breaker", 25, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q230",
+      amperage: 30,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+  ];
+  const expected = [
+    ["10/2 NM-B" as const, 1.071856, 85, 91.108, 116.11, 670.14],
+    ["10/3 NM-B" as const, 1.334639, 85, 113.444, 138.44, 698.05],
+  ] as const;
+
+  for (const [cableType, unitCost, footage, extendedCost, materialCost, sellingPrice] of expected) {
+    const result = calculateAdditionEstimate(
+      {
+        ...additionInputs,
+        receptacles: 0,
+        switches: 0,
+        dimmers: 0,
+        recessedLights: 0,
+        ceilingFans: 0,
+        circuitEntries: [
+          {
+            amperage: 30,
+            poleCount: 2,
+            protectionType: "Standard",
+            cableType,
+            quantity: 1,
+          },
+        ],
+        routeLength: 50,
+        homeRunLength: 35,
+        crewSize: 1,
+        crewHours: 1,
+      },
+      settings,
+      book,
+    );
+    const cable = result.assembly.find(
+      (line) => line.id === "addition-circuit-1-cable",
+    );
+
+    assert.equal(cable?.description, `30A 2-pole ${cableType} branch-circuit cable`);
+    assert.equal(cable?.quantity, footage);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(cable?.extendedCost, extendedCost);
+    assert.equal(result.pricing.materialCost, materialCost);
+    assert.equal(result.pricing.calculatedSellingPrice, sellingPrice);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.severity === "error",
+      ),
+      false,
+    );
+  }
+});
+
+test("equivalent New House heavy wires preserve distinct exact takeoff and selling totals", () => {
+  const book = [
+    ...newHousePriceBook,
+    catalogRow("Siemens Q230 30A 2-pole standard breaker", 25, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q230",
+      amperage: 30,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+    catalogRow("Siemens Q240 40A 2-pole standard breaker", 35, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q240",
+      amperage: 40,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+  ];
+  const expected = [
+    [30, "10/2 NM-B" as const, 1.071856, 85.748, 110.75, 513.44],
+    [30, "10/3 NM-B" as const, 1.334639, 106.771, 131.77, 539.71],
+    [40, "8/2 NM-B" as const, 1.89096, 151.277, 186.28, 607.85],
+    [40, "8/3 NM-B" as const, 2.682868, 214.629, 249.63, 687.04],
+  ] as const;
+
+  for (const [amperage, cableType, unitCost, extendedCost, materialCost, sellingPrice] of expected) {
+    const result = calculateNewHouseEstimate(
+      {
+        ...newHouseInputs,
+        floorCount: 1,
+        garageSquareFootage: 0,
+        basementSquareFootage: 0,
+        outletQuantity: 0,
+        switchQuantity: 0,
+        dimmerQuantity: 0,
+        recessedLightQuantity: 0,
+        fanQuantity: 0,
+        smokeCoQuantity: 0,
+        bedroomCount: 0,
+        bathroomQuantity: 0,
+        kitchenApplianceCircuitQuantity: 0,
+        laundryCircuitQuantity: 0,
+        exteriorReceptacleQuantity: 0,
+        exteriorLightingQuantity: 0,
+        garageReceptacleQuantity: 0,
+        garageCircuitQuantity: 0,
+        servicePanelAllowance: 0,
+        hvacEquipmentCircuitQuantity: 1,
+        miniSplitCircuitQuantity: 0,
+        commonBranchCircuitQuantity: 0,
+        equipmentCircuitFootage: 80,
+        equipmentCircuitAmperage: amperage,
+        equipmentCircuitPoleCount: 2,
+        equipmentCircuitProtectionType: "Standard",
+        equipmentCircuitCableType: cableType,
+        crewSize: 1,
+        crewHours: 1,
+        laborAdjustmentHours: 0,
+      },
+      settings,
+      book,
+    );
+    const cable = result.assembly.find(
+      (line) => line.id === "new-house-equipment-cable",
+    );
+
+    assert.equal(cable?.description.startsWith(cableType), true);
+    assert.equal(cable?.quantity, 80);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(cable?.extendedCost, extendedCost);
+    assert.equal(result.pricing.materialCost, materialCost);
+    assert.equal(result.pricing.calculatedSellingPrice, sellingPrice);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.severity === "error",
+      ),
+      false,
+    );
+  }
+});
+
+test("equivalent EV 2-wire and 3-wire Romex preserve distinct exact takeoff and selling totals", () => {
+  const evInputs: EvChargerInputRecord = {
+    chargerQuantity: 1,
+    chargerOutputAmps: 40,
+    circuitAmps: "Auto",
+    chargerSupply: "Customer Provided",
+    connection: "Hardwired",
+    routeLength: 15,
+    wiringMethod: "Romex (NM-B)",
+    cableType: "8/2 NM-B",
+    location: "Indoor",
+    panelManufacturer: "Siemens",
+    panelSpace: "Available",
+    breakerRequirement: "GFCI 2-Pole",
+    access: "Standard",
+    permit: "Not Required",
+    loadManagement: "None",
+    disconnect: "Not Required",
+    surgeProtection: "None",
+    panelModifications: "None",
+    difficulty: "Standard",
+    notes: "",
+    laborRateType: "residential",
+  };
+  const book = [
+    catalogRow("8/2 NM-B cable", 1.89096, { category: "Conductor" }),
+    catalogRow("8/3 NM-B cable", 2.682868, { category: "Conductor" }),
+    catalogRow("Siemens QF250A 50A 2-pole GFCI breaker", 151.702, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QF250A",
+      amperage: 50,
+      poleCount: 2,
+      protectionType: "GFCI",
+    }),
+  ];
+  const expected = [
+    ["8/2 NM-B" as const, 1.89096, 28.364, 180.07, 675.09],
+    ["8/3 NM-B" as const, 2.682868, 40.243, 191.94, 689.92],
+  ] as const;
+
+  for (const [cableType, unitCost, extendedCost, materialCost, sellingPrice] of expected) {
+    const result = calculateEvChargerEstimate(
+      { ...evInputs, cableType },
+      settings,
+      book,
+    );
+    const cable = result.assembly.find((line) => line.id === "cable");
+
+    assert.equal(cable?.description, `${cableType} cable — verify conductor sizing and route`);
+    assert.equal(cable?.quantity, 15);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(cable?.extendedCost, extendedCost);
+    assert.equal(result.pricing.materialCost, materialCost);
+    assert.equal(result.pricing.calculatedSellingPrice, sellingPrice);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.severity === "error",
+      ),
+      false,
+    );
+  }
 });

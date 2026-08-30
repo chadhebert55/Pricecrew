@@ -901,6 +901,19 @@ type CreatedQuote = {
   customerId: number | null;
   customerName: string;
   customerEmail: string | null;
+  assembly: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitCost: number;
+    extendedCost: number;
+  }>;
+  pricing: {
+    materialCost: number;
+    finalSellingPrice: number;
+    pricingWarnings: PricingWarningRecord[];
+  };
+  total: number;
 };
 
 test("module aliases include canonical and seeded historical builder labels", () => {
@@ -1056,11 +1069,18 @@ async function getQuote(baseUrl: string, id: number) {
     assembly: Array<{
       id: string;
       description: string;
+      quantity: number;
       unitCost: number;
       extendedCost: number;
       source: string;
     }>;
-    pricing: { materialCost: number; laborCost: number };
+    pricing: {
+      materialCost: number;
+      laborCost: number;
+      finalSellingPrice: number;
+      pricingWarnings: PricingWarningRecord[];
+    };
+    total: number;
     error?: string;
   };
   assert.equal(
@@ -1147,6 +1167,288 @@ test("requested builders preserve seeded pricing across preview, create, and rel
         preview.pricing,
         `${quoteCase.label} pricing changed between preview and reload`,
       );
+    }
+  } finally {
+    await closeTestServer(server);
+  }
+});
+
+test("heavy-load wire pairs keep exact seeded pricing through preview, create, and reload", async () => {
+  const { server, baseUrl } = await startTestServer();
+  const additionBase: AdditionInputRecord = {
+    length: 20,
+    width: 16,
+    receptacles: 0,
+    switches: 0,
+    dimmers: 0,
+    recessedLights: 0,
+    ceilingFans: 0,
+    customerSuppliedFans: true,
+    circuitCount: 1,
+    routeLength: 50,
+    homeRunLength: 35,
+    panelManufacturer: "Siemens",
+    breakerAmperage: 20,
+    breakerPoleCount: 1,
+    breakerProtectionType: "Standard",
+    cableType: "12/2 NM-B",
+    subpanelOption: "No Subpanel",
+    feederDistance: 0,
+    crewSize: 1,
+    crewHours: 1,
+    notes: "",
+  };
+  const newHouseBase: NewHouseInputRecord = {
+    ...newHouseInputs,
+    finishedSquareFootage: 2000,
+    floorCount: 1,
+    garageSquareFootage: 0,
+    basementSquareFootage: 0,
+    outletQuantity: 0,
+    switchQuantity: 0,
+    dimmerQuantity: 0,
+    recessedLightQuantity: 0,
+    fanQuantity: 0,
+    smokeCoQuantity: 0,
+    bedroomCount: 0,
+    bathroomQuantity: 0,
+    kitchenApplianceCircuitQuantity: 0,
+    laundryCircuitQuantity: 0,
+    exteriorReceptacleQuantity: 0,
+    exteriorLightingQuantity: 0,
+    garageReceptacleQuantity: 0,
+    garageCircuitQuantity: 0,
+    servicePanelAllowance: 0,
+    hvacEquipmentCircuitQuantity: 1,
+    miniSplitCircuitQuantity: 0,
+    commonBranchCircuitQuantity: 0,
+    equipmentCircuitFootage: 80,
+    equipmentCircuitPoleCount: 2,
+    equipmentCircuitProtectionType: "Standard",
+    crewSize: 1,
+    crewHours: 1,
+    laborAdjustmentHours: 0,
+  };
+  const evBase: EvChargerInputRecord = {
+    ...evInputs,
+    chargerQuantity: 1,
+    chargerOutputAmps: 40,
+    circuitAmps: "Auto",
+    chargerSupply: "Customer Provided",
+    connection: "Hardwired",
+    routeLength: 15,
+    wiringMethod: "Romex (NM-B)",
+    panelManufacturer: "Siemens",
+    breakerRequirement: "GFCI 2-Pole",
+    permit: "Not Required",
+    loadManagement: "None",
+    disconnect: "Not Required",
+    surgeProtection: "None",
+    panelModifications: "None",
+    difficulty: "Standard",
+  };
+  const cases: Array<{
+    label: string;
+    module: QuoteRequest["module"];
+    jobInputs: QuoteJobInputsRecord;
+    lineId: string;
+    descriptionIncludes: string;
+    quantity: number;
+    unitCost: number;
+    extendedCost: number;
+    materialCost: number;
+    sellingPrice: number;
+    hasBlockingWarning: boolean;
+  }> = [
+    {
+      label: "Addition 10/2",
+      module: "ADDITION",
+      jobInputs: {
+        ...additionBase,
+        circuitEntries: [
+          {
+            amperage: 30,
+            poleCount: 2,
+            protectionType: "Standard",
+            cableType: "10/2 NM-B",
+            quantity: 1,
+          },
+        ],
+      },
+      lineId: "addition-circuit-1-cable",
+      descriptionIncludes: "10/2 NM-B",
+      quantity: 85,
+      unitCost: 1.071856,
+      extendedCost: 91.108,
+      materialCost: 91.11,
+      sellingPrice: 638.89,
+      hasBlockingWarning: true,
+    },
+    {
+      label: "Addition 10/3",
+      module: "ADDITION",
+      jobInputs: {
+        ...additionBase,
+        circuitEntries: [
+          {
+            amperage: 30,
+            poleCount: 2,
+            protectionType: "Standard",
+            cableType: "10/3 NM-B",
+            quantity: 1,
+          },
+        ],
+      },
+      lineId: "addition-circuit-1-cable",
+      descriptionIncludes: "10/3 NM-B",
+      quantity: 85,
+      unitCost: 1.334639,
+      extendedCost: 113.444,
+      materialCost: 113.44,
+      sellingPrice: 666.8,
+      hasBlockingWarning: true,
+    },
+    {
+      label: "New House 10/2",
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseBase,
+        equipmentCircuitAmperage: 30,
+        equipmentCircuitCableType: "10/2 NM-B",
+      },
+      lineId: "new-house-equipment-cable",
+      descriptionIncludes: "10/2 NM-B",
+      quantity: 80,
+      unitCost: 1.071856,
+      extendedCost: 85.748,
+      materialCost: 85.75,
+      sellingPrice: 482.19,
+      hasBlockingWarning: true,
+    },
+    {
+      label: "New House 10/3",
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseBase,
+        equipmentCircuitAmperage: 30,
+        equipmentCircuitCableType: "10/3 NM-B",
+      },
+      lineId: "new-house-equipment-cable",
+      descriptionIncludes: "10/3 NM-B",
+      quantity: 80,
+      unitCost: 1.334639,
+      extendedCost: 106.771,
+      materialCost: 106.77,
+      sellingPrice: 508.46,
+      hasBlockingWarning: true,
+    },
+    {
+      label: "New House 8/2",
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseBase,
+        equipmentCircuitAmperage: 40,
+        equipmentCircuitCableType: "8/2 NM-B",
+      },
+      lineId: "new-house-equipment-cable",
+      descriptionIncludes: "8/2 NM-B",
+      quantity: 80,
+      unitCost: 1.89096,
+      extendedCost: 151.277,
+      materialCost: 151.28,
+      sellingPrice: 564.1,
+      hasBlockingWarning: true,
+    },
+    {
+      label: "New House 8/3",
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseBase,
+        equipmentCircuitAmperage: 40,
+        equipmentCircuitCableType: "8/3 NM-B",
+      },
+      lineId: "new-house-equipment-cable",
+      descriptionIncludes: "8/3 NM-B",
+      quantity: 80,
+      unitCost: 2.682868,
+      extendedCost: 214.629,
+      materialCost: 214.63,
+      sellingPrice: 643.29,
+      hasBlockingWarning: true,
+    },
+    {
+      label: "EV 8/2",
+      module: "EV_CHARGER",
+      jobInputs: { ...evBase, cableType: "8/2 NM-B" },
+      lineId: "cable",
+      descriptionIncludes: "8/2 NM-B",
+      quantity: 15,
+      unitCost: 1.89096,
+      extendedCost: 28.364,
+      materialCost: 180.07,
+      sellingPrice: 675.09,
+      hasBlockingWarning: false,
+    },
+    {
+      label: "EV 8/3",
+      module: "EV_CHARGER",
+      jobInputs: { ...evBase, cableType: "8/3 NM-B" },
+      lineId: "cable",
+      descriptionIncludes: "8/3 NM-B",
+      quantity: 15,
+      unitCost: 2.682868,
+      extendedCost: 40.243,
+      materialCost: 191.94,
+      sellingPrice: 689.92,
+      hasBlockingWarning: false,
+    },
+  ];
+
+  try {
+    for (const quoteCase of cases) {
+      const preview = await previewQuote(baseUrl, {
+        module: quoteCase.module,
+        jobInputs: quoteCase.jobInputs,
+      });
+      const previewCable = preview.assembly.find(
+        (line) => line.id === quoteCase.lineId,
+      );
+      assert.ok(
+        previewCable?.description.includes(quoteCase.descriptionIncludes),
+        `${quoteCase.label} preserves the selected cable description`,
+      );
+      assert.equal(previewCable?.quantity, quoteCase.quantity);
+      assert.equal(previewCable?.unitCost, quoteCase.unitCost);
+      assert.equal(previewCable?.extendedCost, quoteCase.extendedCost);
+      assert.equal(preview.pricing.materialCost, quoteCase.materialCost);
+      assert.equal(
+        preview.pricing.finalSellingPrice,
+        quoteCase.sellingPrice,
+      );
+      assert.equal(
+        preview.pricing.pricingWarnings.some(
+          (warning) =>
+            typeof warning !== "string" &&
+            warning.severity === "error",
+        ),
+        quoteCase.hasBlockingWarning,
+      );
+
+      const created = await postQuote(baseUrl, {
+        customerName: `${quoteCase.label} parity ${randomUUID()}`,
+        projectName: `${quoteCase.label} saved wire parity`,
+        proposalDescription: "Preserve the selected heavy-load conductor.",
+        module: quoteCase.module,
+        jobInputs: quoteCase.jobInputs,
+      });
+      assert.deepEqual(created.assembly, preview.assembly);
+      assert.deepEqual(created.pricing, preview.pricing);
+      assert.equal(created.total, quoteCase.sellingPrice);
+
+      const saved = await getQuote(baseUrl, created.id);
+      assert.deepEqual(saved.assembly, preview.assembly);
+      assert.deepEqual(saved.pricing, preview.pricing);
+      assert.equal(saved.total, quoteCase.sellingPrice);
     }
   } finally {
     await closeTestServer(server);
