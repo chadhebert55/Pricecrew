@@ -44,5 +44,13 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
     },
+    {
+      command:
+        "NODE_ENV=test PORT=5175 BASE_PATH=/ VITE_E2E_AUTH=false pnpm --filter @workspace/electrical-estimator exec vite --config vite.config.ts --host 127.0.0.1 --mode development",
+      cwd: "..",
+      url: "http://127.0.0.1:5175",
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
   ],
 });
