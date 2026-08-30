@@ -12,4 +12,6 @@ export type NewHouseInputsBranchCircuitAmperage = typeof NewHouseInputsBranchCir
 export const NewHouseInputsBranchCircuitAmperage = {
   NUMBER_15: 15,
   NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_40: 40,
 } as const;

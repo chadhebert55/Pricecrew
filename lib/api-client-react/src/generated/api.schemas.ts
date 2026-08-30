@@ -1324,6 +1324,8 @@ export type NewHouseInputsBranchCircuitAmperage = typeof NewHouseInputsBranchCir
 export const NewHouseInputsBranchCircuitAmperage = {
   NUMBER_15: 15,
   NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_40: 40,
 } as const;
 
 export type NewHouseInputsBranchCircuitPoleCount = typeof NewHouseInputsBranchCircuitPoleCount[keyof typeof NewHouseInputsBranchCircuitPoleCount];
@@ -1331,6 +1333,7 @@ export type NewHouseInputsBranchCircuitPoleCount = typeof NewHouseInputsBranchCi
 
 export const NewHouseInputsBranchCircuitPoleCount = {
   NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;
 
 export type NewHouseInputsBranchCircuitProtectionType = typeof NewHouseInputsBranchCircuitProtectionType[keyof typeof NewHouseInputsBranchCircuitProtectionType];
@@ -1350,6 +1353,10 @@ export const NewHouseInputsBranchCircuitCableType = {
   '12/2_NM-B': '12/2 NM-B',
   '14/2_NM-B': '14/2 NM-B',
   '14/3_NM-B': '14/3 NM-B',
+  '10/2_NM-B': '10/2 NM-B',
+  '10/3_NM-B': '10/3 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+  '8/3_NM-B': '8/3 NM-B',
 } as const;
 
 export type NewHouseInputsEquipmentCircuitAmperage = typeof NewHouseInputsEquipmentCircuitAmperage[keyof typeof NewHouseInputsEquipmentCircuitAmperage];

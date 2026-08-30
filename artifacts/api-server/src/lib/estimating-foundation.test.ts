@@ -1343,6 +1343,28 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       hasBlockingWarning: false,
     },
     {
+      label: "New House branch 10/3",
+      module: "NEW_HOUSE",
+      jobInputs: {
+        ...newHouseBase,
+        hvacEquipmentCircuitQuantity: 0,
+        commonBranchCircuitQuantity: 1,
+        branchCircuitFootage: 80,
+        branchCircuitAmperage: 30,
+        branchCircuitPoleCount: 2,
+        branchCircuitProtectionType: "Standard",
+        branchCircuitCableType: "10/3 NM-B",
+      },
+      lineId: "new-house-branch-cable",
+      descriptionIncludes: "10/3 NM-B",
+      quantity: 80,
+      unitCost: 1.350184,
+      extendedCost: 108.015,
+      materialCost: 129.12,
+      sellingPrice: 461.4,
+      hasBlockingWarning: false,
+    },
+    {
       label: "New House 8/2",
       module: "NEW_HOUSE",
       jobInputs: {
@@ -1451,6 +1473,26 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       assert.deepEqual(saved.assembly, preview.assembly);
       assert.deepEqual(saved.pricing, preview.pricing);
       assert.equal(saved.total, preview.pricing.finalSellingPrice);
+      assert.deepEqual(saved.jobInputs, quoteCase.jobInputs);
+
+      if (
+        quoteCase.label === "Addition 10/3" ||
+        quoteCase.label === "New House branch 10/3"
+      ) {
+        const revised = await postQuote(baseUrl, {
+          sourceQuoteId: created.id,
+          customerName: `${quoteCase.label} revision ${randomUUID()}`,
+          projectName: `${quoteCase.label} revised wire parity`,
+          proposalDescription:
+            "Preserve the selected heavy-load conductor in a revision.",
+          module: quoteCase.module,
+          jobInputs: saved.jobInputs,
+        });
+        const reloadedRevision = await getQuote(baseUrl, revised.id);
+        assert.deepEqual(reloadedRevision.jobInputs, quoteCase.jobInputs);
+        assert.deepEqual(reloadedRevision.assembly, preview.assembly);
+        assert.deepEqual(reloadedRevision.pricing, preview.pricing);
+      }
     }
   } finally {
     await closeTestServer(server);

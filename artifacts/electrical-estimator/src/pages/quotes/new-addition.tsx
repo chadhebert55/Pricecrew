@@ -78,6 +78,32 @@ function legacyCircuitEntries(inputs: AdditionInputs): AdditionCircuitEntry[] {
   }]
 }
 
+function synchronizeCircuitInputs(inputs: AdditionInputs): AdditionInputs {
+  const circuitEntries = inputs.circuitEntries ?? legacyCircuitEntries(inputs)
+  const first = circuitEntries[0]
+  return {
+    ...inputs,
+    circuitEntries,
+    circuitCount: circuitEntries.reduce((sum, entry) => sum + entry.quantity, 0),
+    ...(first ? {
+      breakerAmperage: first.amperage,
+      breakerPoleCount: first.poleCount,
+      breakerProtectionType: first.protectionType,
+      cableType: first.cableType,
+    } : {}),
+  }
+}
+
+function cableForAmperage(
+  currentCable: AdditionCircuitEntry["cableType"],
+  amperage: AdditionCircuitEntry["amperage"],
+): AdditionCircuitEntry["cableType"] {
+  const threeWire = currentCable.includes("/3")
+  if (amperage === 30) return threeWire ? "10/3 NM-B" : "10/2 NM-B"
+  if (amperage === 20) return "12/2 NM-B"
+  return threeWire ? "14/3 NM-B" : "14/2 NM-B"
+}
+
 export function NewAdditionQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
@@ -103,7 +129,7 @@ export function NewAdditionQuote() {
     setCustomerId,
     setProjectName,
     setProposalDescription,
-    setInputs,
+    setInputs: (value: AdditionInputs) => setInputs(synchronizeCircuitInputs(value)),
     setSettingsLoaded,
   })
 
@@ -175,19 +201,7 @@ export function NewAdditionQuote() {
 
   const circuitEntries = inputs.circuitEntries ?? legacyCircuitEntries(inputs)
   const updateCircuitEntries = (entries: AdditionCircuitEntry[]) => {
-    const first = entries[0]
-    setInputs((current) => ({
-      ...current,
-      circuitEntries: entries,
-      circuitCount: entries.reduce((sum, entry) => sum + entry.quantity, 0),
-      ...(first ? {
-        // Keep the legacy scalar fields synchronized for older consumers.
-        breakerAmperage: first.amperage,
-        breakerPoleCount: first.poleCount,
-        breakerProtectionType: first.protectionType,
-        cableType: first.cableType,
-      } : {}),
-    }))
+    setInputs((current) => synchronizeCircuitInputs({ ...current, circuitEntries: entries }))
   }
   const updateCircuitEntry = (index: number, patch: Partial<AdditionCircuitEntry>) => {
     const entries = circuitEntries.map((entry, entryIndex) => entryIndex === index ? { ...entry, ...patch } : entry)
@@ -195,14 +209,9 @@ export function NewAdditionQuote() {
   }
   const setCircuitAmperage = (index: number, amperage: AdditionCircuitEntry["amperage"]) => {
     const current = circuitEntries[index]
-    const cableType = amperage === 30
-      ? "10/3 NM-B"
-      : amperage === 20
-        ? "12/2 NM-B"
-        : current.cableType === "10/2 NM-B" || current.cableType === "10/3 NM-B" ? "14/2 NM-B" : current.cableType
     updateCircuitEntry(index, {
       amperage,
-      cableType,
+      cableType: cableForAmperage(current.cableType, amperage),
       poleCount: amperage === 30 ? 2 : current.poleCount,
     })
   }

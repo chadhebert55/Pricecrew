@@ -58,6 +58,21 @@ export type EstimatingSettings = {
   newHouseLaborAdjustmentHours?: number;
 };
 
+const compatibleNmBCablesByAmperage: Record<number, readonly string[]> = {
+  15: ["12/2 NM-B", "14/2 NM-B", "14/3 NM-B"],
+  20: ["12/2 NM-B"],
+  30: ["10/2 NM-B", "10/3 NM-B"],
+  40: ["8/2 NM-B", "8/3 NM-B"],
+};
+
+function compatibleNmBCables(amperage: number) {
+  return compatibleNmBCablesByAmperage[amperage];
+}
+
+function isCompatibleNmBCable(amperage: number, cableType: string) {
+  return compatibleNmBCables(amperage)?.includes(cableType) ?? false;
+}
+
 type EstimateResult = {
   assembly: AssemblyLineRecord[];
   pricing: PricingRecord;
@@ -2732,14 +2747,7 @@ export function calculateAdditionEstimate(
     ? inputs.circuitEntries
     : null;
   const additionCableCompatible = (entry: AdditionCircuitEntry) =>
-    entry.amperage === 15
-      ? entry.cableType === "12/2 NM-B" ||
-        entry.cableType === "14/2 NM-B" ||
-        entry.cableType === "14/3 NM-B"
-      : entry.amperage === 20
-        ? entry.cableType === "12/2 NM-B"
-        : entry.cableType === "10/2 NM-B" ||
-          entry.cableType === "10/3 NM-B";
+    isCompatibleNmBCable(entry.amperage, entry.cableType);
 
   if (circuitEntries) {
     let commonRouteAllocated = false;
@@ -2804,12 +2812,14 @@ export function calculateAdditionEstimate(
   } else {
     const circuits = n(inputs.circuitCount);
     const footage = n(inputs.routeLength) + n(inputs.homeRunLength) * circuits;
-    const compatible =
-      inputs.breakerAmperage !== 20 || inputs.cableType === "12/2 NM-B";
+    const compatible = isCompatibleNmBCable(
+      inputs.breakerAmperage,
+      inputs.cableType,
+    );
     if (footage) {
       if (!compatible) {
         pricingWarnings.push(
-          `Addition circuit compatibility is unresolved: ${inputs.cableType} cannot be used for a ${inputs.breakerAmperage}A circuit. Select 12/2 NM-B for 20A circuits; no cable cost was substituted.`,
+          `Addition circuit compatibility is unresolved: ${inputs.cableType} cannot be used for a ${inputs.breakerAmperage}A circuit. Select ${compatibleNmBCables(inputs.breakerAmperage)?.join(" or ") ?? "a supported cable"}; no cable cost was substituted.`,
         );
       }
       const cable = compatible
@@ -4670,12 +4680,16 @@ export function calculateNewHouseEstimate(
   if (branchCircuitCount > 0) {
     const averageBranchFootage = quantity(inputs.branchCircuitFootage);
     const branchFootage = averageBranchFootage * branchCircuitCount;
-    const branchCableIsCompatible =
-      inputs.branchCircuitAmperage === 15 ||
-      inputs.branchCircuitCableType === "12/2 NM-B";
+    const requiredBranchCables = compatibleNmBCables(
+      inputs.branchCircuitAmperage,
+    );
+    const branchCableIsCompatible = isCompatibleNmBCable(
+      inputs.branchCircuitAmperage,
+      inputs.branchCircuitCableType,
+    );
     if (!branchCableIsCompatible) {
       pricingWarnings.push(
-        `New House branch-circuit cable is incompatible: ${inputs.branchCircuitCableType} cannot be priced for the selected ${inputs.branchCircuitAmperage}A circuit. Select 12/2 NM-B before sending the quote.`,
+        `New House branch-circuit cable is incompatible: ${inputs.branchCircuitCableType} cannot be priced for the selected ${inputs.branchCircuitAmperage}A circuit. Select ${requiredBranchCables?.join(" or ") ?? "a supported cable"} before sending the quote.`,
       );
     }
     if (branchFootage === 0) {
@@ -4722,16 +4736,13 @@ export function calculateNewHouseEstimate(
   if (equipmentCircuitCount > 0) {
     const averageEquipmentFootage = quantity(inputs.equipmentCircuitFootage);
     const equipmentFootage = averageEquipmentFootage * equipmentCircuitCount;
-    const compatibleEquipmentCables: Record<number, string[]> = {
-      20: ["12/2 NM-B"],
-      30: ["10/2 NM-B", "10/3 NM-B"],
-      40: ["8/2 NM-B", "8/3 NM-B"],
-    };
-    const requiredEquipmentCables =
-      compatibleEquipmentCables[inputs.equipmentCircuitAmperage];
-    const equipmentCableIsCompatible =
-      Boolean(requiredEquipmentCables) &&
-      requiredEquipmentCables.includes(inputs.equipmentCircuitCableType);
+    const requiredEquipmentCables = compatibleNmBCables(
+      inputs.equipmentCircuitAmperage,
+    );
+    const equipmentCableIsCompatible = isCompatibleNmBCable(
+      inputs.equipmentCircuitAmperage,
+      inputs.equipmentCircuitCableType,
+    );
     if (!equipmentCableIsCompatible) {
       pricingWarnings.push(
         `New House equipment-circuit cable is incompatible: ${inputs.equipmentCircuitCableType} cannot be priced for the selected ${inputs.equipmentCircuitAmperage}A circuit. Select ${requiredEquipmentCables?.join(" or ") ?? "a supported cable"} before sending the quote.`,

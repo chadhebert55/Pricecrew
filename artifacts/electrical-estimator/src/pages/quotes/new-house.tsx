@@ -70,6 +70,17 @@ function optionalAmount(value: string) {
   return Number.isFinite(amount) && amount >= 0 ? amount : null
 }
 
+function newHouseCableForAmperage(
+  currentCable: NewHouseInputs["branchCircuitCableType"],
+  amperage: number,
+): NewHouseInputs["branchCircuitCableType"] {
+  const threeWire = currentCable.includes("/3")
+  if (amperage === 40) return threeWire ? "8/3 NM-B" : "8/2 NM-B"
+  if (amperage === 30) return threeWire ? "10/3 NM-B" : "10/2 NM-B"
+  if (amperage === 20) return "12/2 NM-B"
+  return threeWire ? "14/3 NM-B" : "14/2 NM-B"
+}
+
 export function NewHouseQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
@@ -148,18 +159,26 @@ export function NewHouseQuote() {
     }))
   }
 
+  const setBranchCircuitAmperage = (value: string) => {
+    const amperage = Number(value) as NewHouseInputs["branchCircuitAmperage"]
+    setInputs((current) => ({
+      ...current,
+      branchCircuitAmperage: amperage,
+      branchCircuitCableType: newHouseCableForAmperage(current.branchCircuitCableType, amperage),
+      branchCircuitPoleCount: amperage >= 30 ? 2 : 1,
+    }))
+  }
+
   const setEquipmentCircuitAmperage = (value: string) => {
     const amperage = Number(value) as NewHouseInputs["equipmentCircuitAmperage"]
-    const cableType = amperage === 20
-      ? "12/2 NM-B"
-      : amperage === 30
-        ? "10/3 NM-B"
-        : "8/3 NM-B"
     setInputs((current) => ({
       ...current,
       equipmentCircuitAmperage: amperage,
-      equipmentCircuitCableType: cableType,
-      equipmentCircuitPoleCount: amperage >= 30 ? 2 : current.equipmentCircuitPoleCount,
+      equipmentCircuitCableType: newHouseCableForAmperage(
+        current.equipmentCircuitCableType,
+        amperage,
+      ) as NewHouseInputs["equipmentCircuitCableType"],
+      equipmentCircuitPoleCount: 2,
     }))
   }
 
@@ -396,14 +415,16 @@ export function NewHouseQuote() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-branch-amp">Amperage</Label>
-                          <select id="nh-branch-amp" value={inputs.branchCircuitAmperage} onChange={(event) => setInputs(c => ({...c, branchCircuitAmperage: Number(event.target.value) as NewHouseInputs["branchCircuitAmperage"]}))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-branch-amp">
+                          <select id="nh-branch-amp" value={inputs.branchCircuitAmperage} onChange={(event) => setBranchCircuitAmperage(event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-branch-amp">
                             <option value="15">15A</option>
                             <option value="20">20A</option>
+                            <option value="30">30A</option>
+                            <option value="40">40A</option>
                           </select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-branch-poles">Pole Count</Label>
-                          <select id="nh-branch-poles" value={inputs.branchCircuitPoleCount} onChange={(event) => setQuantity("branchCircuitPoleCount", event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-branch-poles"><option value="1">1 pole</option></select>
+                          <select id="nh-branch-poles" value={inputs.branchCircuitPoleCount} onChange={(event) => setQuantity("branchCircuitPoleCount", event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-branch-poles"><option value="1">1 pole</option><option value="2">2 poles</option></select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-branch-prot">Protection Type</Label>
@@ -420,6 +441,10 @@ export function NewHouseQuote() {
                             <option value="12/2 NM-B">12/2 NM-B</option>
                             <option value="14/2 NM-B">14/2 NM-B</option>
                             <option value="14/3 NM-B">14/3 NM-B</option>
+                            <option value="10/2 NM-B">10/2 NM-B</option>
+                            <option value="10/3 NM-B">10/3 NM-B</option>
+                            <option value="8/2 NM-B">8/2 NM-B</option>
+                            <option value="8/3 NM-B">8/3 NM-B</option>
                           </select>
                         </div>
                       </div>

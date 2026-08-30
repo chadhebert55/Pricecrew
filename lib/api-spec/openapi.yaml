@@ -2829,14 +2829,14 @@ components:
         miniSplitCircuitQuantity: { type: number, minimum: 0 }
         commonBranchCircuitQuantity: { type: number, minimum: 0 }
         branchCircuitFootage: { type: number, minimum: 0 }
-        branchCircuitAmperage: { type: number, enum: [15, 20] }
-        branchCircuitPoleCount: { type: number, enum: [1] }
+        branchCircuitAmperage: { type: number, enum: [15, 20, 30, 40] }
+        branchCircuitPoleCount: { type: number, enum: [1, 2] }
         branchCircuitProtectionType:
           type: string
           enum: [Standard, GFCI, AFCI, Dual Function]
         branchCircuitCableType:
           type: string
-          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/2 NM-B, 10/3 NM-B, 8/2 NM-B, 8/3 NM-B]
         equipmentCircuitFootage: { type: number, minimum: 0 }
         equipmentCircuitAmperage: { type: number, enum: [20, 30, 40] }
         equipmentCircuitPoleCount: { type: number, enum: [2] }

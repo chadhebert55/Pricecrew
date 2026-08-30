@@ -1118,6 +1118,65 @@ test("addition prices a mixed circuit schedule with independent quantities and v
   );
 });
 
+test("addition legacy scalar inputs price both 30A cable variants without substituting", () => {
+  for (const [cableType, unitCost] of [
+    ["10/2 NM-B", 1.071856],
+    ["10/3 NM-B", 1.350184],
+  ] as const) {
+    const result = calculateAdditionEstimate(
+      {
+        ...additionInputs,
+        circuitEntries: undefined,
+        breakerAmperage: 30,
+        breakerPoleCount: 2,
+        cableType,
+      },
+      settings,
+      [
+        ...priceBook,
+        catalogRow(`${cableType} cable`, unitCost, { category: "Conductor" }),
+      ],
+    );
+    const cable = result.assembly.find((line) => line.id === "addition-cable");
+    assert.equal(cable?.description, `${cableType} branch-circuit cable`);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "ADDITION_CIRCUIT_COMPATIBILITY_REVIEW",
+      ),
+      false,
+    );
+  }
+});
+
+test("addition legacy scalar inputs leave unsupported heavy cable combinations unresolved", () => {
+  const result = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      circuitEntries: undefined,
+      breakerAmperage: 30,
+      breakerPoleCount: 2,
+      cableType: "12/2 NM-B",
+    },
+    settings,
+    priceBook,
+  );
+  assert.equal(
+    result.assembly.find((line) => line.id === "addition-cable")?.unitCost,
+    0,
+  );
+  assert.equal(
+    result.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "ADDITION_CIRCUIT_COMPATIBILITY_REVIEW",
+    ),
+    true,
+  );
+});
+
 test("addition schedule splits do not multiply shared route footage or pricing", () => {
   const book = [
     ...priceBook,
@@ -3997,6 +4056,42 @@ test("New House prices compatible 2-wire and 3-wire heavy equipment cables from 
   }
 });
 
+test("New House prices compatible 2-wire and 3-wire heavy general branch cables", () => {
+  const selections = [
+    [30, "10/2 NM-B", 1.071856],
+    [30, "10/3 NM-B", 1.350184],
+    [40, "8/2 NM-B", 1.89096],
+    [40, "8/3 NM-B", 2.682868],
+  ] as const;
+
+  for (const [amperage, cableType, unitCost] of selections) {
+    const result = calculateNewHouseEstimate(
+      {
+        ...newHouseInputs,
+        branchCircuitAmperage: amperage,
+        branchCircuitPoleCount: 2,
+        branchCircuitCableType: cableType,
+      },
+      settings,
+      newHousePriceBook,
+    );
+    const cable = result.assembly.find(
+      (line) => line.id === "new-house-branch-cable",
+    );
+    assert.equal(cable?.description.startsWith(cableType), true);
+    assert.equal(cable?.unitCost, unitCost);
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "NEW_HOUSE_COMPATIBILITY_REVIEW" &&
+          warning.message.includes("branch-circuit cable"),
+      ),
+      false,
+    );
+  }
+});
+
 test("New House keeps a compatible 3-wire heavy cable unresolved when its exact catalog row is missing", () => {
   const result = calculateNewHouseEstimate(
     {
@@ -4050,6 +4145,34 @@ test("New House preview and create accept the same heavy 2-wire and 3-wire cable
         module: "NEW_HOUSE",
         jobInputs,
         proposalDescription: "Install the selected heavy branch circuit.",
+      }).success,
+      true,
+    );
+  }
+
+  for (const [amperage, cableType] of [
+    [30, "10/2 NM-B"],
+    [30, "10/3 NM-B"],
+    [40, "8/2 NM-B"],
+    [40, "8/3 NM-B"],
+  ] as const) {
+    const jobInputs = {
+      ...newHouseInputs,
+      branchCircuitAmperage: amperage,
+      branchCircuitPoleCount: 2,
+      branchCircuitCableType: cableType,
+    };
+    assert.equal(
+      PreviewQuoteBody.safeParse({ module: "NEW_HOUSE", jobInputs }).success,
+      true,
+    );
+    assert.equal(
+      CreateQuoteBody.safeParse({
+        customerName: "New House branch wire parity",
+        projectName: `${amperage}A ${cableType}`,
+        module: "NEW_HOUSE",
+        jobInputs,
+        proposalDescription: "Install the selected heavy general branch circuit.",
       }).success,
       true,
     );
