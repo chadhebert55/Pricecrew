@@ -1527,25 +1527,41 @@ const additionSubpanelPriceBook: PriceBookItem[] = [
   ...priceBook,
   catalogRow("#6 copper SER cable", 3, { category: "Conductor" }),
   catalogRow("#1 aluminum SER cable", 5, { category: "Conductor" }),
-  catalogRow("60A subpanel load center", 120, { category: "Panel" }),
-  catalogRow("100A subpanel load center", 180, { category: "Panel" }),
-  catalogRow("Siemens 60A 2-pole Standard breaker", 40, {
+  catalogRow("60A subpanel load center", 90.476, {
+    category: "Panel",
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "SN2020L1125",
+    supplierSku: "1552612",
+    amperage: 125,
+  }),
+  catalogRow("100A subpanel load center", 90.476, {
+    category: "Panel",
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "SN2020L1125",
+    supplierSku: "1552612",
+    amperage: 125,
+  }),
+  catalogRow("Siemens 60A 2-pole Standard breaker", 21.1, {
     category: "Protection",
     manufacturer: "Siemens",
+    manufacturerPartNumber: "Q260",
+    supplierSku: "25268",
     amperage: 60,
     poleCount: 2,
     protectionType: "Standard",
   }),
-  catalogRow("Siemens 100A 2-pole Standard breaker", 70, {
+  catalogRow("Siemens 100A 2-pole Standard breaker", 153.41, {
     category: "Protection",
     manufacturer: "Siemens",
+    manufacturerPartNumber: "Q2100H",
+    supplierSku: "12427",
     amperage: 100,
     poleCount: 2,
     protectionType: "Standard",
   }),
 ];
 
-test("addition 60A and 100A subpanels use distinct verified 4-wire feeder groups", () => {
+test("addition 60A and 100A subpanels share SN2020L1125 while retaining distinct feeder groups", () => {
   const sixty = calculateAdditionEstimate(
     {
       ...additionInputs,
@@ -1592,17 +1608,31 @@ test("addition 60A and 100A subpanels use distinct verified 4-wire feeder groups
     )?.description.includes("100A"),
     true,
   );
+  const sixtyPanel = sixty.assembly.find(
+    (line) => line.id === "addition-subpanel-load-center",
+  );
+  const hundredPanel = hundred.assembly.find(
+    (line) => line.id === "addition-subpanel-load-center",
+  );
+  assert.equal(sixtyPanel?.description.includes("60A"), true);
+  assert.equal(hundredPanel?.description.includes("100A"), true);
+  for (const panel of [sixtyPanel, hundredPanel]) {
+    assert.equal(panel?.description.includes("SN2020L1125"), true);
+    assert.equal(panel?.unitCost, 90.476);
+    assert.equal(panel?.source.includes("MPN SN2020L1125"), true);
+    assert.equal(panel?.source.includes("SKU 1552612"), true);
+  }
   assert.equal(
     sixty.assembly.find(
-      (line) => line.id === "addition-subpanel-load-center",
-    )?.description.includes("60A"),
-    true,
+      (line) => line.id === "addition-subpanel-feeder-breaker",
+    )?.unitCost,
+    21.1,
   );
   assert.equal(
     hundred.assembly.find(
-      (line) => line.id === "addition-subpanel-load-center",
-    )?.description.includes("100A"),
-    true,
+      (line) => line.id === "addition-subpanel-feeder-breaker",
+    )?.unitCost,
+    153.41,
   );
 });
 

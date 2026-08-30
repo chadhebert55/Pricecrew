@@ -118,6 +118,8 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       for (const [item, unitCost, unit, supplierSku, manufacturerPartNumber] of [
         ["Milbank U3990-XL-200 200A meter-main — SKU 304898", 441.525, "ea", "304898", "U3990-XL-200"],
         ["Siemens PN4040B1200C 200A 40-space panel — SKU 1552599", 294.625, "ea", "1552599", "PN4040B1200C"],
+        ["Siemens SN2020L1125 125A 20-space MLO load center — SKU 1552612", 90.476, "ea", "1552612", "SN2020L1125"],
+        ["Siemens SN4040L1200 200A 40-space MLO load center — SKU 1532840", 222.443, "ea", "1532840", "SN4040L1200"],
         ["Pass & Seymour S1-18-W 1-gang box — SKU 18134", 2.4769, "ea", "18134", "S1-18-W"],
         ["Pass & Seymour TM870-W 15A single-pole switch — SKU 3211", 1.85, "ea", "3211", "TM870-W"],
         ["Pass & Seymour TM873-W 15A 3-way switch — SKU 32128", 2.25, "ea", "32128", "TM873-W"],
@@ -246,12 +248,13 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         "100A subpanel load center",
       ]) {
         const row = seededRows.find((candidate) => candidate.item === item);
-        assert.equal(row?.unitCost, 151.625);
+        assert.equal(row?.unitCost, 90.476);
         assert.equal(row?.supplier, "Northeast Electrical");
-        assert.equal(row?.manufacturer, "Square D");
-        assert.equal(row?.manufacturerPartNumber, "SQD HOM612L100R");
-        assert.equal(row?.supplierSku, null);
-        assert.equal(row?.upc, "78590106120");
+        assert.equal(row?.manufacturer, "Siemens");
+        assert.equal(row?.manufacturerPartNumber, "SN2020L1125");
+        assert.equal(row?.supplierSku, "1552612");
+        assert.equal(row?.amperage, 125);
+        assert.equal(row?.sourceDate, "2026-08-27");
       }
       for (const item of [
         "10/2 NM-B cable",
@@ -408,6 +411,28 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         preservedRequiredBreaker?.supplier,
         "Contractor feeder supplier",
       );
+
+      const requiredPanel = seededRows.find(
+        (row) => row.item === "60A subpanel load center",
+      );
+      assert.ok(requiredPanel);
+      await transaction
+        .update(priceBookItemsTable)
+        .set({
+          unitCost: 188.88,
+          supplier: "Contractor panel supplier",
+          isDefault: false,
+        })
+        .where(eq(priceBookItemsTable.id, requiredPanel.id));
+      await seedEstimatorData(transaction as unknown as typeof db, {
+        companyId: company.id,
+      });
+      const [preservedRequiredPanel] = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.id, requiredPanel.id));
+      assert.equal(preservedRequiredPanel?.unitCost, 188.88);
+      assert.equal(preservedRequiredPanel?.supplier, "Contractor panel supplier");
 
       throw new RollbackFreshSeedTest();
     });

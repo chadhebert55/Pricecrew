@@ -800,7 +800,9 @@ export function auditPriceBookItem(
     "New House",
     name.includes("new house") ||
       name.includes("smoke co") ||
-      name.includes("smoke carbon monoxide"),
+      name.includes("smoke carbon monoxide") ||
+      name.includes("subpanel") ||
+      name.includes("load center"),
   );
 
   if (category === "protection" && name.includes("breaker")) {
@@ -2881,6 +2883,8 @@ export function calculateAdditionEstimate(
       source: feeder.source,
     });
 
+    const feederBreakerPart =
+      subpanelAmperage === 60 ? "Q260" : "Q2100H";
     const feederBreaker = resolveBreaker(
       {
         manufacturer: inputs.panelManufacturer,
@@ -2894,7 +2898,7 @@ export function calculateAdditionEstimate(
     addLine(assembly, {
       id: "addition-subpanel-feeder-breaker",
       category: "Protection",
-      description: feederBreaker.description,
+      description: `Siemens ${feederBreakerPart} ${subpanelAmperage}A 2-pole Standard feeder breaker`,
       quantity: 1,
       unit: "ea",
       unitCost: feederBreaker.value,
@@ -2905,7 +2909,7 @@ export function calculateAdditionEstimate(
     addLine(assembly, {
       id: "addition-subpanel-load-center",
       category: "Panel",
-      description: `${subpanelAmperage}A subpanel load center with isolated neutral and equipment grounding provisions`,
+      description: `${subpanelAmperage}A subpanel — Siemens SN2020L1125 125A main-lug load center with isolated neutral and equipment grounding provisions`,
       quantity: 1,
       unit: "ea",
       unitCost: panel.value,

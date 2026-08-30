@@ -1692,8 +1692,14 @@ test("saved Addition subpanel resolves seeded source prices identically across p
     assert.equal(
       saved.assembly.find((line) => line.id === "addition-subpanel-load-center")
         ?.unitCost,
-      151.625,
+      90.476,
     );
+    const savedPanel = saved.assembly.find(
+      (line) => line.id === "addition-subpanel-load-center",
+    );
+    assert.equal(savedPanel?.description.includes("SN2020L1125"), true);
+    assert.equal(savedPanel?.source.includes("MPN SN2020L1125"), true);
+    assert.equal(savedPanel?.source.includes("SKU 1552612"), true);
     assert.deepEqual(saved.assembly, preview.assembly);
     assert.deepEqual(saved.pricing, preview.pricing);
     assert.equal(
@@ -1730,6 +1736,12 @@ test("saved Addition subpanel resolves seeded source prices identically across p
     );
     assert.equal(sixtyBreaker?.unitCost, 21.1);
     assert.equal(sixtyBreaker?.source.includes("SKU 25268"), true);
+    const sixtyPanel = sixtySaved.assembly.find(
+      (line) => line.id === "addition-subpanel-load-center",
+    );
+    assert.equal(sixtyPanel?.unitCost, 90.476);
+    assert.equal(sixtyPanel?.description.includes("SN2020L1125"), true);
+    assert.equal(sixtyPanel?.source.includes("SKU 1552612"), true);
     assert.deepEqual(sixtySaved.assembly, sixtyPreview.assembly);
     assert.deepEqual(sixtySaved.pricing, sixtyPreview.pricing);
   } finally {

@@ -15,6 +15,8 @@ export const SIEMENS_QF250A_SEED_COST = 151.702;
 export const SIEMENS_STANDARD_2_POLE_SEED_COST = 21.1;
 export const SIEMENS_QF2_2_POLE_SEED_COST = 151.702;
 export const SIEMENS_Q2100H_SEED_COST = 153.41;
+export const SIEMENS_SN2020L1125_SEED_COST = 90.476;
+export const SIEMENS_SN4040L1200_SEED_COST = 222.443;
 export const USER_VERIFIED_4_0_SER_SEED_COST = 4.4198;
 
 export const DEFAULT_COMPANY_ID = 1;
@@ -534,6 +536,8 @@ export async function seedEstimatorData(
     ...[
       ["Equipment", "Milbank U3990-XL-200 200A meter-main — SKU 304898", "ea", 441.525, "Milbank", "U3990-XL-200", "304898", 200],
       ["Panel", "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599", "ea", 294.625, "Siemens", "PN4040B1200C", "1552599", 200],
+      ["Panel", "Siemens SN2020L1125 125A 20-space MLO load center — SKU 1552612", "ea", SIEMENS_SN2020L1125_SEED_COST, "Siemens", "SN2020L1125", "1552612", 125],
+      ["Panel", "Siemens SN4040L1200 200A 40-space MLO load center — SKU 1532840", "ea", SIEMENS_SN4040L1200_SEED_COST, "Siemens", "SN4040L1200", "1532840", 200],
       ["Rough-in", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", "ea", 2.4769, "Pass & Seymour", "S1-18-W", "18134", undefined],
       ["Controls", "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211", "ea", 1.85, "Pass & Seymour", "TM870-W", "3211", 15],
       ["Controls", "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128", "ea", 2.25, "Pass & Seymour", "TM873-W", "32128", 15],
@@ -1366,12 +1370,13 @@ export async function seedEstimatorData(
       category: "Panel",
       item: `${feederRating} subpanel load center`,
       unit: "ea",
-      unitCost: 151.625,
+      unitCost: SIEMENS_SN2020L1125_SEED_COST,
       supplier: "Northeast Electrical",
-      manufacturer: "Square D",
-      manufacturerPartNumber: "SQD HOM612L100R",
-      upc: "78590106120",
-      sourceDate,
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "SN2020L1125",
+      supplierSku: "1552612",
+      amperage: 125,
+      sourceDate: needcoSourceDate,
       isDefault: false,
     })),
     ...([
@@ -2006,6 +2011,22 @@ export async function seedEstimatorData(
       manufacturerPartNumber: "ITE Q2100",
       supplierSku: "4387",
     },
+    "60A subpanel load center": {
+      unitCost: 151.625,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "Square D",
+      manufacturerPartNumber: "SQD HOM612L100R",
+      supplierSku: null,
+    },
+    "100A subpanel load center": {
+      unitCost: 151.625,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "Square D",
+      manufacturerPartNumber: "SQD HOM612L100R",
+      supplierSku: null,
+    },
     "Panasonic FV-0511VF1 exhaust fan": {
       unitCost: 136,
       supplier: "Company baseline — edit current cost",
@@ -2210,7 +2231,7 @@ export async function seedEstimatorData(
       )
       .limit(1);
     const [skuMatch] =
-      itemMatch || !item.supplierSku
+      itemMatch || !item.supplierSku || item.supplierSku === "1552612"
         ? []
         : await database
             .select()
