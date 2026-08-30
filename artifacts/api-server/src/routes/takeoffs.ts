@@ -323,8 +323,21 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
   }
   const nextQuantity =
     parsed.data.status === "accepted"
-      ? parsed.data.approvedQuantity ?? existing.proposedQuantity
+      ? (parsed.data.approvedQuantity ?? existing.proposedQuantity)
       : null;
+  const nextReviewerNote = parsed.data.reviewerNote ?? null;
+  if (
+    parsed.data.status === existing.status &&
+    nextQuantity === existing.approvedQuantity &&
+    nextReviewerNote === existing.reviewerNote
+  ) {
+    res.json(
+      ReviewTakeoffItemResponse.parse(
+        serializeTakeoff(detail.takeoff, detail.items, detail.events),
+      ),
+    );
+    return;
+  }
   const reviewedAt = new Date();
   const action =
     parsed.data.status === existing.status &&
@@ -339,7 +352,7 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
       .set({
         status: parsed.data.status,
         approvedQuantity: nextQuantity,
-        reviewerNote: parsed.data.reviewerNote ?? null,
+        reviewerNote: nextReviewerNote,
         reviewedBy: req.userId ?? "unknown",
         reviewedAt,
       })
@@ -352,7 +365,7 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
       nextStatus: parsed.data.status,
       previousQuantity: existing.approvedQuantity,
       nextQuantity,
-      note: parsed.data.reviewerNote ?? null,
+      note: nextReviewerNote,
       reviewedBy: req.userId ?? "unknown",
     });
   });
