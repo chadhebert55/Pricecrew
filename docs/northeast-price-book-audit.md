@@ -1,3 +1,23 @@
+## Aluminum SER cut-to-length reconciliation
+
+The August 25, 2026 Northeast supplier workbook verifies these distinct cut-to-length products. Prices shown here are normalized from the workbook's per-thousand-foot `m` unit to dollars per foot:
+
+| Conductor configuration | Northeast SKU | UPC | Cost / ft |
+| --- | ---: | --- | ---: |
+| #6-6-6-6 | 295791 | 980120S0022 | $1.237700 |
+| #4-4-4-6 | 295811 | 980120S0023 | $1.386400 |
+| #2-2-2-4 | 300631 | 980120S0048 | $1.857700 |
+| #1-1-1-3 | 295809 | 980120S0024 | $2.417841 |
+| 1/0-1/0-1/0-#2 | 295793 | 980120S0025 | $2.631865 |
+| 2/0-2/0-2/0-1 | 448611 | 98012058489 | $3.186944 |
+| 3/0-3/0-3/0-1/0 | 300637 | 980120S0026 | $3.930704 |
+| 4/0-4/0-4/0-2/0 | 300640 | 98012058499 | $4.419839 |
+| 250-250-250-3/0 | 502696 | 980120S3003 | $5.100700 |
+| TRIUG Wesleyan 350-350 MCM-4/0 | 448629 | 980120S0187 | $5.678337 |
+| Alternate #1-1-1-3 product | 507461 | 980120S3004 | $4.082400 |
+
+SKU 295809 remains the canonical #1 aluminum SER feeder. SKU 507461 is a separate catalog product and is never substituted for it implicitly.
+
 # Northeast Electrical price-book audit
 
 Source workbook: `0_HBS_Master_Workbook_v1.1_Northeast_Mapped_1787854885808.xlsx`  
@@ -33,7 +53,7 @@ Catalog price date: 2026-08-25
 | 3/0 aluminum XHHW | 1005949 | WIA. XHHW 3/0 S | m | $1.072337/ft |
 | 4/0 aluminum XHHW | 392124 | WIA. XHHW 4/0 S | m | $1.191903/ft |
 | 1/0 aluminum SER | 295793 | WIA. SER 1/0-1/ | m | $2.631865/ft |
-| 3/0 aluminum SER | 239619 | WIA. SER 3/0-3/ | m | $3.930704/ft |
+| 3/0 aluminum SER | 300637 | WIA. SER 3/0-3/ | m | $3.930704/ft |
 | #1 aluminum SER | 295809 | WIA. SER 1-1-1- | m | $2.417841/ft |
 
 The workbook contains additional rows for several wire sizes. The canonical 14/2, 12/2, 10/2, 8/2, and 6/2 rows use the verified package-derived purchasing costs. The 10/3, 8/3, and 6/3 rows retain the selected cut-to-length policy; alternate coil observations remain source references and do not replace those canonical rows. Each seeded row is a specific editable Northeast SKU, not a claim that it is the only valid color, reel, or packaging variant.

@@ -63,7 +63,7 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         ["3/0 aluminum XHHW conductor", 1.072337, "Wia.", "WIA. XHHW 3/0 S", "1005949", "980120S0164"],
         ["4/0 aluminum XHHW conductor", 1.191903, "Wia.", "WIA. XHHW 4/0 S", "392124", "980120S0174"],
         ["1/0 aluminum SER cable", 2.631865, "Wia.", "WIA. SER 1/0-1/", "295793", "980120S0025"],
-        ["3/0 aluminum SER cable", 3.930704, "Wia.", "WIA. SER 3/0-3/", "239619", "980120S0034"],
+        ["3/0 aluminum SER cable", 3.930704, "Wia.", "WIA. SER 3/0-3/", "300637", "980120S0026"],
         ["#1 aluminum SER cable", 2.417841, "Wia.", "WIA. SER 1-1-1-", "295809", "980120S0024"],
       ] as const;
       for (const [item, unitCost, manufacturer, manufacturerPartNumber, supplierSku, upc] of expectedNortheastCatalog) {
@@ -79,7 +79,14 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       }
       for (const [item, unitCost, unit, supplierSku, upc] of [
         ["Siemens MC0816B1200 200A meter-load-center — SKU 132873", 523.989, "ea", "132873", "78364351070"],
+        ["Wia #6-6-6-6 aluminum SER — SKU 295791", 1.2377, "ft", "295791", "980120S0022"],
+        ["Wia #4-4-4-6 aluminum SER — SKU 295811", 1.3864, "ft", "295811", "980120S0023"],
+        ["Wia #2-2-2-4 aluminum SER — SKU 300631", 1.8577, "ft", "300631", "980120S0048"],
+        ["Wia 2/0-2/0-2/0-1 aluminum SER — SKU 448611", 3.186944, "ft", "448611", "98012058489"],
         ["Wia 4/0 aluminum SER — SKU 1266468", 3.30776, "ft", "1266468", "980120S4953"],
+        ["Wia 250-250-250-3/0 aluminum SER — SKU 502696", 5.1007, "ft", "502696", "980120S3003"],
+        ["Wia TRIUG Wesleyan 350-350 MCM-4/0 aluminum cable — SKU 448629", 5.678337, "ft", "448629", "980120S0187"],
+        ["Wia alternate #1-1-1-3 aluminum SER — SKU 507461", 4.0824, "ft", "507461", "980120S3004"],
         ["Erico 615880 5/8x8ft copper ground rod — SKU 160523", 25.313, "ea", "160523", "78285630609"],
         ["PVCFIT 200P40-20F 2-inch Sch40 PVC conduit 10-ft stick — SKU 8891", 1.12886, "ft", "8891", "98006006026"],
         ["PVCFIT 200P WH 2-inch PVC service weatherhead — SKU 512902", 15.70706, "ea", "512902", "98006006613"],
