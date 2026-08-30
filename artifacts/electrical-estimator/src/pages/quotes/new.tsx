@@ -11,6 +11,7 @@ import { Zap, Calculator, Info, TriangleAlert } from "lucide-react"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
 function BasicSelect({ value, onChange, options, id }: { value: string, onChange: (v: string) => void, options: {label: string, value: string}[], id?: string }) {
   return (
@@ -30,7 +31,8 @@ export function NewQuote() {
   const [_, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
-  const { data: settings } = useGetSettings()
+  const settingsQuery = useGetSettings()
+  const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   
@@ -522,7 +524,7 @@ export function NewQuote() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
-                  
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
                   <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-sm flex items-start gap-3">
                     <Info className="text-primary shrink-0 mt-0.5" size={16} />
                     <div className="space-y-1">

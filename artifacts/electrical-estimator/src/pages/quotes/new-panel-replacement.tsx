@@ -18,6 +18,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { QuoteBuilderRecovery, QuotePreviewRecovery } from "@/components/quote-builder-recovery"
 
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -111,8 +112,10 @@ export function NewPanelReplacementQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
-  const { data: settings } = useGetSettings()
+  const settingsQuery = useGetSettings()
+  const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [previewRetryCount, setPreviewRetryCount] = useState(0)
   
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
@@ -144,7 +147,7 @@ export function NewPanelReplacementQuote() {
       }))
       setSettingsLoaded(true)
     }
-  }, [settings, settingsLoaded])
+  }, [revision.isRevision, settings, settingsLoaded])
 
   const previewPayload = {
     module: "PANEL_REPLACEMENT" as const,
@@ -165,7 +168,7 @@ export function NewPanelReplacementQuote() {
       )
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded, previewRetryCount])
 
   const handleExistingBreakerChange = (amperage: number, poleCount: number, protectionType: ExistingBreakerCountProtectionType, quantityStr: string) => {
     const quantity = numberValue(quantityStr, 0)
@@ -280,7 +283,7 @@ export function NewPanelReplacementQuote() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!settingsLoaded || !previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent || previewQuote.isError) return
     createQuote.mutate(
       {
         data: {
@@ -700,7 +703,9 @@ export function NewPanelReplacementQuote() {
                   Material and labor breakdown based on the parametric assembly.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 pt-6">
+               <CardContent className="space-y-6 pt-6">
+                 <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                 <QuotePreviewRecovery isError={previewQuote.isError} onRetry={() => setPreviewRetryCount((count) => count + 1)} />
                 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between items-center text-muted-foreground">
@@ -793,7 +798,7 @@ export function NewPanelReplacementQuote() {
                   type="submit" 
                   data-testid="button-submit-quote"
                   className="w-full h-12 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground" 
-                   disabled={createQuote.isPending || !settingsLoaded || !previewIsCurrent || !customerName || !projectName}
+                    disabled={createQuote.isPending || !settingsLoaded || !previewIsCurrent || previewQuote.isError || !customerName || !projectName}
                 >
                   {createQuote.isPending ? "Generating Quote..." : "Generate Quote"}
                 </Button>

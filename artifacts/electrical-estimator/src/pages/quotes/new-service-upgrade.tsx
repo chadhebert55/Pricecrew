@@ -19,6 +19,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { QuoteBuilderRecovery, QuotePreviewRecovery } from "@/components/quote-builder-recovery"
 
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -169,8 +170,10 @@ export function NewServiceUpgradeQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
-  const { data: settings } = useGetSettings()
+  const settingsQuery = useGetSettings()
+  const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [previewRetryCount, setPreviewRetryCount] = useState(0)
   
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
@@ -202,7 +205,7 @@ export function NewServiceUpgradeQuote() {
       }))
       setSettingsLoaded(true)
     }
-  }, [settings, settingsLoaded])
+  }, [revision.isRevision, settings, settingsLoaded])
 
   const previewPayload = {
     module: "SERVICE_UPGRADE" as const,
@@ -223,7 +226,7 @@ export function NewServiceUpgradeQuote() {
       )
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded, previewRetryCount])
 
   const handleExistingBreakerChange = (amperage: number, poleCount: number, protectionType: ExistingBreakerCountProtectionType, quantityStr: string) => {
     const quantity = numberValue(quantityStr, 0)
@@ -322,7 +325,7 @@ export function NewServiceUpgradeQuote() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (!settingsLoaded || !previewIsCurrent) return
+    if (!settingsLoaded || !previewIsCurrent || previewQuote.isError) return
     createQuote.mutate(
       {
         data: {
@@ -920,7 +923,9 @@ export function NewServiceUpgradeQuote() {
                   </div>
                   <CardDescription className="text-secondary-foreground/70">Uses the same server calculation path as the saved immutable quote snapshot.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-5 pt-6">
+                  <CardContent className="space-y-5 pt-6">
+                    <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                    <QuotePreviewRecovery isError={previewQuote.isError} onRetry={() => setPreviewRetryCount((count) => count + 1)} />
                   
                   {pricing && previewIsCurrent ? (
                     <>
@@ -960,11 +965,7 @@ export function NewServiceUpgradeQuote() {
                         <div className="mt-1 font-mono text-3xl font-bold text-primary">${pricing.finalSellingPrice.toFixed(2)}</div>
                       </div>
 
-                      <Button type="submit" className="w-full" size="lg" disabled={!settingsLoaded || !previewIsCurrent || createQuote.isPending}>
-                        {createQuote.isPending ? "Creating Quote..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Create Quote Snapshot"}
-                      </Button>
-                      
-                      {assembly.length > 0 && (
+                       {assembly.length > 0 && (
                         <div className="mt-6">
                           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary-foreground/70">Generated Assembly Preview ({assembly.length})</h4>
                           <div className="max-h-48 overflow-y-auto rounded border border-secondary-border bg-secondary-foreground/5 p-2 text-xs">
@@ -985,6 +986,9 @@ export function NewServiceUpgradeQuote() {
                       {previewQuote.isPending ? "Calculating estimate..." : "Enter details to see calculation"}
                     </div>
                   )}
+                  <Button type="submit" className="w-full" size="lg" disabled={!settingsLoaded || !previewIsCurrent || previewQuote.isError || createQuote.isPending}>
+                    {createQuote.isPending ? "Creating Quote..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Create Quote Snapshot"}
+                  </Button>
                 </CardContent>
               </Card>
             </div>

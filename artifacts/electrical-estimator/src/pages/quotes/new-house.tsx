@@ -18,6 +18,7 @@ import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
+import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
 const initialInputs: NewHouseInputs = {
   finishedSquareFootage: 2000,
@@ -73,7 +74,8 @@ export function NewHouseQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
-  const { data: settings } = useGetSettings()
+  const settingsQuery = useGetSettings()
+  const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   
   const [previewedInputKey, setPreviewedInputKey] = useState("")
@@ -521,6 +523,7 @@ export function NewHouseQuote() {
                   <CardDescription className="text-secondary-foreground/70">Server-calculated from company catalog items and current settings.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-6">
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
                     <p className="text-secondary-foreground/80">Labor, rough-in, device finish, and distribution are compiled into a comprehensive quote.</p>
@@ -575,7 +578,7 @@ export function NewHouseQuote() {
                     </div>
                   </div>
 
-                  {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
+                  {revision.isRevision && revision.isError ? null : previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
                   <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError} data-testid="button-nh-submit">
                     {createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Quote"}
                   </Button>

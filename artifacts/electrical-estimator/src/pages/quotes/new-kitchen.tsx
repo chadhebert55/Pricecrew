@@ -17,6 +17,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
 const initialInputs: KitchenInputs = {
   refrigeratorCircuits: 1,
@@ -66,7 +67,8 @@ export function NewKitchenQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
-  const { data: settings } = useGetSettings()
+  const settingsQuery = useGetSettings()
+  const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
   const [customerName, setCustomerName] = useState("")
@@ -508,6 +510,7 @@ export function NewKitchenQuote() {
                   <CardDescription className="text-secondary-foreground/70">Server-calculated from company catalog items and current settings.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-6">
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
                     <p className="text-secondary-foreground/80">Appliance specifications, countertop spacing, route, and protection requirements remain visible verification items rather than hidden assumptions.</p>
