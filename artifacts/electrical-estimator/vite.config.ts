@@ -56,7 +56,7 @@ const replitPlugins =
       ]
     : [];
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   const isBuild = command === 'build';
   const rawPort = process.env.PORT;
 
@@ -113,6 +113,14 @@ export default defineConfig(({ command }) => {
       strictPort: true,
       host: '0.0.0.0',
       allowedHosts: true,
+      proxy:
+        mode === 'e2e' && process.env.E2E_API_URL
+          ? {
+              '/api': {
+                target: process.env.E2E_API_URL,
+              },
+            }
+          : undefined,
       fs: {
         strict: true,
       },

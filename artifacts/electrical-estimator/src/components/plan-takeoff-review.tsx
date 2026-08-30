@@ -438,6 +438,7 @@ export function PlanTakeoffReview({
                     <Label className="text-xs" htmlFor={`takeoff-qty-${item.id}`}>Quantity</Label>
                     <Input
                       id={`takeoff-qty-${item.id}`}
+                      data-testid={`takeoff-quantity-${item.fieldKey}`}
                       type="number"
                       min="0"
                       step="1"
@@ -451,6 +452,7 @@ export function PlanTakeoffReview({
                 </div>
                 <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
                   <Textarea
+                    data-testid={`takeoff-note-${item.fieldKey}`}
                     className="min-h-9"
                     value={draftNotes[item.id] ?? ""}
                     onChange={(event) => setDraftNotes((current) => ({

@@ -106,6 +106,9 @@ const queryClient = new QueryClient({
 });
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const isE2eMode =
+  import.meta.env.MODE === 'e2e' &&
+  import.meta.env.VITE_E2E_AUTH === 'true';
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -167,17 +170,10 @@ const clerkAppearance = {
   },
 };
 
-function PrivateRouter() {
-  const { isLoaded, isSignedIn } = useAuth();
-
-  if (!isLoaded) return <RouteLoading />;
-  if (!isSignedIn) return <PrivateLanding />;
-
+function PrivateRouteSwitch() {
   return (
-    <RoutedErrorBoundary>
-      <Shell>
-        <Suspense fallback={<RouteLoading />}>
-          <Switch>
+    <Suspense fallback={<RouteLoading />}>
+      <Switch>
             {/* `/` is the canonical dashboard URL; keep `/dashboard` for legacy links and bookmarks. */}
             <Route path="/dashboard" component={() => <Redirect to="/" />} />
             <Route path="/" component={Dashboard} />
@@ -200,8 +196,21 @@ function PrivateRouter() {
             <Route path="/customers/:id" component={CustomerDetail} />
             <Route path="/settings" component={Settings} />
             <Route component={NotFound} />
-          </Switch>
-        </Suspense>
+      </Switch>
+    </Suspense>
+  );
+}
+
+function PrivateRouter() {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) return <RouteLoading />;
+  if (!isSignedIn) return <PrivateLanding />;
+
+  return (
+    <RoutedErrorBoundary>
+      <Shell>
+        <PrivateRouteSwitch />
       </Shell>
     </RoutedErrorBoundary>
   );
@@ -351,10 +360,23 @@ function ClerkProviderWithRoutes() {
   );
 }
 
+function E2eProviderWithRoutes() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <RoutedErrorBoundary>
+          <PrivateRouteSwitch />
+        </RoutedErrorBoundary>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
 function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      {isE2eMode ? <E2eProviderWithRoutes /> : <ClerkProviderWithRoutes />}
     </WouterRouter>
   );
 }

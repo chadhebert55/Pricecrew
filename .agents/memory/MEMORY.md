@@ -15,3 +15,4 @@
 - [Subpanel catalog ratings](subpanel-catalog-ratings.md) — a verified 100A-rated MLO load center may serve 60A- and 100A-fed Addition subpanels; feeder protection sets the supplied rating.
 - [Blueprint review corrections](blueprint-review-corrections.md) — post-quote takeoff corrections append to the live audit while the quote’s original approval snapshot stays immutable.
 - [Shell bundle budget](shell-bundle-budget.md) — lazy-load substantial authenticated-shell controls so global UI features do not consume the estimator entry budget.
+- [Clerk UI fixture tenants](clerk-ui-fixture-tenants.md) — Clerk browser sessions may create a provisional tenant that fixture cleanup must remove too.
