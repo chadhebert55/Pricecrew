@@ -8,7 +8,7 @@ import {
   usePreflightQuoteExport,
 } from "@workspace/api-client-react"
 import { useEffect, useRef, useState } from "react"
-import { Download, FileText, PlugZap, TriangleAlert } from "lucide-react"
+import { CheckCircle2, Download, FileText, PlugZap, TriangleAlert } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,8 @@ type QuoteExportCardProps = {
   customerName: string
   customerEmail: string | null | undefined
   isDirty: boolean
+  assemblyLineCount: number
+  onReviseQuote?: () => void
 }
 
 export function QuoteExportCard({
@@ -29,6 +31,8 @@ export function QuoteExportCard({
   customerName,
   customerEmail,
   isDirty,
+  assemblyLineCount,
+  onReviseQuote,
 }: QuoteExportCardProps) {
   const { toast } = useToast()
   const preflightExport = usePreflightQuoteExport()
@@ -57,6 +61,11 @@ export function QuoteExportCard({
     setMapping((current) => ({ ...current, [field]: value }))
     setIssues([])
   }
+
+  const hasJobberProperty = Boolean(
+    mapping.jobberPropertyId?.trim() || mapping.propertyStreet1?.trim(),
+  )
+  const exceedsJobberLineLimit = destination === "jobber" && assemblyLineCount > MAX_JOBBER_LINE_ITEMS
 
   const handleExport = async () => {
     if (isDirty) {
@@ -180,6 +189,65 @@ export function QuoteExportCard({
           </AlertDescription>
         </Alert>
 
+        {destination === "jobber" && (
+          <div
+            className="rounded-md border border-border bg-muted/20 p-4"
+            data-testid="export-readiness"
+          >
+            <div className="flex items-start gap-3">
+              {hasJobberProperty && !exceedsJobberLineLimit ? (
+                <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
+              ) : (
+                <TriangleAlert className="mt-0.5 shrink-0 text-amber-600" size={18} />
+              )}
+              <div className="min-w-0 space-y-3">
+                <div>
+                  <p className="font-semibold">Jobber export readiness</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {hasJobberProperty
+                      ? "A mapped Jobber Property ID or property street is supplied."
+                      : "Jobber needs a mapped Property ID or Property Street 1 before it can link this quote to a property."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                  <span className={exceedsJobberLineLimit ? "font-medium text-destructive" : "text-muted-foreground"}>
+                    {assemblyLineCount} of {MAX_JOBBER_LINE_ITEMS} line items
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Includes one line for the exact saved quote total.
+                  </span>
+                </div>
+                {(!hasJobberProperty || exceedsJobberLineLimit) && (
+                  <div className="flex flex-wrap gap-2">
+                    {!hasJobberProperty && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        data-testid="button-complete-property-mapping"
+                        onClick={() => document.getElementById("export-property-mapping")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                      >
+                        Add property details
+                      </Button>
+                    )}
+                    {exceedsJobberLineLimit && onReviseQuote && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        data-testid="button-revise-for-export"
+                        onClick={onReviseQuote}
+                      >
+                        Duplicate / Revise to reduce lines
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {destination === "quickbooks" ? (
           <MappingSection
             title="QuickBooks invoice mapping"
@@ -216,9 +284,10 @@ export function QuoteExportCard({
               onChange={updateMapping}
             />
             <MappingSection
+              id="export-property-mapping"
               title={destination === "jobber" ? "Jobber property mapping" : "Housecall Pro service address"}
               description={destination === "jobber"
-                ? "Provide an existing Jobber Property ID or at least Property Street 1 so Jobber can link or create the property."
+                ? "Select a mapped Jobber Property ID, or enter Property Street 1 below so Jobber can link or create the property."
                 : "Address fields are optional and are combined into Housecall Pro's documented Service address field."}
               fields={[
                 ...(destination === "jobber"
@@ -277,6 +346,8 @@ function ExportSelect({ label, value, option, testId }: { label: string; value: 
 
 type FieldDefinition = [string, keyof QuoteExportMapping, "text" | "email" | "tel" | "date"]
 
+const MAX_JOBBER_LINE_ITEMS = 10
+
 function destinationLabel(destination: QuoteExportRequestDestination) {
   if (destination === "quickbooks") return "QuickBooks Online"
   if (destination === "housecall_pro") return "Housecall Pro"
@@ -284,12 +355,14 @@ function destinationLabel(destination: QuoteExportRequestDestination) {
 }
 
 function MappingSection({
+  id,
   title,
   description,
   fields,
   mapping,
   onChange,
 }: {
+  id?: string
   title: string
   description: string
   fields: FieldDefinition[]
@@ -297,7 +370,7 @@ function MappingSection({
   onChange: (field: keyof QuoteExportMapping, value: string) => void
 }) {
   return (
-    <div>
+    <div id={id}>
       <h3 className="font-semibold">{title}</h3>
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

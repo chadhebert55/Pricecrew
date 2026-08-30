@@ -378,6 +378,8 @@ export function QuoteDetail() {
         customerName={quote.customerName}
         customerEmail={quote.customerEmail}
         isDirty={isDirty}
+        assemblyLineCount={quote.assembly.length + 1}
+        onReviseQuote={handleDuplicate}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
