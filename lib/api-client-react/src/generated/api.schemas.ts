@@ -513,6 +513,7 @@ export type AdditionInputsBreakerAmperage = typeof AdditionInputsBreakerAmperage
 export const AdditionInputsBreakerAmperage = {
   NUMBER_15: 15,
   NUMBER_20: 20,
+  NUMBER_30: 30,
 } as const;
 
 export type AdditionInputsBreakerPoleCount = typeof AdditionInputsBreakerPoleCount[keyof typeof AdditionInputsBreakerPoleCount];
@@ -520,6 +521,7 @@ export type AdditionInputsBreakerPoleCount = typeof AdditionInputsBreakerPoleCou
 
 export const AdditionInputsBreakerPoleCount = {
   NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;
 
 export type AdditionInputsBreakerProtectionType = typeof AdditionInputsBreakerProtectionType[keyof typeof AdditionInputsBreakerProtectionType];
@@ -539,6 +541,8 @@ export const AdditionInputsCableType = {
   '12/2_NM-B': '12/2 NM-B',
   '14/2_NM-B': '14/2 NM-B',
   '14/3_NM-B': '14/3 NM-B',
+  '10/2_NM-B': '10/2 NM-B',
+  '10/3_NM-B': '10/3 NM-B',
 } as const;
 
 export type AdditionCircuitEntryAmperage = typeof AdditionCircuitEntryAmperage[keyof typeof AdditionCircuitEntryAmperage];

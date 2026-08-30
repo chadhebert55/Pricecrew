@@ -209,10 +209,10 @@ export type AdditionInputRecord = {
   routeLength: number;
   homeRunLength: number;
   panelManufacturer: string;
-  breakerAmperage: number;
-  breakerPoleCount: number;
+  breakerAmperage: AdditionCircuitEntry["amperage"];
+  breakerPoleCount: AdditionCircuitEntry["poleCount"];
   breakerProtectionType: string;
-  cableType: CableType;
+  cableType: AdditionCircuitEntry["cableType"];
   circuitEntries?: AdditionCircuitEntry[];
   subpanelOption?: AdditionSubpanelOption;
   feederDistance?: number;

@@ -245,6 +245,69 @@ test("Jobber preflight returns actionable identity, property, quote, and pricing
   assert.ok(issues.every((entry) => entry.field && entry.message));
 });
 
+test("all exports block active zero-cost materials unless intentionally excluded", () => {
+  const zeroCostLine = {
+    ...savedQuote().assembly[0]!,
+    description: "Customer-selected fixture",
+    unitCost: 0,
+    extendedCost: 0,
+  };
+  const unresolved = savedQuote({ assembly: [zeroCostLine] });
+  const preflights = [
+    preflightJobberQuoteExport(unresolved, validMapping),
+    preflightQuickBooksQuoteExport(unresolved, {
+      quickBooksCustomer: "Ada Lovelace",
+      quickBooksInvoiceDate: "2026-08-30",
+      quickBooksDueDate: "2026-08-30",
+    }),
+    preflightHousecallProQuoteExport(unresolved, {}),
+  ];
+  for (const issues of preflights) {
+    assert.ok(issues.some((entry) => entry.code === "UNRESOLVED_MATERIAL_COST"));
+  }
+
+  const intentionallyExcluded = savedQuote({
+    assembly: [{
+      ...zeroCostLine,
+      intentionalExclusionReason: "Customer is purchasing this fixture directly.",
+    }],
+  });
+  assert.equal(
+    preflightJobberQuoteExport(intentionallyExcluded, validMapping).some(
+      (entry) => entry.code === "UNRESOLVED_MATERIAL_COST",
+    ),
+    false,
+  );
+});
+
+test("all exports block saved error-level pricing warnings", () => {
+  const quote = savedQuote({
+    pricing: {
+      ...savedQuote().pricing,
+      pricingWarnings: [{
+        code: "MISSING_CATALOG_PRICE",
+        severity: "error",
+        category: "missing-price",
+        message: "A required catalog price is missing.",
+        source: "Saved quote pricing snapshot",
+        context: {},
+      }],
+    },
+  });
+  assert.ok(
+    preflightJobberQuoteExport(quote, validMapping).some(
+      (entry) => entry.code === "BLOCKING_PRICING_WARNINGS",
+    ),
+  );
+  assert.ok(
+    preflightQuickBooksQuoteExport(quote, {
+      quickBooksCustomer: "Ada Lovelace",
+      quickBooksInvoiceDate: "2026-08-30",
+      quickBooksDueDate: "2026-08-30",
+    }).some((entry) => entry.code === "BLOCKING_PRICING_WARNINGS"),
+  );
+});
+
 test("Jobber preflight enforces the available assembly-line limit and line constraints", () => {
   const templateLine = savedQuote().assembly[0]!;
   const assembly = Array.from(

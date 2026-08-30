@@ -23,6 +23,7 @@ type QuoteExportCardProps = {
   customerEmail: string | null | undefined
   isDirty: boolean
   assemblyLineCount: number
+  pricingBlockers?: string[]
   onReviseQuote?: () => void
 }
 
@@ -32,6 +33,7 @@ export function QuoteExportCard({
   customerEmail,
   isDirty,
   assemblyLineCount,
+  pricingBlockers = [],
   onReviseQuote,
 }: QuoteExportCardProps) {
   const { toast } = useToast()
@@ -66,8 +68,17 @@ export function QuoteExportCard({
     mapping.jobberPropertyId?.trim() || mapping.propertyStreet1?.trim(),
   )
   const exceedsJobberLineLimit = destination === "jobber" && assemblyLineCount > MAX_JOBBER_LINE_ITEMS
+  const pricingBlocked = pricingBlockers.length > 0
 
   const handleExport = async () => {
+    if (pricingBlocked) {
+      toast({
+        variant: "destructive",
+        title: "Resolve pricing before exporting",
+        description: "Add verified costs or classify intentional material exclusions, then save the quote.",
+      })
+      return
+    }
     if (isDirty) {
       toast({
         variant: "destructive",
@@ -148,7 +159,7 @@ export function QuoteExportCard({
               Prepare a provider-friendly file from this saved quote. This is a download for import—not a direct sync, connection, or send action.
             </CardDescription>
           </div>
-          <Button data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy}>
+          <Button data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy || pricingBlocked}>
             <Download size={16} className="mr-2" />
             {busy ? "Checking export..." : "Export Quote"}
           </Button>
@@ -188,6 +199,19 @@ export function QuoteExportCard({
               : "The CSV uses this saved assembly and exact final selling price. It does not rerun estimating or read live catalog pricing."}
           </AlertDescription>
         </Alert>
+
+        {pricingBlocked && (
+          <Alert variant="destructive" data-testid="alert-export-pricing-blocked">
+            <TriangleAlert size={16} />
+            <AlertTitle>Pricing must be resolved before export</AlertTitle>
+            <AlertDescription>
+              Add a positive saved cost for each active material, or classify a true customer-supplied/excluded item with an intentional reason. Draft saving remains available.
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {pricingBlockers.map((blocker, index) => <li key={`${index}-${blocker}`}>{blocker}</li>)}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {destination === "jobber" && (
           <div

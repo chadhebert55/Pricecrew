@@ -12,4 +12,5 @@ export type AdditionInputsBreakerAmperage = typeof AdditionInputsBreakerAmperage
 export const AdditionInputsBreakerAmperage = {
   NUMBER_15: 15,
   NUMBER_20: 20,
+  NUMBER_30: 30,
 } as const;

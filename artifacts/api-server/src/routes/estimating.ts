@@ -1058,19 +1058,18 @@ export function evaluateCustomerReadyPricing({
     };
   }
 
-  const unresolvedContractorMaterials = assembly.filter(
+  const unresolvedMaterials = assembly.filter(
     (line) =>
       line.quantity > 0 &&
       line.unitCost <= 0 &&
-      line.source.startsWith("Contractor-entered") &&
       (!line.intentionalExclusionReason ||
         line.intentionalExclusionReason.trim().length < 10),
   );
-  if (unresolvedContractorMaterials.length > 0) {
+  if (unresolvedMaterials.length > 0) {
     return {
       allowed: false,
       error:
-        "Every active contractor-supplied material needs a cost or an intentional-exclusion reason before marking this quote ready.",
+        "Every active material needs a positive cost or an intentional-exclusion reason before marking this quote ready.",
     };
   }
 

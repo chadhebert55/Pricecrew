@@ -205,11 +205,10 @@ export function QuoteDetail() {
     quote.module === "ADDITION"
       ? (quote.jobInputs as { circuitEntries?: AdditionCircuitEntry[] }).circuitEntries
       : undefined
-  const unresolvedContractorMaterials = quote.assembly.some(
+  const unresolvedMaterialLines = quote.assembly.filter(
     (line) =>
       line.quantity > 0 &&
       line.unitCost <= 0 &&
-      line.source.startsWith("Contractor-entered") &&
       (!line.intentionalExclusionReason || line.intentionalExclusionReason.trim().length < 10),
   )
   const negativeLaborAdjustmentKeys = new Set([
@@ -233,8 +232,14 @@ export function QuoteDetail() {
   )
   const hasBlockingWarnings =
     quote.pricing.pricingWarnings.some((warning) => warning.severity === "error") ||
-    unresolvedContractorMaterials ||
+    unresolvedMaterialLines.length > 0 ||
     hasNegativeLaborAdjustment
+  const exportPricingBlockers = [
+    ...quote.pricing.pricingWarnings
+      .filter((warning) => warning.severity === "error")
+      .map(pricingWarningMessage),
+    ...unresolvedMaterialLines.map((line) => `${contractorMaterialName(line.description)} has no resolved material cost.`),
+  ]
 
   return (
     <div className="space-y-6 pb-24">
@@ -379,6 +384,7 @@ export function QuoteDetail() {
         customerEmail={quote.customerEmail}
         isDirty={isDirty}
         assemblyLineCount={quote.assembly.length + 1}
+        pricingBlockers={exportPricingBlockers}
         onReviseQuote={handleDuplicate}
       />
 

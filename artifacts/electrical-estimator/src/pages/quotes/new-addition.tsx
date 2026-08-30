@@ -181,10 +181,10 @@ export function NewAdditionQuote() {
       circuitCount: entries.reduce((sum, entry) => sum + entry.quantity, 0),
       ...(first ? {
         // Keep the legacy scalar fields synchronized for older consumers.
-        breakerAmperage: first.amperage === 30 ? 20 : first.amperage,
-        breakerPoleCount: first.poleCount === 2 ? 1 : first.poleCount,
+        breakerAmperage: first.amperage,
+        breakerPoleCount: first.poleCount,
         breakerProtectionType: first.protectionType,
-        cableType: first.cableType === "10/2 NM-B" || first.cableType === "10/3 NM-B" ? "12/2 NM-B" : first.cableType,
+        cableType: first.cableType,
       } : {}),
     }))
   }

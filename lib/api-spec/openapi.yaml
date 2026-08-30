@@ -1859,16 +1859,16 @@ components:
           enum: [Siemens, Eaton, Square D]
         breakerAmperage:
           type: number
-          enum: [15, 20]
+          enum: [15, 20, 30]
         breakerPoleCount:
           type: number
-          enum: [1]
+          enum: [1, 2]
         breakerProtectionType:
           type: string
           enum: [Standard, GFCI, AFCI, Dual Function]
         cableType:
           type: string
-          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/2 NM-B, 10/3 NM-B]
         circuitEntries:
           type: array
           minItems: 1

@@ -159,6 +159,7 @@ export function NewHouseQuote() {
       ...current,
       equipmentCircuitAmperage: amperage,
       equipmentCircuitCableType: cableType,
+      equipmentCircuitPoleCount: amperage >= 30 ? 2 : current.equipmentCircuitPoleCount,
     }))
   }
 

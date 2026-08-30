@@ -208,12 +208,47 @@ function cents(value: number) {
   return Math.round(value * 100);
 }
 
+function blockingSavedPricingIssues(quote: QuoteRecord) {
+  const issues: QuoteExportPreflightIssue[] = [];
+  const blockingWarnings = (quote.pricing?.pricingWarnings ?? []).filter(
+    (warning) =>
+      typeof warning === "string" || warning.severity === "error",
+  );
+  if (blockingWarnings.length > 0) {
+    issues.push(
+      issue(
+        "BLOCKING_PRICING_WARNINGS",
+        "pricing.pricingWarnings",
+        "Resolve all missing, unsafe, or invalid material prices before exporting this quote.",
+      ),
+    );
+  }
+
+  quote.assembly?.forEach((line, index) => {
+    if (
+      line.quantity > 0 &&
+      line.unitCost <= 0 &&
+      (!line.intentionalExclusionReason ||
+        line.intentionalExclusionReason.trim().length < 10)
+    ) {
+      issues.push(
+        issue(
+          "UNRESOLVED_MATERIAL_COST",
+          `assembly[${index}].unitCost`,
+          `${line.description || `Assembly line ${index + 1}`} needs a positive saved cost or an intentional-exclusion reason before export.`,
+        ),
+      );
+    }
+  });
+  return issues;
+}
+
 export function preflightJobberQuoteExport(
   quote: QuoteRecord,
   mapping: QuoteExportMapping,
 ): QuoteExportPreflightIssue[] {
   const resolved = resolveMapping(quote, mapping);
-  const issues: QuoteExportPreflightIssue[] = [];
+  const issues = blockingSavedPricingIssues(quote);
 
   if (
     !resolved.jobberClientId &&
@@ -484,7 +519,7 @@ export function buildJobberQuoteCsv(
 }
 
 function savedQuoteIssues(quote: QuoteRecord) {
-  const issues: QuoteExportPreflightIssue[] = [];
+  const issues = blockingSavedPricingIssues(quote);
   if (!text(quote.quoteNumber)) {
     issues.push(
       issue(

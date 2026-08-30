@@ -11,4 +11,5 @@ export type AdditionInputsBreakerPoleCount = typeof AdditionInputsBreakerPoleCou
 
 export const AdditionInputsBreakerPoleCount = {
   NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;
