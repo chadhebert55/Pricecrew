@@ -27,6 +27,7 @@ import {
 } from "../lib/pdf-storage";
 import {
   extractTakeoff,
+  type ExtractedTakeoffItem,
   TakeoffExtractionError,
 } from "../lib/takeoff-extractor";
 import {
@@ -66,6 +67,17 @@ function serializeTakeoffItem(item: TakeoffItem) {
     reviewerNote: item.reviewerNote,
     reviewedAt: item.reviewedAt?.toISOString() ?? null,
   };
+}
+
+export function pendingTakeoffItems(
+  takeoffId: number,
+  items: ExtractedTakeoffItem[],
+) {
+  return items.map((item) => ({
+    takeoffId,
+    ...item,
+    status: "pending" as const,
+  }));
 }
 
 function serializeReviewEvent(event: TakeoffReviewEvent) {
@@ -190,11 +202,7 @@ router.post("/takeoffs", async (req, res): Promise<void> => {
     const completedAt = new Date();
     const [updated] = await db.transaction(async (tx) => {
       await tx.insert(takeoffItemsTable).values(
-        extraction.items.map((item) => ({
-          takeoffId: takeoff.id,
-          ...item,
-          status: "pending" as const,
-        })),
+        pendingTakeoffItems(takeoff.id, extraction.items),
       );
       return tx
         .update(planTakeoffsTable)
