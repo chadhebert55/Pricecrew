@@ -14,6 +14,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   Route,
+  Redirect,
   Switch,
   Link,
   useLocation,
@@ -177,6 +178,8 @@ function PrivateRouter() {
       <Shell>
         <Suspense fallback={<RouteLoading />}>
           <Switch>
+            {/* `/` is the canonical dashboard URL; keep `/dashboard` for legacy links and bookmarks. */}
+            <Route path="/dashboard" component={() => <Redirect to="/" />} />
             <Route path="/" component={Dashboard} />
             <Route path="/quotes" component={QuotesList} />
             <Route path="/quotes/new" component={NewQuote} />
