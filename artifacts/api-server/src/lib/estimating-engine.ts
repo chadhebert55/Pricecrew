@@ -1037,7 +1037,7 @@ function unitCost(
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
   expectedCategory?: string,
-): { value: number; source: string } {
+): { value: number; source: string; item?: PriceBookItem } {
   const match = deterministicPriceBookMatch(
     priceBook,
     (item) =>
@@ -1049,7 +1049,11 @@ function unitCost(
       item.unitCost > 0,
   );
   if (match) {
-    return { value: match.unitCost, source: catalogSource(match) };
+    return {
+      value: match.unitCost,
+      source: catalogSource(match),
+      item: match,
+    };
   }
 
   pricingWarnings.push(
@@ -2883,8 +2887,6 @@ export function calculateAdditionEstimate(
       source: feeder.source,
     });
 
-    const feederBreakerPart =
-      subpanelAmperage === 60 ? "Q260" : "Q2100H";
     const feederBreaker = resolveBreaker(
       {
         manufacturer: inputs.panelManufacturer,
@@ -2898,7 +2900,7 @@ export function calculateAdditionEstimate(
     addLine(assembly, {
       id: "addition-subpanel-feeder-breaker",
       category: "Protection",
-      description: `Siemens ${feederBreakerPart} ${subpanelAmperage}A 2-pole Standard feeder breaker`,
+      description: feederBreaker.description,
       quantity: 1,
       unit: "ea",
       unitCost: feederBreaker.value,
@@ -2906,10 +2908,18 @@ export function calculateAdditionEstimate(
     });
 
     const panel = unitCost(panelKey, priceBook, pricingWarnings, "Panel");
+    const panelIdentity = panel.item
+      ? [
+          panel.item.manufacturer,
+          panel.item.manufacturerPartNumber,
+        ].filter(Boolean).join(" ")
+      : "";
     addLine(assembly, {
       id: "addition-subpanel-load-center",
       category: "Panel",
-      description: `${subpanelAmperage}A subpanel — Siemens SN2020L1125 125A main-lug load center with isolated neutral and equipment grounding provisions`,
+      description: panelIdentity
+        ? `${subpanelAmperage}A subpanel — ${panelIdentity} main-lug load center with isolated neutral and equipment grounding provisions`
+        : `${subpanelAmperage}A subpanel load center with isolated neutral and equipment grounding provisions${panel.value > 0 ? "" : " — unresolved"}`,
       quantity: 1,
       unit: "ea",
       unitCost: panel.value,

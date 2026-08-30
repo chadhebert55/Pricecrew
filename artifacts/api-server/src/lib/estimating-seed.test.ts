@@ -525,14 +525,38 @@ test("required Addition and New House rows reconcile across existing companies w
           );
           const row = rows.find((candidate) => candidate.item === item);
           assert.equal(row?.isDefault, false);
-          if (item !== "#6 copper SER cable") {
-            assert.equal(row?.unitCost, 0);
-            assert.equal(
-              row?.supplier,
-              "Company default — set current cost",
-            );
+          if (item === "#6 copper SER cable") {
+            if (company.id === legacyCompany.id) {
+              assert.equal(row?.unitCost, 7.125);
+              assert.equal(row?.supplier, "Contractor SER supplier");
+            } else {
+              assert.equal(row?.unitCost, 0);
+              assert.equal(
+                row?.supplier,
+                "Unresolved — no exact verified source price",
+              );
+            }
+          } else {
+            assert.ok((row?.unitCost ?? 0) > 0);
+            assert.equal(row?.supplier, "Northeast Electrical");
           }
         }
+      }
+
+      const emptyRows = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, emptyCompany.id));
+      for (const [item, unitCost, supplierSku] of [
+        ["10/2 NM-B cable", 1.071856, "5096"],
+        ["10/3 NM-B cable", 1.350184, "301392"],
+        ["#1 aluminum SER cable", 2.417841, "295809"],
+        ["60A subpanel load center", 90.476, "1552612"],
+        ["100A subpanel load center", 90.476, "1552612"],
+      ] as const) {
+        const row = emptyRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, unitCost);
+        assert.equal(row?.supplierSku, supplierSku);
       }
 
       const [editedSer] = await transaction

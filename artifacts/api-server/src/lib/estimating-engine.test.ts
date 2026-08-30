@@ -303,6 +303,48 @@ test("Siemens AFCI selection prefers exact Northeast QA115AFC and QA120AFC rows"
   );
 });
 
+test("Addition subpanel descriptions reflect resolved contractor products instead of claiming Siemens identities", () => {
+  const result = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      panelManufacturer: "Eaton",
+      subpanelOption: "100A Subpanel",
+      feederDistance: 25,
+    },
+    settings,
+    [
+      catalogRow("#1 aluminum SER cable", 2.417841, {
+        category: "Conductor",
+      }),
+      catalogRow("Eaton 100A 2-pole Standard breaker", 210.849, {
+        category: "Protection",
+        manufacturer: "Eaton",
+        manufacturerPartNumber: "C-H BR2100",
+        amperage: 100,
+        poleCount: 2,
+        protectionType: "Standard",
+      }),
+      catalogRow("100A subpanel load center", 188.88, {
+        category: "Panel",
+        supplier: "Contractor panel supplier",
+      }),
+    ],
+  );
+
+  const breaker = result.assembly.find(
+    (line) => line.id === "addition-subpanel-feeder-breaker",
+  );
+  assert.match(breaker?.description ?? "", /Eaton C-H BR2100/);
+  assert.doesNotMatch(breaker?.description ?? "", /Siemens|Q2100H/);
+
+  const panel = result.assembly.find(
+    (line) => line.id === "addition-subpanel-load-center",
+  );
+  assert.doesNotMatch(panel?.description ?? "", /Siemens|SN2020L1125/);
+  assert.match(panel?.source ?? "", /Contractor panel supplier/);
+  assert.equal(panel?.unitCost, 188.88);
+});
+
 test("bathroom quote-local exhaust overrides flow through material, profit, and margin totals", () => {
   const base = calculateBathroomEstimate(
     bathroomBuilderInputs,

@@ -101,7 +101,9 @@ Unresolved: any Juno fixture selection without the exact verified model, retail-
 
 Mapped: selected 1/0, 3/0, and 4/0 aluminum XHHW rows; selected 1/0 and 3/0 aluminum SER rows; exact breaker tuples where present.
 
-Unresolved: 4/0 SER because workbook variants diverge materially; copper service alternatives; meter-main/panel/disconnect equipment; mast, weatherhead, hub, LB, elbows, couplings, and PVC sold under ambiguous `c` units; grounding/bonding products without selected dimensions; permits, utility coordination, labeling, normal stock, and generic field allowances.
+Explicitly confirmed outside the automatic Northeast family mapping: the active 4/0 aluminum SER key retains the newer user-confirmed $4.4198/ft company cost. The distinct Northeast 4/0 SER SKUs remain available only as exact selectors; none is inferred from the generic active key.
+
+Unresolved: copper service alternatives; meter-main/panel/disconnect equipment without an exact selector; mast, weatherhead, hub, LB, elbows, couplings, and PVC sold under ambiguous `c` units; grounding/bonding products without selected dimensions; permits, utility coordination, labeling, normal stock, and generic field allowances.
 
 Service Upgrade and Panel Replacement snapshots may optionally carry
 `exactCatalogParts` canonical item strings on a per-line basis (for example
@@ -122,7 +124,7 @@ Unresolved: panel enclosures and mains without an exact selected product family;
 
 ### Addition and New House
 
-Mapped: 10/2 and 10/3 NM-B; exact Siemens 30A, 60A, and 100A standard breakers; the preferred #1 aluminum SER four-wire feeder row; and the BRK hardwired smoke/CO combination alarm. Subpanel enclosure identity remains tracked separately until its exact shared product mapping is reconciled.
+Mapped: 10/2 and 10/3 NM-B; exact Siemens 30A, 60A, and 100A standard breakers; the preferred #1 aluminum SER four-wire feeder row; the BRK hardwired smoke/CO combination alarm; and Siemens SN2020L1125 as the shared 125A-rated MLO enclosure for both the 60A- and 100A-fed subpanel selections.
 
 Customer-supplied fixture lines carry an explicit intentional-exclusion reason while retaining a visible review warning. Positive starter planning values are labeled as company allowances in Price Book management and remain editable; they are not presented as sourced catalog prices.
 
