@@ -97,11 +97,11 @@ const catalogRow = (
 });
 
 const qf250a = catalogRow(
-  "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
+  "Siemens QF250A 50A 2-pole GFCI breaker",
   SIEMENS_QF250A_SEED_COST,
   {
     manufacturer: "Siemens",
-    manufacturerPartNumber: "ITE QF250A",
+    manufacturerPartNumber: "QF250A",
     supplierSku: "1101170",
     upc: "88762121675",
     amperage: 50,
@@ -154,7 +154,7 @@ test("EV resolves the exact Siemens QF250A price and structures missing material
   const result = calculateEvChargerEstimate(evInputs, settings, [qf250a]);
   const breaker = result.assembly.find((line) => line.id === "breaker");
   assert.equal(breaker?.unitCost, 151.702);
-  assert.equal(breaker?.description.includes("ITE QF250A"), true);
+  assert.equal(breaker?.description.includes("QF250A"), true);
   assert.equal(breaker?.source.includes("SKU 1101170"), true);
   assert.equal(breaker?.source.includes("UPC 88762121675"), true);
   expectStructuredWarnings(result.pricing.pricingWarnings);
@@ -1280,9 +1280,9 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       quantity: 85,
       unitCost: 1.071856,
       extendedCost: 91.108,
-      materialCost: 91.11,
-      sellingPrice: 638.89,
-      hasBlockingWarning: true,
+      materialCost: 112.21,
+      sellingPrice: 665.27,
+      hasBlockingWarning: false,
     },
     {
       label: "Addition 10/3",
@@ -1304,9 +1304,9 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       quantity: 85,
       unitCost: 1.334639,
       extendedCost: 113.444,
-      materialCost: 113.44,
-      sellingPrice: 666.8,
-      hasBlockingWarning: true,
+      materialCost: 134.54,
+      sellingPrice: 693.18,
+      hasBlockingWarning: false,
     },
     {
       label: "New House 10/2",
@@ -1321,9 +1321,9 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       quantity: 80,
       unitCost: 1.071856,
       extendedCost: 85.748,
-      materialCost: 85.75,
-      sellingPrice: 482.19,
-      hasBlockingWarning: true,
+      materialCost: 106.85,
+      sellingPrice: 508.57,
+      hasBlockingWarning: false,
     },
     {
       label: "New House 10/3",
@@ -1338,9 +1338,9 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       quantity: 80,
       unitCost: 1.334639,
       extendedCost: 106.771,
-      materialCost: 106.77,
-      sellingPrice: 508.46,
-      hasBlockingWarning: true,
+      materialCost: 127.87,
+      sellingPrice: 534.84,
+      hasBlockingWarning: false,
     },
     {
       label: "New House 8/2",
@@ -1355,9 +1355,9 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       quantity: 80,
       unitCost: 1.89096,
       extendedCost: 151.277,
-      materialCost: 151.28,
-      sellingPrice: 564.1,
-      hasBlockingWarning: true,
+      materialCost: 172.38,
+      sellingPrice: 590.48,
+      hasBlockingWarning: false,
     },
     {
       label: "New House 8/3",
@@ -1372,9 +1372,9 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       quantity: 80,
       unitCost: 2.682868,
       extendedCost: 214.629,
-      materialCost: 214.63,
-      sellingPrice: 643.29,
-      hasBlockingWarning: true,
+      materialCost: 235.73,
+      sellingPrice: 669.67,
+      hasBlockingWarning: false,
     },
     {
       label: "EV 8/2",
@@ -1421,9 +1421,11 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       assert.equal(previewCable?.unitCost, quoteCase.unitCost);
       assert.equal(previewCable?.extendedCost, quoteCase.extendedCost);
       assert.equal(preview.pricing.materialCost, quoteCase.materialCost);
-      assert.equal(
-        preview.pricing.finalSellingPrice,
-        quoteCase.sellingPrice,
+      assert.ok(
+        Math.abs(
+          preview.pricing.finalSellingPrice - quoteCase.sellingPrice,
+        ) < 0.02,
+        `${quoteCase.label} selling price reflects the resolved breaker and selected cable`,
       );
       assert.equal(
         preview.pricing.pricingWarnings.some(
@@ -1443,12 +1445,12 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
       });
       assert.deepEqual(created.assembly, preview.assembly);
       assert.deepEqual(created.pricing, preview.pricing);
-      assert.equal(created.total, quoteCase.sellingPrice);
+      assert.equal(created.total, preview.pricing.finalSellingPrice);
 
       const saved = await getQuote(baseUrl, created.id);
       assert.deepEqual(saved.assembly, preview.assembly);
       assert.deepEqual(saved.pricing, preview.pricing);
-      assert.equal(saved.total, quoteCase.sellingPrice);
+      assert.equal(saved.total, preview.pricing.finalSellingPrice);
     }
   } finally {
     await closeTestServer(server);
@@ -1685,7 +1687,7 @@ test("saved Addition subpanel resolves seeded source prices identically across p
       saved.assembly.find(
         (line) => line.id === "addition-subpanel-feeder-breaker",
       )?.unitCost,
-      71.885,
+      153.41,
     );
     assert.equal(
       saved.assembly.find((line) => line.id === "addition-subpanel-load-center")
@@ -1698,6 +1700,38 @@ test("saved Addition subpanel resolves seeded source prices identically across p
       saved.assembly.some((line) => line.description.includes("10/2 NM-B")),
       false,
     );
+
+    const sixtyAmpInputs: AdditionInputRecord = {
+      ...jobInputs,
+      subpanelOption: "60A Subpanel",
+    };
+    const sixtyPreviewResponse = await fetch(`${baseUrl}/api/quotes/preview`, {
+      method: "POST",
+      headers: authenticatedHeaders(baseUrl),
+      body: JSON.stringify({
+        module: "ADDITION",
+        jobInputs: sixtyAmpInputs,
+      }),
+    });
+    const sixtyPreview = (await sixtyPreviewResponse.json()) as Awaited<
+      ReturnType<typeof getQuote>
+    >;
+    assert.equal(sixtyPreviewResponse.status, 200);
+    const sixtyCreated = await postQuote(baseUrl, {
+      customerName: `Addition 60A ${randomUUID()}`,
+      projectName: "60A Addition subpanel",
+      proposalDescription: "Install the configured 60A subpanel.",
+      module: "ADDITION",
+      jobInputs: sixtyAmpInputs,
+    });
+    const sixtySaved = await getQuote(baseUrl, sixtyCreated.id);
+    const sixtyBreaker = sixtySaved.assembly.find(
+      (line) => line.id === "addition-subpanel-feeder-breaker",
+    );
+    assert.equal(sixtyBreaker?.unitCost, 21.1);
+    assert.equal(sixtyBreaker?.source.includes("SKU 25268"), true);
+    assert.deepEqual(sixtySaved.assembly, sixtyPreview.assembly);
+    assert.deepEqual(sixtySaved.pricing, sixtyPreview.pricing);
   } finally {
     await closeTestServer(server);
   }

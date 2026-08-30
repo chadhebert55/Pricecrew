@@ -269,15 +269,15 @@ export function NewBathroomQuote() {
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                     <div className="space-y-2">
                       <Label htmlFor="bath-fan-cost">Standard Panasonic fan unit cost ($)</Label>
-                      <Input id="bath-fan-cost" type="number" min="0" step="0.01" value={inputs.exhaustFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("exhaustFanMaterialCostOverride", event.target.value)} placeholder="Price Book baseline: $136.00" />
+                      <Input id="bath-fan-cost" type="number" min="0" step="0.01" value={inputs.exhaustFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("exhaustFanMaterialCostOverride", event.target.value)} placeholder="Price Book: $119.291" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="bath-fan-light-cost">Fan / light unit cost ($)</Label>
-                      <Input id="bath-fan-light-cost" type="number" min="0" step="0.01" value={inputs.fanLightMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("fanLightMaterialCostOverride", event.target.value)} placeholder="Use Price Book" />
+                      <Input id="bath-fan-light-cost" type="number" min="0" step="0.01" value={inputs.fanLightMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("fanLightMaterialCostOverride", event.target.value)} placeholder="Price Book: $164.804" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="bath-fan-heat-cost">Fan / light / heat unit cost ($)</Label>
-                      <Input id="bath-fan-heat-cost" type="number" min="0" step="0.01" value={inputs.fanLightHeatMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("fanLightHeatMaterialCostOverride", event.target.value)} placeholder="Use Price Book" />
+                      <Input id="bath-fan-heat-cost" type="number" min="0" step="0.01" value={inputs.fanLightHeatMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("fanLightHeatMaterialCostOverride", event.target.value)} placeholder="Price Book: $354.581" />
                     </div>
                   </div>
                 </section>

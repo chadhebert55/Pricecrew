@@ -33,16 +33,18 @@ Catalog price date: 2026-08-25
 | 4/0 aluminum XHHW | 392124 | WIA. XHHW 4/0 S | m | $1.191903/ft |
 | 1/0 aluminum SER | 295793 | WIA. SER 1/0-1/ | m | $2.631865/ft |
 | 3/0 aluminum SER | 239619 | WIA. SER 3/0-3/ | m | $3.930704/ft |
+| #1 aluminum SER | 295809 | WIA. SER 1-1-1- | m | $2.417841/ft |
 
 The workbook contains additional rows for several wire sizes. The seeded row is a specific editable Northeast SKU, not a claim that it is the only valid color, reel, or packaging variant.
 
 ### Devices and breakers
 
-The seed retains exact Northeast rows for the workbook-mapped Pass & Seymour tamper-resistant receptacles and self-test GFCIs, Panasonic FV-0511VF1 fan, Siemens 20A standard/GFCI/dual-function breakers, Eaton BR 20A standard/AFCI/dual-function breakers, Square D Homeline 20A standard/GFCI/dual-function breakers, and Siemens/Square D 50A two-pole GFCI breakers. It also maps the BRK SMICO100-AC hardwired smoke/CO combination alarm.
+The seed retains exact Northeast rows for the workbook-mapped Pass & Seymour tamper-resistant receptacles and self-test GFCIs; Panasonic FV-0511VF1, FV-0511VFL, FV-0511VH1, and FV-0511VHL exhaust products; Siemens 20A standard/GFCI/dual-function breakers; Eaton BR 20A standard/AFCI/dual-function breakers; Square D Homeline 20A standard/GFCI/dual-function breakers; and exact supported two-pole breakers. It also maps the BRK SMICO100-AC hardwired smoke/CO combination alarm.
 
 Exact 15A rows were added for:
 
 - Siemens Q115 standard and Q115DF dual-function
+- Siemens QA115AFC and QA120AFC AFCI rows at $52.233 each
 - Eaton BR115 standard, BRN115AF AFCI, and BRN115DF dual-function
 - Square D Homeline HOM115 standard and HOM115GFI GFCI
 
@@ -58,9 +60,9 @@ Unresolved: 8/2 SER (no exact workbook family), other two-pole breaker combinati
 
 ### Bathroom
 
-Mapped: 12/2, 14/2, and 14/3 NM-B; exact Pass & Seymour receptacle/GFCI rows; exact supported breaker tuples; Panasonic FV-0511VF1.
+Mapped: 12/2, 14/2, and 14/3 NM-B; exact Pass & Seymour receptacle/GFCI rows; exact supported breaker tuples; Panasonic FV-0511VF1 standard fan, FV-0511VFL fan/light, and FV-0511VHL fan/light/heat. FV-0511VH1 is retained as a separate exact catalog row and is not substituted for a selected fan/light/heat unit.
 
-Unresolved: generic vanity, fan/light, fan/heat, heated-floor, fixture, box, plate, and permit allowances; any breaker tuple not represented by an exact compatible workbook row.
+Unresolved: generic vanity, heated-floor, fixture, box, plate, and permit allowances; any breaker tuple not represented by an exact compatible workbook row.
 
 ### Kitchen
 
@@ -72,7 +74,7 @@ Unresolved: appliance-specific device allowances, USB/specialty devices, island/
 
 Mapped: 14/2 and 14/3 NM-B plus exact supported 15A breaker tuples.
 
-Unresolved: Juno fixture rows without an exact workbook model, retail-pack switch/dimmer/plate/box variants that do not exactly match Northeast catalog part numbers, smart-control combo packs, and unsupported breakers. Their former starter prices are no longer treated as verified catalog prices.
+Unresolved: any Juno fixture selection without the exact verified model, retail-pack switch/dimmer/plate/box variants that do not exactly match Northeast catalog part numbers, smart-control combo packs, and unsupported breakers. Their former starter prices are no longer treated as verified catalog prices.
 
 ### Service Upgrade
 
@@ -99,9 +101,13 @@ Unresolved: panel enclosures and mains without an exact selected product family;
 
 ### Addition and New House
 
-Mapped: 10/2 and 10/3 NM-B; exact Siemens 30A, 60A, and 100A standard breakers; 60A and 100A Square D MLO subpanel selections; four-wire feeder conductors; and the BRK hardwired smoke/CO combination alarm.
+Mapped: 10/2 and 10/3 NM-B; exact Siemens 30A, 60A, and 100A standard breakers; the preferred #1 aluminum SER four-wire feeder row; and the BRK hardwired smoke/CO combination alarm. Subpanel enclosure identity remains tracked separately until its exact shared product mapping is reconciled.
 
 Customer-supplied fixture lines carry an explicit intentional-exclusion reason while retaining a visible review warning. Positive starter planning values are labeled as company allowances in Price Book management and remain editable; they are not presented as sourced catalog prices.
+
+### Service Call, Time & Materials, and Custom Items
+
+These builders price contractor-entered material lines rather than selecting fixed catalog assemblies. Their quote-local descriptions, quantities, and unit costs remain visible and are preserved in saved snapshots. No Northeast catalog row is inferred from free text, and no zero-cost user line is silently replaced.
 
 ## Intentionally rejected substitutions
 

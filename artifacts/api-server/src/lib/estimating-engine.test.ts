@@ -235,6 +235,72 @@ test("bathroom prices all exhaust options as contractor supplied while vanity re
     result.assembly.find((line) => line.id === "fan-light-heat")?.unitCost,
     360,
   );
+  assert.match(
+    result.assembly.find((line) => line.id === "fan-lights")?.description ?? "",
+    /FV-0511VFL/,
+  );
+  assert.match(
+    result.assembly.find((line) => line.id === "fan-light-heat")?.description ?? "",
+    /FV-0511VHL/,
+  );
+});
+
+test("Siemens AFCI selection prefers exact Northeast QA115AFC and QA120AFC rows", () => {
+  const verifiedAfcis: PriceBookItem[] = [
+    catalogRow("Siemens Q115AFC legacy allowance", 44, {
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q115AFC",
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "AFCI",
+    }),
+    catalogRow("Siemens QA115AFC 15A 1-pole AFCI breaker", 52.233, {
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QA115AFC",
+      supplierSku: "900554",
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "AFCI",
+    }),
+    catalogRow("Siemens Q120AFC legacy allowance", 58, {
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q120AFC",
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "AFCI",
+    }),
+    catalogRow("Siemens QA120AFC 20A 1-pole AFCI breaker", 52.233, {
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QA120AFC",
+      supplierSku: "900102",
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "AFCI",
+    }),
+  ];
+  const fifteen = calculateAdditionEstimate(
+    { ...additionInputs, circuitCount: 1, breakerAmperage: 15 },
+    settings,
+    verifiedAfcis,
+  );
+  const twenty = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      circuitCount: 1,
+      breakerAmperage: 20,
+      cableType: "12/2 NM-B",
+    },
+    settings,
+    verifiedAfcis,
+  );
+  assert.equal(
+    fifteen.assembly.find((line) => line.id === "addition-breakers")?.unitCost,
+    52.233,
+  );
+  assert.equal(
+    twenty.assembly.find((line) => line.id === "addition-breakers")?.unitCost,
+    52.233,
+  );
 });
 
 test("bathroom quote-local exhaust overrides flow through material, profit, and margin totals", () => {
@@ -1201,6 +1267,142 @@ test("addition prices both 10/2 and 10/3 as selectable 30A branch-circuit cables
       true,
     );
   }
+});
+
+test("Siemens 40A through 60A GFCI paths prefer exact QF2 products over QE or BF variants", () => {
+  const evInputs: EvChargerInputRecord = {
+    chargerQuantity: 1,
+    chargerOutputAmps: 40,
+    circuitAmps: "50A",
+    chargerSupply: "Customer Provided",
+    connection: "Hardwired",
+    routeLength: 15,
+    wiringMethod: "Romex (NM-B)",
+    cableType: "8/2 NM-B",
+    location: "Indoor",
+    panelManufacturer: "Siemens",
+    panelSpace: "Available",
+    breakerRequirement: "GFCI 2-Pole",
+    access: "Standard",
+    permit: "Not Required",
+    loadManagement: "None",
+    disconnect: "Not Required",
+    surgeProtection: "None",
+    panelModifications: "None",
+    difficulty: "Standard",
+    notes: "",
+    laborRateType: "residential",
+  };
+  const qfRows = [
+    [40, "QF240A", "1101171"],
+    [50, "QF250A", "1101170"],
+    [60, "QF260A", "1080836"],
+  ] as const;
+  const book = [
+    catalogRow("8/2 NM-B cable", 1.891, { category: "Conductor" }),
+    ...qfRows.map(([amperage, part, supplierSku]) =>
+      catalogRow(`Siemens ${part} ${amperage}A 2-pole GFCI breaker`, 151.702, {
+        category: "Protection",
+        manufacturer: "Siemens",
+        manufacturerPartNumber: part,
+        supplierSku,
+        amperage,
+        poleCount: 2,
+        protectionType: "GFCI",
+      }),
+    ),
+    ...qfRows.flatMap(([amperage]) => [
+      catalogRow(`Siemens QE${amperage} molded-case GFCI breaker`, 339.575, {
+        category: "Protection",
+        manufacturer: "Siemens",
+        manufacturerPartNumber: `QE${amperage}`,
+        amperage,
+        poleCount: 2,
+        protectionType: "GFCI",
+      }),
+      catalogRow(`Siemens BF${amperage}A molded-case GFCI breaker`, 197.976, {
+        category: "Protection",
+        manufacturer: "Siemens",
+        manufacturerPartNumber: `BF${amperage}A`,
+        amperage,
+        poleCount: 2,
+        protectionType: "GFCI",
+      }),
+    ]),
+  ];
+
+  for (const [amperage, part, supplierSku] of qfRows) {
+    const result = calculateEvChargerEstimate(
+      { ...evInputs, circuitAmps: `${amperage}A` },
+      settings,
+      book,
+    );
+    const breaker = result.assembly.find((line) => line.id === "breaker");
+    assert.equal(breaker?.unitCost, 151.702);
+    assert.equal(breaker?.description.includes(part), true);
+    assert.equal(breaker?.source.includes(`SKU ${supplierSku}`), true);
+  }
+});
+
+test("Siemens 30A standard resolves Q230 while 30A GFCI remains explicit and unresolved", () => {
+  const q230 = catalogRow("Siemens 30A 2-pole Standard breaker", 21.1, {
+    category: "Protection",
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q230",
+    supplierSku: "16701",
+    amperage: 30,
+    poleCount: 2,
+    protectionType: "Standard",
+  });
+  const additionBook = [
+    ...priceBook,
+    q230,
+    catalogRow("10/3 NM-B cable", 1.35),
+  ];
+  const circuitEntry = {
+    amperage: 30 as const,
+    poleCount: 2 as const,
+    cableType: "10/3 NM-B" as const,
+    quantity: 1,
+  };
+  const standard = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      circuitEntries: [{ ...circuitEntry, protectionType: "Standard" }],
+    },
+    settings,
+    additionBook,
+  );
+  const gfci = calculateAdditionEstimate(
+    {
+      ...additionInputs,
+      circuitEntries: [{ ...circuitEntry, protectionType: "GFCI" }],
+    },
+    settings,
+    additionBook,
+  );
+
+  const standardBreaker = standard.assembly.find(
+    (line) => line.id === "addition-circuit-1-breaker",
+  );
+  assert.equal(standardBreaker?.unitCost, 21.1);
+  assert.equal(standardBreaker?.description.includes("Q230"), true);
+  assert.equal(standardBreaker?.source.includes("SKU 16701"), true);
+  assert.equal(
+    gfci.assembly.find((line) => line.id === "addition-circuit-1-breaker")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    gfci.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "EXACT_BREAKER_UNRESOLVED" &&
+        warning.context.amperage === 30 &&
+        warning.context.protectionType === "GFCI",
+    ),
+    true,
+  );
 });
 
 test("addition mixed circuit schedules have preview and create validation parity", () => {
@@ -4052,7 +4254,7 @@ test("equivalent EV 2-wire and 3-wire Romex preserve distinct exact takeoff and 
     catalogRow("Siemens QF250A 50A 2-pole GFCI breaker", 151.702, {
       category: "Protection",
       manufacturer: "Siemens",
-      manufacturerPartNumber: "ITE QF250A",
+      manufacturerPartNumber: "QF250A",
       amperage: 50,
       poleCount: 2,
       protectionType: "GFCI",

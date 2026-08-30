@@ -150,6 +150,12 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
       }
 
       for (const [item, unitCost, supplierSku, manufacturerPartNumber] of [
+        ["Panasonic FV-0511VF1 exhaust fan", 119.291, "1697956", "FV-0511VF1"],
+        ["Contractor-supplied bathroom fan/light combination", 164.804, "1697108", "FV-0511VFL"],
+        ["Panasonic FV-0511VH1 bathroom fan/heat combination", 274.51, "1620175", "FV-0511VH1"],
+        ["Contractor-supplied bathroom fan/light/heat combination", 354.581, "1620176", "FV-0511VHL"],
+        ["Siemens QA115AFC 15A 1-pole AFCI breaker", 52.233, "900554", "ITE QA115AFC"],
+        ["Siemens QA120AFC 20A 1-pole AFCI breaker", 52.233, "900102", "ITE QA120AFC"],
         ["Siemens Q115 15A 1-pole standard breaker", 8.673, "17237", "ITE Q115"],
         ["Siemens Q115DF 15A 1-pole dual-function breaker", 69.239, "938243", "ITE Q115DF"],
         ["Eaton BR115 15A 1-pole standard breaker", 19.647, "20956", "C-H BR115"],
@@ -158,8 +164,11 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         ["Square D Homeline HOM115 15A 1-pole standard breaker", 13.321, "15367", "SQD HOM115"],
         ["Square D Homeline HOM115GFI 15A 1-pole GFCI breaker", 133.568, "8508", "SQD HOM115GFI"],
         ["Square D 50A 2-pole GFCI breaker", 278.491, "87379", "SQD HOM250GFI"],
-        ["Siemens 60A 2-pole Standard breaker", 21.1, "25268", "ITE Q260"],
-        ["Siemens 100A 2-pole Standard breaker", 71.885, "4387", "ITE Q2100"],
+        ["Siemens 30A 2-pole Standard breaker", 21.1, "16701", "Q230"],
+        ["Siemens 40A 2-pole Standard breaker", 21.1, "24287", "Q240"],
+        ["Siemens 50A 2-pole Standard breaker", 21.1, "8220", "Q250"],
+        ["Siemens 60A 2-pole Standard breaker", 21.1, "25268", "Q260"],
+        ["Siemens 100A 2-pole Standard breaker", 153.41, "12427", "Q2100H"],
         ["Eaton 60A 2-pole Standard breaker", 64.692, "26831", "C-H BR260"],
         ["Eaton 100A 2-pole Standard breaker", 210.849, "20884", "C-H BR2100"],
         ["Square D 60A 2-pole Standard breaker", 31.599, "26680", "SQD HOM260"],
@@ -172,6 +181,43 @@ test("fresh seed promotes verified pricing and inserts editable service and pane
         assert.equal(row?.manufacturerPartNumber, manufacturerPartNumber);
         assert.equal(row?.sourceDate, "2026-08-25");
       }
+      for (const [item, upc] of [
+        ["Panasonic FV-0511VF1 exhaust fan", "88517037546"],
+        ["Contractor-supplied bathroom fan/light combination", "88517037547"],
+        ["Panasonic FV-0511VH1 bathroom fan/heat combination", "88517037417"],
+        ["Contractor-supplied bathroom fan/light/heat combination", "88517037418"],
+        ["Siemens QA115AFC 15A 1-pole AFCI breaker", "88762121620"],
+        ["Siemens QA120AFC 20A 1-pole AFCI breaker", "88762121625"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.upc, upc);
+        assert.equal(row?.supplier, "Northeast Electrical");
+        assert.equal(row?.isDefault, false);
+      }
+      for (const [item, amperage, supplierSku, manufacturerPartNumber] of [
+        ["Siemens QF240A 40A 2-pole GFCI breaker", 40, "1101171", "QF240A"],
+        ["Siemens QF250A 50A 2-pole GFCI breaker", 50, "1101170", "QF250A"],
+        ["Siemens QF260A 60A 2-pole GFCI breaker", 60, "1080836", "QF260A"],
+      ] as const) {
+        const row = seededRows.find((candidate) => candidate.item === item);
+        assert.equal(row?.unitCost, 151.702);
+        assert.equal(row?.supplier, "Northeast Electrical");
+        assert.equal(row?.manufacturer, "Siemens");
+        assert.equal(row?.manufacturerPartNumber, manufacturerPartNumber);
+        assert.equal(row?.supplierSku, supplierSku);
+        assert.equal(row?.amperage, amperage);
+        assert.equal(row?.poleCount, 2);
+        assert.equal(row?.protectionType, "GFCI");
+        assert.equal(row?.isDefault, false);
+      }
+      assert.equal(
+        seededRows.some(
+          (row) =>
+            row.item === "Siemens 30A 2-pole GFCI breaker" &&
+            row.supplier === "Company default — set current cost",
+        ),
+        false,
+      );
       for (const item of [
         "1/0 copper service conductor alternative",
         "2/0 copper service conductor alternative",

@@ -1161,6 +1161,11 @@ function resolveBreaker(
       source: "Unresolved exact breaker — select supported protection",
     };
   }
+  const requiresSiemensQf2 =
+    normalized(selection.manufacturer) === "siemens" &&
+    selection.poleCount === 2 &&
+    exactProtectionType === "GFCI" &&
+    [40, 50, 60].includes(selection.amperage);
   const match = deterministicPriceBookMatch(
     priceBook,
     (item) =>
@@ -1170,6 +1175,10 @@ function resolveBreaker(
       item.poleCount === selection.poleCount &&
       normalized(item.protectionType ?? "") ===
         normalized(exactProtectionType) &&
+      (!requiresSiemensQf2 ||
+        /^(?:ite)?qf(?:240a|250a|260a)$/.test(
+          normalized(item.manufacturerPartNumber ?? "").replace(/\s+/g, ""),
+        )) &&
       !item.isDefault &&
       !normalized(item.item).startsWith("unverified ") &&
       Number.isFinite(item.unitCost) &&
@@ -1744,7 +1753,7 @@ export function calculateBathroomEstimate(
     "fan-lights",
     "Ventilation",
     "Contractor-supplied bathroom fan/light combination",
-    "Contractor-supplied bathroom fan/light combination",
+    "Panasonic FV-0511VFL bathroom fan/light combination",
     inputs.fanLights,
     false,
     "ea",
@@ -1754,7 +1763,7 @@ export function calculateBathroomEstimate(
     "fan-light-heat",
     "Ventilation",
     "Contractor-supplied bathroom fan/light/heat combination",
-    "Contractor-supplied bathroom fan/light/heat combination",
+    "Panasonic FV-0511VHL bathroom fan/light/heat combination",
     inputs.fanLightHeatUnits,
     false,
     "ea",

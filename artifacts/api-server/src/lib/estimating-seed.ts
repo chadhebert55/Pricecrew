@@ -12,6 +12,9 @@ import {
 } from "@workspace/db";
 
 export const SIEMENS_QF250A_SEED_COST = 151.702;
+export const SIEMENS_STANDARD_2_POLE_SEED_COST = 21.1;
+export const SIEMENS_QF2_2_POLE_SEED_COST = 151.702;
+export const SIEMENS_Q2100H_SEED_COST = 153.41;
 export const USER_VERIFIED_4_0_SER_SEED_COST = 4.4198;
 
 export const DEFAULT_COMPANY_ID = 1;
@@ -222,7 +225,11 @@ export async function seedEstimatorData(
         .from(companiesTable)
         .where(eq(companiesTable.id, options.companyId))
         .limit(1)
-    : await database.select().from(companiesTable).limit(1);
+    : await database
+        .select()
+        .from(companiesTable)
+        .where(eq(companiesTable.id, DEFAULT_COMPANY_ID))
+        .limit(1);
   const company =
     existingCompany ??
     (options.companyId
@@ -433,19 +440,29 @@ export async function seedEstimatorData(
         [40, 2, "GFCI"],
         [50, 2, "GFCI"],
         [60, 2, "GFCI"],
-      ] as const).map(([amperage, poleCount, protectionType]) => ({
-        category: "Protection",
-        item: `${manufacturer} ${amperage}A ${poleCount}-pole ${protectionType} breaker`,
-        unit: "ea",
-        unitCost: 0,
-        supplier: "Company default — set current cost",
-        manufacturer,
-        sourceDate,
-        amperage,
-        poleCount,
-        protectionType,
-        isDefault: false,
-      })),
+      ] as const)
+        .filter(
+          ([amperage, poleCount, protectionType]) =>
+            !(
+              manufacturer === "Siemens" &&
+              amperage === 30 &&
+              poleCount === 2 &&
+              protectionType === "GFCI"
+            ),
+        )
+        .map(([amperage, poleCount, protectionType]) => ({
+          category: "Protection",
+          item: `${manufacturer} ${amperage}A ${poleCount}-pole ${protectionType} breaker`,
+          unit: "ea",
+          unitCost: 0,
+          supplier: "Company default — set current cost",
+          manufacturer,
+          sourceDate,
+          amperage,
+          poleCount,
+          protectionType,
+          isDefault: false,
+        })),
     ),
   ];
   const additionalPanelReplacementItems: SeedPriceBookItem[] = [
@@ -593,21 +610,28 @@ export async function seedEstimatorData(
       amperage: typeof amperage === "number" ? amperage : undefined,
       sourceDate, isDefault: false,
     })),
-    {
-      category: "Protection",
-      item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
-      unit: "ea",
-      unitCost: SIEMENS_QF250A_SEED_COST,
-      supplier: "Northeast Electrical",
-      manufacturer: "Siemens",
-      manufacturerPartNumber: "ITE QF250A",
-      supplierSku: "1101170",
-      sourceDate,
-      amperage: 50,
-      poleCount: 2,
-      protectionType: "GFCI",
-      isDefault: false,
-    },
+    ...([
+      ["QF240A", 40, "1101171", undefined],
+      ["QF250A", 50, "1101170", "88762121675"],
+      ["QF260A", 60, "1080836", undefined],
+    ] as const).map(
+      ([manufacturerPartNumber, amperage, supplierSku, upc]) => ({
+        category: "Protection",
+        item: `Siemens ${manufacturerPartNumber} ${amperage}A 2-pole GFCI breaker`,
+        unit: "ea",
+        unitCost: SIEMENS_QF2_2_POLE_SEED_COST,
+        supplier: "Northeast Electrical",
+        manufacturer: "Siemens",
+        manufacturerPartNumber,
+        supplierSku,
+        ...(upc ? { upc } : {}),
+        sourceDate,
+        amperage,
+        poleCount: 2,
+        protectionType: "GFCI",
+        isDefault: false,
+      }),
+    ),
     {
       category: "Devices",
       item: "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
@@ -861,8 +885,8 @@ export async function seedEstimatorData(
       category: "Ventilation",
       item: "Panasonic FV-0511VF1 exhaust fan",
       unit: "ea",
-      unitCost: 136,
-      supplier: "Company baseline — edit current cost",
+      unitCost: 119.291,
+      supplier: "Northeast Electrical",
       manufacturer: "Panasonic",
       manufacturerPartNumber: "FV-0511VF1",
       supplierSku: "1697956",
@@ -873,8 +897,11 @@ export async function seedEstimatorData(
       category: "Ventilation",
       item: "Contractor-supplied bathroom fan/light combination",
       unit: "ea",
-      unitCost: 210,
-      supplier: "Company baseline — edit current cost",
+      unitCost: 164.804,
+      supplier: "Northeast Electrical",
+      manufacturer: "Panasonic",
+      manufacturerPartNumber: "FV-0511VFL",
+      supplierSku: "1697108",
       sourceDate,
       isDefault: false,
     },
@@ -882,8 +909,23 @@ export async function seedEstimatorData(
       category: "Ventilation",
       item: "Contractor-supplied bathroom fan/light/heat combination",
       unit: "ea",
-      unitCost: 360,
-      supplier: "Company baseline — edit current cost",
+      unitCost: 354.581,
+      supplier: "Northeast Electrical",
+      manufacturer: "Panasonic",
+      manufacturerPartNumber: "FV-0511VHL",
+      supplierSku: "1620176",
+      sourceDate,
+      isDefault: false,
+    },
+    {
+      category: "Ventilation",
+      item: "Panasonic FV-0511VH1 bathroom fan/heat combination",
+      unit: "ea",
+      unitCost: 274.51,
+      supplier: "Northeast Electrical",
+      manufacturer: "Panasonic",
+      manufacturerPartNumber: "FV-0511VH1",
+      supplierSku: "1620175",
       sourceDate,
       isDefault: false,
     },
@@ -929,6 +971,36 @@ export async function seedEstimatorData(
       manufacturerPartNumber: "HOM115CAFIC",
       sourceDate,
       amperage: 15,
+      poleCount: 1,
+      protectionType: "AFCI",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens QA115AFC 15A 1-pole AFCI breaker",
+      unit: "ea",
+      unitCost: 52.233,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QA115AFC",
+      supplierSku: "900554",
+      sourceDate,
+      amperage: 15,
+      poleCount: 1,
+      protectionType: "AFCI",
+      isDefault: false,
+    },
+    {
+      category: "Protection",
+      item: "Siemens QA120AFC 20A 1-pole AFCI breaker",
+      unit: "ea",
+      unitCost: 52.233,
+      supplier: "Northeast Electrical",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QA120AFC",
+      supplierSku: "900102",
+      sourceDate,
+      amperage: 20,
       poleCount: 1,
       protectionType: "AFCI",
       isDefault: false,
@@ -1281,8 +1353,11 @@ export async function seedEstimatorData(
       isDefault: false,
     })),
     ...([
-      ["Siemens", 60, 21.1, "ITE Q260", "25268"],
-      ["Siemens", 100, 71.885, "ITE Q2100", "4387"],
+      ["Siemens", 30, SIEMENS_STANDARD_2_POLE_SEED_COST, "Q230", "16701"],
+      ["Siemens", 40, SIEMENS_STANDARD_2_POLE_SEED_COST, "Q240", "24287"],
+      ["Siemens", 50, SIEMENS_STANDARD_2_POLE_SEED_COST, "Q250", "8220"],
+      ["Siemens", 60, SIEMENS_STANDARD_2_POLE_SEED_COST, "Q260", "25268"],
+      ["Siemens", 100, SIEMENS_Q2100H_SEED_COST, "Q2100H", "12427"],
       ["Eaton", 60, 64.692, "C-H BR260", "26831"],
       ["Eaton", 100, 210.849, "C-H BR2100", "20884"],
       ["Square D", 60, 31.599, "SQD HOM260", "26680"],
@@ -1723,6 +1798,11 @@ export async function seedEstimatorData(
     "15367": "78590106520",
     "8508": "78590106536",
     "1697956": "88517037546",
+    "1697108": "88517037547",
+    "1620175": "88517037417",
+    "1620176": "88517037418",
+    "900554": "88762121620",
+    "900102": "88762121625",
     "2149": "78364314819",
     "942105": "88762181732",
     "1098885": "88762121655",
@@ -1846,13 +1926,54 @@ export async function seedEstimatorData(
       supplierSku: string | null;
     }
   > = {
-    "Panasonic FV-0511VF1 exhaust fan": {
-      unitCost: 119.291,
+    "Siemens QF250A 50A 2-pole GFCI breaker": {
+      item: "Siemens / ITE QF250A 50A 2-pole GFCI breaker",
+      unitCost: SIEMENS_QF250A_SEED_COST,
       supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE QF250A",
+      supplierSku: "1101170",
+    },
+    "Siemens 60A 2-pole Standard breaker": {
+      unitCost: 21.1,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE Q260",
+      supplierSku: "25268",
+    },
+    "Siemens 100A 2-pole Standard breaker": {
+      unitCost: 71.885,
+      supplier: "Northeast Electrical",
+      sourceDate,
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "ITE Q2100",
+      supplierSku: "4387",
+    },
+    "Panasonic FV-0511VF1 exhaust fan": {
+      unitCost: 136,
+      supplier: "Company baseline — edit current cost",
       sourceDate,
       manufacturer: "Panasonic",
       manufacturerPartNumber: "FV-0511VF1",
       supplierSku: "1697956",
+    },
+    "Contractor-supplied bathroom fan/light combination": {
+      unitCost: 210,
+      supplier: "Company baseline — edit current cost",
+      sourceDate,
+      manufacturer: null,
+      manufacturerPartNumber: null,
+      supplierSku: null,
+    },
+    "Contractor-supplied bathroom fan/light/heat combination": {
+      unitCost: 360,
+      supplier: "Company baseline — edit current cost",
+      sourceDate,
+      manufacturer: null,
+      manufacturerPartNumber: null,
+      supplierSku: null,
     },
     "Legrand radiant TM870WCC10 15A single-pole switch": {
       unitCost: 4.55,
@@ -2061,6 +2182,33 @@ export async function seedEstimatorData(
         .set(item)
         .where(eq(priceBookItemsTable.id, existing.id));
     }
+  }
+
+  const [legacySiemens30AGfciPlaceholder] = await database
+    .select()
+    .from(priceBookItemsTable)
+    .where(
+      and(
+        eq(priceBookItemsTable.companyId, company.id),
+        eq(
+          priceBookItemsTable.item,
+          "Siemens 30A 2-pole GFCI breaker",
+        ),
+      ),
+    )
+    .limit(1);
+  if (
+    legacySiemens30AGfciPlaceholder?.unitCost === 0 &&
+    legacySiemens30AGfciPlaceholder.supplier ===
+      "Company default — set current cost" &&
+    legacySiemens30AGfciPlaceholder.manufacturer === "Siemens" &&
+    legacySiemens30AGfciPlaceholder.amperage === 30 &&
+    legacySiemens30AGfciPlaceholder.poleCount === 2 &&
+    legacySiemens30AGfciPlaceholder.protectionType === "GFCI"
+  ) {
+    await database
+      .delete(priceBookItemsTable)
+      .where(eq(priceBookItemsTable.id, legacySiemens30AGfciPlaceholder.id));
   }
 
   const allowanceRenames = [
