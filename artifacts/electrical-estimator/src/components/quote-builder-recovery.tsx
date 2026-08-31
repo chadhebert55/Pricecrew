@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { RotateCcw, Trash2, TriangleAlert } from "lucide-react"
+import { RotateCcw, RotateCw, Trash2, TriangleAlert } from "lucide-react"
 
 type SettingsState = {
   isLoading: boolean
@@ -23,6 +23,7 @@ type DraftRecoveryState = {
   isStorageUnavailable: boolean
   onRestore: () => void
   onDiscard: () => void
+  onRetryStorage: () => void
 }
 
 export function QuoteBuilderRecovery({
@@ -40,15 +41,27 @@ export function QuoteBuilderRecovery({
         <div
           role="alert"
           data-testid="alert-quote-draft-storage"
-          className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm"
+          className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm"
         >
-          <TriangleAlert size={17} className="mt-0.5 shrink-0 text-destructive" />
-          <div>
-            <p className="font-semibold">Unfinished quote protection is unavailable</p>
-            <p className="mt-1 text-secondary-foreground/80">
-              This browser could not save your unfinished quote. Refreshing or closing this page may lose your work.
-            </p>
+          <div className="flex items-start gap-3">
+            <TriangleAlert size={17} className="mt-0.5 shrink-0 text-destructive" />
+            <div>
+              <p className="font-semibold">Unfinished quote protection is unavailable</p>
+              <p className="mt-1 text-secondary-foreground/80">
+                This browser could not save your unfinished quote. Refreshing or closing this page may lose your work.
+              </p>
+            </div>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="button-retry-quote-draft-storage"
+            onClick={draft.onRetryStorage}
+          >
+            <RotateCw size={14} className="mr-1.5" />
+            Retry protection
+          </Button>
         </div>
       )}
       {draft?.isAvailable && (

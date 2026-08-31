@@ -41,11 +41,13 @@ export function useQuoteBuilderDraft<T>({
   )
   const serializedValues = JSON.stringify(values)
   const baselineRef = useRef<string | null>(null)
+  const attemptedValuesRef = useRef<string | null>(null)
   const [pendingDraft, setPendingDraft] = useState<StoredQuoteBuilderDraft<T> | null>(null)
   const [isDraftStorageUnavailable, setIsDraftStorageUnavailable] = useState(false)
 
   useEffect(() => {
     baselineRef.current = null
+    attemptedValuesRef.current = null
     setPendingDraft(
       scope && ready ? readQuoteBuilderDraft<T>(module, scope) : null,
     )
@@ -54,16 +56,21 @@ export function useQuoteBuilderDraft<T>({
   useEffect(() => {
     if (!ready || !storageKey || baselineRef.current !== null) return
     baselineRef.current = serializedValues
+    attemptedValuesRef.current = serializedValues
   }, [ready, serializedValues, storageKey])
 
   useEffect(() => {
     if (!ready || !scope || !storageKey || baselineRef.current === null) return
     if (pendingDraft) return
     if (baselineRef.current === serializedValues) return
+    if (attemptedValuesRef.current === serializedValues) return
 
     const didSave = saveQuoteBuilderDraft(module, scope, values)
+    attemptedValuesRef.current = serializedValues
     setIsDraftStorageUnavailable(!didSave)
-    baselineRef.current = serializedValues
+    if (didSave) {
+      baselineRef.current = serializedValues
+    }
     setPendingDraft(null)
   }, [module, pendingDraft, ready, scope, serializedValues, storageKey, values])
 
@@ -85,12 +92,23 @@ export function useQuoteBuilderDraft<T>({
   const discardDraft = useCallback(() => {
     clearQuoteBuilderDraft(module, scope)
     baselineRef.current = serializedValues
+    attemptedValuesRef.current = serializedValues
     setPendingDraft(null)
   }, [module, scope, serializedValues])
+
+  const retryDraftStorage = useCallback(() => {
+    const didSave = saveQuoteBuilderDraft(module, scope, values)
+    attemptedValuesRef.current = serializedValues
+    setIsDraftStorageUnavailable(!didSave)
+    if (didSave) {
+      baselineRef.current = serializedValues
+    }
+  }, [module, scope, serializedValues, values])
 
   const clearDraft = useCallback(() => {
     clearQuoteBuilderDraft(module, scope)
     baselineRef.current = serializedValues
+    attemptedValuesRef.current = serializedValues
     setPendingDraft(null)
   }, [module, scope, serializedValues])
 
@@ -101,6 +119,7 @@ export function useQuoteBuilderDraft<T>({
       isStorageUnavailable: isDraftStorageUnavailable,
       onRestore: restoreDraft,
       onDiscard: discardDraft,
+      onRetryStorage: retryDraftStorage,
     },
     clearDraft,
     scope,

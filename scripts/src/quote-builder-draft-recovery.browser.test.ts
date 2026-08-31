@@ -183,8 +183,9 @@ test("unfinished quote warns when browser storage blocks or rejects draft writes
       await context.addInitScript((failure) => {
         const state = globalThis as typeof globalThis & {
           __quoteDraftStorageBlocked?: boolean
+          name: string
         }
-        state.__quoteDraftStorageBlocked = true
+        state.__quoteDraftStorageBlocked = state.name !== "quote-draft-storage-recovered"
         const originalSetItem = Storage.prototype.setItem
         Storage.prototype.setItem = function (key, value) {
           if (state.__quoteDraftStorageBlocked) {
@@ -205,15 +206,37 @@ test("unfinished quote warns when browser storage blocks or rejects draft writes
       await expect(page.getByTestId("alert-quote-draft-storage")).toContainText(
         "Refreshing or closing this page may lose your work.",
       )
+      await page.getByTestId("button-retry-quote-draft-storage").click()
+      await expect(page.getByTestId("alert-quote-draft-storage")).toBeVisible()
+      await expect(page.locator("#customerName")).toHaveValue(
+        `Storage test ${storageFailure} ${marker}`,
+      )
+      await expect(page.locator("#projectName")).toHaveValue("")
 
       if (storageFailure === "blocked") {
         await page.evaluate(() => {
-          ;(globalThis as typeof globalThis & {
+          const state = globalThis as typeof globalThis & {
             __quoteDraftStorageBlocked?: boolean
-          }).__quoteDraftStorageBlocked = false
+            name: string
+          }
+          state.__quoteDraftStorageBlocked = false
+          state.name = "quote-draft-storage-recovered"
         })
-        await page.locator("#projectName").fill(`Recovered storage ${marker}`)
+        await page.getByTestId("button-retry-quote-draft-storage").click()
         await expect(page.getByTestId("alert-quote-draft-storage")).toHaveCount(0)
+        await expect(page.locator("#customerName")).toHaveValue(
+          `Storage test ${storageFailure} ${marker}`,
+        )
+        await expect(page.locator("#projectName")).toHaveValue("")
+        await page.reload()
+        await expect(page.getByTestId("alert-quote-draft-available")).toBeVisible()
+        await expect(page.locator("#customerName")).toHaveValue("")
+        await expect(page.locator("#projectName")).toHaveValue("")
+        await page.getByTestId("button-restore-quote-draft").click()
+        await expect(page.locator("#customerName")).toHaveValue(
+          `Storage test ${storageFailure} ${marker}`,
+        )
+        await expect(page.locator("#projectName")).toHaveValue("")
       }
 
       await context.close()
