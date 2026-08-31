@@ -2152,6 +2152,7 @@ export interface PriceBookItem {
   /** @nullable */
   protectionType?: string | null;
   isDefault: boolean;
+  isContractorOwned: boolean;
   builders: string[];
   activeSelection: boolean;
   isUnresolved: boolean;
@@ -2161,7 +2162,119 @@ export interface PriceBookItem {
 }
 
 export interface PriceBookItemUpdate {
+  /** @minimum 0 */
   unitCost: number;
+}
+
+export interface PriceBookImportPreviewInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000000
+     */
+  csv: string;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  sourceDate?: string | null;
+}
+
+export interface PriceBookImportApplyInput {
+  /**
+     * @maxItems 10000
+     * @items.minimum 2
+     */
+  selectedRows: number[];
+}
+
+export interface PriceBookImportValue {
+  category: string;
+  item: string;
+  unit: string;
+  unitCost: number;
+  /** @nullable */
+  supplier: string | null;
+  /** @nullable */
+  manufacturer: string | null;
+  /** @nullable */
+  manufacturerPartNumber: string | null;
+  /** @nullable */
+  supplierSku: string | null;
+  /** @nullable */
+  upc: string | null;
+  /** @nullable */
+  sourceDate: string | null;
+  /** @nullable */
+  amperage: number | null;
+  /** @nullable */
+  poleCount: number | null;
+  /** @nullable */
+  protectionType: string | null;
+}
+
+export type PriceBookImportRowAction = typeof PriceBookImportRowAction[keyof typeof PriceBookImportRowAction];
+
+
+export const PriceBookImportRowAction = {
+  insert: 'insert',
+  update: 'update',
+  skip: 'skip',
+  unresolved: 'unresolved',
+} as const;
+
+export type PriceBookImportRowStatus = typeof PriceBookImportRowStatus[keyof typeof PriceBookImportRowStatus];
+
+
+export const PriceBookImportRowStatus = {
+  proposed: 'proposed',
+  applied: 'applied',
+  skipped: 'skipped',
+  unresolved: 'unresolved',
+} as const;
+
+export interface PriceBookImportRow {
+  rowNumber: number;
+  action: PriceBookImportRowAction;
+  status: PriceBookImportRowStatus;
+  /** @nullable */
+  reason: string | null;
+  /** @nullable */
+  matchedItemId: number | null;
+  incoming: PriceBookImportValue;
+  before: PriceBookImportValue | null;
+}
+
+export interface PriceBookImportReport {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  unresolved: number;
+}
+
+export type PriceBookImportStatus = typeof PriceBookImportStatus[keyof typeof PriceBookImportStatus];
+
+
+export const PriceBookImportStatus = {
+  review: 'review',
+  applied: 'applied',
+} as const;
+
+export interface PriceBookImport {
+  id: number;
+  sourceFileName: string;
+  /** @nullable */
+  sourceDate: string | null;
+  status: PriceBookImportStatus;
+  rows: PriceBookImportRow[];
+  report: PriceBookImportReport;
+  createdAt: string;
+  /** @nullable */
+  appliedAt: string | null;
 }
 
 export type CompanySettingsEvDefaultCableType = typeof CompanySettingsEvDefaultCableType[keyof typeof CompanySettingsEvDefaultCableType];

@@ -23,6 +23,7 @@ import {
   companySettingsTable,
   db,
   priceBookItemsTable,
+  priceBookImportsTable,
   proposalDecisionsTable,
   quotesTable,
 } from "@workspace/db";
@@ -63,6 +64,7 @@ import {
 } from "../routes/estimating";
 import {
   ensureEstimatorSeed,
+  DEFAULT_COMPANY_ID,
   seedEstimatorData,
   SIEMENS_QF250A_SEED_COST,
 } from "./estimating-seed";
@@ -980,6 +982,7 @@ async function startTestServer() {
   return {
     server,
     baseUrl,
+    companyId: company.id,
   };
 }
 
@@ -1005,6 +1008,9 @@ async function cleanupTestCompany(companyId: number, userId: string) {
     .delete(proposalDecisionsTable)
     .where(eq(proposalDecisionsTable.companyId, companyId));
   await db.delete(quotesTable).where(eq(quotesTable.companyId, companyId));
+  await db
+    .delete(priceBookImportsTable)
+    .where(eq(priceBookImportsTable.companyId, companyId));
   await db
     .delete(customersTable)
     .where(eq(customersTable.companyId, companyId));
@@ -1090,6 +1096,232 @@ async function getQuote(baseUrl: string, id: number) {
   );
   return body;
 }
+
+test("reviewed price imports protect contractor rows and historical quote snapshots", async () => {
+  const { server, baseUrl, companyId } = await startTestServer();
+  const marker = randomUUID();
+  try {
+    const [templateQuote] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID))
+      .limit(1);
+    assert.ok(templateQuote);
+    const [historicalQuote] = await db
+      .insert(quotesTable)
+      .values({
+        companyId,
+        quoteNumber: `IMPORT-SNAPSHOT-${marker}`,
+        customerName: templateQuote.customerName,
+        customerEmail: templateQuote.customerEmail,
+        projectName: templateQuote.projectName,
+        module: templateQuote.module,
+        status: templateQuote.status,
+        jobInputs: templateQuote.jobInputs,
+        assembly: templateQuote.assembly,
+        pricing: templateQuote.pricing,
+        proposalDescription: templateQuote.proposalDescription,
+        total: templateQuote.total,
+        margin: templateQuote.margin,
+      })
+      .returning();
+    assert.ok(historicalQuote);
+    const originalSnapshot = JSON.stringify({
+      jobInputs: historicalQuote.jobInputs,
+      assembly: historicalQuote.assembly,
+      pricing: historicalQuote.pricing,
+      total: historicalQuote.total,
+      margin: historicalQuote.margin,
+    });
+
+    const [systemRow, contractorRow] = await db
+      .insert(priceBookItemsTable)
+      .values([
+        {
+          companyId,
+          category: "Devices",
+          item: `System import row ${marker}`,
+          unit: "ea",
+          unitCost: 4,
+          supplier: "Northeast Electrical",
+          manufacturer: "Siemens",
+          manufacturerPartNumber: `SYSTEM-MPN-${marker}`,
+          supplierSku: `SYSTEM-${marker}`,
+          upc: `SYSTEM-UPC-${marker}`,
+          sourceDate: "2026-08-25",
+          amperage: 20,
+          poleCount: 1,
+          protectionType: "AFCI",
+          isDefault: false,
+          isContractorOwned: false,
+        },
+        {
+          companyId,
+          category: "Devices",
+          item: `Contractor import row ${marker}`,
+          unit: "ea",
+          unitCost: 8,
+          supplier: "Northeast Electrical",
+          supplierSku: `OWNED-${marker}`,
+          sourceDate: "2026-08-25",
+          isDefault: false,
+          isContractorOwned: true,
+        },
+      ])
+      .returning();
+    assert.ok(systemRow);
+    assert.ok(contractorRow);
+
+    const csv = [
+      "Category,Description,UOM,Customer Price,Supplier,SKU,Price Date",
+      `Devices,System import row ${marker},ea,5.25,Northeast Electrical,SYSTEM-${marker},2026-09-01`,
+      `Devices,Contractor import row ${marker},ea,9.50,Northeast Electrical,OWNED-${marker},2026-09-01`,
+      `Devices,New import row ${marker},ea,3.75,Northeast Electrical,NEW-${marker},2026-09-01`,
+      `Devices,Unidentified row ${marker},ea,2.00,Northeast Electrical,,2026-09-01`,
+    ].join("\n");
+    const previewResponse = await fetch(
+      `${baseUrl}/api/price-book/imports/preview`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({
+          fileName: "northeast-customer-price.csv",
+          csv,
+          sourceDate: "2026-09-01",
+        }),
+      },
+    );
+    const preview = (await previewResponse.json()) as {
+      id: number;
+      report: {
+        inserted: number;
+        updated: number;
+        skipped: number;
+        unresolved: number;
+      };
+    };
+    assert.equal(previewResponse.status, 201);
+    assert.deepEqual(preview.report, {
+      inserted: 1,
+      updated: 1,
+      skipped: 1,
+      unresolved: 1,
+    });
+
+    const competingPreviewResponse = await fetch(
+      `${baseUrl}/api/price-book/imports/preview`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({
+          fileName: "northeast-customer-price-competing.csv",
+          csv,
+          sourceDate: "2026-09-01",
+        }),
+      },
+    );
+    const competingPreview =
+      (await competingPreviewResponse.json()) as typeof preview;
+    assert.equal(competingPreviewResponse.status, 201);
+
+    const applyResponses = await Promise.all(
+      [preview.id, competingPreview.id].map((id) =>
+        fetch(`${baseUrl}/api/price-book/imports/${id}/apply`, {
+          method: "POST",
+          headers: authenticatedHeaders(baseUrl),
+          body: JSON.stringify({ selectedRows: [2, 4] }),
+        }),
+      ),
+    );
+    assert.deepEqual(
+      applyResponses.map((response) => response.status),
+      [200, 200],
+    );
+    const appliedImports = await Promise.all(
+      applyResponses.map((response) => response.json() as Promise<typeof preview>),
+    );
+    const insertedImport = appliedImports.find(
+      (priceBookImport) => priceBookImport.report.inserted === 1,
+    );
+    const duplicateBlockedImport = appliedImports.find(
+      (priceBookImport) => priceBookImport.report.inserted === 0,
+    );
+    assert.ok(insertedImport);
+    assert.ok(duplicateBlockedImport);
+    assert.deepEqual(insertedImport.report, preview.report);
+    assert.deepEqual(duplicateBlockedImport.report, {
+      inserted: 0,
+      updated: 1,
+      skipped: 1,
+      unresolved: 2,
+    });
+
+    const [updatedSystemRow, unchangedContractorRow, insertedRows, reloadedQuote] =
+      await Promise.all([
+        db
+          .select()
+          .from(priceBookItemsTable)
+          .where(eq(priceBookItemsTable.id, systemRow.id))
+          .then(([row]) => row),
+        db
+          .select()
+          .from(priceBookItemsTable)
+          .where(eq(priceBookItemsTable.id, contractorRow.id))
+          .then(([row]) => row),
+        db
+          .select()
+          .from(priceBookItemsTable)
+          .where(
+            and(
+              eq(priceBookItemsTable.companyId, companyId),
+              eq(priceBookItemsTable.supplierSku, `NEW-${marker}`),
+            ),
+          ),
+        db
+          .select()
+          .from(quotesTable)
+          .where(eq(quotesTable.id, historicalQuote.id))
+          .then(([quote]) => quote),
+      ]);
+    assert.equal(updatedSystemRow?.unitCost, 5.25);
+    assert.equal(updatedSystemRow?.isContractorOwned, false);
+    assert.equal(updatedSystemRow?.manufacturer, "Siemens");
+    assert.equal(
+      updatedSystemRow?.manufacturerPartNumber,
+      `SYSTEM-MPN-${marker}`,
+    );
+    assert.equal(updatedSystemRow?.upc, `SYSTEM-UPC-${marker}`);
+    assert.equal(updatedSystemRow?.amperage, 20);
+    assert.equal(updatedSystemRow?.poleCount, 1);
+    assert.equal(updatedSystemRow?.protectionType, "AFCI");
+    assert.equal(unchangedContractorRow?.unitCost, 8);
+    assert.equal(insertedRows.length, 1);
+    assert.equal(insertedRows[0]?.unitCost, 3.75);
+    assert.ok(reloadedQuote);
+    assert.equal(
+      JSON.stringify({
+        jobInputs: reloadedQuote.jobInputs,
+        assembly: reloadedQuote.assembly,
+        pricing: reloadedQuote.pricing,
+        total: reloadedQuote.total,
+        margin: reloadedQuote.margin,
+      }),
+      originalSnapshot,
+    );
+
+    const repeatedApply = await fetch(
+      `${baseUrl}/api/price-book/imports/${insertedImport.id}/apply`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({ selectedRows: [2, 4] }),
+      },
+    );
+    assert.equal(repeatedApply.status, 409);
+  } finally {
+    await closeTestServer(server);
+  }
+});
 
 test("requested builders preserve seeded pricing across preview, create, and reload", async () => {
   const { server, baseUrl } = await startTestServer();

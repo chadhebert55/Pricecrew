@@ -35,6 +35,9 @@ import type {
   ListCustomersParams,
   ListQuotesParams,
   NotificationsResponse,
+  PriceBookImport,
+  PriceBookImportApplyInput,
+  PriceBookImportPreviewInput,
   PriceBookItem,
   PriceBookItemUpdate,
   ProposalDecision,
@@ -2100,6 +2103,228 @@ export function useListPriceBookItems<TData = Awaited<ReturnType<typeof listPric
 
 
 
+
+export const getPreviewPriceBookImportUrl = () => {
+
+
+
+
+  return `/api/price-book/imports/preview`
+}
+
+/**
+ * Parses a customer-price export and proposes only exact SKU, UPC, or manufacturer-part-number matches. No catalog values are changed.
+ * @summary Preview a Northeast customer-price CSV import
+ */
+export const previewPriceBookImport = async (priceBookImportPreviewInput: PriceBookImportPreviewInput, options?: Parameters<typeof customFetch>[1]): Promise<PriceBookImport> => {
+
+  return customFetch<PriceBookImport>(getPreviewPriceBookImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceBookImportPreviewInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewPriceBookImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewPriceBookImport>>, TError,{data: BodyType<PriceBookImportPreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewPriceBookImport>>, TError,{data: BodyType<PriceBookImportPreviewInput>}, TContext> => {
+
+const mutationKey = ['previewPriceBookImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewPriceBookImport>>, {data: BodyType<PriceBookImportPreviewInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewPriceBookImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewPriceBookImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewPriceBookImport>>>
+    export type PreviewPriceBookImportMutationBody = BodyType<PriceBookImportPreviewInput>
+    export type PreviewPriceBookImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Preview a Northeast customer-price CSV import
+ */
+export const usePreviewPriceBookImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewPriceBookImport>>, TError,{data: BodyType<PriceBookImportPreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewPriceBookImport>>,
+        TError,
+        {data: BodyType<PriceBookImportPreviewInput>},
+        TContext
+      > => {
+      return useMutation(getPreviewPriceBookImportMutationOptions(options));
+    }
+
+export const getGetPriceBookImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/price-book/imports/${id}`
+}
+
+/**
+ * @summary Get a price-book import review
+ */
+export const getPriceBookImport = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<PriceBookImport> => {
+
+  return customFetch<PriceBookImport>(getGetPriceBookImportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPriceBookImportQueryKey = (id: number,) => {
+    return [
+    `/api/price-book/imports/${id}`
+    ] as const;
+    }
+
+
+export const getGetPriceBookImportQueryOptions = <TData = Awaited<ReturnType<typeof getPriceBookImport>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPriceBookImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPriceBookImportQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPriceBookImport>>> = ({ signal }) => getPriceBookImport(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPriceBookImport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPriceBookImportQueryResult = NonNullable<Awaited<ReturnType<typeof getPriceBookImport>>>
+export type GetPriceBookImportQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a price-book import review
+ */
+
+export function useGetPriceBookImport<TData = Awaited<ReturnType<typeof getPriceBookImport>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPriceBookImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPriceBookImportQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getApplyPriceBookImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/price-book/imports/${id}/apply`
+}
+
+/**
+ * Applies selected proposed rows after rechecking company ownership and contractor ownership.
+ * @summary Apply selected exact-match price-book changes
+ */
+export const applyPriceBookImport = async (id: number,
+    priceBookImportApplyInput: PriceBookImportApplyInput, options?: Parameters<typeof customFetch>[1]): Promise<PriceBookImport> => {
+
+  return customFetch<PriceBookImport>(getApplyPriceBookImportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceBookImportApplyInput)
+  }
+);}
+
+
+
+
+
+export const getApplyPriceBookImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyPriceBookImport>>, TError,{id: number;data: BodyType<PriceBookImportApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyPriceBookImport>>, TError,{id: number;data: BodyType<PriceBookImportApplyInput>}, TContext> => {
+
+const mutationKey = ['applyPriceBookImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyPriceBookImport>>, {id: number;data: BodyType<PriceBookImportApplyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  applyPriceBookImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyPriceBookImportMutationResult = NonNullable<Awaited<ReturnType<typeof applyPriceBookImport>>>
+    export type ApplyPriceBookImportMutationBody = BodyType<PriceBookImportApplyInput>
+    export type ApplyPriceBookImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Apply selected exact-match price-book changes
+ */
+export const useApplyPriceBookImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyPriceBookImport>>, TError,{id: number;data: BodyType<PriceBookImportApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyPriceBookImport>>,
+        TError,
+        {id: number;data: BodyType<PriceBookImportApplyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyPriceBookImportMutationOptions(options));
+    }
 
 export const getUpdatePriceBookItemUrl = (id: number,) => {
 

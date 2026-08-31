@@ -33,6 +33,7 @@ export const requiredTables = [
   "company_settings",
   "customers",
   "price_book_items",
+  "price_book_imports",
   "quotes",
   "proposal_decisions",
   "proposal_notifications",
@@ -65,6 +66,11 @@ export const requiredForeignKeys: ForeignKeyRequirement[] = [
   {
     name: "price_book_items_company_id_companies_id_fk",
     table: "price_book_items",
+    definition: "FOREIGN KEY (company_id) REFERENCES companies(id)",
+  },
+  {
+    name: "price_book_imports_company_id_companies_id_fk",
+    table: "price_book_imports",
     definition: "FOREIGN KEY (company_id) REFERENCES companies(id)",
   },
   {

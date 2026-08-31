@@ -10,6 +10,7 @@ import { AlertTriangle, CheckCircle2, Search, Save } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { PriceBookImportPanel } from "@/components/price-book-import-panel"
 
 export function PriceBook() {
   const { data: items, isLoading } = useListPriceBookItems()
@@ -55,6 +56,8 @@ export function PriceBook() {
           Audit the exact company costs used by each estimate builder.
         </p>
       </div>
+
+      <PriceBookImportPanel />
 
       <Card>
         <div className="grid gap-3 border-b border-border bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_14rem_14rem_14rem]">

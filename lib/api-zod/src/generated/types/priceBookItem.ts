@@ -31,6 +31,7 @@ export interface PriceBookItem {
   /** @nullable */
   protectionType?: string | null;
   isDefault: boolean;
+  isContractorOwned: boolean;
   builders: string[];
   activeSelection: boolean;
   isUnresolved: boolean;

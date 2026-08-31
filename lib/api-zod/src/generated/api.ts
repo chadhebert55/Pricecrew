@@ -6871,6 +6871,7 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "poleCount": zod.number().nullish(),
   "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
+  "isContractorOwned": zod.boolean(),
   "builders": zod.array(zod.string()),
   "activeSelection": zod.boolean(),
   "isUnresolved": zod.boolean(),
@@ -6881,14 +6882,219 @@ export const ListPriceBookItemsResponse = zod.array(ListPriceBookItemsResponseIt
 
 
 /**
+ * Parses a customer-price export and proposes only exact SKU, UPC, or manufacturer-part-number matches. No catalog values are changed.
+ * @summary Preview a Northeast customer-price CSV import
+ */
+export const previewPriceBookImportBodyFileNameMax = 255;
+
+export const previewPriceBookImportBodyCsvMax = 5000000;
+
+export const previewPriceBookImportBodySourceDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const PreviewPriceBookImportBody = zod.object({
+  "fileName": zod.string().min(1).max(previewPriceBookImportBodyFileNameMax),
+  "csv": zod.string().min(1).max(previewPriceBookImportBodyCsvMax),
+  "sourceDate": zod.string().regex(previewPriceBookImportBodySourceDateRegExp).nullish()
+})
+
+export const PreviewPriceBookImportResponse = zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "sourceDate": zod.string().nullable(),
+  "status": zod.enum(['review', 'applied']),
+  "rows": zod.array(zod.object({
+  "rowNumber": zod.number(),
+  "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
+  "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "reason": zod.string().nullable(),
+  "matchedItemId": zod.number().nullable(),
+  "incoming": zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),
+  "before": zod.union([zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),zod.null()])
+})),
+  "report": zod.object({
+  "inserted": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "unresolved": zod.number()
+}),
+  "createdAt": zod.coerce.date(),
+  "appliedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Get a price-book import review
+ */
+export const GetPriceBookImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPriceBookImportResponse = zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "sourceDate": zod.string().nullable(),
+  "status": zod.enum(['review', 'applied']),
+  "rows": zod.array(zod.object({
+  "rowNumber": zod.number(),
+  "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
+  "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "reason": zod.string().nullable(),
+  "matchedItemId": zod.number().nullable(),
+  "incoming": zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),
+  "before": zod.union([zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),zod.null()])
+})),
+  "report": zod.object({
+  "inserted": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "unresolved": zod.number()
+}),
+  "createdAt": zod.coerce.date(),
+  "appliedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * Applies selected proposed rows after rechecking company ownership and contractor ownership.
+ * @summary Apply selected exact-match price-book changes
+ */
+export const ApplyPriceBookImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const applyPriceBookImportBodySelectedRowsItemMin = 2;
+
+export const applyPriceBookImportBodySelectedRowsMax = 10000;
+
+
+
+export const ApplyPriceBookImportBody = zod.object({
+  "selectedRows": zod.array(zod.number().min(applyPriceBookImportBodySelectedRowsItemMin)).max(applyPriceBookImportBodySelectedRowsMax)
+})
+
+export const ApplyPriceBookImportResponse = zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "sourceDate": zod.string().nullable(),
+  "status": zod.enum(['review', 'applied']),
+  "rows": zod.array(zod.object({
+  "rowNumber": zod.number(),
+  "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
+  "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "reason": zod.string().nullable(),
+  "matchedItemId": zod.number().nullable(),
+  "incoming": zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),
+  "before": zod.union([zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),zod.null()])
+})),
+  "report": zod.object({
+  "inserted": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "unresolved": zod.number()
+}),
+  "createdAt": zod.coerce.date(),
+  "appliedAt": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Update a price book item
  */
 export const UpdatePriceBookItemParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updatePriceBookItemBodyUnitCostMin = 0;
+
+
+
 export const UpdatePriceBookItemBody = zod.object({
-  "unitCost": zod.number()
+  "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin)
 })
 
 export const UpdatePriceBookItemResponse = zod.object({
@@ -6907,6 +7113,7 @@ export const UpdatePriceBookItemResponse = zod.object({
   "poleCount": zod.number().nullish(),
   "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
+  "isContractorOwned": zod.boolean(),
   "builders": zod.array(zod.string()),
   "activeSelection": zod.boolean(),
   "isUnresolved": zod.boolean(),

@@ -33,6 +33,38 @@ Catalog price date: 2026-08-25
 - Seed reconciliation updates only recognized untouched starter rows. Contractor-edited rows are preserved.
 - Price-book management starts on unresolved rows and can narrow the audit by active V1 builder and material category. Each row identifies the builders that consume that exact canonical selection.
 
+## Controlled customer-price imports
+
+Contractors can upload a Northeast customer-price CSV from the Price Book page. The
+file is read locally by the browser and sent to the estimator API for a persisted
+review; no supplier login, API key, or live Northeast connection is required.
+
+The review accepts these common column names:
+
+| Catalog field | Accepted CSV headers |
+| --- | --- |
+| Description | `Item`, `Description`, `Product`, `Product Description`, `Name` |
+| Customer cost | `Unit Cost`, `Cost`, `Price`, `Customer Price`, `Net Price` |
+| Unit | `Unit`, `UOM`, `Unit of Measure`, `Sell Unit` |
+| Exact identity | `Supplier SKU`/`SKU`, `UPC`/`GTIN`, `Manufacturer Part Number`/`MPN` |
+| Source metadata | `Supplier`/`Vendor`, `Manufacturer`/`Brand`, `Source Date`/`Price Date` |
+
+Every proposed update must match exactly by supplier SKU, UPC, or manufacturer part
+number. Descriptions are shown for review but are never used as fuzzy match keys.
+Conflicting identifiers, missing identifiers, unsafe package units, and malformed
+prices remain unresolved with a row-specific reason. Explicit wire-family `m`
+pricing is normalized to dollars per foot; package pricing requires an explicit
+package quantity. When an exact-match export omits optional source, identity, or
+breaker-compatibility columns, the existing verified values are retained rather
+than cleared.
+
+The contractor selects proposed inserts and updates before applying them. Manual
+price-book edits mark a row contractor-owned, and both preview and apply protect
+those rows from supplier-file overwrites. The final report records inserted,
+updated, skipped, and unresolved rows. Applying an import updates only the active
+company catalog; saved quote inputs, assemblies, pricing, totals, and margins are
+not recalculated.
+
 ## Confident Northeast mappings
 
 ### Cable and conductors

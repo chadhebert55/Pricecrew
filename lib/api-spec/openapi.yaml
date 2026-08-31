@@ -631,6 +631,76 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PriceBookItem"
+  /price-book/imports/preview:
+    post:
+      operationId: previewPriceBookImport
+      tags: [price-book]
+      summary: Preview a Northeast customer-price CSV import
+      description: Parses a customer-price export and proposes only exact SKU, UPC, or manufacturer-part-number matches. No catalog values are changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceBookImportPreviewInput"
+      responses:
+        "201":
+          description: Persisted import review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceBookImport"
+        "400":
+          description: Invalid import request
+  /price-book/imports/{id}:
+    get:
+      operationId: getPriceBookImport
+      tags: [price-book]
+      summary: Get a price-book import review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Import review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceBookImport"
+        "404":
+          description: Import review not found
+  /price-book/imports/{id}/apply:
+    post:
+      operationId: applyPriceBookImport
+      tags: [price-book]
+      summary: Apply selected exact-match price-book changes
+      description: Applies selected proposed rows after rechecking company ownership and contractor ownership.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceBookImportApplyInput"
+      responses:
+        "200":
+          description: Applied import report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceBookImport"
+        "404":
+          description: Import review not found
+        "409":
+          description: Import was already applied
   /price-book/{id}:
     patch:
       operationId: updatePriceBookItem
@@ -3088,6 +3158,7 @@ components:
         - unit
         - unitCost
         - isDefault
+        - isContractorOwned
         - builders
         - activeSelection
         - isUnresolved
@@ -3123,6 +3194,8 @@ components:
           type: ["string", "null"]
         isDefault:
           type: boolean
+        isContractorOwned:
+          type: boolean
         builders:
           type: array
           items:
@@ -3143,6 +3216,156 @@ components:
       properties:
         unitCost:
           type: number
+          minimum: 0
+    PriceBookImportPreviewInput:
+      type: object
+      required:
+        - fileName
+        - csv
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        csv:
+          type: string
+          minLength: 1
+          maxLength: 5000000
+        sourceDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+    PriceBookImportApplyInput:
+      type: object
+      required:
+        - selectedRows
+      properties:
+        selectedRows:
+          type: array
+          maxItems: 10000
+          items:
+            type: number
+            minimum: 2
+    PriceBookImportValue:
+      type: object
+      required:
+        - category
+        - item
+        - unit
+        - unitCost
+        - supplier
+        - manufacturer
+        - manufacturerPartNumber
+        - supplierSku
+        - upc
+        - sourceDate
+        - amperage
+        - poleCount
+        - protectionType
+      properties:
+        category:
+          type: string
+        item:
+          type: string
+        unit:
+          type: string
+        unitCost:
+          type: number
+        supplier:
+          type: ["string", "null"]
+        manufacturer:
+          type: ["string", "null"]
+        manufacturerPartNumber:
+          type: ["string", "null"]
+        supplierSku:
+          type: ["string", "null"]
+        upc:
+          type: ["string", "null"]
+        sourceDate:
+          type: ["string", "null"]
+        amperage:
+          type: ["number", "null"]
+        poleCount:
+          type: ["number", "null"]
+        protectionType:
+          type: ["string", "null"]
+    PriceBookImportRow:
+      type: object
+      required:
+        - rowNumber
+        - action
+        - status
+        - reason
+        - matchedItemId
+        - incoming
+        - before
+      properties:
+        rowNumber:
+          type: number
+        action:
+          type: string
+          enum: [insert, update, skip, unresolved]
+        status:
+          type: string
+          enum: [proposed, applied, skipped, unresolved]
+        reason:
+          type: ["string", "null"]
+        matchedItemId:
+          type: ["number", "null"]
+        incoming:
+          $ref: "#/components/schemas/PriceBookImportValue"
+        before:
+          oneOf:
+            - $ref: "#/components/schemas/PriceBookImportValue"
+            - type: "null"
+    PriceBookImportReport:
+      type: object
+      required:
+        - inserted
+        - updated
+        - skipped
+        - unresolved
+      properties:
+        inserted:
+          type: number
+        updated:
+          type: number
+        skipped:
+          type: number
+        unresolved:
+          type: number
+    PriceBookImport:
+      type: object
+      required:
+        - id
+        - sourceFileName
+        - sourceDate
+        - status
+        - rows
+        - report
+        - createdAt
+        - appliedAt
+      properties:
+        id:
+          type: number
+        sourceFileName:
+          type: string
+        sourceDate:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [review, applied]
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceBookImportRow"
+        report:
+          $ref: "#/components/schemas/PriceBookImportReport"
+        createdAt:
+          type: string
+          format: date-time
+        appliedAt:
+          type: ["string", "null"]
+          format: date-time
     CompanySettings:
       type: object
       required:

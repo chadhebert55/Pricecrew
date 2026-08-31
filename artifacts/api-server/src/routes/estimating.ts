@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import {
@@ -23,6 +23,11 @@ import {
   GetQuoteParams,
   GetQuoteResponse,
   GetSettingsResponse,
+  ApplyPriceBookImportBody,
+  ApplyPriceBookImportParams,
+  ApplyPriceBookImportResponse,
+  GetPriceBookImportParams,
+  GetPriceBookImportResponse,
   ListPriceBookItemsResponse,
   ListQuotesQueryParams,
   ListQuotesResponse,
@@ -32,6 +37,8 @@ import {
   MarkNotificationReadResponse,
   PreviewQuoteBody,
   PreviewQuoteResponse,
+  PreviewPriceBookImportBody,
+  PreviewPriceBookImportResponse,
   PreflightQuoteExportBody,
   PreflightQuoteExportParams,
   PreflightQuoteExportResponse,
@@ -59,6 +66,7 @@ import {
   customersTable,
   db,
   priceBookItemsTable,
+  priceBookImportsTable,
   planTakeoffsTable,
   proposalDecisionsTable,
   proposalNotificationsTable,
@@ -82,6 +90,8 @@ import {
   type ServiceUpgradeInputRecord,
   type TimeMaterialsInputRecord,
   type TakeoffQuoteSnapshotRecord,
+  type PriceBookImportRowRecord,
+  type PriceBookImportValueRecord,
 } from "@workspace/db";
 import { ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
@@ -114,6 +124,11 @@ import {
   auditPriceBookItem,
   normalizePricingWarnings,
 } from "../lib/estimating-engine";
+import {
+  exactImportMatches,
+  parsePriceBookImport,
+  reportForImportRows,
+} from "../lib/price-book-import";
 
 const router: IRouter = Router();
 
@@ -2538,6 +2553,288 @@ router.get("/price-book", async (req, res): Promise<void> => {
   );
 });
 
+function serializePriceBookImport(
+  priceBookImport: typeof priceBookImportsTable.$inferSelect,
+) {
+  return {
+    ...priceBookImport,
+    createdAt: priceBookImport.createdAt.toISOString(),
+    appliedAt: priceBookImport.appliedAt?.toISOString() ?? null,
+  };
+}
+
+function importedCatalogValues(value: PriceBookImportValueRecord) {
+  return {
+    category: value.category,
+    item: value.item,
+    unit: value.unit,
+    unitCost: value.unitCost,
+    supplier: value.supplier,
+    manufacturer: value.manufacturer,
+    manufacturerPartNumber: value.manufacturerPartNumber,
+    supplierSku: value.supplierSku,
+    upc: value.upc,
+    sourceDate: value.sourceDate,
+    amperage: value.amperage,
+    poleCount: value.poleCount,
+    protectionType: value.protectionType,
+  };
+}
+
+router.post("/price-book/imports/preview", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  await ensureEstimatorSeed();
+  const parsed = PreviewPriceBookImportBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const existingItems = await db
+    .select()
+    .from(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, companyId));
+  const preview = parsePriceBookImport(
+    parsed.data.csv,
+    existingItems,
+    parsed.data.sourceDate ?? null,
+  );
+  const [priceBookImport] = await db
+    .insert(priceBookImportsTable)
+    .values({
+      companyId,
+      sourceFileName: parsed.data.fileName,
+      sourceDate: parsed.data.sourceDate ?? null,
+      status: "review",
+      rows: preview.rows,
+      report: preview.report,
+    })
+    .returning();
+  if (!priceBookImport) {
+    throw new Error("Unable to create price-book import review");
+  }
+
+  req.log.info(
+    { priceBookImportId: priceBookImport.id, report: preview.report },
+    "Created price-book import review",
+  );
+  res
+    .status(201)
+    .json(
+      PreviewPriceBookImportResponse.parse(
+        serializePriceBookImport(priceBookImport),
+      ),
+    );
+});
+
+router.get("/price-book/imports/:id", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const params = GetPriceBookImportParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [priceBookImport] = await db
+    .select()
+    .from(priceBookImportsTable)
+    .where(
+      and(
+        eq(priceBookImportsTable.id, params.data.id),
+        eq(priceBookImportsTable.companyId, companyId),
+      ),
+    );
+  if (!priceBookImport) {
+    res.status(404).json({ error: "Price-book import review not found" });
+    return;
+  }
+
+  res.json(
+    GetPriceBookImportResponse.parse(
+      serializePriceBookImport(priceBookImport),
+    ),
+  );
+});
+
+router.post("/price-book/imports/:id/apply", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const params = ApplyPriceBookImportParams.safeParse(req.params);
+  const parsed = ApplyPriceBookImportBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const result = await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext('price-book-import'), ${companyId})`,
+    );
+    const [priceBookImport] = await tx
+      .select()
+      .from(priceBookImportsTable)
+      .where(
+        and(
+          eq(priceBookImportsTable.id, params.data.id),
+          eq(priceBookImportsTable.companyId, companyId),
+        ),
+      )
+      .for("update");
+    if (!priceBookImport) return { kind: "not-found" as const };
+    if (priceBookImport.status === "applied") {
+      return { kind: "already-applied" as const };
+    }
+
+    const selectedRows = new Set(parsed.data.selectedRows);
+    const currentItems = await tx
+      .select()
+      .from(priceBookItemsTable)
+      .where(eq(priceBookItemsTable.companyId, companyId));
+    const rows: PriceBookImportRowRecord[] = [];
+
+    for (const row of priceBookImport.rows) {
+      if (row.status !== "proposed") {
+        rows.push(row);
+        continue;
+      }
+      if (!selectedRows.has(row.rowNumber)) {
+        rows.push({
+          ...row,
+          action: "skip",
+          status: "skipped",
+          reason: "Not selected during contractor review.",
+        });
+        continue;
+      }
+
+      if (row.action === "update" && row.matchedItemId !== null) {
+        const target = currentItems.find(
+          (item) => item.id === row.matchedItemId,
+        );
+        if (!target || target.isContractorOwned) {
+          rows.push({
+            ...row,
+            action: "skip",
+            status: "skipped",
+            reason: target
+              ? "Catalog row became contractor-owned after preview and was not overwritten."
+              : "The matched catalog row no longer exists.",
+          });
+          continue;
+        }
+        const currentMatches = exactImportMatches(row.incoming, currentItems);
+        if (
+          currentMatches.length !== 1 ||
+          currentMatches[0]?.id !== target.id
+        ) {
+          rows.push({
+            ...row,
+            action: "unresolved",
+            status: "unresolved",
+            reason:
+              "Exact identifier matches changed after preview; review the file again.",
+          });
+          continue;
+        }
+        const [updated] = await tx
+          .update(priceBookItemsTable)
+          .set({
+            ...importedCatalogValues(row.incoming),
+            isDefault: false,
+            isContractorOwned: false,
+          })
+          .where(
+            and(
+              eq(priceBookItemsTable.id, target.id),
+              eq(priceBookItemsTable.companyId, companyId),
+              eq(priceBookItemsTable.isContractorOwned, false),
+            ),
+          )
+          .returning();
+        if (!updated) {
+          rows.push({
+            ...row,
+            action: "skip",
+            status: "skipped",
+            reason:
+              "Catalog row changed ownership during apply and was not overwritten.",
+          });
+          continue;
+        }
+        rows.push({ ...row, status: "applied", reason: "Applied exact-match update." });
+        continue;
+      }
+
+      if (row.action === "insert") {
+        if (exactImportMatches(row.incoming, currentItems).length > 0) {
+          rows.push({
+            ...row,
+            action: "unresolved",
+            status: "unresolved",
+            reason:
+              "An exact identifier was added after preview; review the file again.",
+          });
+          continue;
+        }
+        const [inserted] = await tx
+          .insert(priceBookItemsTable)
+          .values({
+            companyId,
+            ...importedCatalogValues(row.incoming),
+            isDefault: false,
+            isContractorOwned: false,
+          })
+          .returning();
+        if (!inserted) throw new Error("Unable to insert imported catalog row");
+        currentItems.push(inserted);
+        rows.push({ ...row, status: "applied", reason: "Inserted reviewed catalog row." });
+        continue;
+      }
+
+      rows.push(row);
+    }
+
+    const [updatedImport] = await tx
+      .update(priceBookImportsTable)
+      .set({
+        status: "applied",
+        rows,
+        report: reportForImportRows(rows),
+        appliedAt: new Date(),
+      })
+      .where(eq(priceBookImportsTable.id, priceBookImport.id))
+      .returning();
+    if (!updatedImport) {
+      throw new Error("Unable to finalize price-book import");
+    }
+    return { kind: "applied" as const, priceBookImport: updatedImport };
+  });
+
+  if (result.kind === "not-found") {
+    res.status(404).json({ error: "Price-book import review not found" });
+    return;
+  }
+  if (result.kind === "already-applied") {
+    res.status(409).json({ error: "Price-book import was already applied" });
+    return;
+  }
+
+  req.log.info(
+    {
+      priceBookImportId: result.priceBookImport.id,
+      report: result.priceBookImport.report,
+    },
+    "Applied price-book import",
+  );
+  res.json(
+    ApplyPriceBookImportResponse.parse(
+      serializePriceBookImport(result.priceBookImport),
+    ),
+  );
+});
+
 router.patch("/price-book/:id", async (req, res): Promise<void> => {
   const companyId = requestCompanyId(req);
   await ensureEstimatorSeed();
@@ -2554,7 +2851,11 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
 
   const [item] = await db
     .update(priceBookItemsTable)
-    .set({ unitCost: parsed.data.unitCost, isDefault: false })
+    .set({
+      unitCost: parsed.data.unitCost,
+      isDefault: false,
+      isContractorOwned: true,
+    })
     .where(
       and(
         eq(priceBookItemsTable.id, params.data.id),

@@ -7,4 +7,4 @@ Price-book edits must atomically transfer ownership away from startup defaults. 
 
 **Why:** Insert-only behavior alone can leave starter rows unusable for exact catalog resolution, while broad seed updates can overwrite contractor pricing. Explicit ownership is required to avoid both failure modes.
 
-**How to apply:** Mark every user edit contractor-owned, keep normal startup seeding insert-only, and use narrowly proven reconciliation for legacy system-owned rows. Test fresh initialization and legacy edited-row preservation together.
+**How to apply:** Mark every user edit contractor-owned, keep normal startup seeding insert-only, and use narrowly proven reconciliation for legacy system-owned rows. Supplier-file imports must recheck ownership at apply time, serialize per tenant, fail closed on conflicting exact identifiers, and preserve verified fields omitted from partial exports. Test fresh initialization, legacy edited-row preservation, and concurrent imports together.

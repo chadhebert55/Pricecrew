@@ -48,6 +48,51 @@ export type TimeMaterialsServiceType =
   | "Residential time and materials"
   | "Commercial time and materials";
 
+export type PriceBookImportStatus = "review" | "applied";
+export type PriceBookImportRowAction =
+  | "insert"
+  | "update"
+  | "skip"
+  | "unresolved";
+export type PriceBookImportRowStatus =
+  | "proposed"
+  | "applied"
+  | "skipped"
+  | "unresolved";
+
+export type PriceBookImportValueRecord = {
+  category: string;
+  item: string;
+  unit: string;
+  unitCost: number;
+  supplier: string | null;
+  manufacturer: string | null;
+  manufacturerPartNumber: string | null;
+  supplierSku: string | null;
+  upc: string | null;
+  sourceDate: string | null;
+  amperage: number | null;
+  poleCount: number | null;
+  protectionType: string | null;
+};
+
+export type PriceBookImportRowRecord = {
+  rowNumber: number;
+  action: PriceBookImportRowAction;
+  status: PriceBookImportRowStatus;
+  reason: string | null;
+  matchedItemId: number | null;
+  incoming: PriceBookImportValueRecord;
+  before: PriceBookImportValueRecord | null;
+};
+
+export type PriceBookImportReportRecord = {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  unresolved: number;
+};
+
 export type MiscellaneousMaterialInput = {
   id: string;
   description: string;
@@ -844,10 +889,27 @@ export const priceBookItemsTable = pgTable("price_book_items", {
   poleCount: integer("pole_count"),
   protectionType: text("protection_type"),
   isDefault: boolean("is_default").notNull().default(true),
+  isContractorOwned: boolean("is_contractor_owned").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
+});
+
+export const priceBookImportsTable = pgTable("price_book_imports", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")
+    .notNull()
+    .references(() => companiesTable.id),
+  sourceFileName: text("source_file_name").notNull(),
+  sourceDate: text("source_date"),
+  status: text("status").notNull().default("review"),
+  rows: jsonb("rows").$type<PriceBookImportRowRecord[]>().notNull(),
+  report: jsonb("report").$type<PriceBookImportReportRecord>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  appliedAt: timestamp("applied_at", { withTimezone: true }),
 });
 
 export const quotesTable = pgTable("quotes", {

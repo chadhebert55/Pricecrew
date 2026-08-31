@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PriceBookItemUpdate {
-  /** @minimum 0 */
-  unitCost: number;
+export interface PriceBookImportReport {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  unresolved: number;
 }
