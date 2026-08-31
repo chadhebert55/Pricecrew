@@ -2038,6 +2038,193 @@ test("company prices stay isolated, duplicate exact rows fail closed, and saved 
   }
 });
 
+test("editable drafts reprice from the current tenant catalog while issued quotes preserve their snapshots", async () => {
+  const first = await startTestServer();
+  const second = await startTestServer();
+  const fixtureName = "Juno WF4DREGSMAL 4-inch regressed wafer light";
+  const jobInputs: RecessedLightingInputRecord = {
+    ...recessedInputs,
+    customerSuppliedFixtures: false,
+  };
+  const patchQuote = async (
+    baseUrl: string,
+    quoteId: number,
+    data: Record<string, unknown>,
+  ) => {
+    const response = await fetch(`${baseUrl}/api/quotes/${quoteId}`, {
+      method: "PATCH",
+      headers: authenticatedHeaders(baseUrl),
+      body: JSON.stringify(data),
+    });
+    const body = (await response.json()) as Awaited<ReturnType<typeof getQuote>> & {
+      error?: string;
+      status?: string;
+    };
+    return { response, body };
+  };
+  const fixtureLine = (quote: Awaited<ReturnType<typeof getQuote>>) =>
+    quote.assembly.find((line) => line.id === "recessed-fixtures");
+
+  try {
+    const firstContext = testServerContexts.get(first.server);
+    const secondContext = testServerContexts.get(second.server);
+    assert.ok(firstContext);
+    assert.ok(secondContext);
+    const fixtureRows = await db
+      .select()
+      .from(priceBookItemsTable)
+      .where(
+        and(
+          inArray(priceBookItemsTable.companyId, [
+            firstContext.companyId,
+            secondContext.companyId,
+          ]),
+          eq(priceBookItemsTable.item, fixtureName),
+        ),
+      );
+    const firstFixture = fixtureRows.find(
+      (row) => row.companyId === firstContext.companyId,
+    );
+    const secondFixture = fixtureRows.find(
+      (row) => row.companyId === secondContext.companyId,
+    );
+    assert.ok(firstFixture);
+    assert.ok(secondFixture);
+    await Promise.all([
+      db
+        .update(priceBookItemsTable)
+        .set({ unitCost: 41.25, isDefault: false })
+        .where(eq(priceBookItemsTable.id, firstFixture.id)),
+      db
+        .update(priceBookItemsTable)
+        .set({ unitCost: 66.75, isDefault: false })
+        .where(eq(priceBookItemsTable.id, secondFixture.id)),
+    ]);
+
+    const source = await postQuote(first.baseUrl, {
+      customerName: `Saved repricing ${randomUUID()}`,
+      projectName: "Saved draft repricing",
+      proposalDescription: "Revalidate this editable draft.",
+      module: "RECESSED_LIGHTING",
+      jobInputs,
+    });
+    assert.equal(fixtureLine(await getQuote(first.baseUrl, source.id))?.unitCost, 41.25);
+
+    const duplicateResponse = await fetch(
+      `${first.baseUrl}/api/quotes/${source.id}/duplicate`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(first.baseUrl),
+      },
+    );
+    assert.equal(duplicateResponse.status, 201);
+    const duplicate = (await duplicateResponse.json()) as { id: number };
+    assert.equal(
+      fixtureLine(await getQuote(first.baseUrl, duplicate.id))?.unitCost,
+      41.25,
+    );
+
+    await db
+      .update(priceBookItemsTable)
+      .set({ unitCost: 73.5 })
+      .where(eq(priceBookItemsTable.id, firstFixture.id));
+    const promotedDuplicate = await patchQuote(first.baseUrl, duplicate.id, {
+      status: "ready",
+    });
+    assert.equal(promotedDuplicate.response.status, 200);
+    assert.equal(fixtureLine(promotedDuplicate.body)?.unitCost, 73.5);
+    const issuedPricing = promotedDuplicate.body.pricing;
+    const issuedAssembly = promotedDuplicate.body.assembly;
+
+    await db
+      .update(priceBookItemsTable)
+      .set({ unitCost: 88 })
+      .where(eq(priceBookItemsTable.id, firstFixture.id));
+    const reopenedIssued = await patchQuote(first.baseUrl, duplicate.id, {
+      status: "ready",
+      proposalDescription: "The issued commercial snapshot stays unchanged.",
+    });
+    assert.equal(reopenedIssued.response.status, 200);
+    assert.deepEqual(reopenedIssued.body.assembly, issuedAssembly);
+    assert.deepEqual(reopenedIssued.body.pricing, issuedPricing);
+    const issuedCommercialEdit = await patchQuote(first.baseUrl, duplicate.id, {
+      sellingPriceOverride: 999,
+    });
+    assert.equal(issuedCommercialEdit.response.status, 409);
+    assert.match(issuedCommercialEdit.body.error ?? "", /Duplicate or revise/i);
+
+    const repricedDraft = await patchQuote(first.baseUrl, source.id, {
+      laborOverride: 200,
+    });
+    assert.equal(repricedDraft.response.status, 200);
+    assert.equal(fixtureLine(repricedDraft.body)?.unitCost, 88);
+
+    await db.insert(priceBookItemsTable).values({
+      companyId: firstContext.companyId,
+      category: firstFixture.category,
+      item: fixtureName,
+      unit: firstFixture.unit,
+      unitCost: 0,
+      supplier: "Unresolved duplicate fixture",
+      sourceDate: "2026-08-31",
+      isDefault: false,
+    });
+    const unresolvedDraft = await patchQuote(first.baseUrl, source.id, {
+      sellingPriceOverride: 999,
+    });
+    assert.equal(unresolvedDraft.response.status, 200);
+    assert.equal(fixtureLine(unresolvedDraft.body)?.unitCost, 0);
+    assert.equal(
+      unresolvedDraft.body.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "DUPLICATE_PRICE_BOOK_MATCHES" &&
+          warning.severity === "error",
+      ),
+      true,
+    );
+    const blockedReady = await patchQuote(first.baseUrl, source.id, {
+      status: "ready",
+    });
+    assert.equal(blockedReady.response.status, 409);
+    assert.match(blockedReady.body.error ?? "", /Resolve all missing, unsafe/i);
+
+    const unresolvedRevision = await postQuote(first.baseUrl, {
+      sourceQuoteId: source.id,
+      customerName: source.customerName,
+      projectName: "Current-catalog revision",
+      proposalDescription: "The revision must use current catalog pricing.",
+      module: "RECESSED_LIGHTING",
+      jobInputs,
+    });
+    assert.equal(fixtureLine(await getQuote(first.baseUrl, unresolvedRevision.id))?.unitCost, 0);
+    const blockedRevision = await patchQuote(
+      first.baseUrl,
+      unresolvedRevision.id,
+      { status: "ready" },
+    );
+    assert.equal(blockedRevision.response.status, 409);
+
+    const isolated = await postQuote(second.baseUrl, {
+      customerName: `Isolated repricing ${randomUUID()}`,
+      projectName: "Other tenant saved quote",
+      proposalDescription: "Other tenant pricing remains independent.",
+      module: "RECESSED_LIGHTING",
+      jobInputs,
+    });
+    const isolatedReady = await patchQuote(second.baseUrl, isolated.id, {
+      status: "ready",
+    });
+    assert.equal(isolatedReady.response.status, 200);
+    assert.equal(fixtureLine(isolatedReady.body)?.unitCost, 66.75);
+  } finally {
+    await Promise.all([
+      closeTestServer(first.server),
+      closeTestServer(second.server),
+    ]);
+  }
+});
+
 test("saved Addition subpanel resolves seeded source prices identically across preview, create, and reload", async () => {
   const { server, baseUrl } = await startTestServer();
   try {

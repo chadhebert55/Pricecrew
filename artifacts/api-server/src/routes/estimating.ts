@@ -984,6 +984,23 @@ export function pricingForQuoteUpdate(
   });
 }
 
+function quoteUpdateChangesCommercialOverrides(
+  pricing: PricingRecord,
+  update: {
+    laborOverride?: number | null;
+    sellingPriceOverride?: number | null;
+  },
+) {
+  const laborChanged =
+    "laborOverride" in update &&
+    (update.laborOverride ?? null) !== (pricing.laborOverride ?? null);
+  const sellingPriceChanged =
+    "sellingPriceOverride" in update &&
+    (update.sellingPriceOverride ?? null) !==
+      (pricing.sellingPriceOverride ?? null);
+  return laborChanged || sellingPriceChanged;
+}
+
 export function hasBlockingPricingWarnings(
   warnings: PricingRecord["pricingWarnings"],
 ) {
@@ -2470,13 +2487,60 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     });
     return;
   }
-  const targetStatus =
-    parsed.data.status ?? normalizeQuoteStatus(existingQuote.status);
-  let pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
+  const currentStatus = normalizeQuoteStatus(existingQuote.status);
+  const targetStatus = parsed.data.status ?? currentStatus;
+  const commercialOverridesChanged = quoteUpdateChangesCommercialOverrides(
+    existingQuote.pricing,
+    parsed.data,
+  );
+  if (
+    currentStatus === "ready" &&
+    (targetStatus === "draft" || commercialOverridesChanged)
+  ) {
+    res.status(409).json({
+      error:
+        "Customer-ready quote pricing is an issued snapshot. Duplicate or revise the quote before changing its commercial terms.",
+    });
+    return;
+  }
+
+  let assembly = existingQuote.assembly;
+  let pricing: PricingRecord;
+  const requiresCurrentPriceBookCalculation =
+    currentStatus === "draft" &&
+    (targetStatus === "ready" || commercialOverridesChanged);
+  if (requiresCurrentPriceBookCalculation) {
+    const module = normalizeEstimateModule(existingQuote.module);
+    if (!module) {
+      res.status(409).json({
+        error:
+          "This saved quote uses an unsupported legacy calculator. Duplicate it into a current builder before changing pricing.",
+      });
+      return;
+    }
+    const estimate = await calculateEstimate(
+      companyId,
+      module,
+      existingQuote.jobInputs,
+    );
+    assembly = estimate.assembly;
+    pricing = withProfit(estimate.pricing, {
+      laborOverride:
+        "laborOverride" in parsed.data
+          ? parsed.data.laborOverride
+          : existingQuote.pricing.laborOverride,
+      sellingPriceOverride:
+        "sellingPriceOverride" in parsed.data
+          ? parsed.data.sellingPriceOverride
+          : existingQuote.pricing.sellingPriceOverride,
+    });
+  } else {
+    pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
+  }
   if (targetStatus === "ready") {
     const readiness = evaluateCustomerReadyPricing({
       pricing,
-      assembly: existingQuote.assembly,
+      assembly,
       jobInputs: existingQuote.jobInputs,
       deliberateLossConfirmation: parsed.data.deliberateLossConfirmation,
     });
@@ -2497,6 +2561,7 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
       .update(quotesTable)
       .set({
         status: targetStatus,
+        assembly,
         pricing,
         proposalDescription: parsed.data.proposalDescription,
         total: pricing.finalSellingPrice,
