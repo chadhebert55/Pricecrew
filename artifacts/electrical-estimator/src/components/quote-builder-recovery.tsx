@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { RotateCcw, Trash2 } from "lucide-react"
 
 type SettingsState = {
   isLoading: boolean
@@ -16,15 +17,53 @@ type RevisionState = {
   startFresh: () => void
 }
 
+type DraftRecoveryState = {
+  isAvailable: boolean
+  savedAt?: string
+  onRestore: () => void
+  onDiscard: () => void
+}
+
 export function QuoteBuilderRecovery({
   settings,
   revision,
+  draft,
 }: {
   settings: SettingsState
   revision: RevisionState
+  draft?: DraftRecoveryState
 }) {
   return (
     <div className="space-y-3">
+      {draft?.isAvailable && (
+        <div
+          role="status"
+          data-testid="alert-quote-draft-available"
+          className="space-y-3 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm"
+        >
+          <div>
+            <p className="font-semibold">Unfinished quote found</p>
+            <p className="mt-1 text-secondary-foreground/80">
+              Restore the quote you were building before the connection dropped, or discard it and start fresh.
+              {draft.savedAt && (
+                <span className="block text-xs text-secondary-foreground/60">
+                  Saved {new Date(draft.savedAt).toLocaleString()}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" data-testid="button-restore-quote-draft" onClick={draft.onRestore}>
+              <RotateCcw size={14} className="mr-1.5" />
+              Restore unfinished quote
+            </Button>
+            <Button type="button" variant="outline" size="sm" data-testid="button-discard-quote-draft" onClick={draft.onDiscard}>
+              <Trash2 size={14} className="mr-1.5" />
+              Discard draft
+            </Button>
+          </div>
+        </div>
+      )}
       {settings.isLoading && (
         <p role="status" data-testid="status-loading-settings" className="text-sm text-muted-foreground">
           Loading company settings…

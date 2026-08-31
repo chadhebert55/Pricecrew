@@ -17,6 +17,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
 const selectClassName =
@@ -92,6 +93,12 @@ export function NewRecessedLightingQuote() {
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<RecessedLightingInputs>(initialInputs)
   const revision = useQuoteRevisionPrefill("RECESSED_LIGHTING", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
+  const { draftRecovery } = useQuoteBuilderDraft({
+    module: "RECESSED_LIGHTING",
+    ready: settingsLoaded && !revision.isRevision,
+    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride, sellingPriceOverride },
+    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setLaborOverride, setSellingPriceOverride },
+  })
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
@@ -497,7 +504,7 @@ export function NewRecessedLightingQuote() {
                   <CardDescription className="text-secondary-foreground/70">Uses the same server calculation path as the saved immutable quote snapshot.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-6">
-                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
                     <p className="text-secondary-foreground/80">Room spacing is planning guidance. Catalog materials, internal labor, customer labor, selling price, and overrides remain separate.</p>

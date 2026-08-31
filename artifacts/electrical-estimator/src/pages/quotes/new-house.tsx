@@ -17,6 +17,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
@@ -110,6 +111,12 @@ export function NewHouseQuote() {
     setInputs: (value: NewHouseInputs) =>
       setInputs({ ...value, bedroomCount: value.bedroomCount ?? 0 }),
     setSettingsLoaded,
+  })
+  const { draftRecovery } = useQuoteBuilderDraft({
+    module: "NEW_HOUSE",
+    ready: settingsLoaded && !revision.isRevision,
+    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride, sellingPriceOverride, takeoffId },
+    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs: (value) => setInputs({ ...value, bedroomCount: value.bedroomCount ?? 0 }), setLaborOverride, setSellingPriceOverride, setTakeoffId },
   })
 
   useEffect(() => {
@@ -549,7 +556,7 @@ export function NewHouseQuote() {
                   <CardDescription className="text-secondary-foreground/70">Server-calculated from company catalog items and current settings.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-6">
-                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
                     <p className="text-secondary-foreground/80">Labor, rough-in, device finish, and distribution are compiled into a comprehensive quote.</p>

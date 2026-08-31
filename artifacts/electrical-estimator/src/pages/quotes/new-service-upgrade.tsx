@@ -19,6 +19,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { QuoteBuilderRecovery, QuotePreviewRecovery } from "@/components/quote-builder-recovery"
 
 const selectClassName =
@@ -166,6 +167,13 @@ function numberValue(value: string, minimum = 0) {
   return Number.isFinite(parsed) ? Math.max(minimum, parsed) : minimum
 }
 
+function breakerInventoryState(existingBreakers: ExistingBreakerCount[] | undefined) {
+  return Object.fromEntries((existingBreakers ?? []).map((breaker) => [
+    `${breaker.amperage}-${breaker.poleCount}-${breaker.protectionType}`,
+    breaker.quantity,
+  ]))
+}
+
 export function NewServiceUpgradeQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
@@ -187,14 +195,17 @@ export function NewServiceUpgradeQuote() {
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<ServiceUpgradeInputs>(initialInputs)
   const [existingBreakersState, setExistingBreakersState] = useState<Record<string, number>>({})
-  const revision = useQuoteRevisionPrefill("SERVICE_UPGRADE", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
-  useEffect(() => {
-    if (!revision.source) return
-    const sourceInputs = revision.source.jobInputs as ServiceUpgradeInputs
-    setExistingBreakersState(Object.fromEntries((sourceInputs.existingBreakers ?? []).map((breaker) => [
-      `${breaker.amperage}-${breaker.poleCount}-${breaker.protectionType}`, breaker.quantity,
-    ])))
-  }, [revision.source])
+  const applyInputs = (value: ServiceUpgradeInputs) => {
+    setInputs(value)
+    setExistingBreakersState(breakerInventoryState(value.existingBreakers))
+  }
+  const revision = useQuoteRevisionPrefill("SERVICE_UPGRADE", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs: applyInputs, setSettingsLoaded })
+  const { draftRecovery } = useQuoteBuilderDraft({
+    module: "SERVICE_UPGRADE",
+    ready: settingsLoaded && !revision.isRevision,
+    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride, sellingPriceOverride },
+    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs: applyInputs, setLaborOverride, setSellingPriceOverride },
+  })
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
@@ -843,6 +854,7 @@ export function NewServiceUpgradeQuote() {
                                 <Input
                                   type="number"
                                   min="0"
+                                  data-testid={`input-breaker-${amp}-1-${prot}`}
                                   className="h-8 text-center"
                                   value={existingBreakersState[key] || ""}
                                   onChange={e => handleExistingBreakerChange(amp, 1, prot, e.target.value)}
@@ -870,6 +882,7 @@ export function NewServiceUpgradeQuote() {
                             <Input
                               type="number"
                               min="0"
+                              data-testid={`input-breaker-${amp}-2-Standard`}
                               className="h-8 text-center"
                               value={existingBreakersState[`${amp}-2-Standard`] || ""}
                               onChange={e => handleExistingBreakerChange(amp, 2, "Standard", e.target.value)}
@@ -880,6 +893,7 @@ export function NewServiceUpgradeQuote() {
                             <Input
                               type="number"
                               min="0"
+                              data-testid={`input-breaker-${amp}-2-GFCI`}
                               className="h-8 text-center"
                               value={existingBreakersState[`${amp}-2-GFCI`] || ""}
                               onChange={e => handleExistingBreakerChange(amp, 2, "GFCI", e.target.value)}
@@ -924,7 +938,7 @@ export function NewServiceUpgradeQuote() {
                   <CardDescription className="text-secondary-foreground/70">Uses the same server calculation path as the saved immutable quote snapshot.</CardDescription>
                 </CardHeader>
                   <CardContent className="space-y-5 pt-6">
-                    <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                    <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
                     <QuotePreviewRecovery isError={previewQuote.isError} onRetry={() => setPreviewRetryCount((count) => count + 1)} />
                   
                   {pricing && previewIsCurrent ? (

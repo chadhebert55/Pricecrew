@@ -11,6 +11,7 @@ import { Zap, Calculator, Info, TriangleAlert } from "lucide-react"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
 function BasicSelect({ value, onChange, options, id }: { value: string, onChange: (v: string) => void, options: {label: string, value: string}[], id?: string }) {
@@ -69,6 +70,12 @@ export function NewQuote() {
     laborAdjustmentHours: 0,
   })
   const revision = useQuoteRevisionPrefill("EV_CHARGER", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
+  const { draftRecovery } = useQuoteBuilderDraft({
+    module: "EV_CHARGER",
+    ready: settingsLoaded && !revision.isRevision,
+    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride: "", sellingPriceOverride: "" },
+    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs },
+  })
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
@@ -524,7 +531,7 @@ export function NewQuote() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
-                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
                   <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-sm flex items-start gap-3">
                     <Info className="text-primary shrink-0 mt-0.5" size={16} />
                     <div className="space-y-1">

@@ -17,6 +17,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 
 const initialInputs: BathroomInputs = {
@@ -73,6 +74,12 @@ export function NewBathroomQuote() {
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<BathroomInputs>(initialInputs)
   const revision = useQuoteRevisionPrefill("BATHROOM", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
+  const { draftRecovery } = useQuoteBuilderDraft({
+    module: "BATHROOM",
+    ready: settingsLoaded && !revision.isRevision,
+    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride, sellingPriceOverride },
+    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setLaborOverride, setSellingPriceOverride },
+  })
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
@@ -394,7 +401,7 @@ export function NewBathroomQuote() {
                   <CardDescription className="text-secondary-foreground/70">Uses the same server estimator as saved quote creation.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5 pt-6">
-                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
                   <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
                     <Info className="mt-0.5 shrink-0 text-primary" size={16} />
                     <p className="text-secondary-foreground/80">The customer-supplied vanity fixture remains visible at zero purchase cost. Contractor-supplied exhaust equipment and the optional 15A circuit are included in pricing and margin.</p>

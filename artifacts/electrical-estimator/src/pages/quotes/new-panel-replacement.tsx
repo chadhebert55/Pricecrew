@@ -18,6 +18,7 @@ import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { QuoteBuilderRecovery, QuotePreviewRecovery } from "@/components/quote-builder-recovery"
 
 const selectClassName =
@@ -108,6 +109,13 @@ function numberValue(value: string, minimum = 0) {
   return Number.isFinite(parsed) ? Math.max(minimum, parsed) : minimum
 }
 
+function breakerInventoryState(existingBreakers: ExistingBreakerCount[] | undefined) {
+  return Object.fromEntries((existingBreakers ?? []).map((breaker) => [
+    `${breaker.amperage}-${breaker.poleCount}-${breaker.protectionType}`,
+    breaker.quantity,
+  ]))
+}
+
 export function NewPanelReplacementQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
@@ -128,15 +136,18 @@ export function NewPanelReplacementQuote() {
   const [laborOverride, setLaborOverride] = useState("")
   const [sellingPriceOverride, setSellingPriceOverride] = useState("")
   const [inputs, setInputs] = useState<PanelReplacementInputs>(initialInputs)
-  const revision = useQuoteRevisionPrefill("PANEL_REPLACEMENT", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs, setSettingsLoaded })
-  useEffect(() => {
-    if (!revision.source) return
-    const sourceInputs = revision.source.jobInputs as PanelReplacementInputs
-    setExistingBreakersState(Object.fromEntries((sourceInputs.existingBreakers ?? []).map((breaker) => [
-      `${breaker.amperage}-${breaker.poleCount}-${breaker.protectionType}`, breaker.quantity,
-    ])))
-  }, [revision.source])
   const [existingBreakersState, setExistingBreakersState] = useState<Record<string, number>>({})
+  const applyInputs = (value: PanelReplacementInputs) => {
+    setInputs(value)
+    setExistingBreakersState(breakerInventoryState(value.existingBreakers))
+  }
+  const revision = useQuoteRevisionPrefill("PANEL_REPLACEMENT", { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs: applyInputs, setSettingsLoaded })
+  const { draftRecovery } = useQuoteBuilderDraft({
+    module: "PANEL_REPLACEMENT",
+    ready: settingsLoaded && !revision.isRevision,
+    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride, sellingPriceOverride },
+    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs: applyInputs, setLaborOverride, setSellingPriceOverride },
+  })
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
@@ -704,7 +715,7 @@ export function NewPanelReplacementQuote() {
                 </CardDescription>
               </CardHeader>
                <CardContent className="space-y-6 pt-6">
-                 <QuoteBuilderRecovery settings={settingsQuery} revision={revision} />
+                 <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
                  <QuotePreviewRecovery isError={previewQuote.isError} onRetry={() => setPreviewRetryCount((count) => count + 1)} />
                 
                 <div className="space-y-3 text-sm">
