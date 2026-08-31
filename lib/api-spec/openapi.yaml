@@ -2156,7 +2156,7 @@ components:
           description: Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.
         amperage:
           type: number
-          enum: [15, 20, 30, 40, 50]
+          enum: [15, 20, 30, 40, 50, 60]
         poleCount:
           type: number
           enum: [1, 2]
@@ -2241,7 +2241,7 @@ components:
           enum: [Siemens, Eaton, Square D]
         breakerAmperage:
           type: number
-          enum: [15, 20, 30, 40, 50]
+          enum: [15, 20, 30, 40, 50, 60]
         breakerPoleCount:
           type: number
           enum: [1, 2]
@@ -3211,7 +3211,7 @@ components:
         miniSplitCircuitQuantity: { type: number, minimum: 0 }
         commonBranchCircuitQuantity: { type: number, minimum: 0 }
         branchCircuitFootage: { type: number, minimum: 0 }
-        branchCircuitAmperage: { type: number, enum: [15, 20, 30, 40, 50] }
+        branchCircuitAmperage: { type: number, enum: [15, 20, 30, 40, 50, 60] }
         branchCircuitPoleCount: { type: number, enum: [1, 2] }
         branchCircuitProtectionType:
           type: string
@@ -3220,7 +3220,7 @@ components:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B, 10/2 NM-B, 10/3 NM-B, 8/2 NM-B, 8/3 NM-B, 6/3 NM-B]
         equipmentCircuitFootage: { type: number, minimum: 0 }
-        equipmentCircuitAmperage: { type: number, enum: [20, 30, 40, 50] }
+        equipmentCircuitAmperage: { type: number, enum: [20, 30, 40, 50, 60] }
         equipmentCircuitPoleCount: { type: number, enum: [2] }
         equipmentCircuitProtectionType:
           type: string

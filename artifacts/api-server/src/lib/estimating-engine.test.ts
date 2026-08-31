@@ -1340,7 +1340,7 @@ test("addition legacy scalar inputs leave unsupported heavy cable combinations u
   );
 });
 
-test("Addition prices exact source-backed 40A 8/3 and 50A 6/3 circuit schedules", () => {
+test("Addition prices exact source-backed 40A 8/3 and 50A/60A 6/3 circuit schedules", () => {
   const book = [
     catalogRow("8/3 NM-B cable", 2.682868, { category: "Conductor" }),
     catalogRow("6/3 NM-B cable", 3.921784, { category: "Conductor" }),
@@ -1360,11 +1360,20 @@ test("Addition prices exact source-backed 40A 8/3 and 50A 6/3 circuit schedules"
       poleCount: 2,
       protectionType: "Standard",
     }),
+    catalogRow("Siemens 60A 2-pole Standard breaker", 45, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q260",
+      amperage: 60,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
   ];
 
   for (const [amperage, cableType, cableCost, breakerCost] of [
     [40, "8/3 NM-B", 2.682868, 35],
     [50, "6/3 NM-B", 3.921784, 40],
+    [60, "6/3 NM-B", 3.921784, 45],
   ] as const) {
     const result = calculateAdditionEstimate(
       {
@@ -1475,10 +1484,11 @@ test("Addition keeps heavy 3-wire circuits unresolved for duplicate or non-sourc
   );
 });
 
-test("Addition preview and create validate the same 40A 8/3 and 50A 6/3 selections", () => {
+test("Addition preview and create validate the same 40A 8/3 and 50A/60A 6/3 selections", () => {
   for (const [amperage, cableType] of [
     [40, "8/3 NM-B"],
     [50, "6/3 NM-B"],
+    [60, "6/3 NM-B"],
   ] as const) {
     const jobInputs = {
       ...additionInputs,
@@ -4394,15 +4404,15 @@ test("New House prices compatible 2-wire and 3-wire heavy equipment cables from 
   }
 });
 
-test("New House prices source-backed 50A 6/3 equipment circuits and blocks missing source metadata", () => {
+test("New House prices source-backed 60A 6/3 equipment circuits and blocks missing source metadata", () => {
   const cable = catalogRow("6/3 NM-B cable", 3.921784, {
     category: "Conductor",
   });
-  const breaker = catalogRow("Siemens 50A 2-pole Standard breaker", 40, {
+  const breaker = catalogRow("Siemens 60A 2-pole Standard breaker", 45, {
     category: "Protection",
     manufacturer: "Siemens",
-    manufacturerPartNumber: "Q250",
-    amperage: 50,
+    manufacturerPartNumber: "Q260",
+    amperage: 60,
     poleCount: 2,
     protectionType: "Standard",
   });
@@ -4414,7 +4424,7 @@ test("New House prices source-backed 50A 6/3 equipment circuits and blocks missi
     garageCircuitQuantity: 0,
     hvacEquipmentCircuitQuantity: 1,
     equipmentCircuitFootage: 25,
-    equipmentCircuitAmperage: 50,
+    equipmentCircuitAmperage: 60,
     equipmentCircuitCableType: "6/3 NM-B",
   };
   const resolved = calculateNewHouseEstimate(
@@ -4430,7 +4440,7 @@ test("New House prices source-backed 50A 6/3 equipment circuits and blocks missi
   assert.equal(
     resolved.assembly.find((line) => line.id === "new-house-equipment-breakers")
       ?.unitCost,
-    40,
+    45,
   );
 
   const unbackedBreaker = calculateNewHouseEstimate(
@@ -4526,6 +4536,7 @@ test("New House preview and create accept the same heavy 2-wire and 3-wire cable
     [40, "8/2 NM-B"],
     [40, "8/3 NM-B"],
     [50, "6/3 NM-B"],
+    [60, "6/3 NM-B"],
   ] as const) {
     const jobInputs = {
       ...newHouseInputs,
@@ -4556,6 +4567,7 @@ test("New House preview and create accept the same heavy 2-wire and 3-wire cable
     [40, "8/2 NM-B"],
     [40, "8/3 NM-B"],
     [50, "6/3 NM-B"],
+    [60, "6/3 NM-B"],
   ] as const) {
     const jobInputs = {
       ...newHouseInputs,

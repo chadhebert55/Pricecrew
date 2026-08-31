@@ -3438,23 +3438,30 @@ test("quote revisions retain source customer identity and reject reassignment", 
   }
 });
 
-test("New House room counts persist through create, reload, duplicate, and legacy snapshot reads", async () => {
+test("New House 60A 6/3 inputs persist through create, reload, duplicate, revise, and legacy snapshot reads", async () => {
   const marker = `New House room counts ${randomUUID()}`;
+  const customerEmail = `${randomUUID()}@example.com`;
+  const heavyLoadInputs: NewHouseInputRecord = {
+    ...newHouseInputs,
+    equipmentCircuitAmperage: 60,
+    equipmentCircuitCableType: "6/3 NM-B",
+  };
   const { server, baseUrl } = await startTestServer();
 
   try {
     const source = await postQuote(baseUrl, {
       customerName: marker,
-      customerEmail: `${randomUUID()}@example.com`,
+      customerEmail,
       projectName: `${marker} source`,
       proposalDescription: "Persist the informational room program.",
       module: "NEW_HOUSE",
-      jobInputs: newHouseInputs,
+      jobInputs: heavyLoadInputs,
     });
     const created = await getQuote(baseUrl, source.id);
     assert.equal(created.jobInputs.bedroomCount, 4);
     assert.equal(created.jobInputs.bathroomQuantity, 2);
-    assert.equal(created.jobInputs.equipmentCircuitCableType, "10/3 NM-B");
+    assert.equal(created.jobInputs.equipmentCircuitAmperage, 60);
+    assert.equal(created.jobInputs.equipmentCircuitCableType, "6/3 NM-B");
     const createdEquipmentCable = created.assembly.find(
       (line) => line.id === "new-house-equipment-cable",
     );
@@ -3462,7 +3469,7 @@ test("New House room counts persist through create, reload, duplicate, and legac
       (createdEquipmentCable as { quantity?: number } | undefined)?.quantity,
       80,
     );
-    assert.equal(createdEquipmentCable?.unitCost, 1.350184);
+    assert.equal(createdEquipmentCable?.unitCost, 3.921784);
 
     const sourcePricing = created.pricing;
     const duplicateResponse = await fetch(
@@ -3477,9 +3484,25 @@ test("New House room counts persist through create, reload, duplicate, and legac
     const duplicate = await getQuote(baseUrl, duplicateBody.id);
     assert.equal(duplicate.jobInputs.bedroomCount, 4);
     assert.equal(duplicate.jobInputs.bathroomQuantity, 2);
-    assert.equal(duplicate.jobInputs.equipmentCircuitCableType, "10/3 NM-B");
+    assert.equal(duplicate.jobInputs.equipmentCircuitAmperage, 60);
+    assert.equal(duplicate.jobInputs.equipmentCircuitCableType, "6/3 NM-B");
     assert.deepEqual(duplicate.assembly, created.assembly);
     assert.deepEqual(duplicate.pricing, sourcePricing);
+
+    const revision = await postQuote(baseUrl, {
+      sourceQuoteId: source.id,
+      customerName: marker,
+      customerEmail,
+      projectName: `${marker} revision`,
+      proposalDescription: "Revise the saved heavy-load quote.",
+      module: "NEW_HOUSE",
+      jobInputs: heavyLoadInputs,
+    });
+    const revised = await getQuote(baseUrl, revision.id);
+    assert.equal(revised.jobInputs.equipmentCircuitAmperage, 60);
+    assert.equal(revised.jobInputs.equipmentCircuitCableType, "6/3 NM-B");
+    assert.deepEqual(revised.assembly, created.assembly);
+    assert.deepEqual(revised.pricing, sourcePricing);
 
     const [sourceRow] = await db
       .select()

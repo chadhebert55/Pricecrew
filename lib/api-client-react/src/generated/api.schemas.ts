@@ -528,6 +528,7 @@ export const AdditionInputsBreakerAmperage = {
   NUMBER_30: 30,
   NUMBER_40: 40,
   NUMBER_50: 50,
+  NUMBER_60: 60,
 } as const;
 
 export type AdditionInputsBreakerPoleCount = typeof AdditionInputsBreakerPoleCount[keyof typeof AdditionInputsBreakerPoleCount];
@@ -571,6 +572,7 @@ export const AdditionCircuitEntryAmperage = {
   NUMBER_30: 30,
   NUMBER_40: 40,
   NUMBER_50: 50,
+  NUMBER_60: 60,
 } as const;
 
 export type AdditionCircuitEntryPoleCount = typeof AdditionCircuitEntryPoleCount[keyof typeof AdditionCircuitEntryPoleCount];
@@ -1349,6 +1351,7 @@ export const NewHouseInputsBranchCircuitAmperage = {
   NUMBER_30: 30,
   NUMBER_40: 40,
   NUMBER_50: 50,
+  NUMBER_60: 60,
 } as const;
 
 export type NewHouseInputsBranchCircuitPoleCount = typeof NewHouseInputsBranchCircuitPoleCount[keyof typeof NewHouseInputsBranchCircuitPoleCount];
@@ -1391,6 +1394,7 @@ export const NewHouseInputsEquipmentCircuitAmperage = {
   NUMBER_30: 30,
   NUMBER_40: 40,
   NUMBER_50: 50,
+  NUMBER_60: 60,
 } as const;
 
 export type NewHouseInputsEquipmentCircuitPoleCount = typeof NewHouseInputsEquipmentCircuitPoleCount[keyof typeof NewHouseInputsEquipmentCircuitPoleCount];

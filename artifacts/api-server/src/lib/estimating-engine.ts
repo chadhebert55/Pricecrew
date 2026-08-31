@@ -64,6 +64,7 @@ const compatibleNmBCablesByAmperage: Record<number, readonly string[]> = {
   30: ["10/2 NM-B", "10/3 NM-B"],
   40: ["8/2 NM-B", "8/3 NM-B"],
   50: ["6/3 NM-B"],
+  60: ["6/3 NM-B"],
 };
 
 function compatibleNmBCables(amperage: number) {

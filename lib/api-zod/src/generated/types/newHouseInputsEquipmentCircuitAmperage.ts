@@ -14,4 +14,5 @@ export const NewHouseInputsEquipmentCircuitAmperage = {
   NUMBER_30: 30,
   NUMBER_40: 40,
   NUMBER_50: 50,
+  NUMBER_60: 60,
 } as const;

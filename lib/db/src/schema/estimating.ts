@@ -231,7 +231,7 @@ export type KitchenInputRecord = {
 
 export type AdditionCircuitEntry = {
   label?: string;
-  amperage: 15 | 20 | 30 | 40 | 50;
+  amperage: 15 | 20 | 30 | 40 | 50 | 60;
   poleCount: 1 | 2;
   protectionType: "Standard" | "GFCI" | "AFCI" | "Dual Function";
   cableType:
