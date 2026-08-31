@@ -46,7 +46,7 @@ export default defineConfig({
     },
     {
       command:
-        "NODE_ENV=test PORT=5175 BASE_PATH=/ VITE_E2E_AUTH=false pnpm --filter @workspace/electrical-estimator exec vite --config vite.config.ts --host 127.0.0.1 --mode development",
+        `NODE_ENV=test PORT=5175 BASE_PATH=/ E2E_API_URL=${apiUrl} VITE_E2E_AUTH=false pnpm --filter @workspace/electrical-estimator exec vite --config vite.config.ts --host 127.0.0.1 --mode e2e`,
       cwd: "..",
       url: "http://127.0.0.1:5175",
       reuseExistingServer: false,
