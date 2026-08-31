@@ -15,6 +15,14 @@ import {
 import { sql } from "drizzle-orm";
 
 export type LaborRateType = "residential" | "commercial";
+export const companyTrades = [
+  "Electrical",
+  "Plumbing",
+  "HVAC",
+  "General Contracting",
+  "Other",
+] as const;
+export type CompanyTrade = (typeof companyTrades)[number];
 export type CableType = "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
 export type NewHouseCircuitCableType =
   | CableType
@@ -642,6 +650,9 @@ export type TakeoffQuoteSnapshotRecord = {
 export const companiesTable = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  /** The trade selected during onboarding. Legacy companies remain Electrical. */
+  trade: text("trade").$type<CompanyTrade>().notNull().default("Electrical"),
+  onboardingCompleted: boolean("onboarding_completed").notNull().default(true),
   /** Company-local, customer-safe quote number allocator. */
   nextQuoteSequence: integer("next_quote_sequence").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })

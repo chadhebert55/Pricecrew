@@ -24,6 +24,8 @@ tags:
     description: Company price book operations
   - name: settings
     description: Company estimating settings
+  - name: company
+    description: Authenticated company profile and onboarding state
   - name: billing
     description: PriceCrew subscription and test checkout operations
 paths:
@@ -829,6 +831,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompanySettings"
+  /company:
+    get:
+      operationId: getCompanyProfile
+      tags: [company]
+      summary: Get authenticated company profile
+      responses:
+        "200":
+          description: Company profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyProfile"
+    patch:
+      operationId: updateCompanyProfile
+      tags: [company]
+      summary: Update company name or trade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyProfileUpdate"
+      responses:
+        "200":
+          description: Updated company profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyProfile"
+  /company/onboarding:
+    patch:
+      operationId: updateCompanyOnboarding
+      tags: [company]
+      summary: Update company onboarding completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyOnboardingUpdate"
+      responses:
+        "200":
+          description: Updated company profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyProfile"
 components:
   securitySchemes:
     clerkAuth:
@@ -3495,6 +3544,8 @@ components:
       type: object
       required:
         - companyName
+        - trade
+        - onboardingCompleted
         - laborRate
         - residentialLaborSellRate
         - commercialLaborSellRate
@@ -3536,6 +3587,10 @@ components:
       properties:
         companyName:
           type: string
+        trade:
+          $ref: "#/components/schemas/CompanyTrade"
+        onboardingCompleted:
+          type: boolean
         laborRate:
           type: number
           deprecated: true
@@ -3610,6 +3665,8 @@ components:
       properties:
         companyName:
           type: string
+        trade:
+          $ref: "#/components/schemas/CompanyTrade"
         laborRate:
           type: number
           deprecated: true
@@ -3679,6 +3736,33 @@ components:
         contactAddress: { type: ["string", "null"] }
         proposalAccentColor: { type: string }
         proposalTerms: { type: string }
+    CompanyTrade:
+      type: string
+      enum: [Electrical, Plumbing, HVAC, General Contracting, Other]
+    CompanyProfile:
+      type: object
+      required: [companyName, trade, onboardingCompleted]
+      properties:
+        companyName:
+          type: string
+        trade:
+          $ref: "#/components/schemas/CompanyTrade"
+        onboardingCompleted:
+          type: boolean
+    CompanyProfileUpdate:
+      type: object
+      properties:
+        companyName:
+          type: string
+          minLength: 1
+        trade:
+          $ref: "#/components/schemas/CompanyTrade"
+    CompanyOnboardingUpdate:
+      type: object
+      required: [onboardingCompleted]
+      properties:
+        onboardingCompleted:
+          type: boolean
     BillingPlan:
       type: string
       enum: [solo, crew]

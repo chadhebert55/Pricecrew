@@ -95,7 +95,10 @@ import {
   type PriceBookImportRowRecord,
   type PriceBookImportValueRecord,
 } from "@workspace/db";
-import { ensureEstimatorSeed } from "../lib/estimating-seed";
+import {
+  ensureEstimatorSeed,
+  initializeElectricalStarterData,
+} from "../lib/estimating-seed";
 import {
   HOUSECALL_PRO_CSV_FORMAT,
   HOUSECALL_PRO_DESTINATION,
@@ -134,6 +137,26 @@ import {
 } from "../lib/price-book-import";
 
 const router: IRouter = Router();
+const companyTrades = [
+  "Electrical",
+  "Plumbing",
+  "HVAC",
+  "General Contracting",
+  "Other",
+] as const;
+type CompanyTrade = (typeof companyTrades)[number];
+
+function isCompanyTrade(value: unknown): value is CompanyTrade {
+  return typeof value === "string" && companyTrades.includes(value as CompanyTrade);
+}
+
+function companyProfile(company: typeof companiesTable.$inferSelect) {
+  return {
+    companyName: company.name,
+    trade: company.trade,
+    onboardingCompleted: company.onboardingCompleted,
+  };
+}
 
 router.use((req, res, next) => {
   if (isPublicProposalPath(req)) {
@@ -141,6 +164,75 @@ router.use((req, res, next) => {
     return;
   }
   void requireEstimatorAuth(req, res, next);
+});
+
+router.get("/company", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const [company] = await db
+    .select()
+    .from(companiesTable)
+    .where(eq(companiesTable.id, companyId));
+  if (!company) {
+    res.status(404).json({ error: "Company not found" });
+    return;
+  }
+  res.json(companyProfile(company));
+});
+
+router.patch("/company", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  const body = req.body as Record<string, unknown>;
+  const companyName =
+    typeof body.companyName === "string" ? body.companyName.trim() : undefined;
+  if (
+    (body.companyName !== undefined && !companyName) ||
+    (body.trade !== undefined && !isCompanyTrade(body.trade))
+  ) {
+    res.status(400).json({ error: "Provide a non-empty companyName and a supported trade" });
+    return;
+  }
+  if (companyName === undefined && body.trade === undefined) {
+    res.status(400).json({ error: "Provide companyName or trade" });
+    return;
+  }
+
+  const trade = body.trade as CompanyTrade | undefined;
+  const [company] = await db
+    .update(companiesTable)
+    .set({
+      ...(companyName === undefined ? {} : { name: companyName }),
+      ...(trade === undefined ? {} : { trade }),
+    })
+    .where(eq(companiesTable.id, companyId))
+    .returning();
+  if (!company) {
+    res.status(404).json({ error: "Company not found" });
+    return;
+  }
+  if (trade === "Electrical") {
+    await initializeElectricalStarterData(companyId, db, {
+      applyStarterSettings: !company.onboardingCompleted,
+    });
+  }
+  res.json(companyProfile(company));
+});
+
+router.patch("/company/onboarding", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  if (typeof req.body?.onboardingCompleted !== "boolean") {
+    res.status(400).json({ error: "onboardingCompleted must be a boolean" });
+    return;
+  }
+  const [company] = await db
+    .update(companiesTable)
+    .set({ onboardingCompleted: req.body.onboardingCompleted })
+    .where(eq(companiesTable.id, companyId))
+    .returning();
+  if (!company) {
+    res.status(404).json({ error: "Company not found" });
+    return;
+  }
+  res.json(companyProfile(company));
 });
 
 type QuoteStatus = "draft" | "ready";
@@ -3037,6 +3129,8 @@ router.get("/settings", async (req, res): Promise<void> => {
   res.json(
     GetSettingsResponse.parse({
       companyName: company?.name ?? "Starter Electrical Co.",
+      trade: company?.trade ?? "Electrical",
+      onboardingCompleted: company?.onboardingCompleted ?? false,
       laborRate: settings.residentialLaborSellRate,
       residentialLaborSellRate: settings.residentialLaborSellRate,
       commercialLaborSellRate: settings.commercialLaborSellRate,
@@ -3090,17 +3184,30 @@ router.patch("/settings", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const requestedTrade = req.body?.trade;
+  if (requestedTrade !== undefined && !isCompanyTrade(requestedTrade)) {
+    res.status(400).json({ error: "trade must be Electrical, Plumbing, HVAC, General Contracting, or Other" });
+    return;
+  }
 
   const currentSettings = await companySettings(companyId);
   const residentialLaborSellRate =
     parsed.data.residentialLaborSellRate ??
     parsed.data.laborRate ??
     currentSettings.residentialLaborSellRate;
-  if (parsed.data.companyName !== undefined) {
+  if (parsed.data.companyName !== undefined || requestedTrade !== undefined) {
     await db
       .update(companiesTable)
-      .set({ name: parsed.data.companyName })
+      .set({
+        ...(parsed.data.companyName === undefined
+          ? {}
+          : { name: parsed.data.companyName }),
+        ...(requestedTrade === undefined ? {} : { trade: requestedTrade }),
+      })
       .where(eq(companiesTable.id, companyId));
+  }
+  if (requestedTrade === "Electrical") {
+    await initializeElectricalStarterData(companyId);
   }
 
   const [settings] = await db
@@ -3233,6 +3340,8 @@ router.patch("/settings", async (req, res): Promise<void> => {
   res.json(
     UpdateSettingsResponse.parse({
       companyName: company?.name ?? "Starter Electrical Co.",
+      trade: company?.trade ?? "Electrical",
+      onboardingCompleted: company?.onboardingCompleted ?? false,
       laborRate: settings.residentialLaborSellRate,
       residentialLaborSellRate: settings.residentialLaborSellRate,
       commercialLaborSellRate: settings.commercialLaborSellRate,

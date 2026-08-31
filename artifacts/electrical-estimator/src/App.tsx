@@ -9,6 +9,12 @@ import {
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  type CompanyProfile,
+  type CompanyTrade,
+  getGetCompanyProfileQueryKey,
+  useGetCompanyProfile,
+} from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -97,6 +103,9 @@ const Settings = lazy(() =>
 const Billing = lazy(() =>
   import('@/pages/billing').then(({ Billing }) => ({ default: Billing })),
 );
+const Onboarding = lazy(() =>
+  import('@/pages/onboarding').then(({ Onboarding }) => ({ default: Onboarding })),
+);
 const NotFound = lazy(() => import('@/pages/not-found'));
 
 const queryClient = new QueryClient({
@@ -130,7 +139,6 @@ const clerkAppearance = {
   options: {
     logoPlacement: 'inside' as const,
     logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
     colorPrimary: '#f97316',
@@ -173,7 +181,8 @@ const clerkAppearance = {
   },
 };
 
-function PrivateRouteSwitch() {
+function PrivateRouteSwitch({ trade }: { trade: CompanyTrade }) {
+  const isElectrical = trade === 'Electrical';
   return (
     <Suspense fallback={<RouteLoading />}>
       <Switch>
@@ -181,19 +190,20 @@ function PrivateRouteSwitch() {
             <Route path="/dashboard" component={() => <Redirect to="/" />} />
             <Route path="/" component={Dashboard} />
             <Route path="/quotes" component={QuotesList} />
-            <Route path="/quotes/new" component={NewQuote} />
-            <Route path="/quotes/new/bathroom" component={NewBathroomQuote} />
-            <Route path="/quotes/new/kitchen" component={NewKitchenQuote} />
-            <Route path="/quotes/new/addition" component={NewAdditionQuote} />
-            <Route path="/quotes/new/recessed-lighting" component={NewRecessedLightingQuote} />
-            <Route path="/quotes/new/service-upgrade" component={NewServiceUpgradeQuote} />
-            <Route path="/quotes/new/panel-replacement" component={NewPanelReplacementQuote} />
+            {isElectrical && <Route path="/quotes/new" component={NewQuote} />}
+            {!isElectrical && <Route path="/quotes/new" component={() => <Redirect to="/builders" />} />}
+            {isElectrical && <Route path="/quotes/new/bathroom" component={NewBathroomQuote} />}
+            {isElectrical && <Route path="/quotes/new/kitchen" component={NewKitchenQuote} />}
+            {isElectrical && <Route path="/quotes/new/addition" component={NewAdditionQuote} />}
+            {isElectrical && <Route path="/quotes/new/recessed-lighting" component={NewRecessedLightingQuote} />}
+            {isElectrical && <Route path="/quotes/new/service-upgrade" component={NewServiceUpgradeQuote} />}
+            {isElectrical && <Route path="/quotes/new/panel-replacement" component={NewPanelReplacementQuote} />}
             <Route path="/quotes/new/service-call" component={NewServiceCallQuote} />
             <Route path="/quotes/new/time-materials" component={NewTimeMaterialsQuote} />
             <Route path="/quotes/new/custom" component={NewCustomQuote} />
-            <Route path="/quotes/new/new-house" component={NewHouseQuote} />
+            {isElectrical && <Route path="/quotes/new/new-house" component={NewHouseQuote} />}
             <Route path="/quotes/:id" component={QuoteDetail} />
-            <Route path="/builders" component={Builders} />
+            <Route path="/builders" component={() => <Builders trade={trade} />} />
             <Route path="/price-book" component={PriceBook} />
             <Route path="/customers" component={Customers} />
             <Route path="/customers/:id" component={CustomerDetail} />
@@ -206,15 +216,57 @@ function PrivateRouteSwitch() {
 }
 
 function PrivateRouter() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useAuth();
 
   if (!isLoaded) return <RouteLoading />;
-  if (!isSignedIn) return <PrivateLanding />;
+  if (!isSignedIn || !userId) return <PrivateLanding />;
+
+  return <AuthenticatedPrivateRouter userId={userId} />;
+}
+
+function AuthenticatedPrivateRouter({ userId }: { userId: string }) {
+  const [, setLocation] = useLocation();
+  const companyQueryKey = [...getGetCompanyProfileQueryKey(), userId] as const;
+  const company = useGetCompanyProfile({
+    query: { queryKey: companyQueryKey },
+  });
+
+  if (company.isLoading) return <RouteLoading />;
+  if (company.isError || !company.data) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-destructive">
+        PriceCrew could not load your company workspace. Refresh the page and try again.
+      </div>
+    );
+  }
+
+  const updateCompanyCache = (profile: CompanyProfile) => {
+    queryClient.setQueryData(companyQueryKey, profile);
+  };
+
+  if (!company.data.onboardingCompleted) {
+    return (
+      <Suspense fallback={<RouteLoading />}>
+        <Onboarding
+          initialCompanyName={company.data.companyName}
+          initialTrade={company.data.trade}
+          onComplete={(profile) => {
+            updateCompanyCache(profile);
+            setLocation('/');
+          }}
+          onGoToPriceBook={(profile) => {
+            updateCompanyCache(profile);
+            setLocation('/price-book');
+          }}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <RoutedErrorBoundary>
       <Shell>
-        <PrivateRouteSwitch />
+        <PrivateRouteSwitch trade={company.data.trade} />
       </Shell>
     </RoutedErrorBoundary>
   );
@@ -225,13 +277,10 @@ function PrivateLanding() {
     <main className="min-h-screen bg-secondary px-6 py-16 text-secondary-foreground">
       <div className="mx-auto flex min-h-[70vh] max-w-4xl flex-col justify-center">
         <div className="mb-8 flex items-center gap-3">
-          <img src={`${basePath}/logo.svg`} alt="" className="h-12 w-12" />
-          <span className="font-mono text-sm uppercase tracking-[0.24em] text-primary">
-            Electrical Estimator
-          </span>
+          <span className="text-2xl font-black tracking-tight text-primary">PriceCrew</span>
         </div>
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
-          Private estimating for your contracting company.
+          Private estimating for your service business.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-secondary-foreground/70">
           Build quotes, manage customers, and maintain company pricing in one
@@ -346,7 +395,7 @@ function ClerkProviderWithRoutes() {
         signUp: {
           start: {
             title: 'Create your account',
-            subtitle: 'Set up secure access to the estimator',
+            subtitle: 'Set up secure access to your workspace',
           },
         },
       }}
@@ -373,7 +422,7 @@ function E2eProviderWithRoutes() {
           <Route>
             <E2eShell>
               <RoutedErrorBoundary>
-                <PrivateRouteSwitch />
+                <PrivateRouteSwitch trade="Electrical" />
               </RoutedErrorBoundary>
             </E2eShell>
           </Route>

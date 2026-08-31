@@ -2337,8 +2337,21 @@ export const CompanySettingsEvDefaultCableType = {
   '8/2_SER': '8/2 SER',
 } as const;
 
+export type CompanyTrade = typeof CompanyTrade[keyof typeof CompanyTrade];
+
+
+export const CompanyTrade = {
+  Electrical: 'Electrical',
+  Plumbing: 'Plumbing',
+  HVAC: 'HVAC',
+  General_Contracting: 'General Contracting',
+  Other: 'Other',
+} as const;
+
 export interface CompanySettings {
   companyName: string;
+  trade: CompanyTrade;
+  onboardingCompleted: boolean;
   /**
      * Legacy alias for residentialLaborSellRate.
      * @deprecated
@@ -2434,6 +2447,7 @@ export const CompanySettingsUpdateEvDefaultCableType = {
 
 export interface CompanySettingsUpdate {
   companyName?: string;
+  trade?: CompanyTrade;
   /**
      * Legacy alias for residentialLaborSellRate.
      * @deprecated
@@ -2515,6 +2529,22 @@ export interface CompanySettingsUpdate {
   contactAddress?: string | null;
   proposalAccentColor?: string;
   proposalTerms?: string;
+}
+
+export interface CompanyProfile {
+  companyName: string;
+  trade: CompanyTrade;
+  onboardingCompleted: boolean;
+}
+
+export interface CompanyProfileUpdate {
+  /** @minLength 1 */
+  companyName?: string;
+  trade?: CompanyTrade;
+}
+
+export interface CompanyOnboardingUpdate {
+  onboardingCompleted: boolean;
 }
 
 export type BillingPlan = typeof BillingPlan[keyof typeof BillingPlan];

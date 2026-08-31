@@ -7296,6 +7296,8 @@ export const getSettingsResponseNewHouseLaborAdjustmentHoursMin = 0;
 
 export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']),
+  "onboardingCompleted": zod.boolean(),
   "laborRate": zod.number().describe('Legacy alias for residentialLaborSellRate.'),
   "residentialLaborSellRate": zod.number(),
   "commercialLaborSellRate": zod.number(),
@@ -7388,6 +7390,7 @@ export const updateSettingsBodyNewHouseLaborAdjustmentHoursMin = 0;
 
 export const UpdateSettingsBody = zod.object({
   "companyName": zod.string().optional(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']).optional(),
   "laborRate": zod.number().optional().describe('Legacy alias for residentialLaborSellRate.'),
   "residentialLaborSellRate": zod.number().optional(),
   "commercialLaborSellRate": zod.number().optional(),
@@ -7476,6 +7479,8 @@ export const updateSettingsResponseNewHouseLaborAdjustmentHoursMin = 0;
 
 export const UpdateSettingsResponse = zod.object({
   "companyName": zod.string(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']),
+  "onboardingCompleted": zod.boolean(),
   "laborRate": zod.number().describe('Legacy alias for residentialLaborSellRate.'),
   "residentialLaborSellRate": zod.number(),
   "commercialLaborSellRate": zod.number(),
@@ -7517,6 +7522,48 @@ export const UpdateSettingsResponse = zod.object({
   "contactAddress": zod.string().nullish(),
   "proposalAccentColor": zod.string(),
   "proposalTerms": zod.string()
+})
+
+
+/**
+ * @summary Get authenticated company profile
+ */
+export const GetCompanyProfileResponse = zod.object({
+  "companyName": zod.string(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']),
+  "onboardingCompleted": zod.boolean()
+})
+
+
+/**
+ * @summary Update company name or trade
+ */
+
+
+
+export const UpdateCompanyProfileBody = zod.object({
+  "companyName": zod.string().min(1).optional(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']).optional()
+})
+
+export const UpdateCompanyProfileResponse = zod.object({
+  "companyName": zod.string(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']),
+  "onboardingCompleted": zod.boolean()
+})
+
+
+/**
+ * @summary Update company onboarding completion
+ */
+export const UpdateCompanyOnboardingBody = zod.object({
+  "onboardingCompleted": zod.boolean()
+})
+
+export const UpdateCompanyOnboardingResponse = zod.object({
+  "companyName": zod.string(),
+  "trade": zod.enum(['Electrical', 'Plumbing', 'HVAC', 'General Contracting', 'Other']),
+  "onboardingCompleted": zod.boolean()
 })
 
 

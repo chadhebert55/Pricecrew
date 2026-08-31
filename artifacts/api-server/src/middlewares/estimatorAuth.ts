@@ -6,9 +6,8 @@ import {
   companySettingsTable,
   companiesTable,
   db,
-  priceBookItemsTable,
 } from "@workspace/db";
-import { DEFAULT_COMPANY_ID, ensureEstimatorSeed } from "../lib/estimating-seed";
+import { ensureEstimatorSeed } from "../lib/estimating-seed";
 
 declare global {
   namespace Express {
@@ -38,8 +37,8 @@ export function resolveEstimatorAuthorization(
 /**
  * Require Clerk authentication and resolve the app-owned company membership.
  *
- * New identities receive a separate company initialized from catalog/settings
- * defaults. Existing customers and quotes are never copied or exposed.
+ * New identities receive a separate neutral company. Existing customers,
+ * quotes, and catalog rows are never copied or exposed.
  */
 export async function requireEstimatorAuth(
   req: Request,
@@ -104,7 +103,7 @@ async function provisionIsolatedCompany(userId: string) {
     return await db.transaction(async (tx) => {
       const [company] = await tx
         .insert(companiesTable)
-        .values({ name: "My Electrical Company" })
+        .values({ name: "My Company", trade: "Other", onboardingCompleted: false })
         .returning();
       if (!company) throw new Error("Unable to provision estimating company");
 
@@ -115,45 +114,37 @@ async function provisionIsolatedCompany(userId: string) {
         .returning();
       if (!membership) throw new MembershipCreatedConcurrently();
 
-      const [starterSettings, starterPriceBook] = await Promise.all([
-        tx
-          .select()
-          .from(companySettingsTable)
-          .where(eq(companySettingsTable.companyId, DEFAULT_COMPANY_ID))
-          .then(([settings]) => settings),
-        tx
-          .select()
-          .from(priceBookItemsTable)
-          .where(eq(priceBookItemsTable.companyId, DEFAULT_COMPANY_ID)),
-      ]);
-      if (!starterSettings) {
-        throw new Error("Starter estimating settings were not initialized");
-      }
-
-      const {
-        id: _settingsId,
-        companyId: _settingsCompanyId,
-        updatedAt: _settingsUpdatedAt,
-        ...settingsDefaults
-      } = starterSettings;
+      // A new company is intentionally neutral: no catalog, customers, or
+      // quotes are copied from the legacy electrical starter tenant.
       await tx.insert(companySettingsTable).values({
-        ...settingsDefaults,
         companyId: company.id,
+        laborRate: 0,
+        residentialLaborSellRate: 0,
+        commercialLaborSellRate: 0,
+        loadedLaborCost: 0,
+        materialMarkup: 0,
+        targetMargin: 0,
+        defaultTaxRate: 0,
+        serviceUpgradeCrewSize: 1,
+        serviceUpgradeHoursPerPerson: 0,
+        panelReplacementCrewSize: 1,
+        panelReplacementHoursPerPerson: 0,
+        serviceCallCrewSize: 1,
+        serviceCallHoursPerVisit: 0,
+        timeMaterialsCrewSize: 1,
+        timeMaterialsHours: 0,
+        timeMaterialsLaborSellRate: 0,
+        timeMaterialsLoadedLaborCost: 0,
+        timeMaterialsMaterialMarkup: 0,
+        timeMaterialsTargetMargin: 0,
+        customLaborHours: 0,
+        customLaborSellRate: 0,
+        customLoadedLaborCost: 0,
+        customMaterialMarkup: 0,
+        customTargetMargin: 0,
+        newHouseCrewSize: 1,
+        newHouseHoursPerPerson: 0,
       });
-
-      if (starterPriceBook.length > 0) {
-        await tx.insert(priceBookItemsTable).values(
-          starterPriceBook.map((item) => {
-            const {
-              id: _itemId,
-              companyId: _itemCompanyId,
-              updatedAt: _itemUpdatedAt,
-              ...catalogDefaults
-            } = item;
-            return { ...catalogDefaults, companyId: company.id };
-          }),
-        );
-      }
 
       return membership;
     });

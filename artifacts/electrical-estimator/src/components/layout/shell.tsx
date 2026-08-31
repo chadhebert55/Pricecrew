@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter"
 import { useClerk, useUser } from "@clerk/react"
-import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, Zap, LogOut, Menu, X, CreditCard } from "lucide-react"
+import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, LogOut, Menu, X, CreditCard } from "lucide-react"
 import { lazy, Suspense, useEffect, useState } from "react"
 
 const ProposalNotificationCenter = lazy(() =>
@@ -42,7 +42,7 @@ function ShellFrame({
   }, [location])
 
   const navigation = (
-    <nav className="flex-1 space-y-1 py-4" aria-label="Main navigation">
+    <nav className="flex-1 overflow-y-auto space-y-1 py-4" aria-label="Main navigation">
       {navItems.map((item) => {
         const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href))
         return (
@@ -66,10 +66,7 @@ function ShellFrame({
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-secondary text-secondary-foreground md:flex">
         <div className="flex items-center gap-3 border-b border-secondary-border p-4">
-          <div className="rounded bg-primary p-1.5 text-primary-foreground">
-            <Zap size={20} />
-          </div>
-          <span className="text-lg font-bold uppercase tracking-tight">Estimator</span>
+          <span className="text-xl font-black tracking-tight text-primary">PriceCrew</span>
         </div>
         {navigation}
         {account}
@@ -87,10 +84,7 @@ function ShellFrame({
           <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-secondary-border bg-secondary text-secondary-foreground shadow-xl md:hidden">
             <div className="flex items-center justify-between border-b border-secondary-border p-4">
               <div className="flex items-center gap-3">
-                <div className="rounded bg-primary p-1.5 text-primary-foreground">
-                  <Zap size={20} />
-                </div>
-                <span className="text-lg font-bold uppercase tracking-tight">Estimator</span>
+                <span className="text-xl font-black tracking-tight text-primary">PriceCrew</span>
               </div>
               <button
                 type="button"
@@ -121,7 +115,7 @@ function ShellFrame({
             >
               <Menu size={20} />
             </button>
-            <span className="font-bold uppercase tracking-tight">Estimator</span>
+            <span className="text-lg font-black tracking-tight text-primary">PriceCrew</span>
           </div>
           <Suspense
             fallback={

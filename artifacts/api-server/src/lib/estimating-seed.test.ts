@@ -5,12 +5,14 @@ import { and, eq, inArray } from "drizzle-orm";
 import {
   companiesTable,
   companySettingsTable,
+  customersTable,
   db,
   priceBookItemsTable,
   quotesTable,
 } from "@workspace/db";
 import {
   reconcileRequiredEstimatingItems,
+  initializeElectricalStarterData,
   seedEstimatorData,
 } from "./estimating-seed";
 
@@ -803,6 +805,107 @@ test("legacy contractor-edited starter surge cost is preserved and becomes resol
       throw new RollbackFreshSeedTest();
     });
     assert.fail("Expected the legacy-seed transaction to roll back");
+  } catch (error) {
+    if (!(error instanceof RollbackFreshSeedTest)) throw error;
+  }
+});
+
+test("electrical initialization is additive and never creates demo customer or quote data", async () => {
+  try {
+    await db.transaction(async (transaction) => {
+      const [company] = await transaction
+        .insert(companiesTable)
+        .values({
+          name: `Neutral company ${randomUUID()}`,
+          trade: "Plumbing",
+          onboardingCompleted: false,
+        })
+        .returning();
+      assert.ok(company);
+      await transaction.insert(companySettingsTable).values({
+        companyId: company.id,
+        loadedLaborCost: 77,
+      });
+      await transaction.insert(priceBookItemsTable).values({
+        companyId: company.id,
+        category: "Contractor",
+        item: "Keep this item",
+        unit: "ea",
+        unitCost: 123,
+        isContractorOwned: true,
+        isDefault: false,
+      });
+
+      const neutralRows = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, company.id));
+      assert.equal(neutralRows.length, 1);
+      assert.equal(
+        (
+          await transaction
+            .select()
+            .from(customersTable)
+            .where(eq(customersTable.companyId, company.id))
+        ).length,
+        0,
+      );
+
+      await transaction
+        .update(companiesTable)
+        .set({ trade: "Electrical" })
+        .where(eq(companiesTable.id, company.id));
+      await initializeElectricalStarterData(
+        company.id,
+        transaction as unknown as typeof db,
+      );
+      const initializedRows = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, company.id));
+      assert.equal(
+        initializedRows.find((row) => row.item === "Keep this item")?.unitCost,
+        123,
+      );
+      assert.ok(initializedRows.length > 1);
+      const [settings] = await transaction
+        .select()
+        .from(companySettingsTable)
+        .where(eq(companySettingsTable.companyId, company.id));
+      assert.equal(settings?.loadedLaborCost, 77);
+      assert.equal(
+        (
+          await transaction
+            .select()
+            .from(customersTable)
+            .where(eq(customersTable.companyId, company.id))
+        ).length,
+        0,
+      );
+      assert.equal(
+        (
+          await transaction
+            .select()
+            .from(quotesTable)
+            .where(eq(quotesTable.companyId, company.id))
+        ).length,
+        0,
+      );
+
+      await transaction
+        .update(companiesTable)
+        .set({ trade: "HVAC" })
+        .where(eq(companiesTable.id, company.id));
+      await reconcileRequiredEstimatingItems(transaction as unknown as typeof db);
+      const afterTradeChange = await transaction
+        .select()
+        .from(priceBookItemsTable)
+        .where(eq(priceBookItemsTable.companyId, company.id));
+      assert.equal(afterTradeChange.length, initializedRows.length);
+
+      throw new RollbackFreshSeedTest();
+    });
+    assert.fail("Expected the initialization transaction to roll back");
   } catch (error) {
     if (!(error instanceof RollbackFreshSeedTest)) throw error;
   }

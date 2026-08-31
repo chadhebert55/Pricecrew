@@ -230,17 +230,52 @@ export async function reconcileRequiredEstimatingItems(
   database: typeof db = db,
 ): Promise<void> {
   const companies = await database
-    .select({ id: companiesTable.id })
+    .select({ id: companiesTable.id, trade: companiesTable.trade })
     .from(companiesTable);
   for (const company of companies) {
+    if (company.trade !== "Electrical") continue;
     await reconcileRequiredItemsForCompany(database, company.id);
   }
 }
 
+/**
+ * Adds electrical defaults only when a company chooses Electrical. This is
+ * insert-only for catalog/settings rows, so changing trades never removes or
+ * overwrites contractor records. Deliberately excludes demo customer/quote
+ * fixtures used by the legacy starter tenant.
+ */
+export async function initializeElectricalStarterData(
+  companyId: number,
+  database: typeof db = db,
+  options: { applyStarterSettings?: boolean } = {},
+): Promise<void> {
+  await seedEstimatorData(database, { companyId, includeDemo: false });
+  if (!options.applyStarterSettings) return;
+
+  const [starterSettings] = await database
+    .select()
+    .from(companySettingsTable)
+    .where(eq(companySettingsTable.companyId, DEFAULT_COMPANY_ID));
+  if (!starterSettings) {
+    throw new Error("Electrical starter settings were not initialized");
+  }
+  const {
+    id: _settingsId,
+    companyId: _settingsCompanyId,
+    updatedAt: _settingsUpdatedAt,
+    ...settingsDefaults
+  } = starterSettings;
+  await database
+    .update(companySettingsTable)
+    .set(settingsDefaults)
+    .where(eq(companySettingsTable.companyId, companyId));
+}
+
 export async function seedEstimatorData(
   database: typeof db = db,
-  options: { companyId?: number } = {},
+  options: { companyId?: number; includeDemo?: boolean } = {},
 ): Promise<void> {
+  const includeDemo = options.includeDemo ?? true;
   const [existingCompany] = options.companyId
     ? await database
         .select()
@@ -294,24 +329,25 @@ export async function seedEstimatorData(
     });
   }
 
-  const [existingCustomer] = await database
-    .select()
-    .from(customersTable)
-    .where(eq(customersTable.companyId, company.id))
-    .limit(1);
-
-  const customer =
-    existingCustomer ??
-    (
-      await database
-        .insert(customersTable)
-        .values({
-          companyId: company.id,
-          name: "Waverly Property Group",
-          email: "projects@waverly.example",
-        })
-        .returning()
-    )[0];
+  const customer = includeDemo
+    ? (
+        await database
+          .select()
+          .from(customersTable)
+          .where(eq(customersTable.companyId, company.id))
+          .limit(1)
+      )[0] ??
+      (
+        await database
+          .insert(customersTable)
+          .values({
+            companyId: company.id,
+            name: "Waverly Property Group",
+            email: "projects@waverly.example",
+          })
+          .returning()
+      )[0]
+    : undefined;
 
   const [existingPriceBookItem] = await database
     .select()

@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompanySettingsUpdateEvDefaultCableType } from './companySettingsUpdateEvDefaultCableType';
+import type { CompanyTrade } from './companyTrade';
 import type { LaborRateType } from './laborRateType';
 
 export interface CompanySettingsUpdate {
   companyName?: string;
+  trade?: CompanyTrade;
   /**
      * Legacy alias for residentialLaborSellRate.
      * @deprecated

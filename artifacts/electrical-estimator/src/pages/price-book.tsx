@@ -8,7 +8,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { AlertTriangle, CheckCircle2, FileClock, Search, Save } from "lucide-react"
+import { AlertTriangle, CheckCircle2, FileClock, Search, Save, BookOpen } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -80,62 +80,66 @@ export function PriceBook() {
       />
 
       <Card>
-        <div className="grid gap-3 border-b border-border bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_14rem_14rem_14rem]">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search item, category, or builder..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <select
-            aria-label="Filter by builder"
-            data-testid="price-book-builder-filter"
-            className={selectClassName}
-            value={builder}
-            onChange={(event) => setBuilder(event.target.value)}
-          >
-            <option value="all">All builders</option>
-            {builders.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-          <select
-            aria-label="Filter by category"
-            data-testid="price-book-category-filter"
-            className={selectClassName}
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            <option value="all">All categories</option>
-            {allCategories.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-          <select
-            aria-label="Filter by audit status"
-            data-testid="price-book-status-filter"
-            className={selectClassName}
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="unresolved">All unresolved</option>
-            <option value="active-unresolved">Active unresolved only</option>
-            <option value="verified">Verified pricing</option>
-            <option value="all">All rows</option>
-          </select>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 text-sm">
-          <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
-            <AlertTriangle className="h-4 w-4" />
-            {unresolvedActiveCount} active selections need audit
-          </span>
-          <span className="text-muted-foreground">
-            {unresolvedCount} unresolved of {allItems.length} total rows
-          </span>
-          <span className="ml-auto text-muted-foreground">
-            Showing {filteredItems.length} rows
-          </span>
-        </div>
+        {allItems.length > 0 && (
+          <>
+            <div className="grid gap-3 border-b border-border bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_14rem_14rem_14rem]">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search item, category, or builder..."
+                  className="pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <select
+                aria-label="Filter by builder"
+                data-testid="price-book-builder-filter"
+                className={selectClassName}
+                value={builder}
+                onChange={(event) => setBuilder(event.target.value)}
+              >
+                <option value="all">All builders</option>
+                {builders.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+              <select
+                aria-label="Filter by category"
+                data-testid="price-book-category-filter"
+                className={selectClassName}
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                <option value="all">All categories</option>
+                {allCategories.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+              <select
+                aria-label="Filter by audit status"
+                data-testid="price-book-status-filter"
+                className={selectClassName}
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="unresolved">All unresolved</option>
+                <option value="active-unresolved">Active unresolved only</option>
+                <option value="verified">Verified pricing</option>
+                <option value="all">All rows</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 text-sm">
+              <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
+                <AlertTriangle className="h-4 w-4" />
+                {unresolvedActiveCount} active selections need audit
+              </span>
+              <span className="text-muted-foreground">
+                {unresolvedCount} unresolved of {allItems.length} total rows
+              </span>
+              <span className="ml-auto text-muted-foreground">
+                Showing {filteredItems.length} rows
+              </span>
+            </div>
+          </>
+        )}
         <CardContent className="p-0">
           {isLoading ? (
              <div className="p-8 text-center text-muted-foreground">Loading price book...</div>
@@ -165,9 +169,33 @@ export function PriceBook() {
                   </Table>
                 </div>
               ))}
-              {filteredItems.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">No items match your search.</div>
-              )}
+              {allItems.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+                    <BookOpen className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-foreground">No price book items</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Your Price Book is empty. Review a supplier CSV in the import panel above to populate it.
+                  </p>
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>No items match your filters.</p>
+                  <Button
+                    variant="link"
+                    className="mt-2"
+                    onClick={() => {
+                      setSearch("")
+                      setBuilder("all")
+                      setCategory("all")
+                      setStatus("all")
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              ) : null}
             </div>
           )}
         </CardContent>
@@ -248,7 +276,7 @@ function PriceBookImportHistory({
           </div>
         ) : !history || history.items.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
-            No saved import reports yet. Review a Northeast customer-price CSV to create one.
+            No saved import reports yet. Review a supplier customer-price CSV to create one.
           </div>
         ) : (
           <>

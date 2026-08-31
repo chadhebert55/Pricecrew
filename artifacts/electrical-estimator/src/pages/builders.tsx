@@ -3,8 +3,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Link } from "wouter"
 import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes, House, HousePlus } from "lucide-react"
+import type { CompanyTrade } from "@workspace/api-client-react"
 
-export function Builders() {
+export function Builders({ trade }: { trade: CompanyTrade }) {
   const modules = [
     {
       id: "new-house",
@@ -96,15 +97,25 @@ export function Builders() {
     }
   ]
 
+  const genericModuleIds = new Set(["custom", "service-call", "time-materials"])
+  const visibleModules =
+    trade === "Electrical"
+      ? modules
+      : modules.filter((module) => genericModuleIds.has(module.id))
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Estimating Builders</h1>
-        <p className="text-muted-foreground mt-1">Parametric estimating modules designed for speed and accuracy.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quote Builders</h1>
+        <p className="text-muted-foreground mt-1">
+          {trade === "Electrical"
+            ? "Electrical estimating modules designed for speed and accuracy."
+            : `Start with flexible ${trade} quote builders while trade-specific modules are developed.`}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {modules.map((mod) => (
+        {visibleModules.map((mod) => (
           <Card key={mod.id} className={`flex flex-col ${mod.status === 'upcoming' ? 'opacity-70 bg-muted/30' : 'border-primary shadow-sm hover:shadow-md transition-shadow'}`}>
             <CardHeader>
               <div className="flex justify-between items-start mb-4">

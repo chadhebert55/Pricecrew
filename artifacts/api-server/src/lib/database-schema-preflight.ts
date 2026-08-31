@@ -13,6 +13,10 @@ export type UniqueIndexRequirement = {
   table: string;
   definitionIncludes: string;
 };
+export type ColumnRequirement = {
+  table: string;
+  column: string;
+};
 
 type ForeignKeyRow = {
   constraint_name: string;
@@ -40,6 +44,11 @@ export const requiredTables = [
   "takeoff_items",
   "takeoff_review_events",
 ] as const;
+
+export const requiredColumns: ColumnRequirement[] = [
+  { table: "companies", column: "trade" },
+  { table: "companies", column: "onboarding_completed" },
+];
 
 export const requiredForeignKeys: ForeignKeyRequirement[] = [
   {
@@ -181,6 +190,7 @@ export const requiredUniqueIndexes: UniqueIndexRequirement[] = [
 
 export type DatabaseSchemaPreflightResult = {
   missingTables: string[];
+  missingColumns: string[];
   missingForeignKeys: string[];
   missingUniqueIndexes: string[];
 };
@@ -198,7 +208,7 @@ function formatMissingItems(label: string, items: string[]) {
 export async function inspectEstimatingSchema(
   client: Queryable,
 ): Promise<DatabaseSchemaPreflightResult> {
-  const [tableResult, foreignKeyResult, indexResult] = await Promise.all([
+  const [tableResult, columnResult, foreignKeyResult, indexResult] = await Promise.all([
     client.query<{ table_name: string }>(
       `
         SELECT table_name
@@ -208,6 +218,20 @@ export async function inspectEstimatingSchema(
           AND table_name = ANY($1::text[])
       `,
       [requiredTables],
+    ),
+    client.query<{ table_name: string; column_name: string }>(
+      `
+        SELECT table_name, column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND (table_name, column_name) IN (
+            SELECT * FROM unnest($1::text[], $2::text[])
+          )
+      `,
+      [
+        requiredColumns.map((column) => column.table),
+        requiredColumns.map((column) => column.column),
+      ],
     ),
     client.query<ForeignKeyRow>(
       `
@@ -237,6 +261,9 @@ export async function inspectEstimatingSchema(
   ]);
 
   const existingTables = new Set(tableResult.rows.map((row) => row.table_name));
+  const existingColumns = new Set(
+    columnResult.rows.map((row) => `${row.table_name}.${row.column_name}`),
+  );
   const existingForeignKeys = new Map(
     foreignKeyResult.rows.map((row) => [
       row.constraint_name,
@@ -258,6 +285,9 @@ export async function inspectEstimatingSchema(
 
   return {
     missingTables: requiredTables.filter((table) => !existingTables.has(table)),
+    missingColumns: requiredColumns
+      .filter((column) => !existingColumns.has(`${column.table}.${column.column}`))
+      .map((column) => `${column.table}.${column.column}`),
     missingForeignKeys: requiredForeignKeys
       .filter((foreignKey) => {
         const actual = existingForeignKeys.get(foreignKey.name);
@@ -285,6 +315,7 @@ export async function inspectEstimatingSchema(
 export function schemaPreflightError(result: DatabaseSchemaPreflightResult) {
   const missing = [
     formatMissingItems("Missing tables", result.missingTables),
+    formatMissingItems("Missing columns", result.missingColumns),
     formatMissingItems("Missing foreign keys", result.missingForeignKeys),
     formatMissingItems("Missing unique indexes", result.missingUniqueIndexes),
   ].filter(Boolean);

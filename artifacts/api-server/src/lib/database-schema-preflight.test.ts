@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   inspectEstimatingSchema,
   requiredForeignKeys,
+  requiredColumns,
   requiredTables,
   requiredUniqueIndexes,
   schemaPreflightError,
@@ -10,6 +11,7 @@ import {
 
 type Catalog = {
   tables: Array<{ table_name: string }>;
+  columns: Array<{ table_name: string; column_name: string }>;
   foreignKeys: Array<{
     constraint_name: string;
     table_name: string;
@@ -25,6 +27,10 @@ type Catalog = {
 function synchronizedCatalog(): Catalog {
   return {
     tables: requiredTables.map((table_name) => ({ table_name })),
+    columns: requiredColumns.map((column) => ({
+      table_name: column.table,
+      column_name: column.column,
+    })),
     foreignKeys: requiredForeignKeys.map((foreignKey) => ({
       constraint_name: foreignKey.name,
       table_name: foreignKey.table,
@@ -45,6 +51,9 @@ function catalogClient(catalog: Catalog) {
 
     if (statement.includes("information_schema.tables")) {
       return { rows: catalog.tables };
+    }
+    if (statement.includes("information_schema.columns")) {
+      return { rows: catalog.columns };
     }
     if (statement.includes("pg_constraint")) {
       return { rows: catalog.foreignKeys };
@@ -70,13 +79,24 @@ test("accepts a synchronized schema using only catalog SELECT queries", async ()
 
   assert.deepEqual(result, {
     missingTables: [],
+    missingColumns: [],
     missingForeignKeys: [],
     missingUniqueIndexes: [],
   });
-  assert.equal(queries.length, 3);
+  assert.equal(queries.length, 4);
   for (const query of queries) {
     assert.match(query.trim(), /^SELECT\b/i);
   }
+});
+
+test("reports missing company trade/onboarding persistence columns", async () => {
+  const catalog = synchronizedCatalog();
+  catalog.columns = catalog.columns.filter(
+    (column) => column.column_name !== "onboarding_completed",
+  );
+
+  const result = await inspectEstimatingSchema(catalogClient(catalog).client);
+  assert.deepEqual(result.missingColumns, ["companies.onboarding_completed"]);
 });
 
 test("reports a missing required table with schema-sync guidance", async () => {

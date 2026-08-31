@@ -1,9 +1,13 @@
 import {
+  type CompanyTrade,
+  CompanyTrade as CompanyTradeValues,
+  getGetCompanyProfileQueryKey,
   getGetSettingsQueryKey,
   useGetSettings,
   useUpdateSettings,
 } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query"
+import { useAuth } from "@clerk/react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,12 +25,20 @@ function RateTypeField({ label, testId, value, onChange }: { label: string; test
 
 export function Settings() {
   const queryClient = useQueryClient()
+  const { userId } = useAuth()
   const { toast } = useToast()
   const { data: settings, isLoading } = useGetSettings()
   const updateSettings = useUpdateSettings({
     mutation: {
       onSuccess: (updatedSettings) => {
         queryClient.setQueryData(getGetSettingsQueryKey(), updatedSettings)
+        if (userId) {
+          queryClient.setQueryData([...getGetCompanyProfileQueryKey(), userId], {
+            companyName: updatedSettings.companyName,
+            trade: updatedSettings.trade,
+            onboardingCompleted: updatedSettings.onboardingCompleted,
+          })
+        }
         toast({ title: "Settings saved", description: "Company defaults and proposal presentation have been updated." })
       },
       onError: (error) => toast({ variant: "destructive", title: "Could not save settings", description: error instanceof Error ? error.message : "Please review the values and try again." }),
@@ -35,6 +47,7 @@ export function Settings() {
   
   const [form, setForm] = useState({
     companyName: "",
+    trade: "Other" as CompanyTrade,
     residentialLaborSellRate: "0",
     commercialLaborSellRate: "0",
     loadedLaborCost: "0",
@@ -81,6 +94,7 @@ export function Settings() {
     if (settings) {
       setForm({
         companyName: settings.companyName,
+        trade: settings.trade,
         residentialLaborSellRate: settings.residentialLaborSellRate.toString(),
         commercialLaborSellRate: settings.commercialLaborSellRate.toString(),
         loadedLaborCost: settings.loadedLaborCost.toString(),
@@ -129,6 +143,7 @@ export function Settings() {
     updateSettings.mutate({
       data: {
         companyName: form.companyName,
+          trade: form.trade,
         residentialLaborSellRate: parseFloat(form.residentialLaborSellRate),
         commercialLaborSellRate: parseFloat(form.commercialLaborSellRate),
         loadedLaborCost: parseFloat(form.loadedLaborCost),
@@ -195,6 +210,28 @@ export function Settings() {
               value={form.companyName}
               onChange={(e) => setForm(f => ({ ...f, companyName: e.target.value }))}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company-trade">Primary Trade</Label>
+            <select
+              id="company-trade"
+              data-testid="select-company-trade"
+              value={form.trade}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  trade: event.target.value as CompanyTrade,
+                }))
+              }
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            >
+              {(Object.values(CompanyTradeValues) as CompanyTrade[]).map((trade) => (
+                <option key={trade} value={trade}>{trade}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Switching to Electrical adds any missing starter rows. Changing trades never removes existing records.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2"><Label>Proposal Contact Email</Label><Input data-testid="input-proposal-email" type="email" value={form.contactEmail} onChange={(e) => setForm(f => ({ ...f, contactEmail: e.target.value }))} /></div>
