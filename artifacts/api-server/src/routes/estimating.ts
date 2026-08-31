@@ -236,7 +236,7 @@ router.patch("/company/onboarding", async (req, res): Promise<void> => {
 });
 
 type QuoteStatus = "draft" | "ready";
-type EstimateModule =
+export type EstimateModule =
   | "EV_CHARGER"
   | "BATHROOM"
   | "KITCHEN"
@@ -622,7 +622,7 @@ export function matchCustomerForQuote(
     : null;
 }
 
-async function findOrCreateCustomer(input: {
+export async function findOrCreateCustomer(input: {
   companyId: number;
   name: string;
   email?: string | null;
@@ -1249,7 +1249,7 @@ async function companySettings(companyId: number) {
   return settings;
 }
 
-async function calculateEstimate(
+export async function calculateEstimate(
   companyId: number,
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
@@ -1389,7 +1389,7 @@ function isNewHouseInput(
   );
 }
 
-function moduleMatchesInputs(
+export function moduleMatchesInputs(
   module: EstimateModule,
   jobInputs: QuoteJobInputsRecord,
 ) {

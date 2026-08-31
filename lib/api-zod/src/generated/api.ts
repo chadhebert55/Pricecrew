@@ -7567,3 +7567,182 @@ export const UpdateCompanyOnboardingResponse = zod.object({
 })
 
 
+/**
+ * @summary List the authenticated user's assistant conversations
+ */
+export const ListAssistantConversationsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListAssistantConversationsResponse = zod.array(ListAssistantConversationsResponseItem)
+
+
+/**
+ * @summary Start an assistant conversation
+ */
+export const createAssistantConversationBodyTitleMax = 120;
+
+
+
+export const CreateAssistantConversationBody = zod.object({
+  "title": zod.string().min(1).max(createAssistantConversationBodyTitleMax).optional()
+})
+
+export const CreateAssistantConversationResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List messages in an assistant conversation
+ */
+export const ListAssistantMessagesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListAssistantMessagesResponseItem = zod.object({
+  "id": zod.number(),
+  "conversationId": zod.number(),
+  "role": zod.enum(['user', 'assistant', 'tool']),
+  "content": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})
+export const ListAssistantMessagesResponse = zod.array(ListAssistantMessagesResponseItem)
+
+
+/**
+ * The server may call trusted tenant-scoped tools and returns any pending write actions requiring confirmation.
+ * @summary Send a message to the authenticated PriceCrew Assistant
+ */
+export const SendAssistantMessageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const sendAssistantMessageBodyContentMax = 12000;
+
+
+
+export const SendAssistantMessageBody = zod.object({
+  "content": zod.string().min(1).max(sendAssistantMessageBodyContentMax)
+})
+
+export const SendAssistantMessageResponse = zod.object({
+  "message": zod.object({
+  "id": zod.number(),
+  "conversationId": zod.number(),
+  "role": zod.enum(['user', 'assistant', 'tool']),
+  "content": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+}),
+  "pendingActions": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['quote_create', 'price_book_import']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected', 'expired', 'failed']),
+  "summary": zod.record(zod.string(), zod.unknown()),
+  "expiresAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Request a private assistant upload URL
+ */
+export const requestAssistantUploadUrlBodyFileNameMax = 255;
+
+export const requestAssistantUploadUrlBodyContentTypeMax = 100;
+
+export const requestAssistantUploadUrlBodyFileSizeMax = 25000000;
+
+
+
+export const RequestAssistantUploadUrlBody = zod.object({
+  "fileName": zod.string().min(1).max(requestAssistantUploadUrlBodyFileNameMax),
+  "contentType": zod.string().min(1).max(requestAssistantUploadUrlBodyContentTypeMax),
+  "fileSize": zod.number().min(1).max(requestAssistantUploadUrlBodyFileSizeMax)
+})
+
+export const RequestAssistantUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Parse and match an uploaded supplier price file
+ */
+export const createAssistantImportReviewBodyFileNameMax = 255;
+
+
+
+
+export const CreateAssistantImportReviewBody = zod.object({
+  "conversationId": zod.number(),
+  "fileName": zod.string().min(1).max(createAssistantImportReviewBodyFileNameMax),
+  "objectPath": zod.string().min(1),
+  "sourceDate": zod.string().nullish()
+})
+
+export const CreateAssistantImportReviewResponse = zod.object({
+  "review": zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "status": zod.enum(['review', 'applied', 'expired']),
+  "rows": zod.array(zod.record(zod.string(), zod.unknown())),
+  "report": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+}),
+  "pendingAction": zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['quote_create', 'price_book_import']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected', 'expired', 'failed']),
+  "summary": zod.record(zod.string(), zod.unknown()),
+  "expiresAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Confirm one server-issued assistant write action
+ */
+export const ConfirmAssistantActionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const confirmAssistantActionBodyIdempotencyKeyMax = 120;
+
+
+
+export const ConfirmAssistantActionBody = zod.object({
+  "idempotencyKey": zod.string().max(confirmAssistantActionBodyIdempotencyKeyMax).optional()
+})
+
+export const ConfirmAssistantActionResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['quote_create', 'price_book_import']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected', 'expired', 'failed']),
+  "result": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
+ * @summary Reject one server-issued assistant write action
+ */
+export const RejectAssistantActionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RejectAssistantActionResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['quote_create', 'price_book_import']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected', 'expired', 'failed']),
+  "result": zod.record(zod.string(), zod.unknown())
+})
+
+

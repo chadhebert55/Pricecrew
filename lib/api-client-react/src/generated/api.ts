@@ -20,6 +20,17 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AssistantActionConfirmationInput,
+  AssistantActionResult,
+  AssistantConversation,
+  AssistantConversationInput,
+  AssistantImportReviewInput,
+  AssistantImportReviewResponse,
+  AssistantMessage,
+  AssistantMessageInput,
+  AssistantMessageResponse,
+  AssistantUploadInput,
+  AssistantUploadResponse,
   BillingCheckoutInput,
   BillingCheckoutResponse,
   BillingStatus,
@@ -3005,5 +3016,588 @@ export const useUpdateCompanyOnboarding = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateCompanyOnboardingMutationOptions(options));
+    }
+
+export const getListAssistantConversationsUrl = () => {
+
+
+
+
+  return `/api/assistant/conversations`
+}
+
+/**
+ * @summary List the authenticated user's assistant conversations
+ */
+export const listAssistantConversations = async ( options?: Parameters<typeof customFetch>[1]): Promise<AssistantConversation[]> => {
+
+  return customFetch<AssistantConversation[]>(getListAssistantConversationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAssistantConversationsQueryKey = () => {
+    return [
+    `/api/assistant/conversations`
+    ] as const;
+    }
+
+
+export const getListAssistantConversationsQueryOptions = <TData = Awaited<ReturnType<typeof listAssistantConversations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAssistantConversations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAssistantConversationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAssistantConversations>>> = ({ signal }) => listAssistantConversations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAssistantConversations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAssistantConversationsQueryResult = NonNullable<Awaited<ReturnType<typeof listAssistantConversations>>>
+export type ListAssistantConversationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the authenticated user's assistant conversations
+ */
+
+export function useListAssistantConversations<TData = Awaited<ReturnType<typeof listAssistantConversations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAssistantConversations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAssistantConversationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAssistantConversationUrl = () => {
+
+
+
+
+  return `/api/assistant/conversations`
+}
+
+/**
+ * @summary Start an assistant conversation
+ */
+export const createAssistantConversation = async (assistantConversationInput?: AssistantConversationInput, options?: Parameters<typeof customFetch>[1]): Promise<AssistantConversation> => {
+
+  return customFetch<AssistantConversation>(getCreateAssistantConversationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assistantConversationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAssistantConversationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssistantConversation>>, TError,{data?: BodyType<AssistantConversationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAssistantConversation>>, TError,{data?: BodyType<AssistantConversationInput>}, TContext> => {
+
+const mutationKey = ['createAssistantConversation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAssistantConversation>>, {data?: BodyType<AssistantConversationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAssistantConversation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAssistantConversationMutationResult = NonNullable<Awaited<ReturnType<typeof createAssistantConversation>>>
+    export type CreateAssistantConversationMutationBody = BodyType<AssistantConversationInput> | undefined
+    export type CreateAssistantConversationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start an assistant conversation
+ */
+export const useCreateAssistantConversation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssistantConversation>>, TError,{data?: BodyType<AssistantConversationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAssistantConversation>>,
+        TError,
+        {data?: BodyType<AssistantConversationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAssistantConversationMutationOptions(options));
+    }
+
+export const getListAssistantMessagesUrl = (id: number,) => {
+
+
+
+
+  return `/api/assistant/conversations/${id}/messages`
+}
+
+/**
+ * @summary List messages in an assistant conversation
+ */
+export const listAssistantMessages = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<AssistantMessage[]> => {
+
+  return customFetch<AssistantMessage[]>(getListAssistantMessagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAssistantMessagesQueryKey = (id: number,) => {
+    return [
+    `/api/assistant/conversations/${id}/messages`
+    ] as const;
+    }
+
+
+export const getListAssistantMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listAssistantMessages>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAssistantMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAssistantMessagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAssistantMessages>>> = ({ signal }) => listAssistantMessages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAssistantMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAssistantMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listAssistantMessages>>>
+export type ListAssistantMessagesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List messages in an assistant conversation
+ */
+
+export function useListAssistantMessages<TData = Awaited<ReturnType<typeof listAssistantMessages>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAssistantMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAssistantMessagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendAssistantMessageUrl = (id: number,) => {
+
+
+
+
+  return `/api/assistant/conversations/${id}/messages`
+}
+
+/**
+ * The server may call trusted tenant-scoped tools and returns any pending write actions requiring confirmation.
+ * @summary Send a message to the authenticated PriceCrew Assistant
+ */
+export const sendAssistantMessage = async (id: number,
+    assistantMessageInput: AssistantMessageInput, options?: Parameters<typeof customFetch>[1]): Promise<AssistantMessageResponse> => {
+
+  return customFetch<AssistantMessageResponse>(getSendAssistantMessageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assistantMessageInput)
+  }
+);}
+
+
+
+
+
+export const getSendAssistantMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendAssistantMessage>>, TError,{id: number;data: BodyType<AssistantMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendAssistantMessage>>, TError,{id: number;data: BodyType<AssistantMessageInput>}, TContext> => {
+
+const mutationKey = ['sendAssistantMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendAssistantMessage>>, {id: number;data: BodyType<AssistantMessageInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendAssistantMessage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendAssistantMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendAssistantMessage>>>
+    export type SendAssistantMessageMutationBody = BodyType<AssistantMessageInput>
+    export type SendAssistantMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a message to the authenticated PriceCrew Assistant
+ */
+export const useSendAssistantMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendAssistantMessage>>, TError,{id: number;data: BodyType<AssistantMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendAssistantMessage>>,
+        TError,
+        {id: number;data: BodyType<AssistantMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendAssistantMessageMutationOptions(options));
+    }
+
+export const getRequestAssistantUploadUrlUrl = () => {
+
+
+
+
+  return `/api/assistant/uploads/request-url`
+}
+
+/**
+ * @summary Request a private assistant upload URL
+ */
+export const requestAssistantUploadUrl = async (assistantUploadInput: AssistantUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<AssistantUploadResponse> => {
+
+  return customFetch<AssistantUploadResponse>(getRequestAssistantUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assistantUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestAssistantUploadUrlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestAssistantUploadUrl>>, TError,{data: BodyType<AssistantUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestAssistantUploadUrl>>, TError,{data: BodyType<AssistantUploadInput>}, TContext> => {
+
+const mutationKey = ['requestAssistantUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestAssistantUploadUrl>>, {data: BodyType<AssistantUploadInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestAssistantUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestAssistantUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestAssistantUploadUrl>>>
+    export type RequestAssistantUploadUrlMutationBody = BodyType<AssistantUploadInput>
+    export type RequestAssistantUploadUrlMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request a private assistant upload URL
+ */
+export const useRequestAssistantUploadUrl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestAssistantUploadUrl>>, TError,{data: BodyType<AssistantUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestAssistantUploadUrl>>,
+        TError,
+        {data: BodyType<AssistantUploadInput>},
+        TContext
+      > => {
+      return useMutation(getRequestAssistantUploadUrlMutationOptions(options));
+    }
+
+export const getCreateAssistantImportReviewUrl = () => {
+
+
+
+
+  return `/api/assistant/import-reviews`
+}
+
+/**
+ * @summary Parse and match an uploaded supplier price file
+ */
+export const createAssistantImportReview = async (assistantImportReviewInput: AssistantImportReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<AssistantImportReviewResponse> => {
+
+  return customFetch<AssistantImportReviewResponse>(getCreateAssistantImportReviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assistantImportReviewInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAssistantImportReviewMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssistantImportReview>>, TError,{data: BodyType<AssistantImportReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAssistantImportReview>>, TError,{data: BodyType<AssistantImportReviewInput>}, TContext> => {
+
+const mutationKey = ['createAssistantImportReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAssistantImportReview>>, {data: BodyType<AssistantImportReviewInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAssistantImportReview(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAssistantImportReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createAssistantImportReview>>>
+    export type CreateAssistantImportReviewMutationBody = BodyType<AssistantImportReviewInput>
+    export type CreateAssistantImportReviewMutationError = ErrorType<void>
+
+    /**
+ * @summary Parse and match an uploaded supplier price file
+ */
+export const useCreateAssistantImportReview = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssistantImportReview>>, TError,{data: BodyType<AssistantImportReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAssistantImportReview>>,
+        TError,
+        {data: BodyType<AssistantImportReviewInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAssistantImportReviewMutationOptions(options));
+    }
+
+export const getConfirmAssistantActionUrl = (id: number,) => {
+
+
+
+
+  return `/api/assistant/actions/${id}/confirm`
+}
+
+/**
+ * @summary Confirm one server-issued assistant write action
+ */
+export const confirmAssistantAction = async (id: number,
+    assistantActionConfirmationInput?: AssistantActionConfirmationInput, options?: Parameters<typeof customFetch>[1]): Promise<AssistantActionResult> => {
+
+  return customFetch<AssistantActionResult>(getConfirmAssistantActionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assistantActionConfirmationInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmAssistantActionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmAssistantAction>>, TError,{id: number;data?: BodyType<AssistantActionConfirmationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmAssistantAction>>, TError,{id: number;data?: BodyType<AssistantActionConfirmationInput>}, TContext> => {
+
+const mutationKey = ['confirmAssistantAction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmAssistantAction>>, {id: number;data?: BodyType<AssistantActionConfirmationInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  confirmAssistantAction(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmAssistantActionMutationResult = NonNullable<Awaited<ReturnType<typeof confirmAssistantAction>>>
+    export type ConfirmAssistantActionMutationBody = BodyType<AssistantActionConfirmationInput> | undefined
+    export type ConfirmAssistantActionMutationError = ErrorType<void>
+
+    /**
+ * @summary Confirm one server-issued assistant write action
+ */
+export const useConfirmAssistantAction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmAssistantAction>>, TError,{id: number;data?: BodyType<AssistantActionConfirmationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmAssistantAction>>,
+        TError,
+        {id: number;data?: BodyType<AssistantActionConfirmationInput>},
+        TContext
+      > => {
+      return useMutation(getConfirmAssistantActionMutationOptions(options));
+    }
+
+export const getRejectAssistantActionUrl = (id: number,) => {
+
+
+
+
+  return `/api/assistant/actions/${id}/reject`
+}
+
+/**
+ * @summary Reject one server-issued assistant write action
+ */
+export const rejectAssistantAction = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<AssistantActionResult> => {
+
+  return customFetch<AssistantActionResult>(getRejectAssistantActionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRejectAssistantActionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssistantAction>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectAssistantAction>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rejectAssistantAction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAssistantAction>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectAssistantAction(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectAssistantActionMutationResult = NonNullable<Awaited<ReturnType<typeof rejectAssistantAction>>>
+
+    export type RejectAssistantActionMutationError = ErrorType<void>
+
+    /**
+ * @summary Reject one server-issued assistant write action
+ */
+export const useRejectAssistantAction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssistantAction>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectAssistantAction>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRejectAssistantActionMutationOptions(options));
     }
 

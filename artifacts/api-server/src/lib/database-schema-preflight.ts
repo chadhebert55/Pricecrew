@@ -43,6 +43,10 @@ export const requiredTables = [
   "proposal_notifications",
   "takeoff_items",
   "takeoff_review_events",
+  "assistant_conversations",
+  "assistant_messages",
+  "assistant_pending_actions",
+  "assistant_import_reviews",
 ] as const;
 
 export const requiredColumns: ColumnRequirement[] = [
@@ -142,9 +146,56 @@ export const requiredForeignKeys: ForeignKeyRequirement[] = [
     definition:
       "FOREIGN KEY (item_id) REFERENCES takeoff_items(id) ON DELETE CASCADE",
   },
+  {
+    name: "assistant_conversations_company_id_companies_id_fk",
+    table: "assistant_conversations",
+    definition:
+      "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE",
+  },
+  {
+    name: "assistant_messages_conversation_id_assistant_conversations_id_f",
+    table: "assistant_messages",
+    definition:
+      "FOREIGN KEY (conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE",
+  },
+  {
+    name: "assistant_messages_company_id_companies_id_fk",
+    table: "assistant_messages",
+    definition:
+      "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE",
+  },
+  {
+    name: "assistant_pending_actions_conversation_id_assistant_conversatio",
+    table: "assistant_pending_actions",
+    definition:
+      "FOREIGN KEY (conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE",
+  },
+  {
+    name: "assistant_pending_actions_company_id_companies_id_fk",
+    table: "assistant_pending_actions",
+    definition:
+      "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE",
+  },
+  {
+    name: "assistant_import_reviews_conversation_id_assistant_conversation",
+    table: "assistant_import_reviews",
+    definition:
+      "FOREIGN KEY (conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE",
+  },
+  {
+    name: "assistant_import_reviews_company_id_companies_id_fk",
+    table: "assistant_import_reviews",
+    definition:
+      "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE",
+  },
 ];
 
 export const requiredUniqueIndexes: UniqueIndexRequirement[] = [
+  {
+    name: "assistant_pending_actions_idempotency_unique",
+    table: "assistant_pending_actions",
+    definitionIncludes: "USING btree (company_id, idempotency_key)",
+  },
   {
     name: "company_members_user_id_unique",
     table: "company_members",

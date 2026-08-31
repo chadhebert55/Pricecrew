@@ -33,8 +33,11 @@ function parseStoragePath(value: string) {
   return { bucketName: parts[1], objectName: parts.slice(2).join("/") };
 }
 
-export async function requestTakeoffUploadUrl(companyId: number) {
-  const entityId = `uploads/${companyId}/${randomUUID()}`;
+export async function requestTakeoffUploadUrl(
+  companyId: number,
+  ownerScope?: string,
+) {
+  const entityId = `uploads/${companyId}/${ownerScope ? `${ownerScope}/` : ""}${randomUUID()}`;
   const { bucketName, objectName } = parseStoragePath(
     `${configuredPrivateDir()}/${entityId}`,
   );

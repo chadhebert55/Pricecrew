@@ -878,6 +878,173 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompanyProfile"
+  /assistant/conversations:
+    get:
+      operationId: listAssistantConversations
+      tags: [assistant]
+      summary: List the authenticated user's assistant conversations
+      responses:
+        "200":
+          description: Company and user scoped conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssistantConversation"
+    post:
+      operationId: createAssistantConversation
+      tags: [assistant]
+      summary: Start an assistant conversation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantConversation"
+  /assistant/conversations/{id}/messages:
+    get:
+      operationId: listAssistantMessages
+      tags: [assistant]
+      summary: List messages in an assistant conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Conversation messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssistantMessage"
+        "404":
+          description: Conversation not found
+    post:
+      operationId: sendAssistantMessage
+      tags: [assistant]
+      summary: Send a message to the authenticated PriceCrew Assistant
+      description: The server may call trusted tenant-scoped tools and returns any pending write actions requiring confirmation.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantMessageInput"
+      responses:
+        "200":
+          description: Assistant response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantMessageResponse"
+        "404":
+          description: Conversation not found
+        "503":
+          description: Assistant provider is unavailable
+  /assistant/uploads/request-url:
+    post:
+      operationId: requestAssistantUploadUrl
+      tags: [assistant]
+      summary: Request a private assistant upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantUploadInput"
+      responses:
+        "200":
+          description: Signed private upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantUploadResponse"
+  /assistant/import-reviews:
+    post:
+      operationId: createAssistantImportReview
+      tags: [assistant]
+      summary: Parse and match an uploaded supplier price file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantImportReviewInput"
+      responses:
+        "201":
+          description: Import review and pending confirmation action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantImportReviewResponse"
+        "400":
+          description: Unsupported, malformed, oversized, encrypted, or unsafe file
+  /assistant/actions/{id}/confirm:
+    post:
+      operationId: confirmAssistantAction
+      tags: [assistant]
+      summary: Confirm one server-issued assistant write action
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantActionConfirmationInput"
+      responses:
+        "200":
+          description: Confirmed action result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantActionResult"
+        "404":
+          description: Action not found
+        "409":
+          description: Action expired, already resolved, or stale
+  /assistant/actions/{id}/reject:
+    post:
+      operationId: rejectAssistantAction
+      tags: [assistant]
+      summary: Reject one server-issued assistant write action
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Rejected action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantActionResult"
+        "404":
+          description: Action not found
 components:
   securitySchemes:
     clerkAuth:
@@ -3816,3 +3983,124 @@ components:
         mode:
           type: string
           enum: [test]
+    AssistantConversation:
+      type: object
+      required: [id, title, createdAt, updatedAt]
+      properties:
+        id: { type: number }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AssistantConversationInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+    AssistantMessage:
+      type: object
+      required: [id, conversationId, role, content, metadata, createdAt]
+      properties:
+        id: { type: number }
+        conversationId: { type: number }
+        role:
+          type: string
+          enum: [user, assistant, tool]
+        content: { type: string }
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+    AssistantMessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 12000 }
+    AssistantPendingAction:
+      type: object
+      required: [id, kind, status, summary, expiresAt]
+      properties:
+        id: { type: number }
+        kind:
+          type: string
+          enum: [quote_create, price_book_import]
+        status:
+          type: string
+          enum: [pending, confirmed, rejected, expired, failed]
+        summary:
+          type: object
+          additionalProperties: true
+        expiresAt: { type: string, format: date-time }
+    AssistantMessageResponse:
+      type: object
+      required: [message, pendingActions]
+      properties:
+        message:
+          $ref: "#/components/schemas/AssistantMessage"
+        pendingActions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssistantPendingAction"
+    AssistantUploadInput:
+      type: object
+      required: [fileName, contentType, fileSize]
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, minLength: 1, maxLength: 100 }
+        fileSize: { type: number, minimum: 1, maximum: 25000000 }
+    AssistantUploadResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string }
+        objectPath: { type: string }
+    AssistantImportReviewInput:
+      type: object
+      required: [conversationId, fileName, objectPath]
+      properties:
+        conversationId: { type: number }
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        objectPath: { type: string, minLength: 1 }
+        sourceDate: { type: ["string", "null"] }
+    AssistantImportReview:
+      type: object
+      required: [id, sourceFileName, status, rows, report, createdAt]
+      properties:
+        id: { type: number }
+        sourceFileName: { type: string }
+        status:
+          type: string
+          enum: [review, applied, expired]
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        report:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+    AssistantImportReviewResponse:
+      type: object
+      required: [review, pendingAction]
+      properties:
+        review:
+          $ref: "#/components/schemas/AssistantImportReview"
+        pendingAction:
+          $ref: "#/components/schemas/AssistantPendingAction"
+    AssistantActionConfirmationInput:
+      type: object
+      properties:
+        idempotencyKey: { type: string, maxLength: 120 }
+    AssistantActionResult:
+      type: object
+      required: [id, kind, status, result]
+      properties:
+        id: { type: number }
+        kind:
+          type: string
+          enum: [quote_create, price_book_import]
+        status:
+          type: string
+          enum: [pending, confirmed, rejected, expired, failed]
+        result:
+          type: object
+          additionalProperties: true

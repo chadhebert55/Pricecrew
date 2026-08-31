@@ -2603,6 +2603,179 @@ export interface BillingCheckoutResponse {
   mode: BillingCheckoutResponseMode;
 }
 
+export interface AssistantConversation {
+  id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssistantConversationInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+}
+
+export type AssistantMessageRole = typeof AssistantMessageRole[keyof typeof AssistantMessageRole];
+
+
+export const AssistantMessageRole = {
+  user: 'user',
+  assistant: 'assistant',
+  tool: 'tool',
+} as const;
+
+export type AssistantMessageMetadata = { [key: string]: unknown };
+
+export interface AssistantMessage {
+  id: number;
+  conversationId: number;
+  role: AssistantMessageRole;
+  content: string;
+  metadata: AssistantMessageMetadata;
+  createdAt: string;
+}
+
+export interface AssistantMessageInput {
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  content: string;
+}
+
+export type AssistantPendingActionKind = typeof AssistantPendingActionKind[keyof typeof AssistantPendingActionKind];
+
+
+export const AssistantPendingActionKind = {
+  quote_create: 'quote_create',
+  price_book_import: 'price_book_import',
+} as const;
+
+export type AssistantPendingActionStatus = typeof AssistantPendingActionStatus[keyof typeof AssistantPendingActionStatus];
+
+
+export const AssistantPendingActionStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+  expired: 'expired',
+  failed: 'failed',
+} as const;
+
+export type AssistantPendingActionSummary = { [key: string]: unknown };
+
+export interface AssistantPendingAction {
+  id: number;
+  kind: AssistantPendingActionKind;
+  status: AssistantPendingActionStatus;
+  summary: AssistantPendingActionSummary;
+  expiresAt: string;
+}
+
+export interface AssistantMessageResponse {
+  message: AssistantMessage;
+  pendingActions: AssistantPendingAction[];
+}
+
+export interface AssistantUploadInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  contentType: string;
+  /**
+     * @minimum 1
+     * @maximum 25000000
+     */
+  fileSize: number;
+}
+
+export interface AssistantUploadResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface AssistantImportReviewInput {
+  conversationId: number;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /** @minLength 1 */
+  objectPath: string;
+  /** @nullable */
+  sourceDate?: string | null;
+}
+
+export type AssistantImportReviewStatus = typeof AssistantImportReviewStatus[keyof typeof AssistantImportReviewStatus];
+
+
+export const AssistantImportReviewStatus = {
+  review: 'review',
+  applied: 'applied',
+  expired: 'expired',
+} as const;
+
+export type AssistantImportReviewRowsItem = { [key: string]: unknown };
+
+export type AssistantImportReviewReport = { [key: string]: unknown };
+
+export interface AssistantImportReview {
+  id: number;
+  sourceFileName: string;
+  status: AssistantImportReviewStatus;
+  rows: AssistantImportReviewRowsItem[];
+  report: AssistantImportReviewReport;
+  createdAt: string;
+}
+
+export interface AssistantImportReviewResponse {
+  review: AssistantImportReview;
+  pendingAction: AssistantPendingAction;
+}
+
+export interface AssistantActionConfirmationInput {
+  /** @maxLength 120 */
+  idempotencyKey?: string;
+}
+
+export type AssistantActionResultKind = typeof AssistantActionResultKind[keyof typeof AssistantActionResultKind];
+
+
+export const AssistantActionResultKind = {
+  quote_create: 'quote_create',
+  price_book_import: 'price_book_import',
+} as const;
+
+export type AssistantActionResultStatus = typeof AssistantActionResultStatus[keyof typeof AssistantActionResultStatus];
+
+
+export const AssistantActionResultStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+  expired: 'expired',
+  failed: 'failed',
+} as const;
+
+export type AssistantActionResultResult = { [key: string]: unknown };
+
+export interface AssistantActionResult {
+  id: number;
+  kind: AssistantActionResultKind;
+  status: AssistantActionResultStatus;
+  result: AssistantActionResultResult;
+}
+
 export type ListCustomersParams = {
 search?: string;
 };

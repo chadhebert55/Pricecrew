@@ -9,8 +9,21 @@ const ProposalNotificationCenter = lazy(() =>
   })),
 )
 
+const AssistantWidget = lazy(() =>
+  import("@/components/assistant/AssistantWidget").then((module) => ({
+    default: module.AssistantWidget,
+  })),
+)
+
 export function Shell({ children }: { children: React.ReactNode }) {
-  return <ShellFrame account={<AuthenticatedAccount />}>{children}</ShellFrame>
+  return (
+    <ShellFrame account={<AuthenticatedAccount />}>
+      {children}
+      <Suspense fallback={null}>
+        <AssistantWidget />
+      </Suspense>
+    </ShellFrame>
+  )
 }
 
 export function E2eShell({ children }: { children: React.ReactNode }) {
