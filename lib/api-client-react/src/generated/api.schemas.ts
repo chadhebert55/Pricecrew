@@ -526,6 +526,8 @@ export const AdditionInputsBreakerAmperage = {
   NUMBER_15: 15,
   NUMBER_20: 20,
   NUMBER_30: 30,
+  NUMBER_40: 40,
+  NUMBER_50: 50,
 } as const;
 
 export type AdditionInputsBreakerPoleCount = typeof AdditionInputsBreakerPoleCount[keyof typeof AdditionInputsBreakerPoleCount];
@@ -555,6 +557,9 @@ export const AdditionInputsCableType = {
   '14/3_NM-B': '14/3 NM-B',
   '10/2_NM-B': '10/2 NM-B',
   '10/3_NM-B': '10/3 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+  '8/3_NM-B': '8/3 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
 } as const;
 
 export type AdditionCircuitEntryAmperage = typeof AdditionCircuitEntryAmperage[keyof typeof AdditionCircuitEntryAmperage];
@@ -564,6 +569,8 @@ export const AdditionCircuitEntryAmperage = {
   NUMBER_15: 15,
   NUMBER_20: 20,
   NUMBER_30: 30,
+  NUMBER_40: 40,
+  NUMBER_50: 50,
 } as const;
 
 export type AdditionCircuitEntryPoleCount = typeof AdditionCircuitEntryPoleCount[keyof typeof AdditionCircuitEntryPoleCount];
@@ -593,6 +600,9 @@ export const AdditionCircuitEntryCableType = {
   '14/3_NM-B': '14/3 NM-B',
   '10/2_NM-B': '10/2 NM-B',
   '10/3_NM-B': '10/3 NM-B',
+  '8/2_NM-B': '8/2 NM-B',
+  '8/3_NM-B': '8/3 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
 } as const;
 
 /**
@@ -1338,6 +1348,7 @@ export const NewHouseInputsBranchCircuitAmperage = {
   NUMBER_20: 20,
   NUMBER_30: 30,
   NUMBER_40: 40,
+  NUMBER_50: 50,
 } as const;
 
 export type NewHouseInputsBranchCircuitPoleCount = typeof NewHouseInputsBranchCircuitPoleCount[keyof typeof NewHouseInputsBranchCircuitPoleCount];
@@ -1369,6 +1380,7 @@ export const NewHouseInputsBranchCircuitCableType = {
   '10/3_NM-B': '10/3 NM-B',
   '8/2_NM-B': '8/2 NM-B',
   '8/3_NM-B': '8/3 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
 } as const;
 
 export type NewHouseInputsEquipmentCircuitAmperage = typeof NewHouseInputsEquipmentCircuitAmperage[keyof typeof NewHouseInputsEquipmentCircuitAmperage];
@@ -1378,6 +1390,7 @@ export const NewHouseInputsEquipmentCircuitAmperage = {
   NUMBER_20: 20,
   NUMBER_30: 30,
   NUMBER_40: 40,
+  NUMBER_50: 50,
 } as const;
 
 export type NewHouseInputsEquipmentCircuitPoleCount = typeof NewHouseInputsEquipmentCircuitPoleCount[keyof typeof NewHouseInputsEquipmentCircuitPoleCount];
@@ -1406,6 +1419,7 @@ export const NewHouseInputsEquipmentCircuitCableType = {
   '10/3_NM-B': '10/3 NM-B',
   '8/2_NM-B': '8/2 NM-B',
   '8/3_NM-B': '8/3 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
 } as const;
 
 export interface NewHouseInputs {

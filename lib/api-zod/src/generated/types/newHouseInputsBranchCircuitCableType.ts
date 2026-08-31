@@ -17,4 +17,5 @@ export const NewHouseInputsBranchCircuitCableType = {
   '10/3_NM-B': '10/3 NM-B',
   '8/2_NM-B': '8/2 NM-B',
   '8/3_NM-B': '8/3 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
 } as const;

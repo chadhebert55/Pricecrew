@@ -76,6 +76,7 @@ function newHouseCableForAmperage(
   amperage: number,
 ): NewHouseInputs["branchCircuitCableType"] {
   const threeWire = currentCable.includes("/3")
+  if (amperage === 50) return "6/3 NM-B"
   if (amperage === 40) return threeWire ? "8/3 NM-B" : "8/2 NM-B"
   if (amperage === 30) return threeWire ? "10/3 NM-B" : "10/2 NM-B"
   if (amperage === 20) return "12/2 NM-B"
@@ -427,6 +428,7 @@ export function NewHouseQuote() {
                             <option value="20">20A</option>
                             <option value="30">30A</option>
                             <option value="40">40A</option>
+                             <option value="50">50A</option>
                           </select>
                         </div>
                         <div className="space-y-2">
@@ -452,6 +454,7 @@ export function NewHouseQuote() {
                             <option value="10/3 NM-B">10/3 NM-B</option>
                             <option value="8/2 NM-B">8/2 NM-B</option>
                             <option value="8/3 NM-B">8/3 NM-B</option>
+                             <option value="6/3 NM-B">6/3 NM-B</option>
                           </select>
                         </div>
                       </div>
@@ -466,7 +469,7 @@ export function NewHouseQuote() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-equip-amp">Amperage</Label>
-                          <select id="nh-equip-amp" value={inputs.equipmentCircuitAmperage} onChange={(event) => setEquipmentCircuitAmperage(event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-equip-amp"><option value="20">20A</option><option value="30">30A</option><option value="40">40A</option></select>
+                          <select id="nh-equip-amp" value={inputs.equipmentCircuitAmperage} onChange={(event) => setEquipmentCircuitAmperage(event.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" data-testid="input-nh-equip-amp"><option value="20">20A</option><option value="30">30A</option><option value="40">40A</option><option value="50">50A</option></select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="nh-equip-poles">Pole Count</Label>
@@ -487,6 +490,7 @@ export function NewHouseQuote() {
                             {inputs.equipmentCircuitAmperage === 20 && <option value="12/2 NM-B">12/2 NM-B</option>}
                             {inputs.equipmentCircuitAmperage === 30 && <><option value="10/3 NM-B">10/3 NM-B</option><option value="10/2 NM-B">10/2 NM-B</option></>}
                             {inputs.equipmentCircuitAmperage === 40 && <><option value="8/3 NM-B">8/3 NM-B</option><option value="8/2 NM-B">8/2 NM-B</option></>}
+                             {inputs.equipmentCircuitAmperage === 50 && <option value="6/3 NM-B">6/3 NM-B</option>}
                           </select>
                           <p className="text-xs text-muted-foreground">Use 3-wire for equipment that requires a neutral; keep 2-wire for straight 240V loads that do not.</p>
                         </div>

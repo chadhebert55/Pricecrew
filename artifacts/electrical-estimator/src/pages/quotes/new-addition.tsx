@@ -100,6 +100,8 @@ function cableForAmperage(
   amperage: AdditionCircuitEntry["amperage"],
 ): AdditionCircuitEntry["cableType"] {
   const threeWire = currentCable.includes("/3")
+  if (amperage === 50) return "6/3 NM-B"
+  if (amperage === 40) return threeWire ? "8/3 NM-B" : "8/2 NM-B"
   if (amperage === 30) return threeWire ? "10/3 NM-B" : "10/2 NM-B"
   if (amperage === 20) return "12/2 NM-B"
   return threeWire ? "14/3 NM-B" : "14/2 NM-B"
@@ -219,7 +221,7 @@ export function NewAdditionQuote() {
     updateCircuitEntry(index, {
       amperage,
       cableType: cableForAmperage(current.cableType, amperage),
-      poleCount: amperage === 30 ? 2 : current.poleCount,
+      poleCount: amperage >= 30 ? 2 : current.poleCount,
     })
   }
 
@@ -354,7 +356,7 @@ export function NewAdditionQuote() {
                             <div className="space-y-2">
                               <Label htmlFor={`addition-circuit-${index}-amperage`}>Amperage</Label>
                               <select id={`addition-circuit-${index}-amperage`} aria-label={`Circuit ${index + 1} amperage`} value={entry.amperage} onChange={(event) => setCircuitAmperage(index, Number(event.target.value) as AdditionCircuitEntry["amperage"])} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value={15}>15A</option><option value={20}>20A</option><option value={30}>30A</option>
+                                <option value={15}>15A</option><option value={20}>20A</option><option value={30}>30A</option><option value={40}>40A</option><option value={50}>50A</option>
                               </select>
                             </div>
                             <div className="space-y-2">
@@ -372,7 +374,7 @@ export function NewAdditionQuote() {
                             <div className="space-y-2">
                               <Label htmlFor={`addition-circuit-${index}-cable`}>Cable</Label>
                               <select id={`addition-circuit-${index}-cable`} aria-label={`Circuit ${index + 1} cable`} value={entry.cableType} onChange={(event) => updateCircuitEntry(index, { cableType: event.target.value as AdditionCircuitEntry["cableType"] })} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value="14/2 NM-B">14/2 NM-B</option><option value="12/2 NM-B">12/2 NM-B</option><option value="14/3 NM-B">14/3 NM-B</option><option value="10/2 NM-B">10/2 NM-B</option><option value="10/3 NM-B">10/3 NM-B</option>
+                                <option value="14/2 NM-B">14/2 NM-B</option><option value="12/2 NM-B">12/2 NM-B</option><option value="14/3 NM-B">14/3 NM-B</option><option value="10/2 NM-B">10/2 NM-B</option><option value="10/3 NM-B">10/3 NM-B</option><option value="8/2 NM-B">8/2 NM-B</option><option value="8/3 NM-B">8/3 NM-B</option><option value="6/3 NM-B">6/3 NM-B</option>
                               </select>
                             </div>
                             <div className="space-y-2">

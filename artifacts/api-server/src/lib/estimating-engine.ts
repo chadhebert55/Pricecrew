@@ -63,6 +63,7 @@ const compatibleNmBCablesByAmperage: Record<number, readonly string[]> = {
   20: ["12/2 NM-B"],
   30: ["10/2 NM-B", "10/3 NM-B"],
   40: ["8/2 NM-B", "8/3 NM-B"],
+  50: ["6/3 NM-B"],
 };
 
 function compatibleNmBCables(amperage: number) {
@@ -204,6 +205,17 @@ function warningMetadata(message: string): WarningMetadata {
       category: "missing-price",
       source: "price-book",
       context: { itemKey: message.match(/"([^"]+)"/)?.[1] ?? null },
+    };
+  }
+  if (message.startsWith("Heavy-load")) {
+    return {
+      code: "HEAVY_LOAD_PRICE_UNRESOLVED",
+      severity: "error",
+      category: "missing-price",
+      source: "heavy-load-circuit",
+      context: {
+        rule: "heavy-load cable and breaker rows require exact source-backed company pricing",
+      },
     };
   }
   if (message.startsWith("Unresolved breaker:")) {
@@ -825,13 +837,20 @@ export function auditPriceBookItem(
       builders.add("New House");
     }
     if (
-      (name.includes("20a") || name.includes("30a") || name.includes("40a")) &&
+      (name.includes("20a") ||
+        name.includes("30a") ||
+        name.includes("40a") ||
+        name.includes("50a")) &&
       name.includes("2 pole")
     ) {
       builders.add("New House");
     }
     if (
-      (name.includes("15a") || name.includes("20a") || name.includes("30a")) &&
+      (name.includes("15a") ||
+        name.includes("20a") ||
+        name.includes("30a") ||
+        name.includes("40a") ||
+        name.includes("50a")) &&
       (name.includes("1 pole") || name.includes("2 pole"))
     ) {
       builders.add("Addition");
@@ -864,11 +883,23 @@ export function auditPriceBookItem(
       builders.add("Recessed Lighting");
       builders.add("New House");
     }
-    if (name.includes("10 2 nm b") || name.includes("8 2 nm b")) {
+    if (
+      name.includes("10 2 nm b") ||
+      name.includes("8 2 nm b") ||
+      name.includes("6 3 nm b")
+    ) {
       builders.add("New House");
     }
-    if (name.includes("10 3 nm b")) {
+    if (
+      name.includes("10 3 nm b") ||
+      name.includes("8 2 nm b") ||
+      name.includes("8 3 nm b") ||
+      name.includes("6 3 nm b")
+    ) {
       builders.add("Addition");
+    }
+    if (name.includes("10 3 nm b") || name.includes("8 3 nm b")) {
+      builders.add("New House");
     }
     if (
       name.includes("8 3 nm b") ||
@@ -1037,6 +1068,10 @@ function catalogSource(item: PriceBookItem) {
   return parts.length > 0 ? parts.join(" • ") : "Company price book";
 }
 
+function hasSourceBackedCatalogPricing(item: PriceBookItem | undefined) {
+  return Boolean(item?.supplier?.trim() && item.sourceDate?.trim());
+}
+
 function unitCost(
   key: string,
   priceBook: PriceBookItem[],
@@ -1188,11 +1223,18 @@ type BreakerSelection = {
   protectionType: string;
 };
 
+type ResolvedBreaker = {
+  value: number;
+  description: string;
+  source: string;
+  item?: PriceBookItem;
+};
+
 function resolveBreaker(
   selection: BreakerSelection,
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
-) {
+): ResolvedBreaker {
   const exactProtectionType = protectionType(selection.protectionType);
   if (!exactProtectionType) {
     pricingWarnings.push(
@@ -1260,7 +1302,58 @@ function resolveBreaker(
     value: match.match.unitCost,
     description: `${selection.poleCount}-pole ${selection.amperage}A ${exactProtectionType} breaker — ${match.match.manufacturer}${part}`,
     source: catalogSource(match.match),
+    item: match.match,
   };
+}
+
+function resolveHeavyCircuitCable(
+  cableType: string,
+  amperage: number,
+  priceBook: PriceBookItem[],
+  pricingWarnings: string[],
+) {
+  const cable = unitCost(
+    `${cableType} cable`,
+    priceBook,
+    pricingWarnings,
+  );
+  if (
+    amperage >= 30 &&
+    cable.value > 0 &&
+    !hasSourceBackedCatalogPricing(cable.item)
+  ) {
+    pricingWarnings.push(
+      `Heavy-load cable "${cableType}" is unresolved because its exact company Price Book row is missing supplier or source-date metadata. No cable price was inferred or substituted.`,
+    );
+    return {
+      value: 0,
+      source: "Unresolved — exact cable price is not source-backed",
+    };
+  }
+  return cable;
+}
+
+function resolveHeavyCircuitBreaker(
+  selection: BreakerSelection,
+  priceBook: PriceBookItem[],
+  pricingWarnings: string[],
+) {
+  const breaker = resolveBreaker(selection, priceBook, pricingWarnings);
+  if (
+    selection.amperage >= 30 &&
+    breaker.value > 0 &&
+    !hasSourceBackedCatalogPricing(breaker.item)
+  ) {
+    pricingWarnings.push(
+      `Heavy-load breaker "${selection.manufacturer} ${selection.amperage}A ${selection.poleCount}-pole ${selection.protectionType}" is unresolved because its exact company Price Book row is missing supplier or source-date metadata. No breaker price was inferred or substituted.`,
+    );
+    return {
+      value: 0,
+      description: `${selection.poleCount}-pole ${selection.amperage}A ${selection.protectionType} breaker — unresolved source metadata`,
+      source: "Unresolved — exact breaker price is not source-backed",
+    };
+  }
+  return breaker;
 }
 
 function selectedLaborRateType(value?: string): LaborRateType {
@@ -2798,12 +2891,17 @@ export function calculateAdditionEstimate(
       const compatible = additionCableCompatible(entry);
       if (!compatible) {
         pricingWarnings.push(
-          `Addition circuit compatibility is unresolved: ${entry.cableType} cannot be used for a ${entry.amperage}A circuit. Select 12/2 NM-B for 20A circuits, 10/2 or 10/3 NM-B for 30A circuits, or 12/2/14/2/14/3 NM-B for 15A circuits; no cable cost was substituted.`,
+          `Addition circuit compatibility is unresolved: ${entry.cableType} cannot be used for a ${entry.amperage}A circuit. Select ${compatibleNmBCables(entry.amperage)?.join(" or ") ?? "a supported cable"}; no cable cost was substituted.`,
         );
       }
       if (footage) {
         const cable = compatible
-          ? unitCost(`${entry.cableType} cable`, priceBook, pricingWarnings)
+          ? resolveHeavyCircuitCable(
+              entry.cableType,
+              entry.amperage,
+              priceBook,
+              pricingWarnings,
+            )
           : {
               value: 0,
               source:
@@ -2825,7 +2923,7 @@ export function calculateAdditionEstimate(
           `Addition circuit ${entry.amperage}A cable footage is zero. Confirm the common route and per-circuit home-run assumptions.`,
         );
       }
-      const breaker = resolveBreaker(
+      const breaker = resolveHeavyCircuitBreaker(
         {
           manufacturer: inputs.panelManufacturer,
           amperage: entry.amperage,
@@ -2859,7 +2957,12 @@ export function calculateAdditionEstimate(
         );
       }
       const cable = compatible
-        ? unitCost(`${inputs.cableType} cable`, priceBook, pricingWarnings)
+        ? resolveHeavyCircuitCable(
+            inputs.cableType,
+            inputs.breakerAmperage,
+            priceBook,
+            pricingWarnings,
+          )
         : {
             value: 0,
             source:
@@ -2882,7 +2985,7 @@ export function calculateAdditionEstimate(
       );
     }
     if (circuits) {
-      const breaker = resolveBreaker(
+      const breaker = resolveHeavyCircuitBreaker(
         {
           manufacturer: inputs.panelManufacturer,
           amperage: inputs.breakerAmperage,
@@ -4733,8 +4836,9 @@ export function calculateNewHouseEstimate(
         "New House branch circuit footage is zero while branch circuits are selected. Add average home-run footage per circuit before sending the quote.",
       );
     } else if (branchCableIsCompatible) {
-      const cable = unitCost(
-        `${inputs.branchCircuitCableType} cable`,
+      const cable = resolveHeavyCircuitCable(
+        inputs.branchCircuitCableType,
+        inputs.branchCircuitAmperage,
         priceBook,
         pricingWarnings,
       );
@@ -4748,7 +4852,7 @@ export function calculateNewHouseEstimate(
         source: cable.source,
       });
     }
-    const breaker = resolveBreaker(
+    const breaker = resolveHeavyCircuitBreaker(
       {
         manufacturer: inputs.panelManufacturer,
         amperage: inputs.branchCircuitAmperage,
@@ -4789,8 +4893,9 @@ export function calculateNewHouseEstimate(
         "New House equipment-circuit footage is zero while HVAC or mini-split circuits are selected. Add average home-run footage per circuit before sending the quote.",
       );
     } else if (equipmentCableIsCompatible) {
-      const cable = unitCost(
-        `${inputs.equipmentCircuitCableType} cable`,
+      const cable = resolveHeavyCircuitCable(
+        inputs.equipmentCircuitCableType,
+        inputs.equipmentCircuitAmperage,
         priceBook,
         pricingWarnings,
       );
@@ -4804,7 +4909,7 @@ export function calculateNewHouseEstimate(
         source: cable.source,
       });
     }
-    const breaker = resolveBreaker(
+    const breaker = resolveHeavyCircuitBreaker(
       {
         manufacturer: inputs.panelManufacturer,
         amperage: inputs.equipmentCircuitAmperage,

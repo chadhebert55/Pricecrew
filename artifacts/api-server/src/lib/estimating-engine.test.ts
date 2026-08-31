@@ -1340,6 +1340,177 @@ test("addition legacy scalar inputs leave unsupported heavy cable combinations u
   );
 });
 
+test("Addition prices exact source-backed 40A 8/3 and 50A 6/3 circuit schedules", () => {
+  const book = [
+    catalogRow("8/3 NM-B cable", 2.682868, { category: "Conductor" }),
+    catalogRow("6/3 NM-B cable", 3.921784, { category: "Conductor" }),
+    catalogRow("Siemens 40A 2-pole Standard breaker", 35, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q240",
+      amperage: 40,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+    catalogRow("Siemens 50A 2-pole Standard breaker", 40, {
+      category: "Protection",
+      manufacturer: "Siemens",
+      manufacturerPartNumber: "Q250",
+      amperage: 50,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+  ];
+
+  for (const [amperage, cableType, cableCost, breakerCost] of [
+    [40, "8/3 NM-B", 2.682868, 35],
+    [50, "6/3 NM-B", 3.921784, 40],
+  ] as const) {
+    const result = calculateAdditionEstimate(
+      {
+        ...additionInputs,
+        receptacles: 0,
+        switches: 0,
+        dimmers: 0,
+        recessedLights: 0,
+        ceilingFans: 0,
+        routeLength: 10,
+        homeRunLength: 20,
+        circuitEntries: [{
+          amperage,
+          poleCount: 2,
+          protectionType: "Standard",
+          cableType,
+          quantity: 1,
+        }],
+      },
+      settings,
+      book,
+    );
+
+    assert.equal(
+      result.assembly.find((line) => line.id === "addition-circuit-1-cable")
+        ?.unitCost,
+      cableCost,
+    );
+    assert.equal(
+      result.assembly.find((line) => line.id === "addition-circuit-1-breaker")
+        ?.unitCost,
+      breakerCost,
+    );
+    assert.equal(
+      result.pricing.pricingWarnings.some(
+        (warning) => typeof warning !== "string" && warning.severity === "error",
+      ),
+      false,
+    );
+  }
+});
+
+test("Addition keeps heavy 3-wire circuits unresolved for duplicate or non-source-backed exact rows", () => {
+  const breaker = catalogRow("Siemens 50A 2-pole Standard breaker", 40, {
+    category: "Protection",
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q250",
+    amperage: 50,
+    poleCount: 2,
+    protectionType: "Standard",
+  });
+  const cable = catalogRow("6/3 NM-B cable", 3.921784, {
+    category: "Conductor",
+  });
+  const inputs: AdditionInputRecord = {
+    ...additionInputs,
+    receptacles: 0,
+    switches: 0,
+    dimmers: 0,
+    recessedLights: 0,
+    ceilingFans: 0,
+    circuitEntries: [{
+      amperage: 50,
+      poleCount: 2,
+      protectionType: "Standard",
+      cableType: "6/3 NM-B",
+      quantity: 1,
+    }],
+  };
+
+  const duplicate = calculateAdditionEstimate(
+    inputs,
+    settings,
+    [cable, { ...cable }, breaker],
+  );
+  assert.equal(
+    duplicate.assembly.find((line) => line.id === "addition-circuit-1-cable")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    duplicate.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "DUPLICATE_PRICE_BOOK_MATCHES",
+    ),
+    true,
+  );
+
+  const unbacked = calculateAdditionEstimate(
+    inputs,
+    settings,
+    [{ ...cable, sourceDate: null }, breaker],
+  );
+  assert.equal(
+    unbacked.assembly.find((line) => line.id === "addition-circuit-1-cable")
+      ?.unitCost,
+    0,
+  );
+  assert.equal(
+    unbacked.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.severity === "error" &&
+        warning.message.includes("missing supplier or source-date metadata"),
+    ),
+    true,
+  );
+});
+
+test("Addition preview and create validate the same 40A 8/3 and 50A 6/3 selections", () => {
+  for (const [amperage, cableType] of [
+    [40, "8/3 NM-B"],
+    [50, "6/3 NM-B"],
+  ] as const) {
+    const jobInputs = {
+      ...additionInputs,
+      circuitEntries: [{
+        amperage,
+        poleCount: 2 as const,
+        protectionType: "Standard" as const,
+        cableType,
+        quantity: 1,
+      }],
+      breakerAmperage: amperage,
+      breakerPoleCount: 2 as const,
+      breakerProtectionType: "Standard",
+      cableType,
+    };
+    assert.equal(
+      PreviewQuoteBody.safeParse({ module: "ADDITION", jobInputs }).success,
+      true,
+    );
+    assert.equal(
+      CreateQuoteBody.safeParse({
+        customerName: "Addition heavy wire parity",
+        projectName: `${amperage}A ${cableType}`,
+        module: "ADDITION",
+        jobInputs,
+        proposalDescription: "Install the selected heavy branch circuit.",
+      }).success,
+      true,
+    );
+  }
+});
+
 test("addition schedule splits do not multiply shared route footage or pricing", () => {
   const book = [
     ...priceBook,
@@ -3046,7 +3217,11 @@ test("price-book audit identifies unresolved active selections by builder", () =
 
   assert.equal(unresolvedBreaker.isUnresolved, true);
   assert.equal(unresolvedBreaker.activeSelection, true);
-  assert.deepEqual(unresolvedBreaker.builders, ["EV Charger"]);
+  assert.deepEqual(unresolvedBreaker.builders, [
+    "EV Charger",
+    "Addition",
+    "New House",
+  ]);
   assert.match(unresolvedBreaker.auditMessage ?? "", /sourced contractor cost/i);
   assert.equal(verifiedFixture.isUnresolved, false);
   assert.deepEqual(verifiedFixture.builders, ["Addition", "Recessed Lighting"]);
@@ -4219,6 +4394,67 @@ test("New House prices compatible 2-wire and 3-wire heavy equipment cables from 
   }
 });
 
+test("New House prices source-backed 50A 6/3 equipment circuits and blocks missing source metadata", () => {
+  const cable = catalogRow("6/3 NM-B cable", 3.921784, {
+    category: "Conductor",
+  });
+  const breaker = catalogRow("Siemens 50A 2-pole Standard breaker", 40, {
+    category: "Protection",
+    manufacturer: "Siemens",
+    manufacturerPartNumber: "Q250",
+    amperage: 50,
+    poleCount: 2,
+    protectionType: "Standard",
+  });
+  const inputs: NewHouseInputRecord = {
+    ...newHouseInputs,
+    commonBranchCircuitQuantity: 0,
+    kitchenApplianceCircuitQuantity: 0,
+    laundryCircuitQuantity: 0,
+    garageCircuitQuantity: 0,
+    hvacEquipmentCircuitQuantity: 1,
+    equipmentCircuitFootage: 25,
+    equipmentCircuitAmperage: 50,
+    equipmentCircuitCableType: "6/3 NM-B",
+  };
+  const resolved = calculateNewHouseEstimate(
+    inputs,
+    settings,
+    [cable, breaker],
+  );
+  assert.equal(
+    resolved.assembly.find((line) => line.id === "new-house-equipment-cable")
+      ?.unitCost,
+    3.921784,
+  );
+  assert.equal(
+    resolved.assembly.find((line) => line.id === "new-house-equipment-breakers")
+      ?.unitCost,
+    40,
+  );
+
+  const unbackedBreaker = calculateNewHouseEstimate(
+    inputs,
+    settings,
+    [cable, { ...breaker, supplier: null }],
+  );
+  assert.equal(
+    unbackedBreaker.assembly.find(
+      (line) => line.id === "new-house-equipment-breakers",
+    )?.unitCost,
+    0,
+  );
+  assert.equal(
+    unbackedBreaker.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.severity === "error" &&
+        warning.message.includes("missing supplier or source-date metadata"),
+    ),
+    true,
+  );
+});
+
 test("New House prices compatible 2-wire and 3-wire heavy general branch cables", () => {
   const selections = [
     [30, "10/2 NM-B", 1.071856],
@@ -4289,6 +4525,7 @@ test("New House preview and create accept the same heavy 2-wire and 3-wire cable
     [30, "10/3 NM-B"],
     [40, "8/2 NM-B"],
     [40, "8/3 NM-B"],
+    [50, "6/3 NM-B"],
   ] as const) {
     const jobInputs = {
       ...newHouseInputs,
@@ -4318,6 +4555,7 @@ test("New House preview and create accept the same heavy 2-wire and 3-wire cable
     [30, "10/3 NM-B"],
     [40, "8/2 NM-B"],
     [40, "8/3 NM-B"],
+    [50, "6/3 NM-B"],
   ] as const) {
     const jobInputs = {
       ...newHouseInputs,
@@ -4346,11 +4584,11 @@ test("New House preview and create accept the same heavy 2-wire and 3-wire cable
       module: "NEW_HOUSE",
       jobInputs: {
         ...newHouseInputs,
-        equipmentCircuitAmperage: 30,
+        equipmentCircuitAmperage: 40,
         equipmentCircuitCableType: "6/3 NM-B",
       },
     }).success,
-    false,
+    true,
   );
 });
 

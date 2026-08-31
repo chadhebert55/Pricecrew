@@ -21,7 +21,8 @@ export type NewHouseCircuitCableType =
   | "10/2 NM-B"
   | "10/3 NM-B"
   | "8/2 NM-B"
-  | "8/3 NM-B";
+  | "8/3 NM-B"
+  | "6/3 NM-B";
 export type EvCableType = "8/3 NM-B" | "8/2 NM-B" | "6/3 NM-B" | "8/2 SER";
 export type RecessedLightSize = "4-inch" | "6-inch";
 export type ServiceUpgradeServiceSize = "100A" | "150A" | "200A";
@@ -222,7 +223,7 @@ export type KitchenInputRecord = {
 
 export type AdditionCircuitEntry = {
   label?: string;
-  amperage: 15 | 20 | 30;
+  amperage: 15 | 20 | 30 | 40 | 50;
   poleCount: 1 | 2;
   protectionType: "Standard" | "GFCI" | "AFCI" | "Dual Function";
   cableType:
@@ -230,7 +231,10 @@ export type AdditionCircuitEntry = {
     | "14/2 NM-B"
     | "14/3 NM-B"
     | "10/2 NM-B"
-    | "10/3 NM-B";
+    | "10/3 NM-B"
+    | "8/2 NM-B"
+    | "8/3 NM-B"
+    | "6/3 NM-B";
   quantity: number;
 };
 
