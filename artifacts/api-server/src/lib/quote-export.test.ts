@@ -154,29 +154,51 @@ const officialJobberBaseHeaders = [
   "Tax Method (Inclusive/Exclusive)",
 ] as const;
 
-test("Jobber CSV uses current headers, preserves the saved override total, and leaves unsnapshotted values blank", () => {
-  const result = buildJobberQuoteCsv(savedQuote(), validMapping);
+const officialJobberLineHeaders = (lineNumber: number) => [
+  `Line Item ${lineNumber} Category (Service/Product)`,
+  `Line Item ${lineNumber} Name`,
+  `Line Item ${lineNumber} Description`,
+  `Line Item ${lineNumber} Quantity`,
+  `Line Item ${lineNumber} UNIT Price`,
+  `Line Item ${lineNumber} UNIT Cost`,
+  `Line Item ${lineNumber} Taxable (True/False)`,
+];
+
+test("Jobber CSV locks documented columns, assembly rows, and the saved total row", () => {
+  const result = buildJobberQuoteCsv(
+    savedQuote({
+      assembly: [
+        ...savedQuote().assembly,
+        {
+          id: "receptacle",
+          category: "Devices",
+          description: "Duplex receptacle",
+          quantity: 4,
+          unit: "ea",
+          unitCost: 8.5,
+          extendedCost: 34,
+          source: "Saved catalog",
+        },
+      ],
+    }),
+    validMapping,
+  );
   assert.deepEqual(result.issues, []);
   assert.ok(result.csv);
 
   const [headers, values] = parseCsvRows(result.csv);
   assert.ok(headers);
   assert.ok(values);
-  assert.equal(headers.length, JOBBER_QUOTE_HEADERS.length + 70);
+  const expectedHeaders = [
+    ...officialJobberBaseHeaders,
+    ...Array.from({ length: 10 }, (_, index) =>
+      officialJobberLineHeaders(index + 1),
+    ).flat(),
+  ];
+  assert.equal(headers.length, expectedHeaders.length);
   assert.equal(values.length, headers.length);
   assert.deepEqual(JOBBER_QUOTE_HEADERS, officialJobberBaseHeaders);
-  assert.deepEqual(
-    headers.slice(0, officialJobberBaseHeaders.length),
-    [...officialJobberBaseHeaders],
-  );
-  assert.equal(
-    headers.at(-2),
-    "Line Item 10 UNIT Cost",
-  );
-  assert.equal(
-    headers.at(-1),
-    "Line Item 10 Taxable (True/False)",
-  );
+  assert.deepEqual(headers, expectedHeaders);
 
   const valueFor = (header: string) => values[headers.indexOf(header)];
   assert.equal(valueFor("Quote Status (Draft/Awaiting Response/Approved)"), "Awaiting Response");
@@ -185,12 +207,41 @@ test("Jobber CSV uses current headers, preserves the saved override total, and l
   assert.equal(valueFor("Quote Discount Amount (Unit/Percentage)"), "");
   assert.equal(valueFor("Quote New Tax Rate (Percentage)"), "");
   assert.equal(valueFor("Tax Method (Inclusive/Exclusive)"), "");
-  assert.equal(valueFor("Line Item 1 UNIT Price"), "");
-  assert.equal(valueFor("Line Item 1 UNIT Cost"), "12.34");
-  assert.match(valueFor("Line Item 1 Description") ?? "", /Saved extended cost: \$37\.02/);
-  assert.equal(valueFor("Line Item 2 Name"), "Saved quote total");
-  assert.equal(valueFor("Line Item 2 UNIT Price"), "2345.67");
-  assert.equal(valueFor("Line Item 2 UNIT Cost"), "");
+
+  const lineItemWidth = officialJobberLineHeaders(1).length;
+  const lineItemValues = (lineNumber: number) =>
+    values.slice(
+      officialJobberBaseHeaders.length + (lineNumber - 1) * lineItemWidth,
+      officialJobberBaseHeaders.length + lineNumber * lineItemWidth,
+    );
+  assert.deepEqual(lineItemValues(1), [
+    "Product",
+    "12/2 copper cable",
+    "Saved assembly category: Material; Unit: ft; Source: Saved supplier quote; Saved extended cost: $37.02",
+    "3",
+    "",
+    "12.34",
+    "",
+  ]);
+  assert.deepEqual(lineItemValues(2), [
+    "Product",
+    "Duplex receptacle",
+    "Saved assembly category: Devices; Unit: ea; Source: Saved catalog; Saved extended cost: $34.00",
+    "4",
+    "",
+    "8.50",
+    "",
+  ]);
+  assert.deepEqual(lineItemValues(3), [
+    "Service",
+    "Saved quote total",
+    "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
+    "1",
+    "2345.67",
+    "",
+    "",
+  ]);
+  assert.deepEqual(lineItemValues(4), ["", "", "", "", "", "", ""]);
 });
 
 test("Jobber CSV escapes delimiters and neutralizes spreadsheet formulas", () => {
