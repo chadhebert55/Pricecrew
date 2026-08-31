@@ -6918,6 +6918,7 @@ export const ListPriceBookImportsResponse = zod.object({
   "rowNumber": zod.number(),
   "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
   "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "stale": zod.boolean().describe('The incoming supplier source date is older than the matched catalog row\'s source date.'),
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
@@ -6993,6 +6994,7 @@ export const PreviewPriceBookImportResponse = zod.object({
   "rowNumber": zod.number(),
   "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
   "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "stale": zod.boolean().describe('The incoming supplier source date is older than the matched catalog row\'s source date.'),
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
@@ -7053,6 +7055,7 @@ export const GetPriceBookImportResponse = zod.object({
   "rowNumber": zod.number(),
   "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
   "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "stale": zod.boolean().describe('The incoming supplier source date is older than the matched catalog row\'s source date.'),
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
@@ -7109,10 +7112,11 @@ export const applyPriceBookImportBodySelectedRowsItemMin = 2;
 
 export const applyPriceBookImportBodySelectedRowsMax = 10000;
 
-
+export const applyPriceBookImportBodyAcknowledgeStalePriceWarningDefault = false;
 
 export const ApplyPriceBookImportBody = zod.object({
-  "selectedRows": zod.array(zod.number().min(applyPriceBookImportBodySelectedRowsItemMin)).max(applyPriceBookImportBodySelectedRowsMax)
+  "selectedRows": zod.array(zod.number().min(applyPriceBookImportBodySelectedRowsItemMin)).max(applyPriceBookImportBodySelectedRowsMax),
+  "acknowledgeStalePriceWarning": zod.boolean().default(applyPriceBookImportBodyAcknowledgeStalePriceWarningDefault).describe('Explicitly acknowledge that selected rows may replace newer system-owned catalog prices with an older supplier file.')
 })
 
 export const ApplyPriceBookImportResponse = zod.object({
@@ -7124,6 +7128,7 @@ export const ApplyPriceBookImportResponse = zod.object({
   "rowNumber": zod.number(),
   "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
   "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "stale": zod.boolean().describe('The incoming supplier source date is older than the matched catalog row\'s source date.'),
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({

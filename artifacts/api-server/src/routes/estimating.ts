@@ -128,6 +128,7 @@ import {
 } from "../lib/estimating-engine";
 import {
   exactImportMatches,
+  isOlderPriceBookSourceDate,
   parsePriceBookImport,
   reportForImportRows,
 } from "../lib/price-book-import";
@@ -2598,6 +2599,10 @@ function serializePriceBookImport(
 ) {
   return {
     ...priceBookImport,
+    rows: priceBookImport.rows.map((row) => ({
+      ...row,
+      stale: row.stale ?? false,
+    })),
     createdAt: priceBookImport.createdAt.toISOString(),
     appliedAt: priceBookImport.appliedAt?.toISOString() ?? null,
   };
@@ -2732,6 +2737,36 @@ router.post("/price-book/imports/:id/apply", async (req, res): Promise<void> => 
       .select()
       .from(priceBookItemsTable)
       .where(eq(priceBookItemsTable.companyId, companyId));
+    const staleSelectedRows = priceBookImport.rows
+      .filter(
+        (row) =>
+          row.status === "proposed" &&
+          row.action === "update" &&
+          row.matchedItemId !== null &&
+          selectedRows.has(row.rowNumber),
+      )
+      .filter((row) => {
+        const target = currentItems.find(
+          (item) => item.id === row.matchedItemId,
+        );
+        if (!target || target.isContractorOwned) return false;
+        const currentMatches = exactImportMatches(row.incoming, currentItems);
+        return (
+          currentMatches.length === 1 &&
+          currentMatches[0]?.id === target.id &&
+          isOlderPriceBookSourceDate(
+            row.incoming.sourceDate ?? priceBookImport.sourceDate,
+            target.sourceDate,
+          )
+        );
+      })
+      .map((row) => row.rowNumber);
+    if (
+      staleSelectedRows.length > 0 &&
+      parsed.data.acknowledgeStalePriceWarning !== true
+    ) {
+      return { kind: "stale-warning" as const, staleRows: staleSelectedRows };
+    }
     const rows: PriceBookImportRowRecord[] = [];
 
     for (const row of priceBookImport.rows) {
@@ -2858,6 +2893,14 @@ router.post("/price-book/imports/:id/apply", async (req, res): Promise<void> => 
   }
   if (result.kind === "already-applied") {
     res.status(409).json({ error: "Price-book import was already applied" });
+    return;
+  }
+  if (result.kind === "stale-warning") {
+    res.status(409).json({
+      error:
+        "This supplier file is older than the current system-owned catalog pricing. Explicitly acknowledge the stale-price warning before applying the selected rows.",
+      staleRows: result.staleRows,
+    });
     return;
   }
 

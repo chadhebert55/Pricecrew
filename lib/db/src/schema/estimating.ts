@@ -80,6 +80,7 @@ export type PriceBookImportRowRecord = {
   rowNumber: number;
   action: PriceBookImportRowAction;
   status: PriceBookImportRowStatus;
+  stale: boolean;
   reason: string | null;
   matchedItemId: number | null;
   incoming: PriceBookImportValueRecord;

@@ -6,7 +6,7 @@ import {
   usePreviewPriceBookImport,
 } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertCircle, Check, FileSpreadsheet, Upload } from "lucide-react"
+import { AlertCircle, AlertTriangle, Check, FileSpreadsheet, Upload } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -52,6 +52,7 @@ export function PriceBookImportPanel({
   const [file, setFile] = useState<File | null>(null)
   const [sourceDate, setSourceDate] = useState("")
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const [acknowledgeStalePriceWarning, setAcknowledgeStalePriceWarning] = useState(false)
 
   useEffect(() => {
     setSelectedRows(
@@ -63,12 +64,14 @@ export function PriceBookImportPanel({
           : [],
       ),
     )
+    setAcknowledgeStalePriceWarning(false)
   }, [review?.id, review?.status])
 
   const previewImport = usePreviewPriceBookImport({
     mutation: {
       onSuccess: (result) => {
         onReviewChange(result)
+        setAcknowledgeStalePriceWarning(false)
         setSelectedRows(
           new Set(
             result.rows
@@ -145,6 +148,12 @@ export function PriceBookImportPanel({
       return next
     })
   }
+  const staleRows =
+    review?.status === "review"
+      ? review.rows.filter((row) => row.status === "proposed" && row.stale)
+      : []
+  const selectedStaleRows = staleRows.filter((row) => selectedRows.has(row.rowNumber))
+  const requiresStaleAcknowledgement = selectedStaleRows.length > 0
 
   return (
     <Card data-testid="price-book-import-panel">
@@ -182,6 +191,7 @@ export function PriceBookImportPanel({
                 setFile(event.target.files?.[0] ?? null)
                 onReviewChange(null)
                 setSelectedRows(new Set())
+                setAcknowledgeStalePriceWarning(false)
               }}
             />
           </div>
@@ -320,24 +330,71 @@ export function PriceBookImportPanel({
             </div>
 
             {review.status === "review" && (
-              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {selectedRows.size} exact-match change{selectedRows.size === 1 ? "" : "s"} selected.
-                  Historical quotes are not recalculated.
-                </p>
-                <Button
-                  type="button"
-                  data-testid="apply-price-book-import"
-                  disabled={selectedRows.size === 0 || applyImport.isPending}
-                  onClick={() =>
-                    applyImport.mutate({
-                      id: review.id,
-                      data: { selectedRows: Array.from(selectedRows) },
-                    })
-                  }
-                >
-                  {applyImport.isPending ? "Applying…" : "Apply selected changes"}
-                </Button>
+              <div className="space-y-4 border-t pt-4">
+                {staleRows.length > 0 && (
+                  <div
+                    className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+                    data-testid="stale-price-warning"
+                    role="alert"
+                  >
+                    <div className="flex gap-3">
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                      <div className="space-y-3">
+                        <div>
+                          <p className="font-semibold">This file contains older supplier prices</p>
+                          <p className="mt-1 text-sm">
+                            {staleRows.length} matched catalog row
+                            {staleRows.length === 1 ? " has" : "s have"} a newer source date.
+                            Applying selected older rows can roll current system-owned pricing
+                            backward.
+                          </p>
+                        </div>
+                        <label className="flex cursor-pointer items-start gap-2 text-sm font-medium">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4 rounded border-amber-500 accent-amber-700"
+                            data-testid="acknowledge-stale-price-warning"
+                            checked={acknowledgeStalePriceWarning}
+                            onChange={(event) =>
+                              setAcknowledgeStalePriceWarning(event.target.checked)
+                            }
+                          />
+                          <span>
+                            I understand that the selected older prices will replace newer catalog
+                            prices.
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedRows.size} exact-match change
+                    {selectedRows.size === 1 ? "" : "s"} selected. Historical quotes are not
+                    recalculated.
+                  </p>
+                  <Button
+                    type="button"
+                    data-testid="apply-price-book-import"
+                    disabled={
+                      selectedRows.size === 0 ||
+                      applyImport.isPending ||
+                      (requiresStaleAcknowledgement && !acknowledgeStalePriceWarning)
+                    }
+                    onClick={() =>
+                      applyImport.mutate({
+                        id: review.id,
+                        data: {
+                          selectedRows: Array.from(selectedRows),
+                          acknowledgeStalePriceWarning,
+                        },
+                      })
+                    }
+                  >
+                    {applyImport.isPending ? "Applying…" : "Apply selected changes"}
+                  </Button>
+                </div>
               </div>
             )}
           </>

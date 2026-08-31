@@ -49,6 +49,40 @@ test("proposes an exact SKU update and safely normalizes per-thousand wire prici
   assert.equal(result.rows[0]?.incoming.unit, "ft");
   assert.equal(result.rows[0]?.incoming.unitCost, 0.562271);
   assert.equal(result.rows[0]?.matchedItemId, 1);
+  assert.equal(result.rows[0]?.stale, false);
+});
+
+test("marks an older exact-match supplier row stale and explains the rollback risk", () => {
+  const result = parsePriceBookImport(
+    [
+      "Category,Description,UOM,Customer Price,SKU,Price Date",
+      "Conductor,12/2 NM-B cable,ft,0.45,3873,8/1/2026",
+    ].join("\n"),
+    [existing({ sourceDate: "2026-08-25" })],
+  );
+
+  assert.equal(result.rows[0]?.action, "update");
+  assert.equal(result.rows[0]?.status, "proposed");
+  assert.equal(result.rows[0]?.stale, true);
+  assert.equal(result.rows[0]?.incoming.sourceDate, "2026-08-01");
+  assert.match(result.rows[0]?.reason ?? "", /older than the catalog price/i);
+  assert.match(result.rows[0]?.reason ?? "", /acknowledge/i);
+});
+
+test("fails closed when a CSV price date is not a real unambiguous calendar date", () => {
+  const result = parsePriceBookImport(
+    [
+      "Category,Description,UOM,Customer Price,SKU,Price Date",
+      "Conductor,12/2 NM-B cable,ft,0.45,3873,02/30/2026",
+    ].join("\n"),
+    [existing()],
+  );
+
+  assert.equal(result.rows[0]?.action, "unresolved");
+  assert.equal(result.rows[0]?.status, "unresolved");
+  assert.equal(result.rows[0]?.stale, false);
+  assert.equal(result.rows[0]?.incoming.sourceDate, null);
+  assert.match(result.rows[0]?.reason ?? "", /invalid price date/i);
 });
 
 test("keeps contractor-owned exact matches out of the applyable proposal", () => {

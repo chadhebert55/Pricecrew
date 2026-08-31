@@ -12,4 +12,6 @@ export interface PriceBookImportApplyInput {
      * @items.minimum 2
      */
   selectedRows: number[];
+  /** Explicitly acknowledge that selected rows may replace newer system-owned catalog prices with an older supplier file. */
+  acknowledgeStalePriceWarning?: boolean;
 }

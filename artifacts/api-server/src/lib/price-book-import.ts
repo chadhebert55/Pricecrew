@@ -38,6 +38,28 @@ function parseNumber(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function canonicalSourceDate(value: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(trimmed);
+  const usMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+  if (!isoMatch && !usMatch) return null;
+  const year = Number(isoMatch?.[1] ?? usMatch?.[3]);
+  const month = Number(isoMatch?.[2] ?? usMatch?.[1]);
+  const day = Number(isoMatch?.[3] ?? usMatch?.[2]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return `${year.toString().padStart(4, "0")}-${month
+    .toString()
+    .padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+}
+
 function splitCsvLine(line: string) {
   const cells: string[] = [];
   let cell = "";
@@ -123,6 +145,10 @@ function parseIncomingRow(
   let unit = unitValue ?? "";
   let unitCost = rawCost ?? 0;
   let reason: string | null = null;
+  const rawSourceDate =
+    nullable(cell(row, column(headers, ["sourcedate", "date", "pricedate"]))) ??
+    sourceDate;
+  const sourceDateValue = canonicalSourceDate(rawSourceDate);
 
   if (!item) reason = "Missing item description.";
   else if (!category) reason = "Missing category.";
@@ -143,6 +169,10 @@ function parseIncomingRow(
     } else {
       unitCost = rawCost / packageQuantity;
     }
+  }
+  if (!reason && rawSourceDate && !sourceDateValue) {
+    reason =
+      "Invalid price date; use an actual calendar date in YYYY-MM-DD or M/D/YYYY format.";
   }
 
   const incoming: PriceBookImportValueRecord = {
@@ -167,9 +197,7 @@ function parseIncomingRow(
       cell(row, column(headers, ["suppliersku", "sku", "itemsku", "stockkeepingunit"])),
     ),
     upc: nullable(cell(row, column(headers, ["upc", "gtin", "barcode"]))),
-    sourceDate:
-      nullable(cell(row, column(headers, ["sourcedate", "date", "pricedate"]))) ??
-      sourceDate,
+    sourceDate: sourceDateValue,
     amperage: parseNumber(
       cell(row, column(headers, ["amperage", "amps", "amp"])),
     ),
@@ -200,6 +228,16 @@ function conflictingIdentifier(
     const existingValue = normalizePriceBookIdentifier(existing[field]);
     return incomingValue && existingValue && incomingValue !== existingValue;
   });
+}
+
+export function isOlderPriceBookSourceDate(
+  incomingSourceDate: string | null,
+  catalogSourceDate: string | null,
+) {
+  const incoming = canonicalSourceDate(incomingSourceDate);
+  const catalog = canonicalSourceDate(catalogSourceDate);
+  if (!incoming || !catalog) return false;
+  return incoming < catalog;
 }
 
 function sameValue(
@@ -287,6 +325,7 @@ export function parsePriceBookImport(
       rowNumber: 0,
       action: "unresolved",
       status: "unresolved",
+      stale: false,
       reason: "The file does not contain a CSV header row.",
       matchedItemId: null,
       incoming: {
@@ -321,6 +360,7 @@ export function parsePriceBookImport(
         rowNumber,
         action: "unresolved",
         status: "unresolved",
+        stale: false,
         reason: parseReason,
         matchedItemId: null,
         incoming,
@@ -335,6 +375,7 @@ export function parsePriceBookImport(
         rowNumber,
         action: "unresolved",
         status: "unresolved",
+        stale: false,
         reason: "No exact SKU, UPC, or manufacturer part number was provided.",
         matchedItemId: null,
         incoming,
@@ -357,6 +398,7 @@ export function parsePriceBookImport(
         rowNumber,
         action: "unresolved",
         status: "unresolved",
+        stale: false,
         reason:
           "Multiple catalog rows share an exact SKU, UPC, or manufacturer part number.",
         matchedItemId: null,
@@ -372,6 +414,7 @@ export function parsePriceBookImport(
         rowNumber,
         action: "insert",
         status: "proposed",
+        stale: false,
         reason: "No existing exact identifier matched; review as a new catalog row.",
         matchedItemId: null,
         incoming,
@@ -392,6 +435,7 @@ export function parsePriceBookImport(
         rowNumber,
         action: "unresolved",
         status: "unresolved",
+        stale: false,
         reason: `The supplied ${label} conflicts with the exact-matched catalog row.`,
         matchedItemId: match.id,
         incoming,
@@ -406,6 +450,7 @@ export function parsePriceBookImport(
         rowNumber,
         action: "skip",
         status: "skipped",
+        stale: false,
         reason: "Catalog row is contractor-owned and cannot be overwritten by an import.",
         matchedItemId: match.id,
         incoming: mergedIncoming,
@@ -415,13 +460,20 @@ export function parsePriceBookImport(
     }
 
     const isCurrent = sameValue(match, mergedIncoming);
+    const stale = isOlderPriceBookSourceDate(
+      incoming.sourceDate,
+      match.sourceDate,
+    );
     rows.push({
       rowNumber,
       action: isCurrent ? "skip" : "update",
       status: isCurrent ? "skipped" : "proposed",
+      stale,
       reason: isCurrent
         ? "Exact match is already current; no change is needed."
-        : "Exact identifier match; review the proposed catalog update.",
+        : stale
+          ? `The supplier file is dated ${incoming.sourceDate}, older than the catalog price dated ${match.sourceDate}; acknowledge the stale-price warning before applying.`
+          : "Exact identifier match; review the proposed catalog update.",
       matchedItemId: match.id,
       incoming: mergedIncoming,
       before: importValue(match),

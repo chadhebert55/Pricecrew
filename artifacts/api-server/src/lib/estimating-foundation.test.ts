@@ -1323,6 +1323,99 @@ test("reviewed price imports protect contractor rows and historical quote snapsh
   }
 });
 
+test("price import apply rechecks newer catalog dates and requires explicit acknowledgement", async () => {
+  const { server, baseUrl, companyId } = await startTestServer();
+  const marker = randomUUID();
+  try {
+    const [systemRow] = await db
+      .insert(priceBookItemsTable)
+      .values({
+        companyId,
+        category: "Devices",
+        item: `Stale import row ${marker}`,
+        unit: "ea",
+        unitCost: 4,
+        supplier: "Northeast Electrical",
+        supplierSku: `STALE-${marker}`,
+        sourceDate: "2026-08-01",
+        isDefault: false,
+        isContractorOwned: false,
+      })
+      .returning();
+    assert.ok(systemRow);
+
+    const previewResponse = await fetch(
+      `${baseUrl}/api/price-book/imports/preview`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({
+          fileName: "northeast-stale-price.csv",
+          csv: [
+            "Category,Description,UOM,Customer Price,SKU,Price Date",
+            `Devices,Stale import row ${marker},ea,3.50,STALE-${marker},2026-08-15`,
+          ].join("\n"),
+          sourceDate: "2026-08-15",
+        }),
+      },
+    );
+    const preview = (await previewResponse.json()) as {
+      id: number;
+      rows: Array<{ rowNumber: number; stale: boolean }>;
+    };
+    assert.equal(previewResponse.status, 201);
+    assert.equal(preview.rows[0]?.stale, false);
+
+    await db
+      .update(priceBookItemsTable)
+      .set({ unitCost: 5, sourceDate: "2026-09-01" })
+      .where(eq(priceBookItemsTable.id, systemRow.id));
+
+    const blockedResponse = await fetch(
+      `${baseUrl}/api/price-book/imports/${preview.id}/apply`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({ selectedRows: [2] }),
+      },
+    );
+    const blocked = (await blockedResponse.json()) as {
+      error?: string;
+      staleRows?: number[];
+    };
+    assert.equal(blockedResponse.status, 409);
+    assert.match(blocked.error ?? "", /older than the current/i);
+    assert.deepEqual(blocked.staleRows, [2]);
+    const [stillCurrent] = await db
+      .select()
+      .from(priceBookItemsTable)
+      .where(eq(priceBookItemsTable.id, systemRow.id));
+    assert.equal(stillCurrent?.unitCost, 5);
+    assert.equal(stillCurrent?.sourceDate, "2026-09-01");
+
+    const acknowledgedResponse = await fetch(
+      `${baseUrl}/api/price-book/imports/${preview.id}/apply`,
+      {
+        method: "POST",
+        headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({
+          selectedRows: [2],
+          acknowledgeStalePriceWarning: true,
+        }),
+      },
+    );
+    assert.equal(acknowledgedResponse.status, 200);
+    const [rolledBack] = await db
+      .select()
+      .from(priceBookItemsTable)
+      .where(eq(priceBookItemsTable.id, systemRow.id));
+    assert.equal(rolledBack?.unitCost, 3.5);
+    assert.equal(rolledBack?.sourceDate, "2026-08-15");
+  } finally {
+    await closeTestServer(server);
+  }
+});
+
 test("requested builders preserve seeded pricing across preview, create, and reload", async () => {
   const { server, baseUrl } = await startTestServer();
   const cases: Array<{

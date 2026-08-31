@@ -3305,6 +3305,10 @@ components:
           items:
             type: number
             minimum: 2
+        acknowledgeStalePriceWarning:
+          type: boolean
+          default: false
+          description: Explicitly acknowledge that selected rows may replace newer system-owned catalog prices with an older supplier file.
     PriceBookImportValue:
       type: object
       required:
@@ -3354,6 +3358,7 @@ components:
         - rowNumber
         - action
         - status
+        - stale
         - reason
         - matchedItemId
         - incoming
@@ -3367,6 +3372,9 @@ components:
         status:
           type: string
           enum: [proposed, applied, skipped, unresolved]
+        stale:
+          type: boolean
+          description: The incoming supplier source date is older than the matched catalog row's source date.
         reason:
           type: ["string", "null"]
         matchedItemId:
