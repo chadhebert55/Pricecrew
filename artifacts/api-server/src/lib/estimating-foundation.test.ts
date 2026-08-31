@@ -1731,7 +1731,7 @@ test("heavy-load wire pairs keep exact seeded pricing through preview, create, a
   }
 });
 
-test("company prices stay isolated, normalized duplicates are deterministic, and saved snapshots remain immutable", async () => {
+test("company prices stay isolated, duplicate exact rows fail closed, and saved snapshots remain immutable", async () => {
   const first = await startTestServer();
   const second = await startTestServer();
   const fixtureName = "Juno WF4DREGSMAL 4-inch regressed wafer light";
@@ -1851,14 +1851,81 @@ test("company prices stay isolated, normalized duplicates are deterministic, and
       duplicatePreview.assembly.find(
         (line) => line.id === "recessed-fixtures",
       )?.unitCost,
-      99.75,
+      0,
     );
     assert.match(
       duplicatePreview.assembly.find(
         (line) => line.id === "recessed-fixtures",
       )?.source ?? "",
-      /UPC 99999999999/,
+      /duplicate catalog matches/i,
     );
+    const duplicateWarning = duplicatePreview.pricing.pricingWarnings.find(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "DUPLICATE_PRICE_BOOK_MATCHES",
+    );
+    assert.ok(duplicateWarning);
+    assert.equal(duplicateWarning.severity, "error");
+    assert.equal(duplicateWarning.context.itemKey, fixtureName);
+    assert.equal(duplicateWarning.context.matchCount, 3);
+    assert.match(duplicateWarning.message, /Clean up or disambiguate/);
+    assert.equal(
+      hasBlockingPricingWarnings(duplicatePreview.pricing.pricingWarnings),
+      true,
+    );
+
+    const secondPreviewAfterFirstCompanyDuplicates = await previewQuote(
+      second.baseUrl,
+      {
+        module: "RECESSED_LIGHTING",
+        jobInputs,
+      },
+    );
+    assert.equal(
+      secondPreviewAfterFirstCompanyDuplicates.assembly.find(
+        (line) => line.id === "recessed-fixtures",
+      )?.unitCost,
+      73.5,
+    );
+    assert.equal(
+      secondPreviewAfterFirstCompanyDuplicates.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "DUPLICATE_PRICE_BOOK_MATCHES",
+      ),
+      false,
+    );
+
+    const ambiguousCreated = await postQuote(first.baseUrl, {
+      customerName: `Tenant A duplicate ${randomUUID()}`,
+      projectName: "Tenant A duplicate fixture pricing",
+      proposalDescription: "Preserve unresolved duplicate catalog pricing.",
+      module: "RECESSED_LIGHTING",
+      jobInputs,
+    });
+    const ambiguousSaved = await getQuote(first.baseUrl, ambiguousCreated.id);
+    assert.deepEqual(ambiguousCreated.assembly, duplicatePreview.assembly);
+    assert.deepEqual(ambiguousCreated.pricing, duplicatePreview.pricing);
+    assert.deepEqual(ambiguousSaved.assembly, duplicatePreview.assembly);
+    assert.deepEqual(ambiguousSaved.pricing, duplicatePreview.pricing);
+
+    const ambiguousRevision = await postQuote(first.baseUrl, {
+      sourceQuoteId: ambiguousCreated.id,
+      customerName: `Tenant A duplicate revision ${randomUUID()}`,
+      projectName: "Tenant A duplicate fixture revision",
+      proposalDescription:
+        "Preserve unresolved duplicate catalog pricing in a revision.",
+      module: "RECESSED_LIGHTING",
+      jobInputs,
+    });
+    const ambiguousRevisionSaved = await getQuote(
+      first.baseUrl,
+      ambiguousRevision.id,
+    );
+    assert.deepEqual(ambiguousRevision.assembly, duplicatePreview.assembly);
+    assert.deepEqual(ambiguousRevision.pricing, duplicatePreview.pricing);
+    assert.deepEqual(ambiguousRevisionSaved.assembly, duplicatePreview.assembly);
+    assert.deepEqual(ambiguousRevisionSaved.pricing, duplicatePreview.pricing);
 
     await db
       .update(priceBookItemsTable)

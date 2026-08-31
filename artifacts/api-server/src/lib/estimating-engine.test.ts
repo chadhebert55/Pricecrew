@@ -245,7 +245,7 @@ test("bathroom prices all exhaust options as contractor supplied while vanity re
   );
 });
 
-test("Siemens AFCI selection prefers exact Northeast QA115AFC and QA120AFC rows", () => {
+test("duplicate exact Siemens AFCI breaker identities fail closed", () => {
   const verifiedAfcis: PriceBookItem[] = [
     catalogRow("Siemens Q115AFC legacy allowance", 44, {
       manufacturer: "Siemens",
@@ -293,13 +293,130 @@ test("Siemens AFCI selection prefers exact Northeast QA115AFC and QA120AFC rows"
     settings,
     verifiedAfcis,
   );
+  for (const estimate of [fifteen, twenty]) {
+    assert.equal(
+      estimate.assembly.find((line) => line.id === "addition-breakers")
+        ?.unitCost,
+      0,
+    );
+    const duplicateWarning = estimate.pricing.pricingWarnings.find(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "DUPLICATE_PRICE_BOOK_MATCHES",
+    );
+    if (!duplicateWarning || typeof duplicateWarning === "string") {
+      assert.fail("Expected a structured duplicate Price Book warning");
+    }
+    assert.equal(duplicateWarning.severity, "error");
+    assert.match(duplicateWarning.message, /Clean up or disambiguate/);
+    assert.equal(duplicateWarning.context.matchCount, 2);
+  }
+});
+
+test("generic material duplicates fail closed regardless of duplicate prices", () => {
+  const duplicateCosts = [
+    [3.25, 4.75],
+    [3.25, 3.25],
+    [3.25, 0],
+  ] as const;
+
+  for (const costs of duplicateCosts) {
+    const estimate = calculateEvChargerEstimate(
+      {
+        ...({
+          chargerQuantity: 1,
+          chargerOutputAmps: 40,
+          circuitAmps: "Auto",
+          chargerSupply: "Customer Provided",
+          connection: "Hardwired",
+          routeLength: 25,
+          wiringMethod: "Romex (NM-B)",
+          cableType: "6/3 NM-B",
+          location: "Indoor",
+          panelManufacturer: "Siemens",
+          panelSpace: "Available",
+          breakerRequirement: "GFCI 2-Pole",
+          access: "Standard",
+          permit: "Not Required",
+          loadManagement: "None",
+          disconnect: "Not Required",
+          surgeProtection: "None",
+          panelModifications: "None",
+          difficulty: "Standard",
+          notes: "",
+          laborRateType: "residential",
+        } satisfies EvChargerInputRecord),
+      },
+      settings,
+      [
+        catalogRow("6/3 NM-B cable", costs[0], { id: 1 }),
+        catalogRow("  6/3 NM-B CABLE  ", costs[1], { id: 2 }),
+        catalogRow("Siemens QF250A 50A 2-pole GFCI breaker", 151.702, {
+          manufacturer: "Siemens",
+          manufacturerPartNumber: "QF250A",
+          amperage: 50,
+          poleCount: 2,
+          protectionType: "GFCI",
+        }),
+      ],
+    );
+
+    const cable = estimate.assembly.find((line) => line.id === "cable");
+    assert.equal(cable?.unitCost, 0);
+    assert.match(cable?.source ?? "", /duplicate catalog matches/i);
+    assert.equal(
+      estimate.pricing.pricingWarnings.some(
+        (warning) =>
+          typeof warning !== "string" &&
+          warning.code === "DUPLICATE_PRICE_BOOK_MATCHES" &&
+          warning.context.itemKey === "6/3 NM-B cable" &&
+          warning.context.matchCount === 2,
+      ),
+      true,
+    );
+  }
+});
+
+test("a single exact material match still prices normally", () => {
+  const estimate = calculateEvChargerEstimate(
+    {
+      chargerQuantity: 1,
+      chargerOutputAmps: 40,
+      circuitAmps: "Auto",
+      chargerSupply: "Customer Provided",
+      connection: "Hardwired",
+      routeLength: 25,
+      wiringMethod: "Romex (NM-B)",
+      cableType: "6/3 NM-B",
+      location: "Indoor",
+      panelManufacturer: "Siemens",
+      panelSpace: "Available",
+      breakerRequirement: "GFCI 2-Pole",
+      access: "Standard",
+      permit: "Not Required",
+      loadManagement: "None",
+      disconnect: "Not Required",
+      surgeProtection: "None",
+      panelModifications: "None",
+      difficulty: "Standard",
+      notes: "",
+      laborRateType: "residential",
+    },
+    settings,
+    [catalogRow("6/3 NM-B cable", 3.25)],
+  );
+
   assert.equal(
-    fifteen.assembly.find((line) => line.id === "addition-breakers")?.unitCost,
-    52.233,
+    estimate.assembly.find((line) => line.id === "cable")?.unitCost,
+    3.25,
   );
   assert.equal(
-    twenty.assembly.find((line) => line.id === "addition-breakers")?.unitCost,
-    52.233,
+    estimate.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "DUPLICATE_PRICE_BOOK_MATCHES",
+    ),
+    false,
   );
 });
 
@@ -879,6 +996,52 @@ test("panel exact selections enforce product role, manufacturer, amperage, and s
         typeof warning !== "string" &&
         warning.code === "EXACT_CATALOG_SELECTION_INCOMPATIBLE" &&
         warning.context.group === "groundBar",
+    ),
+    true,
+  );
+});
+
+test("duplicate compatible exact catalog selections fail closed", () => {
+  const exactPanel =
+    "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511";
+  const inputs: PanelReplacementInputRecord = {
+    ...panelReplacementInputs,
+    panelManufacturer: "Square D",
+    panelAmperage: 100,
+    panelSpaceCount: 6,
+    breakerAmperage: 100,
+    feederConductor: "1/0 aluminum XHHW conductor",
+    exactCatalogParts: { panelProduct: exactPanel },
+  };
+  const duplicatePanel = catalogRow(exactPanel, 151.625, {
+    category: "Panel",
+    manufacturer: "Square D",
+    amperage: 100,
+  });
+  const estimate = calculatePanelReplacementEstimate(inputs, settings, [
+    ...panelReplacementPriceBook,
+    duplicatePanel,
+    { ...duplicatePanel, id: 999, unitCost: 0 },
+    catalogRow("Square D 100A 2-pole standard breaker", 95, {
+      manufacturer: "Square D",
+      amperage: 100,
+      poleCount: 2,
+      protectionType: "Standard",
+    }),
+  ]);
+
+  const panel = estimate.assembly.find(
+    (line) => line.id === "panel-replacement-panel",
+  );
+  assert.equal(panel?.unitCost, 0);
+  assert.match(panel?.source ?? "", /duplicate exact catalog matches/i);
+  assert.equal(
+    estimate.pricing.pricingWarnings.some(
+      (warning) =>
+        typeof warning !== "string" &&
+        warning.code === "DUPLICATE_PRICE_BOOK_MATCHES" &&
+        warning.context.itemKey === exactPanel &&
+        warning.context.matchCount === 2,
     ),
     true,
   );

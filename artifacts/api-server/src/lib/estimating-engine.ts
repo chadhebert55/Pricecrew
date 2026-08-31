@@ -100,6 +100,20 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Duplicate Price Book matches found")) {
+    const count = Number(message.match(/\((\d+) active compatible/)?.[1]);
+    return {
+      code: "DUPLICATE_PRICE_BOOK_MATCHES",
+      severity: "error",
+      category: "missing-price",
+      source: "price-book",
+      context: {
+        itemKey: message.match(/for "([^"]+)"/)?.[1] ?? null,
+        matchCount: Number.isFinite(count) ? count : null,
+        rule: "clean up or disambiguate duplicate active catalog rows",
+      },
+    };
+  }
   if (message.startsWith("New House")) {
     const isCompatibilityError = message.includes("incompatible");
     const isMissingPrice =
@@ -565,55 +579,31 @@ function normalized(value: string) {
     .trim();
 }
 
-function comparePriceBookItems(
-  left: PriceBookItem,
-  right: PriceBookItem,
-): number {
-  const textFields: Array<
-    keyof Pick<
-      PriceBookItem,
-      | "sourceDate"
-      | "supplierSku"
-      | "manufacturerPartNumber"
-      | "manufacturer"
-      | "supplier"
-      | "upc"
-      | "protectionType"
-      | "category"
-      | "item"
-    >
-  > = [
-    "sourceDate",
-    "supplierSku",
-    "manufacturerPartNumber",
-    "manufacturer",
-    "supplier",
-    "upc",
-    "protectionType",
-    "category",
-    "item",
-  ];
-  for (const field of textFields) {
-    const comparison = (right[field] ?? "").localeCompare(left[field] ?? "");
-    if (comparison !== 0) return comparison;
-  }
-  const numericFields: Array<
-    keyof Pick<PriceBookItem, "amperage" | "poleCount" | "unitCost">
-  > = ["amperage", "poleCount", "unitCost"];
-  for (const field of numericFields) {
-    const comparison = Number(left[field] ?? 0) - Number(right[field] ?? 0);
-    if (comparison !== 0) return comparison;
-  }
-  if (left.isDefault !== right.isDefault) return left.isDefault ? 1 : -1;
-  return (left.id ?? Number.MAX_SAFE_INTEGER) -
-    (right.id ?? Number.MAX_SAFE_INTEGER);
-}
+type PriceBookMatch =
+  | { status: "none"; candidates: [] }
+  | { status: "unique"; candidates: [PriceBookItem]; match: PriceBookItem }
+  | { status: "ambiguous"; candidates: PriceBookItem[] };
 
-function deterministicPriceBookMatch(
+function resolvePriceBookMatch(
   priceBook: PriceBookItem[],
   predicate: (item: PriceBookItem) => boolean,
-): PriceBookItem | undefined {
-  return priceBook.filter(predicate).sort(comparePriceBookItems)[0];
+): PriceBookMatch {
+  const candidates = priceBook.filter(predicate);
+  if (candidates.length === 0) {
+    return { status: "none", candidates: [] };
+  }
+  if (candidates.length === 1) {
+    return {
+      status: "unique",
+      candidates: [candidates[0]!],
+      match: candidates[0]!,
+    };
+  }
+  return { status: "ambiguous", candidates };
+}
+
+function duplicatePriceBookWarning(identity: string, matchCount: number) {
+  return `Duplicate Price Book matches found for "${identity}" (${matchCount} active compatible catalog rows). No price was selected. Clean up or disambiguate the company Price Book before sending this quote.`;
 }
 
 const BUILDER_NAMES = [
@@ -1053,21 +1043,32 @@ function unitCost(
   pricingWarnings: string[],
   expectedCategory?: string,
 ): { value: number; source: string; item?: PriceBookItem } {
-  const match = deterministicPriceBookMatch(
+  const match = resolvePriceBookMatch(
     priceBook,
     (item) =>
       normalized(item.item) === normalized(key) &&
       (!expectedCategory || itemInCategory(item, expectedCategory)) &&
       !item.isDefault &&
-      !normalized(item.item).startsWith("unverified ") &&
-      Number.isFinite(item.unitCost) &&
-      item.unitCost > 0,
+      !normalized(item.item).startsWith("unverified "),
   );
-  if (match) {
+  if (match.status === "ambiguous") {
+    pricingWarnings.push(
+      duplicatePriceBookWarning(key, match.candidates.length),
+    );
     return {
-      value: match.unitCost,
-      source: catalogSource(match),
-      item: match,
+      value: 0,
+      source: "Unresolved — duplicate catalog matches",
+    };
+  }
+  if (
+    match.status === "unique" &&
+    Number.isFinite(match.match.unitCost) &&
+    match.match.unitCost > 0
+  ) {
+    return {
+      value: match.match.unitCost,
+      source: catalogSource(match.match),
+      item: match.match,
     };
   }
 
@@ -1097,31 +1098,39 @@ function exactCatalogCost(
   )?.[1];
   const isSelectable = (item: PriceBookItem) =>
     !item.isDefault && !normalized(item.item).startsWith("unverified ");
-  const selected =
-    deterministicPriceBookMatch(
-      priceBook,
-      (item) =>
-        normalized(item.item) === normalized(selection) && isSelectable(item),
-    ) ??
-    (selectedSku
-      ? deterministicPriceBookMatch(
-          priceBook,
-          (item) =>
-            normalized(item.supplierSku ?? "") === normalized(selectedSku) &&
-            isSelectable(item),
-        )
-      : undefined);
-  if (
-    !selected ||
-    !Number.isFinite(selected.unitCost) ||
-    selected.unitCost <= 0
-  ) {
+  const exactIdentity = (item: PriceBookItem) =>
+    normalized(item.item) === normalized(selection) && isSelectable(item);
+  const exactCandidates = resolvePriceBookMatch(priceBook, exactIdentity);
+  const skuIdentity = (item: PriceBookItem) =>
+    Boolean(selectedSku) &&
+    normalized(item.supplierSku ?? "") === normalized(selectedSku ?? "") &&
+    isSelectable(item);
+  const skuCandidates =
+    exactCandidates.status === "none" && selectedSku
+      ? resolvePriceBookMatch(priceBook, skuIdentity)
+      : ({ status: "none", candidates: [] } as const);
+  const identity =
+    exactCandidates.status !== "none" ? exactIdentity : skuIdentity;
+  const identityCandidates =
+    exactCandidates.status !== "none" ? exactCandidates : skuCandidates;
+  const selected = resolvePriceBookMatch(
+    priceBook,
+    (item) => identity(item) && compatible(item),
+  );
+
+  if (selected.status === "ambiguous") {
     pricingWarnings.push(
-      `Exact catalog selection "${selection}" for ${selector} is unavailable or unpriced. No generic catalog row was substituted.`,
+      duplicatePriceBookWarning(selection, selected.candidates.length),
     );
-    return { value: 0, source: "Unresolved exact catalog selection" };
+    return {
+      value: 0,
+      source: "Unresolved — duplicate exact catalog matches",
+    };
   }
-  if (!compatible(selected)) {
+  if (
+    selected.status === "none" &&
+    identityCandidates.status !== "none"
+  ) {
     pricingWarnings.push(
       `Exact catalog selection "${selection}" is incompatible with the selected configuration for ${selector}. No generic catalog row was substituted.`,
     );
@@ -1130,7 +1139,20 @@ function exactCatalogCost(
       source: "Unresolved incompatible exact catalog selection",
     };
   }
-  return { value: selected.unitCost, source: catalogSource(selected) };
+  if (
+    selected.status !== "unique" ||
+    !Number.isFinite(selected.match.unitCost) ||
+    selected.match.unitCost <= 0
+  ) {
+    pricingWarnings.push(
+      `Exact catalog selection "${selection}" for ${selector} is unavailable or unpriced. No generic catalog row was substituted.`,
+    );
+    return { value: 0, source: "Unresolved exact catalog selection" };
+  }
+  return {
+    value: selected.match.unitCost,
+    source: catalogSource(selected.match),
+  };
 }
 
 function addLine(
@@ -1187,7 +1209,7 @@ function resolveBreaker(
     selection.poleCount === 2 &&
     exactProtectionType === "GFCI" &&
     [40, 50, 60].includes(selection.amperage);
-  const match = deterministicPriceBookMatch(
+  const match = resolvePriceBookMatch(
     priceBook,
     (item) =>
       normalized(item.manufacturer ?? "") ===
@@ -1201,12 +1223,26 @@ function resolveBreaker(
           normalized(item.manufacturerPartNumber ?? "").replace(/\s+/g, ""),
         )) &&
       !item.isDefault &&
-      !normalized(item.item).startsWith("unverified ") &&
-      Number.isFinite(item.unitCost) &&
-      item.unitCost > 0,
+      !normalized(item.item).startsWith("unverified "),
   );
 
-  if (!match) {
+  const breakerIdentity = `${selection.manufacturer || "selected manufacturer"} ${selection.amperage || "selected amperage"}A ${selection.poleCount || "selected pole count"}-pole ${exactProtectionType} breaker`;
+  if (match.status === "ambiguous") {
+    pricingWarnings.push(
+      duplicatePriceBookWarning(breakerIdentity, match.candidates.length),
+    );
+    return {
+      value: 0,
+      description: `${selection.poleCount || "?"}-pole ${selection.amperage || "?"}A ${exactProtectionType} breaker — unresolved duplicate catalog matches`,
+      source: "Unresolved duplicate exact breaker matches",
+    };
+  }
+
+  if (
+    match.status !== "unique" ||
+    !Number.isFinite(match.match.unitCost) ||
+    match.match.unitCost <= 0
+  ) {
     pricingWarnings.push(
       `Unresolved breaker: no exact ${selection.manufacturer || "selected manufacturer"} ${selection.amperage || "selected amperage"}A ${selection.poleCount || "selected pole count"}-pole ${exactProtectionType} breaker is available in the company price book. No generic breaker cost was substituted.`,
     );
@@ -1217,13 +1253,13 @@ function resolveBreaker(
     };
   }
 
-  const part = match.manufacturerPartNumber
-    ? ` ${match.manufacturerPartNumber}`
+  const part = match.match.manufacturerPartNumber
+    ? ` ${match.match.manufacturerPartNumber}`
     : "";
   return {
-    value: match.unitCost,
-    description: `${selection.poleCount}-pole ${selection.amperage}A ${exactProtectionType} breaker — ${match.manufacturer}${part}`,
-    source: catalogSource(match),
+    value: match.match.unitCost,
+    description: `${selection.poleCount}-pole ${selection.amperage}A ${exactProtectionType} breaker — ${match.match.manufacturer}${part}`,
+    source: catalogSource(match.match),
   };
 }
 
