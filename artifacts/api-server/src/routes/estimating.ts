@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import {
@@ -28,6 +28,8 @@ import {
   ApplyPriceBookImportResponse,
   GetPriceBookImportParams,
   GetPriceBookImportResponse,
+  ListPriceBookImportsQueryParams,
+  ListPriceBookImportsResponse,
   ListPriceBookItemsResponse,
   ListQuotesQueryParams,
   ListQuotesResponse,
@@ -2550,6 +2552,44 @@ router.get("/price-book", async (req, res): Promise<void> => {
         updatedAt: item.updatedAt.toISOString(),
       })),
     ),
+  );
+});
+
+router.get("/price-book/imports", async (req, res): Promise<void> => {
+  const companyId = requestCompanyId(req);
+  await ensureEstimatorSeed();
+  const parsedQuery = ListPriceBookImportsQueryParams.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ error: parsedQuery.error.message });
+    return;
+  }
+
+  const page = parsedQuery.data.page ?? 1;
+  const pageSize = parsedQuery.data.pageSize ?? 10;
+  const offset = (page - 1) * pageSize;
+  const [totalResult, imports] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(priceBookImportsTable)
+      .where(eq(priceBookImportsTable.companyId, companyId)),
+    db
+      .select()
+      .from(priceBookImportsTable)
+      .where(eq(priceBookImportsTable.companyId, companyId))
+      .orderBy(desc(priceBookImportsTable.createdAt), desc(priceBookImportsTable.id))
+      .limit(pageSize)
+      .offset(offset),
+  ]);
+  const total = Number(totalResult[0]?.count ?? 0);
+
+  res.json(
+    ListPriceBookImportsResponse.parse({
+      items: imports.map(serializePriceBookImport),
+      page,
+      pageSize,
+      total,
+      hasNextPage: offset + imports.length < total,
+    }),
   );
 });
 

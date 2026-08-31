@@ -33,10 +33,12 @@ import type {
   HousecallProQuoteExportRequest,
   JobberQuoteExportRequest,
   ListCustomersParams,
+  ListPriceBookImportsParams,
   ListQuotesParams,
   NotificationsResponse,
   PriceBookImport,
   PriceBookImportApplyInput,
+  PriceBookImportHistory,
   PriceBookImportPreviewInput,
   PriceBookItem,
   PriceBookItemUpdate,
@@ -2093,6 +2095,91 @@ export function useListPriceBookItems<TData = Awaited<ReturnType<typeof listPric
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListPriceBookItemsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPriceBookImportsUrl = (params?: ListPriceBookImportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/price-book/imports?${stringifiedParams}` : `/api/price-book/imports`
+}
+
+/**
+ * Lists the authenticated company's saved import reviews and applied reports, newest first.
+ * @summary List saved price-book import reports
+ */
+export const listPriceBookImports = async (params?: ListPriceBookImportsParams, options?: Parameters<typeof customFetch>[1]): Promise<PriceBookImportHistory> => {
+
+  return customFetch<PriceBookImportHistory>(getListPriceBookImportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPriceBookImportsQueryKey = (params?: ListPriceBookImportsParams,) => {
+    return [
+    `/api/price-book/imports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPriceBookImportsQueryOptions = <TData = Awaited<ReturnType<typeof listPriceBookImports>>, TError = ErrorType<unknown>>(params?: ListPriceBookImportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPriceBookImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPriceBookImportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPriceBookImports>>> = ({ signal }) => listPriceBookImports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPriceBookImports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPriceBookImportsQueryResult = NonNullable<Awaited<ReturnType<typeof listPriceBookImports>>>
+export type ListPriceBookImportsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List saved price-book import reports
+ */
+
+export function useListPriceBookImports<TData = Awaited<ReturnType<typeof listPriceBookImports>>, TError = ErrorType<unknown>>(
+ params?: ListPriceBookImportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPriceBookImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPriceBookImportsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

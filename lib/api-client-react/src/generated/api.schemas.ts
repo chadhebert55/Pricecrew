@@ -2301,6 +2301,14 @@ export interface PriceBookImport {
   appliedAt: string | null;
 }
 
+export interface PriceBookImportHistory {
+  items: PriceBookImport[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNextPage: boolean;
+}
+
 export type CompanySettingsEvDefaultCableType = typeof CompanySettingsEvDefaultCableType[keyof typeof CompanySettingsEvDefaultCableType];
 
 
@@ -2497,5 +2505,17 @@ search?: string;
 
 export type ListQuotesParams = {
 status?: QuoteStatus;
+};
+
+export type ListPriceBookImportsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+pageSize?: number;
 };
 

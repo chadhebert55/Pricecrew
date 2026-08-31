@@ -637,6 +637,37 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PriceBookItem"
+  /price-book/imports:
+    get:
+      operationId: listPriceBookImports
+      tags: [price-book]
+      summary: List saved price-book import reports
+      description: Lists the authenticated company's saved import reviews and applied reports, newest first.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            multipleOf: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 50
+            multipleOf: 1
+            default: 10
+      responses:
+        "200":
+          description: Paginated saved import reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceBookImportHistory"
   /price-book/imports/preview:
     post:
       operationId: previewPriceBookImport
@@ -3395,6 +3426,27 @@ components:
         appliedAt:
           type: ["string", "null"]
           format: date-time
+    PriceBookImportHistory:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - total
+        - hasNextPage
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceBookImport"
+        page:
+          type: number
+        pageSize:
+          type: number
+        total:
+          type: number
+        hasNextPage:
+          type: boolean
     CompanySettings:
       type: object
       required:

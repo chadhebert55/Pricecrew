@@ -1,12 +1,14 @@
 import {
+  type PriceBookImport,
   type PriceBookItem,
+  useListPriceBookImports,
   useListPriceBookItems,
   useUpdatePriceBookItem,
 } from "@workspace/api-client-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { AlertTriangle, CheckCircle2, Search, Save } from "lucide-react"
+import { AlertTriangle, CheckCircle2, FileClock, Search, Save } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +16,12 @@ import { PriceBookImportPanel } from "@/components/price-book-import-panel"
 
 export function PriceBook() {
   const { data: items, isLoading } = useListPriceBookItems()
+  const [historyPage, setHistoryPage] = useState(1)
+  const [activeImport, setActiveImport] = useState<PriceBookImport | null>(null)
+  const importHistory = useListPriceBookImports({
+    page: historyPage,
+    pageSize: 10,
+  })
   const updateItem = useUpdatePriceBookItem()
   const [search, setSearch] = useState("")
   const [builder, setBuilder] = useState("all")
@@ -57,7 +65,19 @@ export function PriceBook() {
         </p>
       </div>
 
-      <PriceBookImportPanel />
+      <PriceBookImportPanel
+        review={activeImport}
+        onReviewChange={setActiveImport}
+      />
+
+      <PriceBookImportHistory
+        history={importHistory.data}
+        isError={importHistory.isError}
+        isLoading={importHistory.isLoading}
+        page={historyPage}
+        onPageChange={setHistoryPage}
+        onOpen={setActiveImport}
+      />
 
       <Card>
         <div className="grid gap-3 border-b border-border bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_14rem_14rem_14rem]">
@@ -153,6 +173,169 @@ export function PriceBook() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "Not supplied"
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeZone: "UTC",
+      }).format(date)
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(date)
+}
+
+function PriceBookImportHistory({
+  history,
+  isError,
+  isLoading,
+  page,
+  onPageChange,
+  onOpen,
+}: {
+  history:
+    | {
+        items: PriceBookImport[]
+        page: number
+        pageSize: number
+        total: number
+        hasNextPage: boolean
+      }
+    | undefined
+  isError: boolean
+  isLoading: boolean
+  page: number
+  onPageChange: (page: number) => void
+  onOpen: (review: PriceBookImport) => void
+}) {
+  return (
+    <Card data-testid="price-book-import-history">
+      <CardContent className="p-0">
+        <div className="flex flex-col gap-2 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <FileClock className="h-5 w-5" />
+              Import history
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Reopen saved comparisons to verify applied dates, before/after costs, and unresolved reasons.
+            </p>
+          </div>
+          {history && history.total > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {history.total} report{history.total === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="p-8 text-center text-muted-foreground">Loading import history...</div>
+        ) : isError ? (
+          <div className="p-8 text-center text-sm text-destructive">
+            Import history could not be loaded. Refresh the page and try again.
+          </div>
+        ) : !history || history.items.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            No saved import reports yet. Review a Northeast customer-price CSV to create one.
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Source file</TableHead>
+                  <TableHead>Price date</TableHead>
+                  <TableHead>Reviewed</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Report</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.items.map((importReport) => (
+                  <TableRow key={importReport.id}>
+                    <TableCell className="font-medium">
+                      <div>{importReport.sourceFileName}</div>
+                      <div className="text-xs text-muted-foreground">Import #{importReport.id}</div>
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(importReport.sourceDate)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDateTime(importReport.createdAt)}
+                      {importReport.appliedAt && (
+                        <div className="mt-1 text-xs text-emerald-700">
+                          Applied {formatDateTime(importReport.appliedAt)}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={importReport.status === "applied" ? "success" : "secondary"}>
+                        {importReport.status === "applied" ? "Applied" : "Review"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      <div>
+                        {importReport.report.inserted} inserted · {importReport.report.updated} updated
+                      </div>
+                      <div>
+                        {importReport.report.skipped} skipped · {importReport.report.unresolved} unresolved
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        data-testid={`open-price-book-import-${importReport.id}`}
+                        onClick={() => onOpen(importReport)}
+                      >
+                        Open report
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex items-center justify-between border-t border-border p-4">
+              <span className="text-xs text-muted-foreground">
+                Page {history.page} of {Math.max(1, Math.ceil(history.total / history.pageSize))}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => onPageChange(Math.max(1, page - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!history.hasNextPage}
+                  onClick={() => onPageChange(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

@@ -6891,6 +6891,83 @@ export const ListPriceBookItemsResponse = zod.array(ListPriceBookItemsResponseIt
 
 
 /**
+ * Lists the authenticated company's saved import reviews and applied reports, newest first.
+ * @summary List saved price-book import reports
+ */
+export const listPriceBookImportsQueryPageDefault = 1;
+export const listPriceBookImportsQueryPageMultipleOf = 1;
+
+export const listPriceBookImportsQueryPageSizeDefault = 10;
+export const listPriceBookImportsQueryPageSizeMax = 50;
+export const listPriceBookImportsQueryPageSizeMultipleOf = 1;
+
+
+
+export const ListPriceBookImportsQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).multipleOf(listPriceBookImportsQueryPageMultipleOf).default(listPriceBookImportsQueryPageDefault),
+  "pageSize": zod.coerce.number().min(1).max(listPriceBookImportsQueryPageSizeMax).multipleOf(listPriceBookImportsQueryPageSizeMultipleOf).default(listPriceBookImportsQueryPageSizeDefault)
+})
+
+export const ListPriceBookImportsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "sourceDate": zod.string().nullable(),
+  "status": zod.enum(['review', 'applied']),
+  "rows": zod.array(zod.object({
+  "rowNumber": zod.number(),
+  "action": zod.enum(['insert', 'update', 'skip', 'unresolved']),
+  "status": zod.enum(['proposed', 'applied', 'skipped', 'unresolved']),
+  "reason": zod.string().nullable(),
+  "matchedItemId": zod.number().nullable(),
+  "incoming": zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),
+  "before": zod.union([zod.object({
+  "category": zod.string(),
+  "item": zod.string(),
+  "unit": zod.string(),
+  "unitCost": zod.number(),
+  "supplier": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "upc": zod.string().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "amperage": zod.number().nullable(),
+  "poleCount": zod.number().nullable(),
+  "protectionType": zod.string().nullable()
+}),zod.null()])
+})),
+  "report": zod.object({
+  "inserted": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "unresolved": zod.number()
+}),
+  "createdAt": zod.coerce.date(),
+  "appliedAt": zod.coerce.date().nullable()
+})),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "total": zod.number(),
+  "hasNextPage": zod.boolean()
+})
+
+
+/**
  * Parses a customer-price export and proposes only exact SKU, UPC, or manufacturer-part-number matches. No catalog values are changed.
  * @summary Preview a Northeast customer-price CSV import
  */

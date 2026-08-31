@@ -1,4 +1,5 @@
 import {
+  getListPriceBookImportsQueryKey,
   getListPriceBookItemsQueryKey,
   type PriceBookImport,
   useApplyPriceBookImport,
@@ -6,7 +7,7 @@ import {
 } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { AlertCircle, Check, FileSpreadsheet, Upload } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,18 +38,37 @@ const actionLabels = {
   unresolved: "Unresolved",
 } as const
 
-export function PriceBookImportPanel() {
+type PriceBookImportPanelProps = {
+  review: PriceBookImport | null
+  onReviewChange: (review: PriceBookImport | null) => void
+}
+
+export function PriceBookImportPanel({
+  review,
+  onReviewChange,
+}: PriceBookImportPanelProps) {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const [file, setFile] = useState<File | null>(null)
   const [sourceDate, setSourceDate] = useState("")
-  const [review, setReview] = useState<PriceBookImport | null>(null)
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    setSelectedRows(
+      new Set(
+        review?.status === "review"
+          ? review.rows
+              .filter((row) => row.status === "proposed")
+              .map((row) => row.rowNumber)
+          : [],
+      ),
+    )
+  }, [review?.id, review?.status])
 
   const previewImport = usePreviewPriceBookImport({
     mutation: {
       onSuccess: (result) => {
-        setReview(result)
+        onReviewChange(result)
         setSelectedRows(
           new Set(
             result.rows
@@ -56,6 +76,9 @@ export function PriceBookImportPanel() {
               .map((row) => row.rowNumber),
           ),
         )
+        void queryClient.invalidateQueries({
+          queryKey: getListPriceBookImportsQueryKey(),
+        })
         toast({
           title: "Import ready for review",
           description: "No price-book values have been changed yet.",
@@ -72,10 +95,13 @@ export function PriceBookImportPanel() {
   const applyImport = useApplyPriceBookImport({
     mutation: {
       onSuccess: (result) => {
-        setReview(result)
+        onReviewChange(result)
         setSelectedRows(new Set())
         void queryClient.invalidateQueries({
           queryKey: getListPriceBookItemsQueryKey(),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: getListPriceBookImportsQueryKey(),
         })
         toast({
           title: "Price book updated",
@@ -154,7 +180,7 @@ export function PriceBookImportPanel() {
               accept=".csv,text/csv"
               onChange={(event) => {
                 setFile(event.target.files?.[0] ?? null)
-                setReview(null)
+                onReviewChange(null)
                 setSelectedRows(new Set())
               }}
             />
