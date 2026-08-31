@@ -15,6 +15,62 @@ import {
 
 const apiUrl = "http://127.0.0.1:5080";
 
+type JobberImportFixture = {
+  maxLineItems: number;
+  baseHeaders: string[];
+  lineItemHeaderTemplates: string[];
+  requiredMappings: Array<{ name: string; headers: string[] }>;
+  lineItemRules: {
+    savedTotalName: string;
+  };
+};
+
+const jobberImportFixture = JSON.parse(
+  await readFile(
+    new URL(
+      "../../artifacts/api-server/src/lib/jobber-quote-import.fixture.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+) as JobberImportFixture;
+
+function parseCsvRows(csv: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = "";
+  let quoted = false;
+  for (let index = 0; index < csv.length; index += 1) {
+    const character = csv[index]!;
+    if (character === '"') {
+      if (quoted && csv[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (character === "," && !quoted) {
+      row.push(value);
+      value = "";
+    } else if ((character === "\r" || character === "\n") && !quoted) {
+      if (character === "\r" && csv[index + 1] === "\n") index += 1;
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = "";
+    } else {
+      value += character;
+    }
+  }
+  return rows;
+}
+
+function jobberLineHeaders(lineNumber: number) {
+  return jobberImportFixture.lineItemHeaderTemplates.map((header) =>
+    header.replace("{lineNumber}", String(lineNumber)),
+  );
+}
+
 const jobInputs: AdditionInputRecord = {
   length: 20,
   width: 16,
@@ -172,8 +228,72 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
     const downloadedPath = await download.path();
     expect(downloadedPath).toBeTruthy();
     const csv = await readFile(downloadedPath!, "utf8");
-    expect(csv).toContain('"Saved quote total"');
-    expect(csv).toMatch(/"Saved quote total".*"2345\.67"/);
+    const [headers, values] = parseCsvRows(csv);
+    const expectedHeaders = [
+      ...jobberImportFixture.baseHeaders,
+      ...Array.from({ length: jobberImportFixture.maxLineItems }, (_, index) =>
+        jobberLineHeaders(index + 1),
+      ).flat(),
+    ];
+    expect(headers, "Jobber import header contract").toEqual(expectedHeaders);
+    expect(values, "Jobber import row width").toHaveLength(headers.length);
+
+    const valueFor = (header: string) => values[headers.indexOf(header)] ?? "";
+    for (const requirement of jobberImportFixture.requiredMappings) {
+      expect(
+        requirement.headers.some(
+          (header) => valueFor(header).trim().length > 0,
+        ),
+        `Jobber required ${requirement.name} mapping`,
+      ).toBe(true);
+    }
+    expect(valueFor("Client Email")).toBe(`jobber-${marker}@example.com`);
+    expect(valueFor("Property Street 1")).toBe("123 Main St");
+
+    const lineItemWidth = jobberImportFixture.lineItemHeaderTemplates.length;
+    const lineItemValues = (lineNumber: number) =>
+      values.slice(
+        jobberImportFixture.baseHeaders.length +
+          (lineNumber - 1) * lineItemWidth,
+        jobberImportFixture.baseHeaders.length + lineNumber * lineItemWidth,
+      );
+    expect(lineItemValues(1)).toEqual([
+      "Product",
+      "12/2 NM-B cable",
+      "Saved assembly category: Wiring; Unit: ft; Source: Saved quote fixture; Saved extended cost: $150.00",
+      "120",
+      "",
+      "1.25",
+      "",
+    ]);
+    expect(lineItemValues(2)).toEqual([
+      "Product",
+      "Duplex receptacle",
+      "Saved assembly category: Devices; Unit: ea; Source: Saved quote fixture; Saved extended cost: $34.00",
+      "4",
+      "",
+      "8.50",
+      "",
+    ]);
+    expect(lineItemValues(3)).toEqual([
+      "Service",
+      jobberImportFixture.lineItemRules.savedTotalName,
+      "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
+      "1",
+      "2345.67",
+      "",
+      "",
+    ]);
+    for (
+      let lineNumber = 4;
+      lineNumber <= jobberImportFixture.maxLineItems;
+      lineNumber += 1
+    ) {
+      expect(
+        lineItemValues(lineNumber),
+        `Jobber line item ${lineNumber} after saved total`,
+      ).toEqual(["", "", "", "", "", "", ""]);
+    }
   } finally {
     await context?.close();
     if (companyId !== undefined) {

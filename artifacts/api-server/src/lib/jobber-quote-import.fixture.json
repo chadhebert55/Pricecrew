@@ -1,0 +1,96 @@
+{
+  "provider": "Jobber",
+  "document": "Quote",
+  "format": "CSV",
+  "contractVersion": 1,
+  "source": "Jobber quote CSV import template",
+  "reviewedOn": "2026-08-31",
+  "maxLineItems": 10,
+  "baseHeaders": [
+    "Jobber Client ID",
+    "Client Title",
+    "Client First Name",
+    "Client Last Name",
+    "Client Full Name (Display Only)",
+    "Client Company Name",
+    "Client Is a Company? (True/False)",
+    "Client Email",
+    "Client Main Phone",
+    "Client Home Phone",
+    "Client Work Phone",
+    "Client Mobile Phone",
+    "Client Fax Phone",
+    "Client Other Phone",
+    "Client SMS Enabled Phone Number",
+    "Jobber Property ID",
+    "Property Street 1",
+    "Property Street 2",
+    "Property City",
+    "Property State/Province",
+    "Property Zip/Postal Code",
+    "Property Country",
+    "Billing Street 1",
+    "Billing Street 2",
+    "Billing City",
+    "Billing State/Province",
+    "Billing Zip/Postal Code",
+    "Billing Country",
+    "Client Receives Auto Visit Reminders? (True/False)",
+    "Client Receives Auto Job Follow-ups? (True/False)",
+    "Client Receives Auto Quote Follow-ups? (True/False)",
+    "Client Receives Auto Invoice Follow-ups? (True/False)",
+    "Client Receives Auto Review Requests? (True/False)",
+    "Quote Number",
+    "Quote Title",
+    "Quote Status (Draft/Awaiting Response/Approved)",
+    "Quote Message",
+    "Quote Internal Note",
+    "Quote Introduction Title",
+    "Quote Introduction Body",
+    "Quote Contract Disclaimer",
+    "Quote Discount Type (Unit/Percentage)",
+    "Quote Discount Amount (Unit/Percentage)",
+    "Quote Deposit Type (Unit/Percentage)",
+    "Quote Deposit Amount (Unit/Percentage)",
+    "Quote New Tax Rate Name",
+    "Quote New Tax Rate (Percentage)",
+    "Quote Existing Tax Rate Name",
+    "Tax Method (Inclusive/Exclusive)"
+  ],
+  "lineItemHeaderTemplates": [
+    "Line Item {lineNumber} Category (Service/Product)",
+    "Line Item {lineNumber} Name",
+    "Line Item {lineNumber} Description",
+    "Line Item {lineNumber} Quantity",
+    "Line Item {lineNumber} UNIT Price",
+    "Line Item {lineNumber} UNIT Cost",
+    "Line Item {lineNumber} Taxable (True/False)"
+  ],
+  "requiredMappings": [
+    {
+      "name": "client",
+      "headers": [
+        "Jobber Client ID",
+        "Client First Name",
+        "Client Company Name"
+      ]
+    },
+    {
+      "name": "property",
+      "headers": ["Jobber Property ID", "Property Street 1"]
+    },
+    {
+      "name": "quote number",
+      "headers": ["Quote Number"]
+    },
+    {
+      "name": "quote title",
+      "headers": ["Quote Title"]
+    }
+  ],
+  "lineItemRules": {
+    "categories": ["Service", "Product"],
+    "requiredFields": ["Category", "Name", "Description", "Quantity"],
+    "savedTotalName": "Saved quote total"
+  }
+}

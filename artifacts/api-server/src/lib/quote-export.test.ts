@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { QuoteExportMapping } from "@workspace/api-zod";
 import {
@@ -102,67 +103,166 @@ const validMapping: QuoteExportMapping = {
   propertyCountry: "United States",
 };
 
-const officialJobberBaseHeaders = [
-  "Jobber Client ID",
-  "Client Title",
-  "Client First Name",
-  "Client Last Name",
-  "Client Full Name (Display Only)",
-  "Client Company Name",
-  "Client Is a Company? (True/False)",
-  "Client Email",
-  "Client Main Phone",
-  "Client Home Phone",
-  "Client Work Phone",
-  "Client Mobile Phone",
-  "Client Fax Phone",
-  "Client Other Phone",
-  "Client SMS Enabled Phone Number",
-  "Jobber Property ID",
-  "Property Street 1",
-  "Property Street 2",
-  "Property City",
-  "Property State/Province",
-  "Property Zip/Postal Code",
-  "Property Country",
-  "Billing Street 1",
-  "Billing Street 2",
-  "Billing City",
-  "Billing State/Province",
-  "Billing Zip/Postal Code",
-  "Billing Country",
-  "Client Receives Auto Visit Reminders? (True/False)",
-  "Client Receives Auto Job Follow-ups? (True/False)",
-  "Client Receives Auto Quote Follow-ups? (True/False)",
-  "Client Receives Auto Invoice Follow-ups? (True/False)",
-  "Client Receives Auto Review Requests? (True/False)",
-  "Quote Number",
-  "Quote Title",
-  "Quote Status (Draft/Awaiting Response/Approved)",
-  "Quote Message",
-  "Quote Internal Note",
-  "Quote Introduction Title",
-  "Quote Introduction Body",
-  "Quote Contract Disclaimer",
-  "Quote Discount Type (Unit/Percentage)",
-  "Quote Discount Amount (Unit/Percentage)",
-  "Quote Deposit Type (Unit/Percentage)",
-  "Quote Deposit Amount (Unit/Percentage)",
-  "Quote New Tax Rate Name",
-  "Quote New Tax Rate (Percentage)",
-  "Quote Existing Tax Rate Name",
-  "Tax Method (Inclusive/Exclusive)",
-] as const;
+type JobberImportFixture = {
+  provider: string;
+  document: string;
+  format: string;
+  contractVersion: number;
+  source: string;
+  reviewedOn: string;
+  maxLineItems: number;
+  baseHeaders: string[];
+  lineItemHeaderTemplates: string[];
+  requiredMappings: Array<{ name: string; headers: string[] }>;
+  lineItemRules: {
+    categories: string[];
+    requiredFields: string[];
+    savedTotalName: string;
+  };
+};
 
-const officialJobberLineHeaders = (lineNumber: number) => [
-  `Line Item ${lineNumber} Category (Service/Product)`,
-  `Line Item ${lineNumber} Name`,
-  `Line Item ${lineNumber} Description`,
-  `Line Item ${lineNumber} Quantity`,
-  `Line Item ${lineNumber} UNIT Price`,
-  `Line Item ${lineNumber} UNIT Cost`,
-  `Line Item ${lineNumber} Taxable (True/False)`,
-];
+const jobberImportFixture = JSON.parse(
+  readFileSync(
+    new URL("./jobber-quote-import.fixture.json", import.meta.url),
+    "utf8",
+  ),
+) as JobberImportFixture;
+
+function jobberLineHeaders(lineNumber: number) {
+  return jobberImportFixture.lineItemHeaderTemplates.map((header) =>
+    header.replace("{lineNumber}", String(lineNumber)),
+  );
+}
+
+function assertJobberImportCompatibility(
+  csv: string,
+  expected: {
+    assembly: Array<{
+      description: string;
+      category: string;
+      quantity: number;
+      unitCost: number;
+      unit: string;
+      source: string;
+      extendedCost: number;
+    }>;
+    finalSellingPrice: number;
+  },
+) {
+  const [headers, values] = parseCsvRows(csv);
+  assert.ok(headers, "Jobber import incompatible: CSV has no header row.");
+  assert.ok(values, "Jobber import incompatible: CSV has no data row.");
+  const expectedHeaders = [
+    ...jobberImportFixture.baseHeaders,
+    ...Array.from({ length: jobberImportFixture.maxLineItems }, (_, index) =>
+      jobberLineHeaders(index + 1),
+    ).flat(),
+  ];
+  assert.equal(
+    headers.length,
+    expectedHeaders.length,
+    `Jobber import incompatible: expected ${expectedHeaders.length} headers from the ${jobberImportFixture.source} (contract v${jobberImportFixture.contractVersion}), received ${headers.length}.`,
+  );
+  headers.forEach((header, index) => {
+    assert.equal(
+      header,
+      expectedHeaders[index],
+      `Jobber import incompatible header at column ${index + 1}: expected "${expectedHeaders[index]}", received "${header}".`,
+    );
+  });
+  assert.equal(
+    values.length,
+    headers.length,
+    "Jobber import incompatible: data row width does not match the provider header row.",
+  );
+
+  const valueFor = (header: string) => values[headers.indexOf(header)] ?? "";
+  for (const requirement of jobberImportFixture.requiredMappings) {
+    const presentHeaders = requirement.headers.filter((header) =>
+      headers.includes(header),
+    );
+    assert.ok(
+      presentHeaders.length > 0,
+      `Jobber import incompatible field "${requirement.name}": none of the required headers (${requirement.headers.join(", ")}) are present.`,
+    );
+    assert.ok(
+      presentHeaders.some((header) => valueFor(header).trim().length > 0),
+      `Jobber import incompatible field "${requirement.name}": at least one of ${presentHeaders.join(", ")} must contain a mapped value.`,
+    );
+  }
+
+  const lineItemWidth = jobberImportFixture.lineItemHeaderTemplates.length;
+  const lineItemValues = (lineNumber: number) =>
+    values.slice(
+      jobberImportFixture.baseHeaders.length + (lineNumber - 1) * lineItemWidth,
+      jobberImportFixture.baseHeaders.length + lineNumber * lineItemWidth,
+    );
+  const lineItemValueFor = (lineNumber: number, field: string) =>
+    lineItemValues(lineNumber)[
+      jobberLineHeaders(lineNumber).findIndex((header) =>
+        header.includes(` ${field}`),
+      )
+    ] ?? "";
+  const expectedLine = (lineNumber: number) => {
+    const line = expected.assembly[lineNumber - 1]!;
+    return [
+      "Product",
+      line.description,
+      `Saved assembly category: ${line.category}; Unit: ${line.unit}; Source: ${line.source}; Saved extended cost: $${line.extendedCost.toFixed(2)}`,
+      String(line.quantity),
+      "",
+      line.unitCost.toFixed(2),
+      "",
+    ];
+  };
+
+  expected.assembly.forEach((line, index) => {
+    const lineNumber = index + 1;
+    const category = lineItemValueFor(lineNumber, "Category");
+    assert.ok(
+      jobberImportFixture.lineItemRules.categories.includes(category),
+      `Jobber import incompatible field "Line Item ${lineNumber} Category": "${category}" is not a documented Jobber category.`,
+    );
+    assert.deepEqual(
+      lineItemValues(lineNumber),
+      expectedLine(lineNumber),
+      `Jobber import incompatible line item ${lineNumber}: saved assembly fields are not in the documented columns.`,
+    );
+    for (const requiredField of jobberImportFixture.lineItemRules
+      .requiredFields) {
+      assert.ok(
+        lineItemValueFor(lineNumber, requiredField).trim().length > 0,
+        `Jobber import incompatible field "Line Item ${lineNumber} ${requiredField}": saved assembly value is blank.`,
+      );
+    }
+  });
+
+  const totalLineNumber = expected.assembly.length + 1;
+  assert.deepEqual(
+    lineItemValues(totalLineNumber),
+    [
+      "Service",
+      jobberImportFixture.lineItemRules.savedTotalName,
+      "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
+      "1",
+      expected.finalSellingPrice.toFixed(2),
+      "",
+      "",
+    ],
+    `Jobber import incompatible field "Line Item ${totalLineNumber}": the exact saved total must follow the saved assembly rows.`,
+  );
+  for (
+    let lineNumber = totalLineNumber + 1;
+    lineNumber <= jobberImportFixture.maxLineItems;
+    lineNumber += 1
+  ) {
+    assert.deepEqual(
+      lineItemValues(lineNumber),
+      ["", "", "", "", "", "", ""],
+      `Jobber import incompatible line item ${lineNumber}: unexpected data appears after the saved total row.`,
+    );
+  }
+}
 
 test("Jobber CSV locks documented columns, assembly rows, and the saved total row", () => {
   const result = buildJobberQuoteCsv(
@@ -189,59 +289,34 @@ test("Jobber CSV locks documented columns, assembly rows, and the saved total ro
   const [headers, values] = parseCsvRows(result.csv);
   assert.ok(headers);
   assert.ok(values);
-  const expectedHeaders = [
-    ...officialJobberBaseHeaders,
-    ...Array.from({ length: 10 }, (_, index) =>
-      officialJobberLineHeaders(index + 1),
-    ).flat(),
-  ];
-  assert.equal(headers.length, expectedHeaders.length);
-  assert.equal(values.length, headers.length);
-  assert.deepEqual(JOBBER_QUOTE_HEADERS, officialJobberBaseHeaders);
-  assert.deepEqual(headers, expectedHeaders);
+  assert.deepEqual(JOBBER_QUOTE_HEADERS, jobberImportFixture.baseHeaders);
+  assertJobberImportCompatibility(result.csv, {
+    assembly: [
+      ...savedQuote().assembly,
+      {
+        id: "receptacle",
+        category: "Devices",
+        description: "Duplex receptacle",
+        quantity: 4,
+        unit: "ea",
+        unitCost: 8.5,
+        extendedCost: 34,
+        source: "Saved catalog",
+      },
+    ],
+    finalSellingPrice: 2345.67,
+  });
 
   const valueFor = (header: string) => values[headers.indexOf(header)];
-  assert.equal(valueFor("Quote Status (Draft/Awaiting Response/Approved)"), "Awaiting Response");
+  assert.equal(
+    valueFor("Quote Status (Draft/Awaiting Response/Approved)"),
+    "Awaiting Response",
+  );
   assert.equal(valueFor("Quote Message"), "Install safely,\r\nthen test.");
   assert.equal(valueFor("Quote Discount Type (Unit/Percentage)"), "");
   assert.equal(valueFor("Quote Discount Amount (Unit/Percentage)"), "");
   assert.equal(valueFor("Quote New Tax Rate (Percentage)"), "");
   assert.equal(valueFor("Tax Method (Inclusive/Exclusive)"), "");
-
-  const lineItemWidth = officialJobberLineHeaders(1).length;
-  const lineItemValues = (lineNumber: number) =>
-    values.slice(
-      officialJobberBaseHeaders.length + (lineNumber - 1) * lineItemWidth,
-      officialJobberBaseHeaders.length + lineNumber * lineItemWidth,
-    );
-  assert.deepEqual(lineItemValues(1), [
-    "Product",
-    "12/2 copper cable",
-    "Saved assembly category: Material; Unit: ft; Source: Saved supplier quote; Saved extended cost: $37.02",
-    "3",
-    "",
-    "12.34",
-    "",
-  ]);
-  assert.deepEqual(lineItemValues(2), [
-    "Product",
-    "Duplex receptacle",
-    "Saved assembly category: Devices; Unit: ea; Source: Saved catalog; Saved extended cost: $34.00",
-    "4",
-    "",
-    "8.50",
-    "",
-  ]);
-  assert.deepEqual(lineItemValues(3), [
-    "Service",
-    "Saved quote total",
-    "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
-    "1",
-    "2345.67",
-    "",
-    "",
-  ]);
-  assert.deepEqual(lineItemValues(4), ["", "", "", "", "", "", ""]);
 });
 
 test("Jobber CSV escapes delimiters and neutralizes spreadsheet formulas", () => {
