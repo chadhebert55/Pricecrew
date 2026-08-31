@@ -56,6 +56,7 @@ import type {
   Takeoff,
   TakeoffInput,
   TakeoffItemReview,
+  TakeoffReviewError,
   TakeoffUploadRequest,
   TakeoffUploadResponse,
   ValidationError
@@ -1098,7 +1099,7 @@ export const reviewTakeoffItem = async (id: number,
 
 
 
-export const getReviewTakeoffItemMutationOptions = <TError = ErrorType<void>,
+export const getReviewTakeoffItemMutationOptions = <TError = ErrorType<void | TakeoffReviewError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewTakeoffItem>>, TError,{id: number;itemId: number;data: BodyType<TakeoffItemReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof reviewTakeoffItem>>, TError,{id: number;itemId: number;data: BodyType<TakeoffItemReview>}, TContext> => {
 
@@ -1127,12 +1128,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ReviewTakeoffItemMutationResult = NonNullable<Awaited<ReturnType<typeof reviewTakeoffItem>>>
     export type ReviewTakeoffItemMutationBody = BodyType<TakeoffItemReview>
-    export type ReviewTakeoffItemMutationError = ErrorType<void>
+    export type ReviewTakeoffItemMutationError = ErrorType<void | TakeoffReviewError>
 
     /**
  * @summary Accept, reject, edit, or leave a takeoff item unresolved
  */
-export const useReviewTakeoffItem = <TError = ErrorType<void>,
+export const useReviewTakeoffItem = <TError = ErrorType<void | TakeoffReviewError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewTakeoffItem>>, TError,{id: number;itemId: number;data: BodyType<TakeoffItemReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof reviewTakeoffItem>>,

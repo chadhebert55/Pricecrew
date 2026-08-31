@@ -41,6 +41,17 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again."
 }
 
+function isStaleReviewError(error: unknown) {
+  if (!error || typeof error !== "object" || !("data" in error)) return false
+  const data = (error as { data?: unknown }).data
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      "code" in data &&
+      (data as { code?: unknown }).code === "TAKEOFF_REVIEW_STALE",
+  )
+}
+
 function confidenceVariant(confidence: string) {
   return confidence === "high" ? "default" : confidence === "medium" ? "secondary" : "outline"
 }
@@ -72,14 +83,14 @@ export function PlanTakeoffReview({
     Record<number, { status: TakeoffItemStatus; approvedQuantity: number | null; reviewerNote: string | null }>
   >({})
   const [isConfirming, setIsConfirming] = useState(false)
+  const [isReloading, setIsReloading] = useState(false)
+  const [isReviewStale, setIsReviewStale] = useState(false)
   const [uploadedBaseInputs, setUploadedBaseInputs] = useState<Record<string, unknown> | null>(null)
   const requestUpload = useRequestTakeoffUploadUrl()
   const createTakeoff = useCreateTakeoff()
   const reviewItem = useReviewTakeoffItem()
 
-  useEffect(() => {
-    const savedTakeoff = savedTakeoffQuery.data
-    if (!isSavedReview || !savedTakeoff) return
+  const resetReviewState = (savedTakeoff: Takeoff) => {
     setFailure("")
     setTakeoff(savedTakeoff)
     setUploadedBaseInputs(baseInputs)
@@ -105,13 +116,44 @@ export function PlanTakeoffReview({
         },
       ])),
     )
+  }
+
+  useEffect(() => {
+    const savedTakeoff = savedTakeoffQuery.data
+    if (!isSavedReview || !savedTakeoff) return
+    resetReviewState(savedTakeoff)
+    setIsReviewStale(false)
   }, [baseInputs, isSavedReview, savedTakeoffQuery.data])
 
   const isBusy =
     requestUpload.isPending ||
     createTakeoff.isPending ||
     savedTakeoffQuery.isLoading ||
-    isConfirming
+    isConfirming ||
+    isReloading
+
+  const reloadSavedReview = async () => {
+    if (!isSavedReview) return
+    setIsReloading(true)
+    try {
+      const result = await savedTakeoffQuery.refetch()
+      if (!result.data) throw new Error("The saved takeoff could not be reloaded.")
+      resetReviewState(result.data)
+      setIsReviewStale(false)
+      toast({
+        title: "Saved review reloaded",
+        description: "The current takeoff decisions are ready for your review again.",
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not reload saved review",
+        description: errorMessage(error),
+      })
+    } finally {
+      setIsReloading(false)
+    }
+  }
 
   const syncBuilder = (
     updated: Takeoff,
@@ -195,6 +237,8 @@ export function PlanTakeoffReview({
 
   const updateItem = async (itemId: number, status: TakeoffItemStatus) => {
     if (!takeoff || !uploadedBaseInputs) return
+    const item = takeoff.items.find((candidate) => candidate.id === itemId)
+    if (!item) return
     const rawQuantity = draftQuantities[itemId] ?? ""
     const quantity = Number(rawQuantity)
     if (status === "accepted" && (!Number.isInteger(quantity) || quantity < 0)) {
@@ -220,6 +264,9 @@ export function PlanTakeoffReview({
           status,
           approvedQuantity: status === "accepted" ? quantity : null,
           reviewerNote: draftNotes[itemId]?.trim() || null,
+          expectedStatus: item.status,
+          expectedApprovedQuantity: item.approvedQuantity,
+          expectedReviewerNote: item.reviewerNote,
         },
       })
       setTakeoff(updated)
@@ -289,6 +336,9 @@ export function PlanTakeoffReview({
             status: nextStatus,
             approvedQuantity: nextQuantity,
             reviewerNote: draftNotes[item.id]?.trim() || null,
+            expectedStatus: reviewBaseline[item.id].status,
+            expectedApprovedQuantity: reviewBaseline[item.id].approvedQuantity,
+            expectedReviewerNote: reviewBaseline[item.id].reviewerNote,
           },
         })
         const updatedItem = updated.items.find((candidate) => candidate.id === item.id)
@@ -309,13 +359,20 @@ export function PlanTakeoffReview({
         description: "The original quote snapshot is unchanged. This correction is now in the takeoff audit history.",
       })
     } catch (error) {
-      setReviewBaseline(nextBaseline)
-      setTakeoff(updated)
-      queryClient.setQueryData(getGetTakeoffQueryKey(updated.id), updated)
+      const stale = isStaleReviewError(error)
+      if (stale) {
+        setIsReviewStale(true)
+      } else {
+        setReviewBaseline(nextBaseline)
+        setTakeoff(updated)
+        queryClient.setQueryData(getGetTakeoffQueryKey(updated.id), updated)
+      }
       toast({
         variant: "destructive",
-        title: "Correction only partially saved",
-        description: errorMessage(error),
+        title: stale ? "Saved review is stale" : "Correction only partially saved",
+        description: stale
+          ? "Your staged edits are still here. Reload the saved review to compare them with the latest decision."
+          : errorMessage(error),
       })
     } finally {
       setIsConfirming(false)
@@ -388,6 +445,31 @@ export function PlanTakeoffReview({
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
             <TriangleAlert className="mt-0.5 shrink-0" size={16} />
             <span>{errorMessage(savedTakeoffQuery.error)}</span>
+          </div>
+        )}
+        {isSavedReview && isReviewStale && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+            role="alert"
+            data-testid="alert-takeoff-review-stale"
+          >
+            <div className="flex items-start gap-2">
+              <TriangleAlert className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-300" size={16} />
+              <span>
+                Another contractor saved a decision after you opened this review. Reload the saved review before confirming so neither correction is overwritten.
+              </span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void reloadSavedReview()}
+              disabled={isBusy}
+              data-testid="button-reload-takeoff-review"
+            >
+              {isReloading ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
+              {isReloading ? "Reloading..." : "Reload saved review"}
+            </Button>
           </div>
         )}
 
@@ -511,7 +593,7 @@ export function PlanTakeoffReview({
                 <Button
                   type="button"
                   onClick={() => void confirmCorrection()}
-                  disabled={isBusy || stagedChanges.length === 0}
+                  disabled={isBusy || isReviewStale || stagedChanges.length === 0}
                   data-testid="button-confirm-takeoff-correction"
                 >
                   {isConfirming ? <Loader2 className="animate-spin" size={15} /> : <Check size={15} />}

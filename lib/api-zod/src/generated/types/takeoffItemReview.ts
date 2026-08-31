@@ -20,4 +20,16 @@ export interface TakeoffItemReview {
      * @nullable
      */
   reviewerNote?: string | null;
+  expectedStatus: TakeoffItemStatus;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     * @nullable
+     */
+  expectedApprovedQuantity: number | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  expectedReviewerNote: string | null;
 }

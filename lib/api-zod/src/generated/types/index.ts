@@ -165,6 +165,8 @@ export * from './takeoffItemReview';
 export * from './takeoffItemStatus';
 export * from './takeoffQuoteSnapshot';
 export * from './takeoffQuoteSnapshotApprovedInputs';
+export * from './takeoffReviewError';
+export * from './takeoffReviewErrorCode';
 export * from './takeoffReviewEvent';
 export * from './takeoffReviewEventAction';
 export * from './takeoffStatus';

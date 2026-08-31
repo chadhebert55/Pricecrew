@@ -13,6 +13,18 @@ export interface ValidationError {
   error: string;
 }
 
+export type TakeoffReviewErrorCode = typeof TakeoffReviewErrorCode[keyof typeof TakeoffReviewErrorCode];
+
+
+export const TakeoffReviewErrorCode = {
+  TAKEOFF_REVIEW_STALE: 'TAKEOFF_REVIEW_STALE',
+} as const;
+
+export interface TakeoffReviewError {
+  code?: TakeoffReviewErrorCode;
+  error: string;
+}
+
 export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
 
 
@@ -1883,6 +1895,18 @@ export interface TakeoffItemReview {
      * @nullable
      */
   reviewerNote?: string | null;
+  expectedStatus: TakeoffItemStatus;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     * @nullable
+     */
+  expectedApprovedQuantity: number | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  expectedReviewerNote: string | null;
 }
 
 export type TakeoffStatus = typeof TakeoffStatus[keyof typeof TakeoffStatus];

@@ -3297,12 +3297,21 @@ export const reviewTakeoffItemBodyApprovedQuantityMultipleOf = 1;
 
 export const reviewTakeoffItemBodyReviewerNoteMax = 1000;
 
+export const reviewTakeoffItemBodyExpectedApprovedQuantityMin = 0;
+export const reviewTakeoffItemBodyExpectedApprovedQuantityMax = 100000;
+export const reviewTakeoffItemBodyExpectedApprovedQuantityMultipleOf = 1;
+
+export const reviewTakeoffItemBodyExpectedReviewerNoteMax = 1000;
+
 
 
 export const ReviewTakeoffItemBody = zod.object({
   "status": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
   "approvedQuantity": zod.number().min(reviewTakeoffItemBodyApprovedQuantityMin).max(reviewTakeoffItemBodyApprovedQuantityMax).multipleOf(reviewTakeoffItemBodyApprovedQuantityMultipleOf).nullish(),
-  "reviewerNote": zod.string().max(reviewTakeoffItemBodyReviewerNoteMax).nullish()
+  "reviewerNote": zod.string().max(reviewTakeoffItemBodyReviewerNoteMax).nullish(),
+  "expectedStatus": zod.enum(['pending', 'accepted', 'rejected', 'unresolved']),
+  "expectedApprovedQuantity": zod.number().min(reviewTakeoffItemBodyExpectedApprovedQuantityMin).max(reviewTakeoffItemBodyExpectedApprovedQuantityMax).multipleOf(reviewTakeoffItemBodyExpectedApprovedQuantityMultipleOf).nullable(),
+  "expectedReviewerNote": zod.string().max(reviewTakeoffItemBodyExpectedReviewerNoteMax).nullable()
 })
 
 export const reviewTakeoffItemResponseIdMultipleOf = 1;

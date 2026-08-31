@@ -132,6 +132,9 @@ test("confirmed takeoff correction stays separate from the saved quote snapshot"
           status: "accepted",
           approvedQuantity: 3,
           reviewerNote: originalNote,
+          expectedStatus: "pending",
+          expectedApprovedQuantity: null,
+          expectedReviewerNote: null,
         },
       },
     );
@@ -218,6 +221,44 @@ test("confirmed takeoff correction stays separate from the saved quote snapshot"
     await page.getByTestId("takeoff-quantity-receptacles").fill("5");
     await page.getByTestId("takeoff-note-receptacles").fill(correctionNote);
     await page.getByRole("button", { name: "Stage accept" }).click();
+
+    const competingNote = "Competing contractor correction.";
+    const competingCorrectionResponse = await request.patch(
+      `${apiUrl}/api/takeoffs/${takeoffId}/items/${item!.id}`,
+      {
+        headers: {
+          "x-test-clerk-user-id": userId,
+        },
+        data: {
+          status: "accepted",
+          approvedQuantity: 4,
+          reviewerNote: competingNote,
+          expectedStatus: "accepted",
+          expectedApprovedQuantity: 3,
+          expectedReviewerNote: originalNote,
+        },
+      },
+    );
+    expect(competingCorrectionResponse.ok()).toBe(true);
+
+    await page.getByTestId("button-confirm-takeoff-correction").click();
+    const staleAlert = page.getByTestId("alert-takeoff-review-stale");
+    await expect(staleAlert).toContainText("Another contractor saved a decision");
+    await expect(
+      page.getByTestId("button-confirm-takeoff-correction"),
+    ).toBeDisabled();
+    await page.getByTestId("button-reload-takeoff-review").click();
+    await expect(staleAlert).toBeHidden();
+    await expect(page.getByTestId("takeoff-quantity-receptacles")).toHaveValue(
+      "4",
+    );
+    await expect(page.getByTestId("takeoff-note-receptacles")).toHaveValue(
+      competingNote,
+    );
+
+    await page.getByTestId("takeoff-quantity-receptacles").fill("5");
+    await page.getByTestId("takeoff-note-receptacles").fill(correctionNote);
+    await page.getByRole("button", { name: "Stage accept" }).click();
     await page.getByTestId("button-confirm-takeoff-correction").click();
 
     await expect(
@@ -235,7 +276,7 @@ test("confirmed takeoff correction stays separate from the saved quote snapshot"
     await expect(liveHistory).toContainText("Later Proposed Correction");
     await expect(liveHistory).toContainText("Current: accepted · quantity 5");
     await expect(liveHistory).toContainText(correctionNote);
-    await expect(liveHistory).toContainText(/Confirmed .+ · 2 total audit events/);
+    await expect(liveHistory).toContainText(/Confirmed .+ · 3 total audit events/);
 
     await page.reload();
     await expect(originalSnapshot).toContainText("Proposed 3 · approved 3");
@@ -262,7 +303,10 @@ test("confirmed takeoff correction stays separate from the saved quote snapshot"
     expect(liveTakeoffResponse.ok()).toBe(true);
     const liveTakeoff = (await liveTakeoffResponse.json()) as TakeoffResponse;
     expect(liveTakeoff.items[0]?.approvedQuantity).toBe(5);
-    expect(liveTakeoff.reviewEvents).toHaveLength(2);
+    expect(liveTakeoff.reviewEvents).toHaveLength(3);
+    expect(liveTakeoff.reviewEvents[1]?.nextQuantity).toBe(4);
+    expect(liveTakeoff.reviewEvents[2]?.previousQuantity).toBe(4);
+    expect(liveTakeoff.reviewEvents[2]?.nextQuantity).toBe(5);
 
     await context.close();
   } finally {

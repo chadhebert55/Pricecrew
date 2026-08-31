@@ -207,6 +207,9 @@ test("blueprint corrections stay in live takeoff history, not saved quote snapsh
           status: "accepted",
           approvedQuantity: 3,
           reviewerNote: "Approved from the original plan set.",
+          expectedStatus: "pending",
+          expectedApprovedQuantity: null,
+          expectedReviewerNote: null,
         }),
       },
     );
@@ -261,6 +264,9 @@ test("blueprint corrections stay in live takeoff history, not saved quote snapsh
           status: "accepted",
           approvedQuantity: 5,
           reviewerNote: "Correction: field-verified five receptacles.",
+          expectedStatus: "accepted",
+          expectedApprovedQuantity: 3,
+          expectedReviewerNote: "Approved from the original plan set.",
         }),
       },
     );
@@ -331,6 +337,9 @@ test("blueprint corrections stay in live takeoff history, not saved quote snapsh
           status: "accepted",
           approvedQuantity: 5,
           reviewerNote: "Correction: field-verified five receptacles.",
+          expectedStatus: "accepted",
+          expectedApprovedQuantity: 5,
+          expectedReviewerNote: "Correction: field-verified five receptacles.",
         }),
       },
     );
@@ -352,6 +361,9 @@ test("blueprint corrections stay in live takeoff history, not saved quote snapsh
           status: "accepted",
           approvedQuantity: 99,
           reviewerNote: "Must not cross tenant boundary.",
+          expectedStatus: "accepted",
+          expectedApprovedQuantity: 5,
+          expectedReviewerNote: "Correction: field-verified five receptacles.",
         }),
       },
     );
@@ -381,5 +393,143 @@ test("blueprint corrections stay in live takeoff history, not saved quote snapsh
   } finally {
     await closeServer(server);
     await cleanupTenants([tenantA, tenantB]);
+  }
+});
+
+test("simultaneous takeoff corrections reject stale state and preserve retry order", async () => {
+  const marker = randomUUID();
+  const tenant = await createTenant(marker, "Concurrent");
+  const server = await startServer();
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  try {
+    const [takeoff] = await db
+      .insert(planTakeoffsTable)
+      .values({
+        companyId: tenant.companyId,
+        builderModule: "ADDITION",
+        fileName: "concurrent-review.pdf",
+        objectPath: `/objects/uploads/${tenant.companyId}/${marker}`,
+        fileSize: 1,
+        contentType: "application/pdf",
+        baseInputs: jobInputs,
+        status: "ready",
+        pageCount: 1,
+        extractionSummary: {
+          pages: 1,
+          sections: ["Electrical schedule"],
+          textCharacters: 100,
+          ocrUsed: false,
+          ocrPages: [],
+          ocrSkippedPages: [],
+          ocrWarning: null,
+          ocrCharacters: 0,
+          ocrAverageConfidence: null,
+        },
+        completedAt: new Date("2026-08-31T12:00:00.000Z"),
+      })
+      .returning();
+    assert.ok(takeoff);
+
+    const [item] = await db
+      .insert(takeoffItemsTable)
+      .values({
+        takeoffId: takeoff.id,
+        fieldKey: "receptacles",
+        label: "Receptacles",
+        kind: "quantity",
+        proposedQuantity: 3,
+        approvedQuantity: 3,
+        confidence: "high",
+        sourceContext: "Room schedule calls for three receptacles.",
+        sourcePage: 1,
+        status: "accepted",
+        reviewerNote: "Original approval.",
+      })
+      .returning();
+    assert.ok(item);
+
+    const corrections = [
+      { approvedQuantity: 4, reviewerNote: "North wall adds one receptacle." },
+      { approvedQuantity: 5, reviewerNote: "Field walk found two additions." },
+    ];
+    const results = await Promise.all(
+      corrections.map((correction) =>
+        requestJson(
+          baseUrl,
+          `/api/takeoffs/${takeoff.id}/items/${item.id}`,
+          tenant.userId,
+          {
+            method: "PATCH",
+            body: JSON.stringify({
+              status: "accepted",
+              ...correction,
+              expectedStatus: "accepted",
+              expectedApprovedQuantity: 3,
+              expectedReviewerNote: "Original approval.",
+            }),
+          },
+        ),
+      ),
+    );
+
+    assert.deepEqual(
+      results.map((result) => result.status).sort(),
+      [200, 409],
+    );
+    const winnerIndex = results.findIndex((result) => result.status === 200);
+    const loserIndex = results.findIndex((result) => result.status === 409);
+    assert.notEqual(winnerIndex, -1);
+    assert.notEqual(loserIndex, -1);
+    assert.equal(results[loserIndex]?.body.code, "TAKEOFF_REVIEW_STALE");
+
+    const winner = results[winnerIndex]?.body as TakeoffResponse;
+    const winnerItem = winner.items.find((candidate) => candidate.id === item.id);
+    assert.ok(winnerItem);
+    const losingCorrection = corrections[loserIndex];
+    assert.ok(losingCorrection);
+
+    const retried = await requestJson(
+      baseUrl,
+      `/api/takeoffs/${takeoff.id}/items/${item.id}`,
+      tenant.userId,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "accepted",
+          ...losingCorrection,
+          expectedStatus: winnerItem.status,
+          expectedApprovedQuantity: winnerItem.approvedQuantity,
+          expectedReviewerNote: winnerItem.reviewerNote,
+        }),
+      },
+    );
+    assert.equal(retried.status, 200);
+
+    const finalTakeoff = retried.body as TakeoffResponse;
+    const finalItem = finalTakeoff.items.find(
+      (candidate) => candidate.id === item.id,
+    );
+    assert.ok(finalItem);
+    assert.equal(finalItem.approvedQuantity, losingCorrection.approvedQuantity);
+    assert.equal(finalItem.reviewerNote, losingCorrection.reviewerNote);
+    assert.equal(finalTakeoff.reviewEvents.length, 2);
+    assert.equal(
+      finalTakeoff.reviewEvents[0]?.nextQuantity,
+      winnerItem.approvedQuantity,
+    );
+    assert.equal(
+      finalTakeoff.reviewEvents[1]?.previousQuantity,
+      winnerItem.approvedQuantity,
+    );
+    assert.equal(
+      finalTakeoff.reviewEvents[1]?.nextQuantity,
+      losingCorrection.approvedQuantity,
+    );
+  } finally {
+    await closeServer(server);
+    await cleanupTenants([tenant]);
   }
 });

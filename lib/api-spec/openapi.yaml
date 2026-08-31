@@ -300,6 +300,12 @@ paths:
                 $ref: "#/components/schemas/Takeoff"
         "404":
           description: Takeoff item not found
+        "409":
+          description: The item changed after this review was loaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TakeoffReviewError"
   /proposals/{token}:
     get:
       security: []
@@ -775,6 +781,15 @@ components:
       type: object
       required: [error]
       properties:
+        error:
+          type: string
+    TakeoffReviewError:
+      type: object
+      required: [error]
+      properties:
+        code:
+          type: string
+          enum: [TAKEOFF_REVIEW_STALE]
         error:
           type: string
     DashboardSummary:
@@ -1354,7 +1369,11 @@ components:
     TakeoffItemReview:
       type: object
       additionalProperties: false
-      required: [status]
+      required:
+        - status
+        - expectedStatus
+        - expectedApprovedQuantity
+        - expectedReviewerNote
       properties:
         status:
           $ref: "#/components/schemas/TakeoffItemStatus"
@@ -1364,6 +1383,16 @@ components:
           minimum: 0
           maximum: 100000
         reviewerNote:
+          type: ["string", "null"]
+          maxLength: 1000
+        expectedStatus:
+          $ref: "#/components/schemas/TakeoffItemStatus"
+        expectedApprovedQuantity:
+          type: ["number", "null"]
+          multipleOf: 1
+          minimum: 0
+          maximum: 100000
+        expectedReviewerNote:
           type: ["string", "null"]
           maxLength: 1000
     TakeoffItem:

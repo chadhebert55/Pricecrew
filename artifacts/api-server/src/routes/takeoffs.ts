@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   CreateTakeoffBody,
@@ -139,7 +139,10 @@ async function takeoffDetail(companyId: number, id: number) {
       .select()
       .from(takeoffReviewEventsTable)
       .where(eq(takeoffReviewEventsTable.takeoffId, takeoff.id))
-      .orderBy(asc(takeoffReviewEventsTable.createdAt)),
+      .orderBy(
+        asc(takeoffReviewEventsTable.createdAt),
+        asc(takeoffReviewEventsTable.id),
+      ),
   ]);
   return { takeoff, items, events };
 }
@@ -326,6 +329,21 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
       ? (parsed.data.approvedQuantity ?? existing.proposedQuantity)
       : null;
   const nextReviewerNote = parsed.data.reviewerNote ?? null;
+  const sendStaleReview = () => {
+    res.status(409).json({
+      code: "TAKEOFF_REVIEW_STALE",
+      error:
+        "This takeoff item changed while you were reviewing it. Reload the saved review before confirming your correction.",
+    });
+  };
+  if (
+    parsed.data.expectedStatus !== existing.status ||
+    parsed.data.expectedApprovedQuantity !== existing.approvedQuantity ||
+    parsed.data.expectedReviewerNote !== existing.reviewerNote
+  ) {
+    sendStaleReview();
+    return;
+  }
   if (
     parsed.data.status === existing.status &&
     nextQuantity === existing.approvedQuantity &&
@@ -346,8 +364,8 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
       : parsed.data.status === "pending"
         ? "unresolved"
         : parsed.data.status;
-  await db.transaction(async (tx) => {
-    await tx
+  const didUpdate = await db.transaction(async (tx) => {
+    const updatedItems = await tx
       .update(takeoffItemsTable)
       .set({
         status: parsed.data.status,
@@ -356,7 +374,27 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
         reviewedBy: req.userId ?? "unknown",
         reviewedAt,
       })
-      .where(eq(takeoffItemsTable.id, existing.id));
+      .where(
+        and(
+          eq(takeoffItemsTable.id, existing.id),
+          eq(takeoffItemsTable.takeoffId, detail.takeoff.id),
+          eq(takeoffItemsTable.status, parsed.data.expectedStatus),
+          parsed.data.expectedApprovedQuantity === null
+            ? isNull(takeoffItemsTable.approvedQuantity)
+            : eq(
+                takeoffItemsTable.approvedQuantity,
+                parsed.data.expectedApprovedQuantity,
+              ),
+          parsed.data.expectedReviewerNote === null
+            ? isNull(takeoffItemsTable.reviewerNote)
+            : eq(
+                takeoffItemsTable.reviewerNote,
+                parsed.data.expectedReviewerNote,
+              ),
+        ),
+      )
+      .returning({ id: takeoffItemsTable.id });
+    if (updatedItems.length === 0) return false;
     await tx.insert(takeoffReviewEventsTable).values({
       takeoffId: detail.takeoff.id,
       itemId: existing.id,
@@ -368,7 +406,12 @@ router.patch("/takeoffs/:id/items/:itemId", async (req, res): Promise<void> => {
       note: nextReviewerNote,
       reviewedBy: req.userId ?? "unknown",
     });
+    return true;
   });
+  if (!didUpdate) {
+    sendStaleReview();
+    return;
+  }
   const updated = await takeoffDetail(companyId, detail.takeoff.id);
   if (!updated) throw new Error("Unable to load reviewed takeoff");
   res.json(
