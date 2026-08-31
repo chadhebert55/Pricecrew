@@ -265,7 +265,10 @@ export function QuoteDetail() {
             <Button
             className="w-full sm:w-auto"
             data-testid="button-export-quote-header"
+            variant={hasBlockingWarnings ? "secondary" : "default"}
             onClick={() => document.getElementById("quote-integrations-exports")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            disabled={hasBlockingWarnings}
+            title={hasBlockingWarnings ? "Resolve pricing errors before opening export" : undefined}
           >
             <Download size={16} className="mr-2" /> Export Quote
           </Button>
