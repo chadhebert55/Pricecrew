@@ -2517,6 +2517,62 @@ export interface CompanySettingsUpdate {
   proposalTerms?: string;
 }
 
+export type BillingPlan = typeof BillingPlan[keyof typeof BillingPlan];
+
+
+export const BillingPlan = {
+  solo: 'solo',
+  crew: 'crew',
+} as const;
+
+export type BillingPlanOptionInterval = typeof BillingPlanOptionInterval[keyof typeof BillingPlanOptionInterval];
+
+
+export const BillingPlanOptionInterval = {
+  month: 'month',
+} as const;
+
+export interface BillingPlanOption {
+  id: BillingPlan;
+  name: string;
+  /** @minimum 0 */
+  amount: number;
+  interval: BillingPlanOptionInterval;
+  description: string;
+}
+
+export type BillingStatusMode = typeof BillingStatusMode[keyof typeof BillingStatusMode];
+
+
+export const BillingStatusMode = {
+  test: 'test',
+  not_configured: 'not_configured',
+} as const;
+
+export interface BillingStatus {
+  mode: BillingStatusMode;
+  checkoutAvailable: boolean;
+  currentPlan: BillingPlan | null;
+  plans: BillingPlanOption[];
+  message: string;
+}
+
+export interface BillingCheckoutInput {
+  plan: BillingPlan;
+}
+
+export type BillingCheckoutResponseMode = typeof BillingCheckoutResponseMode[keyof typeof BillingCheckoutResponseMode];
+
+
+export const BillingCheckoutResponseMode = {
+  test: 'test',
+} as const;
+
+export interface BillingCheckoutResponse {
+  checkoutUrl: string;
+  mode: BillingCheckoutResponseMode;
+}
+
 export type ListCustomersParams = {
 search?: string;
 };

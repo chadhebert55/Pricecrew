@@ -3511,6 +3511,41 @@ export const GetNotificationsResponse = zod.object({
 
 
 /**
+ * @summary Get PriceCrew billing status and plans
+ */
+export const getBillingResponsePlansItemAmountMin = 0;
+
+
+
+export const GetBillingResponse = zod.object({
+  "mode": zod.enum(['test', 'not_configured']),
+  "checkoutAvailable": zod.boolean(),
+  "currentPlan": zod.union([zod.enum(['solo', 'crew']),zod.null()]),
+  "plans": zod.array(zod.object({
+  "id": zod.enum(['solo', 'crew']),
+  "name": zod.string(),
+  "amount": zod.number().min(getBillingResponsePlansItemAmountMin),
+  "interval": zod.enum(['month']),
+  "description": zod.string()
+})),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Create a Stripe test-mode subscription checkout session
+ */
+export const CreateBillingCheckoutBody = zod.object({
+  "plan": zod.enum(['solo', 'crew'])
+})
+
+export const CreateBillingCheckoutResponse = zod.object({
+  "checkoutUrl": zod.string(),
+  "mode": zod.enum(['test'])
+})
+
+
+/**
  * @summary Mark a contractor notification as read
  */
 export const MarkNotificationReadParams = zod.object({

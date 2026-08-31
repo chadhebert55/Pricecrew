@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter"
 import { useClerk, useUser } from "@clerk/react"
-import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, Zap, LogOut, Menu, X } from "lucide-react"
+import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, Zap, LogOut, Menu, X, CreditCard } from "lucide-react"
 import { lazy, Suspense, useEffect, useState } from "react"
 
 const ProposalNotificationCenter = lazy(() =>
@@ -33,6 +33,7 @@ function ShellFrame({
     { label: "Builders", href: "/builders", icon: Blocks },
     { label: "Price Book", href: "/price-book", icon: BookOpen },
     { label: "Customers", href: "/customers", icon: Users },
+    { label: "Billing", href: "/billing", icon: CreditCard },
     { label: "Settings", href: "/settings", icon: Settings },
   ]
 

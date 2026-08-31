@@ -94,6 +94,9 @@ const CustomerDetail = lazy(() =>
 const Settings = lazy(() =>
   import('@/pages/settings').then(({ Settings }) => ({ default: Settings })),
 );
+const Billing = lazy(() =>
+  import('@/pages/billing').then(({ Billing }) => ({ default: Billing })),
+);
 const NotFound = lazy(() => import('@/pages/not-found'));
 
 const queryClient = new QueryClient({
@@ -194,6 +197,7 @@ function PrivateRouteSwitch() {
             <Route path="/price-book" component={PriceBook} />
             <Route path="/customers" component={Customers} />
             <Route path="/customers/:id" component={CustomerDetail} />
+            <Route path="/billing" component={Billing} />
             <Route path="/settings" component={Settings} />
             <Route component={NotFound} />
       </Switch>

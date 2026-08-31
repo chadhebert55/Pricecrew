@@ -24,6 +24,8 @@ tags:
     description: Company price book operations
   - name: settings
     description: Company estimating settings
+  - name: billing
+    description: PriceCrew subscription and test checkout operations
 paths:
   /healthz:
     get:
@@ -377,6 +379,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotificationsResponse"
+  /billing:
+    get:
+      operationId: getBilling
+      tags: [billing]
+      summary: Get PriceCrew billing status and plans
+      responses:
+        "200":
+          description: Billing status and available plans
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      tags: [billing]
+      summary: Create a Stripe test-mode subscription checkout session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillingCheckoutInput"
+      responses:
+        "201":
+          description: Stripe test-mode checkout session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingCheckoutResponse"
+        "400":
+          description: Unsupported plan or Stripe test checkout is not configured
+        "503":
+          description: Stripe test checkout is temporarily unavailable
   /notifications/{id}/read:
     post:
       operationId: markNotificationRead
@@ -3643,3 +3679,56 @@ components:
         contactAddress: { type: ["string", "null"] }
         proposalAccentColor: { type: string }
         proposalTerms: { type: string }
+    BillingPlan:
+      type: string
+      enum: [solo, crew]
+    BillingPlanOption:
+      type: object
+      required: [id, name, amount, interval, description]
+      properties:
+        id:
+          $ref: "#/components/schemas/BillingPlan"
+        name:
+          type: string
+        amount:
+          type: number
+          minimum: 0
+        interval:
+          type: string
+          enum: [month]
+        description:
+          type: string
+    BillingStatus:
+      type: object
+      required: [mode, checkoutAvailable, currentPlan, plans, message]
+      properties:
+        mode:
+          type: string
+          enum: [test, not_configured]
+        checkoutAvailable:
+          type: boolean
+        currentPlan:
+          oneOf:
+            - $ref: "#/components/schemas/BillingPlan"
+            - type: "null"
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/BillingPlanOption"
+        message:
+          type: string
+    BillingCheckoutInput:
+      type: object
+      required: [plan]
+      properties:
+        plan:
+          $ref: "#/components/schemas/BillingPlan"
+    BillingCheckoutResponse:
+      type: object
+      required: [checkoutUrl, mode]
+      properties:
+        checkoutUrl:
+          type: string
+        mode:
+          type: string
+          enum: [test]

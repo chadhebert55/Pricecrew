@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BillingCheckoutInput,
+  BillingCheckoutResponse,
+  BillingStatus,
   CompanySettings,
   CompanySettingsUpdate,
   CustomerDetail,
@@ -1373,6 +1376,154 @@ export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotific
 
 
 
+
+export const getGetBillingUrl = () => {
+
+
+
+
+  return `/api/billing`
+}
+
+/**
+ * @summary Get PriceCrew billing status and plans
+ */
+export const getBilling = async ( options?: Parameters<typeof customFetch>[1]): Promise<BillingStatus> => {
+
+  return customFetch<BillingStatus>(getGetBillingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBillingQueryKey = () => {
+    return [
+    `/api/billing`
+    ] as const;
+    }
+
+
+export const getGetBillingQueryOptions = <TData = Awaited<ReturnType<typeof getBilling>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBilling>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBillingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBilling>>> = ({ signal }) => getBilling({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBilling>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBillingQueryResult = NonNullable<Awaited<ReturnType<typeof getBilling>>>
+export type GetBillingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get PriceCrew billing status and plans
+ */
+
+export function useGetBilling<TData = Awaited<ReturnType<typeof getBilling>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBilling>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBillingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateBillingCheckoutUrl = () => {
+
+
+
+
+  return `/api/billing/checkout`
+}
+
+/**
+ * @summary Create a Stripe test-mode subscription checkout session
+ */
+export const createBillingCheckout = async (billingCheckoutInput: BillingCheckoutInput, options?: Parameters<typeof customFetch>[1]): Promise<BillingCheckoutResponse> => {
+
+  return customFetch<BillingCheckoutResponse>(getCreateBillingCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(billingCheckoutInput)
+  }
+);}
+
+
+
+
+
+export const getCreateBillingCheckoutMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingCheckout>>, TError,{data: BodyType<BillingCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBillingCheckout>>, TError,{data: BodyType<BillingCheckoutInput>}, TContext> => {
+
+const mutationKey = ['createBillingCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBillingCheckout>>, {data: BodyType<BillingCheckoutInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBillingCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBillingCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createBillingCheckout>>>
+    export type CreateBillingCheckoutMutationBody = BodyType<BillingCheckoutInput>
+    export type CreateBillingCheckoutMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a Stripe test-mode subscription checkout session
+ */
+export const useCreateBillingCheckout = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingCheckout>>, TError,{data: BodyType<BillingCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBillingCheckout>>,
+        TError,
+        {data: BodyType<BillingCheckoutInput>},
+        TContext
+      > => {
+      return useMutation(getCreateBillingCheckoutMutationOptions(options));
+    }
 
 export const getMarkNotificationReadUrl = (id: number,) => {
 
