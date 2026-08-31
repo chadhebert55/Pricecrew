@@ -42,6 +42,7 @@ export function useQuoteBuilderDraft<T>({
   const serializedValues = JSON.stringify(values)
   const baselineRef = useRef<string | null>(null)
   const [pendingDraft, setPendingDraft] = useState<StoredQuoteBuilderDraft<T> | null>(null)
+  const [isDraftStorageUnavailable, setIsDraftStorageUnavailable] = useState(false)
 
   useEffect(() => {
     baselineRef.current = null
@@ -60,7 +61,8 @@ export function useQuoteBuilderDraft<T>({
     if (pendingDraft) return
     if (baselineRef.current === serializedValues) return
 
-    saveQuoteBuilderDraft(module, scope, values)
+    const didSave = saveQuoteBuilderDraft(module, scope, values)
+    setIsDraftStorageUnavailable(!didSave)
     baselineRef.current = serializedValues
     setPendingDraft(null)
   }, [module, pendingDraft, ready, scope, serializedValues, storageKey, values])
@@ -96,6 +98,7 @@ export function useQuoteBuilderDraft<T>({
     draftRecovery: {
       isAvailable: pendingDraft !== null,
       savedAt: pendingDraft?.savedAt,
+      isStorageUnavailable: isDraftStorageUnavailable,
       onRestore: restoreDraft,
       onDiscard: discardDraft,
     },

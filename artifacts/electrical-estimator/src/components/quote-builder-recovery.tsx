@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { RotateCcw, Trash2 } from "lucide-react"
+import { RotateCcw, Trash2, TriangleAlert } from "lucide-react"
 
 type SettingsState = {
   isLoading: boolean
@@ -20,6 +20,7 @@ type RevisionState = {
 type DraftRecoveryState = {
   isAvailable: boolean
   savedAt?: string
+  isStorageUnavailable: boolean
   onRestore: () => void
   onDiscard: () => void
 }
@@ -35,6 +36,21 @@ export function QuoteBuilderRecovery({
 }) {
   return (
     <div className="space-y-3">
+      {draft?.isStorageUnavailable && (
+        <div
+          role="alert"
+          data-testid="alert-quote-draft-storage"
+          className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm"
+        >
+          <TriangleAlert size={17} className="mt-0.5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-semibold">Unfinished quote protection is unavailable</p>
+            <p className="mt-1 text-secondary-foreground/80">
+              This browser could not save your unfinished quote. Refreshing or closing this page may lose your work.
+            </p>
+          </div>
+        </div>
+      )}
       {draft?.isAvailable && (
         <div
           role="status"

@@ -154,3 +154,78 @@ test("unfinished quote drafts restore, clear, and stay isolated by user", async 
     }
   }
 })
+
+test("unfinished quote warns when browser storage blocks or rejects draft writes", async ({
+  browser,
+  request,
+}) => {
+  const marker = randomUUID()
+  const userId = `draft_storage_warning_ui_${marker}`
+  let companyId: number | undefined
+
+  try {
+    const settingsResponse = await request.get(`${apiUrl}/api/settings`, {
+      headers: { "x-test-clerk-user-id": userId },
+    })
+    expect(settingsResponse.ok()).toBe(true)
+
+    const [membership] = await db
+      .select({ companyId: companyMembersTable.companyId })
+      .from(companyMembersTable)
+      .where(eq(companyMembersTable.userId, userId))
+    expect(membership).toBeTruthy()
+    companyId = membership!.companyId
+
+    for (const storageFailure of ["blocked", "quota"] as const) {
+      const context = await browser.newContext({
+        extraHTTPHeaders: { "x-test-clerk-user-id": userId },
+      })
+      await context.addInitScript((failure) => {
+        const state = globalThis as typeof globalThis & {
+          __quoteDraftStorageBlocked?: boolean
+        }
+        state.__quoteDraftStorageBlocked = true
+        const originalSetItem = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key, value) {
+          if (state.__quoteDraftStorageBlocked) {
+            throw new DOMException(
+              failure === "quota" ? "Quota exceeded" : "Storage is blocked",
+              failure === "quota" ? "QuotaExceededError" : "SecurityError",
+            )
+          }
+          return originalSetItem.call(this, key, value)
+        }
+      }, storageFailure)
+
+      const page = await context.newPage()
+      await page.goto(`/quotes/new?draftScope=storage-warning-${storageFailure}-${marker}`)
+      await expect(page.getByRole("heading", { name: "New Quote" })).toBeVisible()
+      await page.locator("#customerName").fill(`Storage test ${storageFailure} ${marker}`)
+      await expect(page.getByTestId("alert-quote-draft-storage")).toBeVisible()
+      await expect(page.getByTestId("alert-quote-draft-storage")).toContainText(
+        "Refreshing or closing this page may lose your work.",
+      )
+
+      if (storageFailure === "blocked") {
+        await page.evaluate(() => {
+          ;(globalThis as typeof globalThis & {
+            __quoteDraftStorageBlocked?: boolean
+          }).__quoteDraftStorageBlocked = false
+        })
+        await page.locator("#projectName").fill(`Recovered storage ${marker}`)
+        await expect(page.getByTestId("alert-quote-draft-storage")).toHaveCount(0)
+      }
+
+      await context.close()
+    }
+  } finally {
+    if (companyId !== undefined) {
+      await db.delete(quotesTable).where(eq(quotesTable.companyId, companyId))
+      await db.delete(customersTable).where(eq(customersTable.companyId, companyId))
+      await db.delete(priceBookItemsTable).where(eq(priceBookItemsTable.companyId, companyId))
+      await db.delete(companySettingsTable).where(eq(companySettingsTable.companyId, companyId))
+      await db.delete(companyMembersTable).where(eq(companyMembersTable.userId, userId))
+      await db.delete(companiesTable).where(eq(companiesTable.id, companyId))
+    }
+  }
+})
