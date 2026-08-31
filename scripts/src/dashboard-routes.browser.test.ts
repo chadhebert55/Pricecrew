@@ -92,7 +92,7 @@ test("authenticated dashboard bookmarks redirect, survive reload, and keep new q
 });
 
 
-test("saved quote and ready proposal links work when opened directly", async ({
+test("saved quote links work directly and stale proposal links stay unavailable", async ({
   browser,
   request,
 }) => {
@@ -259,7 +259,45 @@ test("saved quote and ready proposal links work when opened directly", async ({
       publicPage.getByRole("button", { name: "Print proposal" }),
     ).toBeVisible();
     await expect(
+      publicPage.getByText("Electrical material", { exact: true }),
+    ).toBeVisible();
+    await expect(publicPage.getByText("$600.00")).toBeVisible();
+    await expect(
       publicPage.getByRole("navigation", { name: "Main navigation" }),
+    ).toHaveCount(0);
+
+    const oldProposalUrl = `${anonymousWebUrl}/proposals/${proposal.proposalShareToken}`;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const updateResponse = await request.patch(
+      `${apiUrl}/api/quotes/${quoteId}`,
+      {
+        headers: { "x-test-clerk-user-id": userId },
+        data: {
+          proposalDescription:
+            "Updated scope requiring a newly issued customer proposal link.",
+        },
+      },
+    );
+    expect(updateResponse.ok()).toBe(true);
+    const updatedQuote = (await updateResponse.json()) as {
+      proposalShareToken: string | null;
+    };
+    expect(updatedQuote.proposalShareToken).toBeTruthy();
+    expect(updatedQuote.proposalShareToken).not.toBe(proposal.proposalShareToken);
+
+    await publicPage.goto(oldProposalUrl);
+    await expect(publicPage.getByTestId("proposal-unavailable")).toBeVisible();
+    await expect(
+      publicPage.getByRole("heading", { name: "Proposal unavailable" }),
+    ).toBeVisible();
+    await expect(
+      publicPage.getByText("Electrical material", { exact: true }),
+    ).toHaveCount(0);
+    await expect(publicPage.getByText("$600.00")).toHaveCount(0);
+    await expect(
+      publicPage.getByRole("heading", {
+        name: `Direct link quote ${marker}`,
+      }),
     ).toHaveCount(0);
   } finally {
     await publicContext?.close();

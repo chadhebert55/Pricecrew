@@ -86,7 +86,17 @@ export function QuoteProposal() {
     return <div className="p-8 text-center text-muted-foreground">Loading proposal…</div>
   }
   if (!quote) {
-    return <div className="p-8 text-center text-destructive">Proposal not found.</div>
+    return (
+      <div
+        className="mx-auto max-w-2xl p-8 text-center"
+        data-testid="proposal-unavailable"
+      >
+        <h1 className="text-2xl font-semibold text-foreground">Proposal unavailable</h1>
+        <p className="mt-2 text-muted-foreground">
+          This proposal link is no longer current. Please ask the contractor for a new link.
+        </p>
+      </div>
+    )
   }
 
   const canPrint = quote.status === "ready"
