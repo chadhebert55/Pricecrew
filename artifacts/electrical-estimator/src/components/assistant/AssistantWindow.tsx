@@ -258,7 +258,7 @@ function ChatView({ conversationId, userId, isExpanded }: { conversationId: numb
          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
        );
        const { uploadURL, objectPath } = await requestUpload.mutateAsync({
-         data: { fileName: file.name, contentType, fileSize: file.size }
+         data: { conversationId, fileName: file.name, contentType, fileSize: file.size }
       });
       
       setUploadProgress(40);

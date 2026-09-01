@@ -17,6 +17,7 @@ import {
   quotesTable,
 } from "@workspace/db";
 import app from "../app";
+import { assertNoAssistantCostOverrides } from "../routes/assistant";
 import {
   ensureEstimatorSeed,
   initializeElectricalStarterData,
@@ -34,6 +35,31 @@ async function closeServer(server: Server) {
     server.close((error) => (error ? reject(error) : resolve())),
   );
 }
+
+test("assistant quote grounding rejects specialized builder cost overrides recursively", () => {
+  for (const override of [
+    "exhaustFanMaterialCostOverride",
+    "fanLightMaterialCostOverride",
+    "fanLightHeatMaterialCostOverride",
+    "newCircuitMaterialsUnitCostOverride",
+    "ceilingFanMaterialCostOverride",
+    "fanMaterialUnitCostOverride",
+  ]) {
+    assert.throws(
+      () =>
+        assertNoAssistantCostOverrides({
+          nested: { [override]: 12.34 },
+        }),
+      new RegExp(override),
+    );
+  }
+  assert.doesNotThrow(() =>
+    assertNoAssistantCostOverrides({
+      fanMaterialUnitCostOverride: null,
+      materials: [{ unitCost: 12.34 }],
+    }),
+  );
+});
 
 test("assistant conversations and pending writes are tenant/user scoped, confirmation-gated, and idempotent", async () => {
   await ensureEstimatorSeed();

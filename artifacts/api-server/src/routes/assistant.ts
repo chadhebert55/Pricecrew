@@ -82,6 +82,22 @@ const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const ACTION_TTL_MS = 30 * 60 * 1000;
 const MODEL = process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-5-20250929";
 
+export function assertNoAssistantCostOverrides(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(assertNoAssistantCostOverrides);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  for (const [key, child] of Object.entries(value)) {
+    if (/costoverride$/i.test(key) && child != null) {
+      throw new Error(
+        `Assistant quote drafts cannot set ${key}. Add that override manually in the quote builder.`,
+      );
+    }
+    assertNoAssistantCostOverrides(child);
+  }
+}
+
 async function groundAssistantQuote(
   companyId: number,
   quote: typeof CreateQuoteBody._output,
@@ -91,6 +107,7 @@ async function groundAssistantQuote(
       "Assistant quote drafts cannot set labor or selling-price overrides.",
     );
   }
+  assertNoAssistantCostOverrides(quote.jobInputs);
   const [settings] = await db
     .select()
     .from(companySettingsTable)
@@ -375,20 +392,45 @@ async function runAssistantTool(input: {
         action: null,
       };
     }
-    const pattern = `%${query}%`;
+    const stopWords = new Set([
+      "a",
+      "an",
+      "the",
+      "what",
+      "whats",
+      "is",
+      "cost",
+      "price",
+      "of",
+      "for",
+      "my",
+    ]);
+    const tokens = (query.toLowerCase().match(/[a-z0-9][a-z0-9/-]*/g) ?? [])
+      .filter((token) => !stopWords.has(token))
+      .slice(0, 8);
+    if (tokens.length === 0) {
+      return {
+        result: { error: "Use an item name, SKU, UPC, or part number." },
+        action: null,
+      };
+    }
+    const tokenMatches = tokens.map((token) => {
+      const pattern = `%${token}%`;
+      return or(
+        ilike(priceBookItemsTable.item, pattern),
+        ilike(priceBookItemsTable.category, pattern),
+        ilike(priceBookItemsTable.supplierSku, pattern),
+        ilike(priceBookItemsTable.manufacturerPartNumber, pattern),
+        ilike(priceBookItemsTable.upc, pattern),
+      );
+    });
     const matches = await db
       .select()
       .from(priceBookItemsTable)
       .where(
         and(
           eq(priceBookItemsTable.companyId, input.companyId),
-          or(
-            ilike(priceBookItemsTable.item, pattern),
-            ilike(priceBookItemsTable.category, pattern),
-            ilike(priceBookItemsTable.supplierSku, pattern),
-            ilike(priceBookItemsTable.manufacturerPartNumber, pattern),
-            ilike(priceBookItemsTable.upc, pattern),
-          ),
+          ...tokenMatches,
         ),
       )
       .orderBy(asc(priceBookItemsTable.item))
@@ -864,7 +906,16 @@ router.post(
       });
       return;
     }
-    const ownerScope = createHash("sha256").update(userId).digest("hex").slice(0, 24);
+    const conversation = await ownedConversation({
+      id: parsed.data.conversationId,
+      companyId,
+      userId,
+    });
+    if (!conversation) {
+      res.status(404).json({ error: "Assistant conversation not found" });
+      return;
+    }
+    const ownerScope = `${createHash("sha256").update(userId).digest("hex").slice(0, 24)}/${conversation.id}`;
     const upload = await requestTakeoffUploadUrl(companyId, ownerScope);
     res.json(RequestAssistantUploadUrlResponse.parse(upload));
   },
@@ -873,6 +924,7 @@ router.post(
 async function safeUploadedBuffer(input: {
   companyId: number;
   userId: string;
+  conversationId: number;
   objectPath: string;
   fileName: string;
 }) {
@@ -882,7 +934,7 @@ async function safeUploadedBuffer(input: {
     .slice(0, 24);
   if (
     !input.objectPath.startsWith(
-      `/objects/uploads/${input.companyId}/${ownerScope}/`,
+      `/objects/uploads/${input.companyId}/${ownerScope}/${input.conversationId}/`,
     )
   ) {
     throw new Error("This uploaded file does not belong to you.");
@@ -941,6 +993,7 @@ router.post("/assistant/import-reviews", async (req, res): Promise<void> => {
       safeUploadedBuffer({
         companyId,
         userId,
+        conversationId: conversation.id,
         objectPath: parsed.data.objectPath,
         fileName: parsed.data.fileName,
       }),
@@ -974,7 +1027,8 @@ router.post("/assistant/import-reviews", async (req, res): Promise<void> => {
         .filter(
           (row) =>
             (row.confidence === "EXACT" || row.confidence === "LIKELY") &&
-            row.matchedItemId !== null,
+            row.matchedItemId !== null &&
+            !row.stale,
         )
         .map((row) => row.rowNumber);
       const action = await createPendingAction({
@@ -1238,7 +1292,8 @@ async function confirmImportAction(input: {
       (row) =>
         !["EXACT", "LIKELY"].includes(row.confidence) ||
         row.matchedItemId === null ||
-        row.beforeUpdatedAt === null,
+        row.beforeUpdatedAt === null ||
+        row.stale,
     )
   ) {
     throw new Error("Ambiguous or unmatched rows cannot be applied.");

@@ -17,3 +17,4 @@
 - [Shell bundle budget](shell-bundle-budget.md) — lazy-load substantial authenticated-shell controls so global UI features do not consume the estimator entry budget.
 - [Clerk UI fixture tenants](clerk-ui-fixture-tenants.md) — Clerk browser sessions may create a provisional tenant that fixture cleanup must remove too.
 - [Identity-scoped client caches](identity-scoped-client-caches.md) — tenant-defining browser queries must include the authenticated identity in their cache key.
+- [Assistant commercial safety](assistant-commercial-safety.md) — AI may read tenant data and prepare previews, but every commercial write needs grounded values and server confirmation.

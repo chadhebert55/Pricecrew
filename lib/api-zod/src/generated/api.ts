@@ -7654,6 +7654,7 @@ export const SendAssistantMessageResponse = zod.object({
 /**
  * @summary Request a private assistant upload URL
  */
+
 export const requestAssistantUploadUrlBodyFileNameMax = 255;
 
 export const requestAssistantUploadUrlBodyContentTypeMax = 100;
@@ -7663,6 +7664,7 @@ export const requestAssistantUploadUrlBodyFileSizeMax = 25000000;
 
 
 export const RequestAssistantUploadUrlBody = zod.object({
+  "conversationId": zod.number().min(1),
   "fileName": zod.string().min(1).max(requestAssistantUploadUrlBodyFileNameMax),
   "contentType": zod.string().min(1).max(requestAssistantUploadUrlBodyContentTypeMax),
   "fileSize": zod.number().min(1).max(requestAssistantUploadUrlBodyFileSizeMax)

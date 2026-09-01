@@ -2685,6 +2685,8 @@ export interface AssistantMessageResponse {
 }
 
 export interface AssistantUploadInput {
+  /** @minimum 1 */
+  conversationId: number;
   /**
      * @minLength 1
      * @maxLength 255

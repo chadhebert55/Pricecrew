@@ -126,6 +126,66 @@ test("assistant supplier review parses XLSX rows into the same deterministic rev
   assert.equal(reviewed.rows[0]?.incoming.unitCost, 22.5);
 });
 
+test("partial supplier updates preserve catalog metadata and stale prices are not proposed", async () => {
+  const existing = catalog({
+    id: 12,
+    category: "Breaker",
+    item: "20A single pole breaker",
+    unit: "ea",
+    unitCost: 18,
+    supplier: "Existing Supply",
+    manufacturer: "Acme",
+    manufacturerPartNumber: "AC-20",
+    supplierSku: "BR20",
+    upc: "009999",
+    sourceDate: "2026-08-31",
+    amperage: 20,
+    poleCount: 1,
+    protectionType: "Standard",
+  });
+  const reviewed = await reviewAssistantImport({
+    buffer: Buffer.from(
+      "Description,Unit Cost,SKU,Price Date\n20A single pole breaker,17.25,BR20,2026-08-01",
+    ),
+    fileName: "partial.csv",
+    sourceDate: null,
+    catalog: [existing],
+  });
+  const row = reviewed.rows[0];
+  assert.ok(row);
+  assert.equal(row.stale, true);
+  assert.equal(reviewed.report.proposed, 0);
+  assert.deepEqual(row.incoming, {
+    category: existing.category,
+    item: "20A single pole breaker",
+    unit: existing.unit,
+    unitCost: 17.25,
+    supplier: existing.supplier,
+    manufacturer: existing.manufacturer,
+    manufacturerPartNumber: existing.manufacturerPartNumber,
+    supplierSku: "BR20",
+    upc: existing.upc,
+    sourceDate: "2026-08-01",
+    amperage: existing.amperage,
+    poleCount: existing.poleCount,
+    protectionType: existing.protectionType,
+  });
+});
+
+test("invalid supplier price dates fail the review", async () => {
+  await assert.rejects(
+    reviewAssistantImport({
+      buffer: Buffer.from(
+        "Description,Unit Cost,SKU,Price Date\n20A breaker,17.25,BR20,2026-02-31",
+      ),
+      fileName: "invalid-date.csv",
+      sourceDate: null,
+      catalog: [],
+    }),
+    /invalid price date/i,
+  );
+});
+
 test("assistant guide search returns version-controlled routes and does not invent missing sections", () => {
   const results = searchAssistantGuide("How do I review OCR takeoffs?");
   assert.equal(results[0]?.title, "Takeoffs");

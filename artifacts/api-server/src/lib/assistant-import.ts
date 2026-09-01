@@ -5,6 +5,7 @@ import type {
   PriceBookImportValueRecord,
 } from "@workspace/db";
 import { normalizePriceBookIdentifier } from "./price-book-import";
+import { isOlderPriceBookSourceDate } from "./price-book-import";
 
 export type AssistantCatalogItem = PriceBookImportValueRecord & {
   id: number;
@@ -22,6 +23,7 @@ export type AssistantImportRow = {
   candidateItemIds: number[];
   before: PriceBookImportValueRecord | null;
   beforeUpdatedAt: string | null;
+  stale: boolean;
 };
 
 const MAX_ROWS = 5_000;
@@ -146,6 +148,24 @@ function nullable(value: string) {
   return value.trim() || null;
 }
 
+function canonicalSourceDate(value: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+  const year = Number(iso?.[1] ?? us?.[3]);
+  const month = Number(iso?.[2] ?? us?.[1]);
+  const day = Number(iso?.[3] ?? us?.[2]);
+  if (!year || !month || !day) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) return null;
+  return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+}
+
 function numberValue(value: string) {
   const parsed = Number(value.replace(/[$,\s]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
@@ -196,17 +216,22 @@ function canonicalRows(rows: string[][], sourceDate: string | null) {
       const item = value(row, itemIndex);
       const unitCost = numberValue(value(row, costIndex));
       if (!item || unitCost === null || unitCost < 0) return null;
+      const rawDate = nullable(value(row, sourceDateIndex)) ?? sourceDate;
+      const sourceDateValue = canonicalSourceDate(rawDate);
+      if (rawDate && !sourceDateValue) {
+        throw new Error(`Row ${start + index + 2} has an invalid price date.`);
+      }
       const canonicalValue: PriceBookImportValueRecord = {
-        category: value(row, categoryIndex) || "Imported",
+        category: value(row, categoryIndex),
         item,
-        unit: value(row, unitIndex) || "ea",
+        unit: value(row, unitIndex),
         unitCost,
         supplier: nullable(value(row, supplierIndex)),
         manufacturer: nullable(value(row, manufacturerIndex)),
         manufacturerPartNumber: nullable(value(row, mpnIndex)),
         supplierSku: nullable(value(row, supplierSkuIndex)),
         upc: nullable(value(row, upcIndex)),
-        sourceDate: nullable(value(row, sourceDateIndex)) ?? sourceDate,
+        sourceDate: sourceDateValue,
         amperage: null,
         poleCount: null,
         protectionType: null,
@@ -259,6 +284,27 @@ function importValue(item: AssistantCatalogItem): PriceBookImportValueRecord {
   };
 }
 
+function mergeIncoming(
+  incoming: PriceBookImportValueRecord,
+  existing: PriceBookImportValueRecord,
+): PriceBookImportValueRecord {
+  return {
+    ...incoming,
+    category: incoming.category || existing.category,
+    unit: incoming.unit || existing.unit,
+    supplier: incoming.supplier ?? existing.supplier,
+    manufacturer: incoming.manufacturer ?? existing.manufacturer,
+    manufacturerPartNumber:
+      incoming.manufacturerPartNumber ?? existing.manufacturerPartNumber,
+    supplierSku: incoming.supplierSku ?? existing.supplierSku,
+    upc: incoming.upc ?? existing.upc,
+    sourceDate: incoming.sourceDate ?? existing.sourceDate,
+    amperage: incoming.amperage ?? existing.amperage,
+    poleCount: incoming.poleCount ?? existing.poleCount,
+    protectionType: incoming.protectionType ?? existing.protectionType,
+  };
+}
+
 function exactIdentifiers(value: PriceBookImportValueRecord) {
   return [
     ["supplierSku", value.supplierSku],
@@ -282,16 +328,20 @@ function matchRow(
   );
   if (exact.length === 1) {
     const match = exact[0];
+    const before = importValue(match);
+    const merged = mergeIncoming(incoming, before);
+    const stale = isOlderPriceBookSourceDate(incoming.sourceDate, match.sourceDate);
     return {
       rowNumber,
       confidence: "EXACT",
       score: 1,
       reason: "One company catalog row matched an exact SKU, UPC, or manufacturer part number.",
-      incoming,
+      incoming: merged,
       matchedItemId: match.id,
       candidateItemIds: [match.id],
-      before: importValue(match),
+      before,
       beforeUpdatedAt: match.updatedAt.toISOString(),
+      stale,
     };
   }
   if (exact.length > 1) {
@@ -305,6 +355,7 @@ function matchRow(
       candidateItemIds: exact.map((item) => item.id),
       before: null,
       beforeUpdatedAt: null,
+      stale: false,
     };
   }
 
@@ -324,16 +375,23 @@ function matchRow(
   const best = ranked[0];
   const second = ranked[1];
   if (best && best.score >= 0.68 && (!second || best.score - second.score >= 0.15)) {
+    const before = importValue(best.candidate);
+    const merged = mergeIncoming(incoming, before);
+    const stale = isOlderPriceBookSourceDate(
+      incoming.sourceDate,
+      best.candidate.sourceDate,
+    );
     return {
       rowNumber,
       confidence: "LIKELY",
       score: Number(best.score.toFixed(3)),
       reason: "One name/manufacturer candidate is materially stronger than the alternatives.",
-      incoming,
+      incoming: merged,
       matchedItemId: best.candidate.id,
       candidateItemIds: [best.candidate.id],
-      before: importValue(best.candidate),
+      before,
       beforeUpdatedAt: best.candidate.updatedAt.toISOString(),
+      stale,
     };
   }
   if (best) {
@@ -348,6 +406,7 @@ function matchRow(
       candidateItemIds: candidates.map(({ candidate }) => candidate.id),
       before: null,
       beforeUpdatedAt: null,
+      stale: false,
     };
   }
   return {
@@ -360,6 +419,7 @@ function matchRow(
     candidateItemIds: [],
     before: null,
     beforeUpdatedAt: null,
+    stale: false,
   };
 }
 
@@ -399,7 +459,8 @@ export async function reviewAssistantImport(input: {
     proposed: matchedRows.filter(
       (row) =>
         (row.confidence === "EXACT" || row.confidence === "LIKELY") &&
-        row.matchedItemId !== null,
+        row.matchedItemId !== null &&
+        !row.stale,
     ).length,
   };
   return { rows: matchedRows, report };

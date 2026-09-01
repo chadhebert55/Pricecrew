@@ -4041,8 +4041,9 @@ components:
             $ref: "#/components/schemas/AssistantPendingAction"
     AssistantUploadInput:
       type: object
-      required: [fileName, contentType, fileSize]
+      required: [conversationId, fileName, contentType, fileSize]
       properties:
+        conversationId: { type: number, minimum: 1 }
         fileName: { type: string, minLength: 1, maxLength: 255 }
         contentType: { type: string, minLength: 1, maxLength: 100 }
         fileSize: { type: number, minimum: 1, maximum: 25000000 }
