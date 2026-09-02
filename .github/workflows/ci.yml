@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Allow manual runs from the Actions tab (e.g. re-running against a branch
+  # without pushing a new commit).
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
