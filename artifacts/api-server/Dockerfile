@@ -29,7 +29,7 @@ COPY scripts/package.json ./scripts/
 RUN pnpm install --frozen-lockfile=false
 
 # ---------------------------------------------------------------------------
-# Stage 2: build the API bundle
+# Stage 2: build the API bundle + deploy a self-contained runtime tree
 # ---------------------------------------------------------------------------
 FROM deps AS build
 WORKDIR /repo
@@ -42,11 +42,18 @@ COPY lib ./lib
 RUN pnpm --filter @workspace/api-spec run codegen \
  && pnpm --filter @workspace/api-server run build
 
+# `pnpm deploy` produces a self-contained project directory with a real
+# (non-symlinked) node_modules holding only the prod deps this package
+# actually uses, including all transitives that esbuild left external.
+# --legacy is required by pnpm 9 for `deploy` to work without a
+# 'deploy' field in package.json.
+RUN pnpm --filter @workspace/api-server --prod --legacy deploy /deploy \
+ && cp -R artifacts/api-server/dist /deploy/dist
+
 # ---------------------------------------------------------------------------
 # Stage 3: runtime image
 # ---------------------------------------------------------------------------
 FROM node:22-bookworm-slim AS runtime
-RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # System libs required by @napi-rs/canvas and OCR native binaries.
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -64,22 +71,10 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-# Copy just the built bundle. esbuild inlines workspace code, but any
-# package marked `external` in build.mjs (native deps + the entire
-# @opentelemetry family that Sentry pulls in) has to be a real
-# node_modules entry at runtime.
-COPY --from=build /repo/artifacts/api-server/dist ./dist
-COPY --from=build /repo/artifacts/api-server/package.json ./package.json.original
-
-# Strip `workspace:*` deps from package.json before install: esbuild
-# already bundled the @workspace/* packages into dist/index.mjs, and
-# pnpm can't resolve `workspace:*` outside a workspace context. Then
-# install remaining deps (npm-registry ones) as a standalone project so
-# externalized transitives like @opentelemetry/api land in node_modules.
-RUN corepack enable && corepack prepare pnpm@9 --activate \
- && node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('./package.json.original','utf8'));for(const k of ['dependencies','devDependencies','peerDependencies','optionalDependencies']){if(!p[k])continue;for(const [n,v] of Object.entries(p[k])){if(String(v).startsWith('workspace:'))delete p[k][n];}}delete p.scripts;fs.writeFileSync('./package.json',JSON.stringify(p,null,2));" \
- && rm package.json.original \
- && pnpm install --prod --ignore-scripts
+# Copy the deployed, self-contained project from the build stage. This
+# already has a flat, real (non-symlinked) node_modules with every
+# runtime dep + externalized transitive (@opentelemetry/*, native, etc.).
+COPY --from=build /deploy ./
 
 EXPOSE 3001
 
