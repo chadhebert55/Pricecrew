@@ -1,6 +1,8 @@
 // Init Sentry BEFORE importing app so http/express auto-instrumentation hooks in.
+// initObservability is async because it dynamically imports @sentry/node when
+// DSN is set; we fire-and-forget so app boot doesn't block on the network.
 import { initObservability } from "./lib/observability";
-initObservability();
+void initObservability();
 
 import app from "./app";
 import { logger } from "./lib/logger";
