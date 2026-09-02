@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test:db-preflight": "NODE_ENV=test ../../scripts/node_modules/.bin/tsx src/lib/database-schema-preflight.ts",
-    "test": "pnpm run test:db-preflight && NODE_ENV=test ../../scripts/node_modules/.bin/tsx --test src/lib/*.test.ts",
+    "test": "pnpm run test:db-preflight && NODE_ENV=test ../../scripts/node_modules/.bin/tsx --test --test-concurrency=1 src/lib/*.test.ts",
+    "test:no-db": "NODE_ENV=test ../../scripts/node_modules/.bin/tsx --test src/lib/billing.test.ts src/lib/database-schema-preflight.test.ts src/lib/quote-export.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
