@@ -21,9 +21,11 @@ COPY artifacts/api-server/package.json ./artifacts/api-server/
 COPY lib ./lib
 COPY scripts/package.json ./scripts/
 
-# Install with the frozen lockfile. --prod=false is required so the
-# api-server's devDeps (esbuild, tsx, types) are available for the build.
-RUN pnpm install --frozen-lockfile
+# Install workspace deps. Not using --frozen-lockfile because pnpm 9 in
+# this base image doesn't agree with the pnpm 12 lockfile format on the
+# overrides canonical form (identical content, different serialization).
+# Same reason CI runs with --frozen-lockfile=false.
+RUN pnpm install --frozen-lockfile=false
 
 # ---------------------------------------------------------------------------
 # Stage 2: build the API bundle
