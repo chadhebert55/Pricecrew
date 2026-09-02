@@ -102,6 +102,16 @@ jobs:
         working-directory: lib/db
         run: node ./scripts/push-schema.mjs --force
 
+      - name: Advance identity sequences past reserved IDs
+        # ensureEstimatorSeed() explicitly inserts companies(id=1). Without
+        # bumping the SERIAL sequence, the next default insert reuses id=1
+        # and hits companies_pkey. Advance every SERIAL sequence past 1000
+        # so tests that grab a fresh company via default id never collide.
+        env:
+          PGPASSWORD: pricecrew_test
+        run: |
+          psql -h localhost -U pricecrew -d pricecrew_test -c "SELECT setval('companies_id_seq', 1000, true);"
+
       - name: Build API
         working-directory: artifacts/api-server
         run: pnpm run build
