@@ -45,9 +45,7 @@ RUN pnpm --filter @workspace/api-spec run codegen \
 # `pnpm deploy` produces a self-contained project directory with a real
 # (non-symlinked) node_modules holding only the prod deps this package
 # actually uses, including all transitives that esbuild left external.
-# --legacy is required by pnpm 9 for `deploy` to work without a
-# 'deploy' field in package.json.
-RUN pnpm --filter @workspace/api-server --prod --legacy deploy /deploy \
+RUN pnpm --filter @workspace/api-server --prod deploy /deploy \
  && cp -R artifacts/api-server/dist /deploy/dist
 
 # ---------------------------------------------------------------------------
