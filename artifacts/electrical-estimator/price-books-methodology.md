@@ -15,30 +15,41 @@ Every PriceCrew account ships with three pre-loaded price books so a new user ca
 
 **Contractor book** is the source of truth. 13,965 SKUs, sourced from a real Northeast supply-house pricing feed. The prices are framed as "contractor pricing" — nationally portable because supply-house margins are consistent across regions (a #12 THHN at a Rexel branch in Boston is very close to a #12 THHN at a CED branch in Phoenix).
 
-**Retail and Premium books are derived from the Contractor book using category-aware multipliers** — not a flat percentage — because retail markup varies by product type:
+**Retail and Premium books are derived from the Contractor book using category-aware multipliers** — not a flat percentage — because retail markup varies by product type.
 
-| Category | Retail multiplier | Premium multiplier | Rationale |
+Multipliers marked **✅ tuned** below have been calibrated against a small sample of live Home Depot / Lowe's data (Sept 2026, n=8 usable data points across 40 sampled SKUs). All other multipliers remain reasoned estimates pending a larger v1.5 calibration pass.
+
+| Category | Retail multiplier | Premium multiplier | Basis |
 |---|---:|---:|---|
-| Conductor (wire) | 1.15× | 0.85× | Commodity; HD sells cheap, thin margins |
-| Conduit & Raceway | 1.18× | 0.85× | Commodity |
-| Wire Management | 1.20× | 0.85× | Commodity |
-| Fasteners | 1.25× | 0.85× | Standard hardware retail |
-| Firestop & Sealants | 1.20× | 0.85× | Commodity chemicals |
-| Grounding & Bonding | 1.20× | 0.85× | Standard hardware retail |
-| Fittings | 1.28× | 0.85× | Moderate retail spread |
-| Terminals & Lugs | 1.25× | 0.85× | Standard hardware retail |
-| Boxes | 1.28× | 0.85× | Moderate retail spread |
-| Devices (switches, outlets) | 1.30× | 0.85× | HD marks these up |
-| Protection (breakers, GFCIs) | 1.28× | 0.85× | Moderate retail spread |
-| Panels & Load Centers | 1.30× | 0.85× | Moderate retail spread |
-| Data & Comm | 1.30× | 0.85× | Less commodity |
-| Lighting | 1.35× | 0.85× | HD marks fixtures 30–40% |
-| Motors & Controls | 1.35× | 0.85× | Specialty, wider retail markup |
-| HVAC & Motors | 1.35× | 0.85× | Specialty |
-| Solar & EV | 1.35× | 0.85× | Specialty |
-| Tools | 1.22× | 0.85× | HD is competitive on tools |
-| PPE & Safety | 1.20× | 0.85× | HD is competitive on safety gear |
-| Misc / fallback | 1.25× | 0.85× | Reasonable default |
+| Conductor (wire) | 1.15× | 0.85× | Estimate |
+| Conduit & Raceway | 1.18× | 0.85× | Estimate (sample skewed by pack UOM) |
+| Wire Management | 1.05× | 0.85× | ✅ Tuned (observed 1.00×) |
+| Fasteners | 1.25× | 0.85× | Estimate |
+| Firestop & Sealants | 1.10× | 0.85× | ✅ Tuned (observed 1.07×) |
+| Grounding & Bonding | 1.20× | 0.85× | Estimate |
+| Fittings | 1.28× | 0.85× | Estimate |
+| Terminals & Lugs | 1.25× | 0.85× | Estimate |
+| Boxes | 1.22× | 0.85× | ✅ Tuned (observed 1.22×) |
+| Devices (switches, outlets) | 1.33× | 0.85× | ✅ Tuned (observed 1.33×) |
+| Protection (breakers, GFCIs) | 1.28× | 0.85× | Estimate |
+| Panels & Load Centers | 1.30× | 0.85× | Estimate |
+| Data & Comm | 1.30× | 0.85× | Estimate |
+| Lighting | 1.35× | 0.85× | Estimate |
+| Motors & Controls | 1.35× | 0.85× | Estimate |
+| HVAC & Motors | 1.35× | 0.85× | Estimate |
+| Solar & EV | 1.35× | 0.85× | Estimate |
+| Tools | 1.22× | 0.85× | Estimate |
+| PPE & Safety | 1.20× | 0.85× | Estimate (sample skewed by multipack UOM) |
+| Misc / fallback | 1.25× | 0.85× | Estimate |
+
+### Calibration notes (Sept 2, 2026)
+
+- Sampled 40 SKUs stratified across all 20 categories.
+- **21/40 SKUs were not stocked at Home Depot or Lowe's**, confirming that most supply-house SKUs simply don't have a retail equivalent. This validates that the Retail book is a *baseline for retail-sourcing users*, not a mirror of the Contractor book.
+- Home Depot and Lowe's block bulk product-page fetching, so 11 additional SKUs had a confirmed product match but no visible price in search snippets.
+- Where data existed, original estimates were close: Devices and Boxes were within 3–5% of observed. Wire Management and Firestop were high and were corrected downward.
+- **Planned v1.5:** rebuild the Retail book from a curated set of ~500 real HD/Lowe's SKUs (top-selling residential items) rather than deriving all 13,965 SKUs from the Contractor book.
+
 
 ## Files
 

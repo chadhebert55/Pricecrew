@@ -21,31 +21,35 @@ import os
 import sys
 from pathlib import Path
 
+# Multipliers are (retail_multiplier, premium_multiplier).
+# Retail multipliers tuned Sept 2026 against a small HD/Lowe's sample (n=8 usable).
+# Categories marked "tuned" have at least one observed data point; others remain estimates.
+# See price-books-methodology.md for full rationale and calibration notes.
 MULTIPLIERS = {
     # High-commodity, thin retail spread
-    'Conductor':            (1.15, 0.85),
-    'Conduit & Raceway':    (1.18, 0.85),
-    'Wire Management':      (1.20, 0.85),
-    'Fasteners':            (1.25, 0.85),
-    'Firestop & Sealants':  (1.20, 0.85),
-    'Grounding & Bonding':  (1.20, 0.85),
+    'Conductor':            (1.15, 0.85),  # estimate — no retail data
+    'Conduit & Raceway':    (1.18, 0.85),  # estimate — sample skewed by pack UOM
+    'Wire Management':      (1.05, 0.85),  # tuned: observed 1.00x (Milwaukee markers)
+    'Fasteners':            (1.25, 0.85),  # estimate — no retail data
+    'Firestop & Sealants':  (1.10, 0.85),  # tuned: observed 1.07x (Ideal duct seal)
+    'Grounding & Bonding':  (1.20, 0.85),  # estimate — no retail data
     # Devices & fittings — moderate retail markup
-    'Fittings':             (1.28, 0.85),
-    'Devices':              (1.30, 0.85),
-    'Terminals & Lugs':     (1.25, 0.85),
-    'Boxes':                (1.28, 0.85),
+    'Fittings':             (1.28, 0.85),  # estimate — no retail data
+    'Devices':              (1.33, 0.85),  # tuned: observed 1.33x (Lev/P&S switches)
+    'Terminals & Lugs':     (1.25, 0.85),  # estimate — no retail data
+    'Boxes':                (1.22, 0.85),  # tuned: observed 1.22x (Crouse-Hinds covers)
     # Lighting & panels — wider retail markup at HD
-    'Lighting':             (1.35, 0.85),
-    'Panels & Load Centers':(1.30, 0.85),
-    'Protection':           (1.28, 0.85),
+    'Lighting':             (1.35, 0.85),  # estimate — no retail data
+    'Panels & Load Centers':(1.30, 0.85),  # estimate — no retail data
+    'Protection':           (1.28, 0.85),  # estimate — no retail data
     # Specialty / less common at HD
-    'Motors & Controls':    (1.35, 0.85),
-    'HVAC & Motors':        (1.35, 0.85),
-    'Solar & EV':           (1.35, 0.85),
-    'Data & Comm':          (1.30, 0.85),
+    'Motors & Controls':    (1.35, 0.85),  # estimate — no retail data
+    'HVAC & Motors':        (1.35, 0.85),  # estimate — no retail data
+    'Solar & EV':           (1.35, 0.85),  # estimate — no retail data
+    'Data & Comm':          (1.30, 0.85),  # estimate — no retail data
     # Tools & PPE — HD is competitive
-    'Tools':                (1.22, 0.85),
-    'PPE & Safety':         (1.20, 0.85),
+    'Tools':                (1.22, 0.85),  # estimate — no retail data
+    'PPE & Safety':         (1.20, 0.85),  # kept — sample skewed by multipack UOM
     # Fallback
     'Misc':                 (1.25, 0.85),
 }
