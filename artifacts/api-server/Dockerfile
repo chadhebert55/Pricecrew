@@ -77,7 +77,7 @@ COPY --from=build /repo/artifacts/api-server/package.json ./package.json.origina
 # install remaining deps (npm-registry ones) as a standalone project so
 # externalized transitives like @opentelemetry/api land in node_modules.
 RUN corepack enable && corepack prepare pnpm@9 --activate \
- && node -e "const p=require('./package.json.original');for(const k of ['dependencies','devDependencies','peerDependencies','optionalDependencies']){if(!p[k])continue;for(const [n,v] of Object.entries(p[k])){if(String(v).startsWith('workspace:'))delete p[k][n];}}delete p.scripts;require('fs').writeFileSync('./package.json',JSON.stringify(p,null,2));" \
+ && node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('./package.json.original','utf8'));for(const k of ['dependencies','devDependencies','peerDependencies','optionalDependencies']){if(!p[k])continue;for(const [n,v] of Object.entries(p[k])){if(String(v).startsWith('workspace:'))delete p[k][n];}}delete p.scripts;fs.writeFileSync('./package.json',JSON.stringify(p,null,2));" \
  && rm package.json.original \
  && pnpm install --prod --ignore-scripts
 
