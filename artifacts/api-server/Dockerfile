@@ -64,11 +64,22 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-# Copy just the built bundle and the pruned node_modules needed at runtime.
-# esbuild bundles server code into dist/ so we mostly need native modules.
+# Copy just the built bundle. esbuild inlines workspace code, but any
+# package marked `external` in build.mjs (native deps + the entire
+# @opentelemetry family that Sentry pulls in) has to be a real
+# node_modules entry at runtime.
 COPY --from=build /repo/artifacts/api-server/dist ./dist
-COPY --from=build /repo/artifacts/api-server/package.json ./package.json
-COPY --from=build /repo/node_modules ./node_modules
+COPY --from=build /repo/artifacts/api-server/package.json ./package.json.original
+
+# Strip `workspace:*` deps from package.json before install: esbuild
+# already bundled the @workspace/* packages into dist/index.mjs, and
+# pnpm can't resolve `workspace:*` outside a workspace context. Then
+# install remaining deps (npm-registry ones) as a standalone project so
+# externalized transitives like @opentelemetry/api land in node_modules.
+RUN corepack enable && corepack prepare pnpm@9 --activate \
+ && node -e "const p=require('./package.json.original');for(const k of ['dependencies','devDependencies','peerDependencies','optionalDependencies']){if(!p[k])continue;for(const [n,v] of Object.entries(p[k])){if(String(v).startsWith('workspace:'))delete p[k][n];}}delete p.scripts;require('fs').writeFileSync('./package.json',JSON.stringify(p,null,2));" \
+ && rm package.json.original \
+ && pnpm install --prod --ignore-scripts
 
 EXPOSE 3001
 
