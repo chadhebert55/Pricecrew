@@ -73,8 +73,10 @@ jobs:
       NODE_ENV: test
       # Placeholder values so app modules that read these at import time do not crash.
       # Real secrets are never used in CI.
-      CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
-      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      # Clerk SDK validates the key format at boot. Use a well-formed
+      # but obviously fake test-mode key. b64 of "clerk.example.com$".
+      CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       ANTHROPIC_API_KEY: sk-ant-ci-placeholder
       SESSION_SECRET: ci-placeholder-session-secret-32chars-long
       PORT: "3001"
