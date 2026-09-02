@@ -17,6 +17,7 @@ WORKDIR /repo
 
 # Copy manifests first so this layer caches on lockfile churn only.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY tsconfig.json tsconfig.base.json ./
 COPY artifacts/api-server/package.json ./artifacts/api-server/
 COPY lib ./lib
 COPY scripts/package.json ./scripts/
