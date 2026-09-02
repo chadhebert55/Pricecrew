@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AssistantMessage } from "./AssistantMessage";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile } from "@/lib/upload-file";
 
 interface AssistantWindowProps {
   userId: string;
@@ -257,27 +258,17 @@ function ChatView({ conversationId, userId, isExpanded }: { conversationId: numb
          extension === "xls" ? "application/vnd.ms-excel" :
          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
        );
-       const { uploadURL, objectPath } = await requestUpload.mutateAsync({
+       const instruction = await requestUpload.mutateAsync({
          data: { conversationId, fileName: file.name, contentType, fileSize: file.size }
       });
-      
+
       setUploadProgress(40);
 
-      const xhr = new XMLHttpRequest();
-      await new Promise<void>((resolve, reject) => {
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setUploadProgress(40 + (event.loaded / event.total) * 40);
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Upload failed: ${xhr.statusText}`));
-        };
-        xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.open("PUT", uploadURL, true);
-         xhr.setRequestHeader("Content-Type", contentType);
-        xhr.send(file);
+      const { objectPath } = await uploadFile({
+        instruction,
+        file,
+        contentType,
+        onProgress: (fraction) => setUploadProgress(40 + fraction * 40),
       });
 
       setUploadProgress(90);

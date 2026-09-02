@@ -30,7 +30,6 @@ import type {
   AssistantMessageInput,
   AssistantMessageResponse,
   AssistantUploadInput,
-  AssistantUploadResponse,
   BillingCheckoutInput,
   BillingCheckoutResponse,
   BillingStatus,
@@ -3327,9 +3326,9 @@ export const getRequestAssistantUploadUrlUrl = () => {
 /**
  * @summary Request a private assistant upload URL
  */
-export const requestAssistantUploadUrl = async (assistantUploadInput: AssistantUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<AssistantUploadResponse> => {
+export const requestAssistantUploadUrl = async (assistantUploadInput: AssistantUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<TakeoffUploadResponse> => {
 
-  return customFetch<AssistantUploadResponse>(getRequestAssistantUploadUrlUrl(),
+  return customFetch<TakeoffUploadResponse>(getRequestAssistantUploadUrlUrl(),
   {
     ...options,
     method: 'POST',

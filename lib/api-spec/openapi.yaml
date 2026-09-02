@@ -1616,12 +1616,47 @@ components:
           type: string
           enum: [application/pdf]
     TakeoffUploadResponse:
+      oneOf:
+        - $ref: '#/components/schemas/SignedUrlUploadInstruction'
+        - $ref: '#/components/schemas/VercelBlobUploadInstruction'
+      discriminator:
+        propertyName: driver
+        mapping:
+          signed-url: '#/components/schemas/SignedUrlUploadInstruction'
+          vercel-blob: '#/components/schemas/VercelBlobUploadInstruction'
+    SignedUrlUploadInstruction:
       type: object
-      required: [uploadURL, objectPath]
+      required: [driver, uploadURL, objectPath, method]
       properties:
+        driver:
+          type: string
+          enum: [signed-url]
         uploadURL:
           type: string
         objectPath:
+          type: string
+          minLength: 1
+        method:
+          type: string
+          enum: [PUT]
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+    VercelBlobUploadInstruction:
+      type: object
+      required: [driver, objectPath, pathname, handleUploadRoute]
+      properties:
+        driver:
+          type: string
+          enum: [vercel-blob]
+        objectPath:
+          type: string
+          minLength: 1
+        pathname:
+          type: string
+          minLength: 1
+        handleUploadRoute:
           type: string
           minLength: 1
     TakeoffInput:
@@ -4048,11 +4083,7 @@ components:
         contentType: { type: string, minLength: 1, maxLength: 100 }
         fileSize: { type: number, minimum: 1, maximum: 25000000 }
     AssistantUploadResponse:
-      type: object
-      required: [uploadURL, objectPath]
-      properties:
-        uploadURL: { type: string }
-        objectPath: { type: string }
+      $ref: '#/components/schemas/TakeoffUploadResponse'
     AssistantImportReviewInput:
       type: object
       required: [conversationId, fileName, objectPath]

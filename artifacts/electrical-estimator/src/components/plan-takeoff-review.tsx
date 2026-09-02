@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Check, FileSearch, Loader2, RotateCcw, TriangleAlert, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { uploadFile } from "@/lib/upload-file"
 
 type PlanTakeoffReviewProps = {
   module: TakeoffBuilderModule
@@ -189,28 +190,25 @@ export function PlanTakeoffReview({
     setTakeoff(null)
     onTakeoffApplied({}, undefined)
     try {
-      const upload = await requestUpload.mutateAsync({
+      const instruction = await requestUpload.mutateAsync({
         data: {
           fileName: file.name,
           fileSize: file.size,
           contentType: "application/pdf",
         },
       })
-      const uploadResponse = await fetch(upload.uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/pdf" },
-        body: file,
+      const { objectPath } = await uploadFile({
+        instruction,
+        file,
+        contentType: "application/pdf",
       })
-      if (!uploadResponse.ok) {
-        throw new Error("The PDF upload did not finish. Check your connection and try again.")
-      }
       const result = await createTakeoff.mutateAsync({
         data: {
           module,
           fileName: file.name,
           fileSize: file.size,
           contentType: "application/pdf",
-          objectPath: upload.objectPath,
+          objectPath,
           baseInputs: baseline,
         },
       })
