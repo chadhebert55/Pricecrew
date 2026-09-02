@@ -1,0 +1,51 @@
+# Fly.io app config for the PriceCrew API server.
+#
+# First time:
+#   1. `fly launch --no-deploy --copy-config` from artifacts/api-server/
+#      (skip DB creation — we already have Neon)
+#   2. `fly secrets set DATABASE_URL=... CLERK_SECRET_KEY=... CLERK_PUBLISHABLE_KEY=... \
+#          VITE_CLERK_PUBLISHABLE_KEY=... ANTHROPIC_API_KEY=... SESSION_SECRET=... \
+#          BLOB_READ_WRITE_TOKEN=... ALLOWED_ORIGINS=https://app.pricecrew.com`
+#   3. `fly deploy`
+#
+# Region: iad (Ashburn) — same region as the Neon prod branch (us-east-2)
+# to minimize DB latency. Change if you move Neon.
+
+app = "pricecrew-api"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = 30
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3001"
+  NODE_ENV = "production"
+  STORAGE_DRIVER = "auto"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 200
+    soft_limit = 150
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "15s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

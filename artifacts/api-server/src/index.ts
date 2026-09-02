@@ -1,3 +1,7 @@
+// Init Sentry BEFORE importing app so http/express auto-instrumentation hooks in.
+import { initObservability } from "./lib/observability";
+initObservability();
+
 import app from "./app";
 import { logger } from "./lib/logger";
 

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": [
+    "Vercel deploys the frontend only. The API server has native deps",
+    "(@gutenye/ocr-node with ONNX, @napi-rs/canvas, pdf-parse) that are",
+    "not viable in Vercel serverless functions:",
+    "  - OCR bundle alone exceeds the 250MB unzipped Function limit",
+    "  - Cold starts on native modules run 3-10s",
+    "  - Long-running Anthropic streams and PDF parsing want a warm server",
+    "So the API lives on a container host (Fly.io / Railway / Render) and",
+    "the frontend calls it via VITE_API_BASE_URL at build time.",
+    "See infra/README.md for the API host runbook."
+  ],
+
+  "buildCommand": "pnpm --filter @workspace/electrical-estimator run build",
+  "outputDirectory": "artifacts/electrical-estimator/dist/public",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" }
+      ]
+    }
+  ]
+}

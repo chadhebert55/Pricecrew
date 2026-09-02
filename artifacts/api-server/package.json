@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.67.0",
+    "@sentry/node": "^8.42.0",
     "@clerk/express": "^2.1.63",
     "@clerk/shared": "^4.30.1",
     "@google-cloud/storage": "^8.0.1",

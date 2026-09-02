@@ -70,6 +70,7 @@ autoInstallPeers: false
 
 onlyBuiltDependencies:
   - '@clerk/shared'
+  - '@sentry/cli'
   - '@swc/core'
   - esbuild
   - msw
@@ -79,6 +80,8 @@ onlyBuiltDependencies:
 
 allowBuilds:
   '@clerk/shared': true
+  # @sentry/cli downloads a signed binary from Sentry's CDN. Trusted.
+  '@sentry/cli': true
   '@swc/core': true
   esbuild: true
   msw: true

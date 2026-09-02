@@ -9,6 +9,8 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { corsMiddleware } from "./middlewares/corsMiddleware";
+import { sentryErrorHandler } from "./lib/observability";
 
 const app: Express = express();
 
@@ -31,6 +33,7 @@ app.use(
     },
   }),
 );
+app.use(corsMiddleware());
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(express.json({ limit: "6mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -44,5 +47,8 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Sentry Express error handler. No-op when SENTRY_DSN is not set.
+app.use(sentryErrorHandler);
 
 export default app;

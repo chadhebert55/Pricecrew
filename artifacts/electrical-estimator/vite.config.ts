@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 const entryChunkBudgetBytes = 500_000;
 const entryChunkReportPrefix = 'ELECTRICAL_ESTIMATOR_ENTRY_CHUNK ';
@@ -80,6 +81,25 @@ export default defineConfig(({ command, mode }) => {
     );
   }
 
+  // Only upload source maps to Sentry when the auth token AND org/project
+  // are provided. Everything gated so PR builds and local builds skip it.
+  const sentryPlugins =
+    isBuild &&
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+      ? [
+          sentryVitePlugin({
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            release: { name: process.env.SENTRY_RELEASE },
+            sourcemaps: { filesToDeleteAfterUpload: ['**/*.js.map'] },
+            telemetry: false,
+          }),
+        ]
+      : [];
+
   return {
     base: basePath ?? '/',
     plugins: [
@@ -88,6 +108,7 @@ export default defineConfig(({ command, mode }) => {
       entryChunkReportPlugin(),
       runtimeErrorOverlay(),
       ...replitPlugins,
+      ...sentryPlugins,
     ],
     resolve: {
       alias: {
@@ -107,6 +128,10 @@ export default defineConfig(({ command, mode }) => {
         ? path.resolve(process.env.BUNDLE_CHECK_OUTPUT_DIR)
         : path.resolve(import.meta.dirname, 'dist/public'),
       emptyOutDir: true,
+      // Emit source maps so the Sentry plugin can upload them.
+      // The plugin deletes .js.map files from the dist after upload,
+      // so they never ship to users.
+      sourcemap: Boolean(process.env.SENTRY_AUTH_TOKEN),
     },
     server: {
       port,
