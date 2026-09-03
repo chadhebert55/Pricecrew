@@ -6,6 +6,7 @@ import {
   companyMembersTable,
   companySettingsTable,
   db,
+  priceBookItemsTable,
 } from "@workspace/db";
 
 const apiUrl = "http://127.0.0.1:5080";
@@ -47,6 +48,10 @@ async function cleanupOnboardingUser(
   companyId: number | undefined,
 ): Promise<void> {
   if (companyId === undefined) return;
+  
+   await db
+    .delete(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, companyId));
   await db
     .delete(companySettingsTable)
     .where(eq(companySettingsTable.companyId, companyId));
