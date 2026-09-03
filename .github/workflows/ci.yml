@@ -130,3 +130,81 @@ jobs:
       - name: Run API tests
         working-directory: artifacts/api-server
         run: pnpm run test
+
+  browser-tests:
+    name: Browser E2E Tests
+    runs-on: ubuntu-latest
+    # Mirrors api-tests: real Postgres, same placeholder secrets. The API
+    # server, four vite dev servers, and Playwright all start via
+    # playwright.config.ts webServer entries.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pricecrew
+          POSTGRES_PASSWORD: pricecrew_test
+          POSTGRES_DB: pricecrew_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pricecrew -d pricecrew_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://pricecrew:pricecrew_test@localhost:5432/pricecrew_test
+      NODE_ENV: test
+      CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      ANTHROPIC_API_KEY: sk-ant-ci-placeholder
+      SESSION_SECRET: ci-placeholder-session-secret-32chars-long
+      STORAGE_DRIVER: memory
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Push schema to test DB
+        working-directory: lib/db
+        run: node ./scripts/push-schema.mjs --force
+
+      - name: Advance identity sequences past reserved IDs
+        env:
+          PGPASSWORD: pricecrew_test
+        run: |
+          psql -h localhost -U pricecrew -d pricecrew_test -c "SELECT setval('companies_id_seq', 1000, true);"
+
+      - name: Install Playwright browsers
+        working-directory: scripts
+        # Only chromium; we don't test other browsers. `--with-deps` pulls
+        # in the ~50MB of shared libs Ubuntu runners are missing.
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run browser tests
+        working-directory: scripts
+        run: pnpm run test:takeoff-history-ui
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            scripts/playwright-report/
+            scripts/test-results/
+          retention-days: 7
