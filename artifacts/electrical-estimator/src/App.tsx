@@ -126,6 +126,12 @@ const isE2eMode =
 // onboardingCompleted) instead of the bypass switch used by other E2E tests.
 const isE2eOnboardingMode =
   isE2eMode && import.meta.env.VITE_E2E_ONBOARDING === 'true';
+// New: unauthenticated public-landing harness. Same MODE=e2e build, but
+// VITE_E2E_AUTH=false. Skips ClerkProvider entirely so tests don't need
+// a real Clerk publishable key to load clerk.browser.js.
+const isE2eAnonymousMode =
+  import.meta.env.MODE === 'e2e' &&
+  import.meta.env.VITE_E2E_AUTH === 'false';
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -485,6 +491,30 @@ function E2eBypassProviderWithRoutes() {
   );
 }
 
+/**
+ * Anonymous E2E harness (port 5175). Renders the public landing page
+ * without ClerkProvider so the test build doesn't need a real Clerk key
+ * to load clerk.browser.js. Any path renders the landing; sign-in flows
+ * are not exercised by this harness.
+ */
+function E2eAnonymousProviderWithRoutes() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Switch>
+          <Route path="/proposals/:token" component={QuoteProposal} />
+          <Route>
+            <RoutedErrorBoundary>
+              <PrivateLanding />
+            </RoutedErrorBoundary>
+          </Route>
+        </Switch>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
 function App() {
   return (
     <WouterRouter base={basePath}>
@@ -492,6 +522,8 @@ function App() {
         <E2eOnboardingProviderWithRoutes />
       ) : isE2eMode ? (
         <E2eBypassProviderWithRoutes />
+      ) : isE2eAnonymousMode ? (
+        <E2eAnonymousProviderWithRoutes />
       ) : (
         <ClerkProviderWithRoutes />
       )}
