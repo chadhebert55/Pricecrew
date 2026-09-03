@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useClerk } from "@clerk/react"
 import {
   useUpdateCompanyProfile,
   useUpdateCompanyOnboarding,
@@ -10,9 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { AlertCircle, CheckCircle2 } from "lucide-react"
+import { CheckCircle2, AlertCircle } from "lucide-react"
 
 interface OnboardingProps {
   initialCompanyName?: string
@@ -21,6 +20,10 @@ interface OnboardingProps {
   onGoToPriceBook?: (profile: CompanyProfile) => void
 }
 
+// The auto-provisioner assigns a placeholder company name for brand-new users.
+// We must not accept it as the real value; require the user to type their own.
+const PLACEHOLDER_COMPANY_NAME = "My Company"
+
 export function Onboarding({
   initialCompanyName = "",
   initialTrade,
@@ -28,22 +31,32 @@ export function Onboarding({
   onGoToPriceBook,
 }: OnboardingProps) {
   const [step, setStep] = useState(1)
-  const [companyName, setCompanyName] = useState(initialCompanyName || "My Company")
+  const [companyName, setCompanyName] = useState(
+    initialCompanyName && initialCompanyName !== PLACEHOLDER_COMPANY_NAME
+      ? initialCompanyName
+      : "",
+  )
   const [trade, setTrade] = useState<CompanyTrade | undefined>(initialTrade)
   const [priceBookChoice, setPriceBookChoice] = useState<"import" | "empty" | "skip">()
   const [error, setError] = useState<string | null>(null)
 
-  const queryClient = useQueryClient()
+  const { signOut } = useClerk()
 
   const updateProfile = useUpdateCompanyProfile()
   const updateOnboarding = useUpdateCompanyOnboarding()
 
-  const totalSteps = 4
-  const progress = (step / totalSteps) * 100
+  const totalSteps = 3
+  // Show progress as "step N-1 complete" so we never read 100% before Finish.
+  const progress = ((step - 1) / totalSteps) * 100
 
   const handleNextStep1 = () => {
-    if (!companyName.trim()) {
+    const trimmed = companyName.trim()
+    if (!trimmed) {
       setError("Company name is required")
+      return
+    }
+    if (trimmed.toLowerCase() === PLACEHOLDER_COMPANY_NAME.toLowerCase()) {
+      setError("Please enter your real company name")
       return
     }
     setError(null)
@@ -59,21 +72,16 @@ export function Onboarding({
     setStep(3)
   }
 
-  const handleNextStep3 = () => {
+  const handleFinish = async () => {
     if (!priceBookChoice) {
       setError("Please choose how to set up your price book")
       return
     }
     setError(null)
-    setStep(4)
-  }
-
-  const handleFinish = async () => {
-    setError(null)
     try {
       await updateProfile.mutateAsync({
         data: {
-          companyName,
+          companyName: companyName.trim(),
           trade,
         },
       })
@@ -94,26 +102,48 @@ export function Onboarding({
     }
   }
 
+  const isSaving = updateProfile.isPending || updateOnboarding.isPending
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-secondary/30 p-4">
       <div className="w-full max-w-xl space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Welcome to PriceCrew</h1>
-          <p className="text-muted-foreground">Let's set up your estimating workspace.</p>
+        <div className="flex items-center justify-between">
+          <div className="flex-1" />
+          <div className="space-y-2 text-center">
+            <h1 className="text-3xl font-bold tracking-tight">Welcome to PriceCrew</h1>
+            <p className="text-muted-foreground">Let's set up your estimating workspace.</p>
+          </div>
+          <div className="flex-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              data-testid="btn-sign-out"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
 
         <Progress value={progress} className="h-2" data-testid="onboarding-progress" />
 
         <Card className="shadow-lg border-border/50">
           {step === 1 && (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleNextStep1()
+              }}
+            >
               <CardHeader>
                 <CardTitle>Company Name</CardTitle>
                 <CardDescription>What should we call your workspace?</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="company-name">Company Name <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="company-name">
+                    Company Name <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="company-name"
                     data-testid="input-company-name"
@@ -122,23 +152,40 @@ export function Onboarding({
                       setCompanyName(e.target.value)
                       if (error) setError(null)
                     }}
-                    placeholder="My Company"
+                    placeholder="e.g. Chad Hebert Electric"
                     autoFocus
                   />
-                  {error && <p className="text-sm text-destructive" data-testid="error-message">{error}</p>}
+                  {error && (
+                    <p
+                      className="text-sm text-destructive"
+                      role="alert"
+                      data-testid="error-message"
+                    >
+                      {error}
+                    </p>
+                  )}
                 </div>
                 <div className="flex justify-end">
-                  <Button data-testid="btn-next" onClick={handleNextStep1}>Continue</Button>
+                  <Button type="submit" data-testid="btn-next">
+                    Continue
+                  </Button>
                 </div>
               </CardContent>
-            </>
+            </form>
           )}
 
           {step === 2 && (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleNextStep2()
+              }}
+            >
               <CardHeader>
                 <CardTitle>Primary Trade</CardTitle>
-                <CardDescription>We'll configure your initial settings based on your trade.</CardDescription>
+                <CardDescription>
+                  We'll configure your initial settings based on your trade.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -164,36 +211,66 @@ export function Onboarding({
                     <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <h4 className="font-semibold text-sm">Electrical templates included</h4>
-                      <p className="text-sm text-muted-foreground mt-1">We'll initialize your workspace with starter assemblies for panels, services, and circuits.</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        We'll initialize your workspace with starter assemblies for panels,
+                        services, and circuits.
+                      </p>
                     </div>
                   </div>
                 )}
-                
+
                 {trade && trade !== CompanyTrade.Electrical && (
-                   <div className="rounded-md bg-muted/50 p-4 border flex gap-3">
+                  <div className="rounded-md bg-muted/50 p-4 border flex gap-3">
                     <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <h4 className="font-semibold text-sm">Blank workspace</h4>
-                      <p className="text-sm text-muted-foreground mt-1">We don't have built-in assemblies for {trade} yet, but you can build custom quotes right away.</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        We don't have built-in assemblies for {trade} yet, but you can start
+                        from the Builders page and build custom quotes right away.
+                      </p>
                     </div>
                   </div>
                 )}
 
-                {error && <p className="text-sm text-destructive" data-testid="error-message">{error}</p>}
-                
+                {error && (
+                  <p
+                    className="text-sm text-destructive"
+                    role="alert"
+                    data-testid="error-message"
+                  >
+                    {error}
+                  </p>
+                )}
+
                 <div className="flex justify-between">
-                  <Button variant="ghost" onClick={() => setStep(1)} data-testid="btn-back">Back</Button>
-                  <Button onClick={handleNextStep2} data-testid="btn-next">Continue</Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setStep(1)}
+                    data-testid="btn-back"
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" data-testid="btn-next">
+                    Continue
+                  </Button>
                 </div>
               </CardContent>
-            </>
+            </form>
           )}
 
           {step === 3 && (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                void handleFinish()
+              }}
+            >
               <CardHeader>
                 <CardTitle>Price Book</CardTitle>
-                <CardDescription>How would you like to build your material and labor catalog?</CardDescription>
+                <CardDescription>
+                  How would you like to build your material and labor catalog?
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
@@ -208,7 +285,13 @@ export function Onboarding({
                     }}
                   >
                     <div className="font-semibold text-base">Import from CSV</div>
-                    <div className={priceBookChoice === "import" ? "text-primary-foreground/90" : "text-muted-foreground"}>
+                    <div
+                      className={
+                        priceBookChoice === "import"
+                          ? "text-primary-foreground/90"
+                          : "text-muted-foreground"
+                      }
+                    >
                       Upload your existing catalog from another tool or spreadsheet.
                     </div>
                   </Button>
@@ -224,7 +307,13 @@ export function Onboarding({
                     }}
                   >
                     <div className="font-semibold text-base">Start from scratch</div>
-                    <div className={priceBookChoice === "empty" ? "text-primary-foreground/90" : "text-muted-foreground"}>
+                    <div
+                      className={
+                        priceBookChoice === "empty"
+                          ? "text-primary-foreground/90"
+                          : "text-muted-foreground"
+                      }
+                    >
                       Build your catalog item by item as you quote.
                     </div>
                   </Button>
@@ -240,58 +329,48 @@ export function Onboarding({
                     }}
                   >
                     <div className="font-semibold text-base">Decide later</div>
-                    <div className={priceBookChoice === "skip" ? "text-primary-foreground/90" : "text-muted-foreground"}>
+                    <div
+                      className={
+                        priceBookChoice === "skip"
+                          ? "text-primary-foreground/90"
+                          : "text-muted-foreground"
+                      }
+                    >
                       Skip the price book for now and jump straight to quoting.
                     </div>
                   </Button>
                 </div>
 
-                {error && <p className="text-sm text-destructive" data-testid="error-message">{error}</p>}
-                
-                <div className="flex justify-between">
-                  <Button variant="ghost" onClick={() => setStep(2)} data-testid="btn-back">Back</Button>
-                  <Button onClick={handleNextStep3} data-testid="btn-next">Continue</Button>
-                </div>
-              </CardContent>
-            </>
-          )}
+                {error && (
+                  <p
+                    className="text-sm text-destructive"
+                    role="alert"
+                    data-testid="error-message"
+                  >
+                    {error}
+                  </p>
+                )}
 
-          {step === 4 && (
-            <>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Invite Crew</CardTitle>
-                  <Badge variant="secondary" className="font-normal">Coming soon</Badge>
-                </div>
-                <CardDescription>Collaborate with your team on estimates and price books.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/20 text-center">
-                  <p className="text-muted-foreground">Team invitations are currently under development.</p>
-                  <p className="text-sm text-muted-foreground mt-2">You can invite your crew from the Settings page later.</p>
-                </div>
-
-                {error && <p className="text-sm text-destructive" data-testid="error-message">{error}</p>}
-                
                 <div className="flex justify-between">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setStep(3)} 
-                    disabled={updateProfile.isPending || updateOnboarding.isPending}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setStep(2)}
+                    disabled={isSaving}
                     data-testid="btn-back"
                   >
                     Back
                   </Button>
-                  <Button 
-                    onClick={handleFinish} 
-                    disabled={updateProfile.isPending || updateOnboarding.isPending}
-                    data-testid="btn-finish"
-                  >
-                    {updateProfile.isPending || updateOnboarding.isPending ? "Saving..." : (priceBookChoice === "import" ? "Finish & Import CSV" : "Finish & Go to Dashboard")}
+                  <Button type="submit" disabled={isSaving} data-testid="btn-finish">
+                    {isSaving
+                      ? "Saving..."
+                      : priceBookChoice === "import"
+                      ? "Finish & Import CSV"
+                      : "Finish & Go to Dashboard"}
                   </Button>
                 </div>
               </CardContent>
-            </>
+            </form>
           )}
         </Card>
       </div>
