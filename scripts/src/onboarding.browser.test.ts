@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import {
   companiesTable,
   companyMembersTable,
+  priceBookItemsTable,
   companySettingsTable,
   db,
 } from "@workspace/db";
@@ -50,6 +51,9 @@ async function cleanupOnboardingUser(
   await db
     .delete(companySettingsTable)
     .where(eq(companySettingsTable.companyId, companyId));
+ await db
+  .delete(priceBookItemsTable)
+  .where(eq(priceBookItemsTable.companyId, companyId));
   await db
     .delete(companyMembersTable)
     .where(eq(companyMembersTable.userId, userId));
