@@ -41,7 +41,12 @@ export function Onboarding({
       ? initialCompanyName
       : "",
   )
-  const [trade, setTrade] = useState<CompanyTrade | undefined>(initialTrade)
+  // Ignore initialTrade for the wizard: the auto-provisioner seeds new
+  // companies with the DB default ("Electrical" or "Other"), so passing
+  // it through would silently pre-select a trade the user never chose.
+  // Users always start step 2 blank and must actively pick.
+  void initialTrade
+  const [trade, setTrade] = useState<CompanyTrade | undefined>(undefined)
   const [priceBookChoice, setPriceBookChoice] = useState<"import" | "empty" | "skip">()
   const [error, setError] = useState<string | null>(null)
 
