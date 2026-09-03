@@ -121,6 +121,11 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const isE2eMode =
   import.meta.env.MODE === 'e2e' &&
   import.meta.env.VITE_E2E_AUTH === 'true';
+// New: dedicated harness for the onboarding suite. Renders the real
+// AuthenticatedPrivateRouter (fetches company profile, honors
+// onboardingCompleted) instead of the bypass switch used by other E2E tests.
+const isE2eOnboardingMode =
+  isE2eMode && import.meta.env.VITE_E2E_ONBOARDING === 'true';
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -217,14 +222,35 @@ function PrivateRouteSwitch({ trade }: { trade: CompanyTrade }) {
 
 function PrivateRouter() {
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const clerk = useClerk();
 
   if (!isLoaded) return <RouteLoading />;
   if (!isSignedIn || !userId) return <PrivateLanding />;
 
-  return <AuthenticatedPrivateRouter userId={userId} />;
+  return (
+    <AuthenticatedPrivateRouter
+      userId={userId}
+      authMode="clerk"
+      onSignOut={() => void clerk.signOut()}
+    />
+  );
 }
 
-function AuthenticatedPrivateRouter({ userId }: { userId: string }) {
+/**
+ * The onboarding gate. Extracted so the E2E harness can render it too, using
+ * the same API-driven flow the production app uses. In E2E mode we render the
+ * E2eShell instead of the Clerk-aware Shell and omit sign-out (E2E tests don't
+ * exercise auth).
+ */
+function AuthenticatedPrivateRouter({
+  userId,
+  authMode,
+  onSignOut,
+}: {
+  userId: string;
+  authMode: 'clerk' | 'e2e';
+  onSignOut?: () => void;
+}) {
   const [, setLocation] = useLocation();
   const companyQueryKey = [...getGetCompanyProfileQueryKey(), userId] as const;
   const company = useGetCompanyProfile({
@@ -250,6 +276,7 @@ function AuthenticatedPrivateRouter({ userId }: { userId: string }) {
         <Onboarding
           initialCompanyName={company.data.companyName}
           initialTrade={company.data.trade}
+          onSignOut={onSignOut}
           onComplete={(profile) => {
             updateCompanyCache(profile);
             setLocation('/');
@@ -263,11 +290,10 @@ function AuthenticatedPrivateRouter({ userId }: { userId: string }) {
     );
   }
 
+  const shellChildren = <PrivateRouteSwitch trade={company.data.trade} />;
   return (
     <RoutedErrorBoundary>
-      <Shell>
-        <PrivateRouteSwitch trade={company.data.trade} />
-      </Shell>
+      {authMode === 'clerk' ? <Shell>{shellChildren}</Shell> : <E2eShell>{shellChildren}</E2eShell>}
     </RoutedErrorBoundary>
   );
 }
@@ -413,7 +439,33 @@ function ClerkProviderWithRoutes() {
   );
 }
 
-function E2eProviderWithRoutes() {
+
+function E2eOnboardingProviderWithRoutes() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Switch>
+          <Route path="/proposals/:token" component={QuoteProposal} />
+          <Route component={E2eOnboardingPrivateRouter} />
+        </Switch>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+function E2eOnboardingPrivateRouter() {
+  // No onSignOut in E2E: Clerk isn't in the tree, and tests exercise onboarding
+  // and the app shell, not the auth boundary.
+  return <AuthenticatedPrivateRouter userId="e2e-user" authMode="e2e" />;
+}
+
+/**
+ * Existing E2E harness (5174) that bypasses the onboarding gate. Kept for
+ * backwards compatibility with dashboard-routes/quote-builder tests that
+ * assume they land on the private app directly.
+ */
+function E2eBypassProviderWithRoutes() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -436,7 +488,13 @@ function E2eProviderWithRoutes() {
 function App() {
   return (
     <WouterRouter base={basePath}>
-      {isE2eMode ? <E2eProviderWithRoutes /> : <ClerkProviderWithRoutes />}
+      {isE2eOnboardingMode ? (
+        <E2eOnboardingProviderWithRoutes />
+      ) : isE2eMode ? (
+        <E2eBypassProviderWithRoutes />
+      ) : (
+        <ClerkProviderWithRoutes />
+      )}
     </WouterRouter>
   );
 }
