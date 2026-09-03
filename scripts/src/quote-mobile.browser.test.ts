@@ -171,7 +171,9 @@ test("quote building and export surfaces work at phone and tablet widths", async
     ).toBe(true);
 
     await page.goto("/price-book");
-    await expect(page.getByRole("heading", { name: "Price Book" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Price Book", exact: true }),
+    ).toBeVisible();
     const priceBookScroller = page.locator(".table-scroll").first();
     await expect(priceBookScroller).toBeVisible();
     expect(
