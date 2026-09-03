@@ -16,7 +16,7 @@ const apiUrl = "http://127.0.0.1:5080";
 const anonymousWebUrl = "http://127.0.0.1:5175";
 const authenticatedWebUrl = "http://127.0.0.1:5174";
 
-const landingHeading = "Private estimating for your contracting company.";
+const landingHeading = "Private estimating for your service business.";
 
 test("unauthenticated dashboard entry points stay on the public landing page", async ({
   page,

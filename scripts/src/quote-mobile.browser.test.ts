@@ -170,8 +170,23 @@ test("quote building and export surfaces work at phone and tablet widths", async
       ),
     ).toBe(true);
 
+    // Seed at least one price-book row so the /price-book table renders.
+    // The E2E auto-provisioner defaults trade="Other", which skips the
+    // Electrical starter-data seed, so the price book would otherwise be
+    // empty and the .table-scroll wrapper would not render.
+    await db.insert(priceBookItemsTable).values({
+      companyId,
+      category: "Devices",
+      item: `Mobile fixture item ${marker.slice(0, 8)}`,
+      unit: "ea",
+      unitCost: 1,
+      supplier: "quote-mobile fixture",
+    });
+
     await page.goto("/price-book");
-    await expect(page.getByRole("heading", { name: "Price Book" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Price Book", exact: true }),
+    ).toBeVisible();
     const priceBookScroller = page.locator(".table-scroll").first();
     await expect(priceBookScroller).toBeVisible();
     expect(
