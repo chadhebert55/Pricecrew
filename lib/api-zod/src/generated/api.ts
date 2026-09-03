@@ -3036,10 +3036,21 @@ export const RequestTakeoffUploadUrlBody = zod.object({
 
 
 
-export const RequestTakeoffUploadUrlResponse = zod.object({
+
+
+
+export const RequestTakeoffUploadUrlResponse = zod.union([zod.object({
+  "driver": zod.enum(['signed-url']),
   "uploadURL": zod.string(),
-  "objectPath": zod.string().min(1)
-})
+  "objectPath": zod.string().min(1),
+  "method": zod.enum(['PUT']),
+  "headers": zod.record(zod.string(), zod.string()).optional()
+}),zod.object({
+  "driver": zod.enum(['vercel-blob']),
+  "objectPath": zod.string().min(1),
+  "pathname": zod.string().min(1),
+  "handleUploadRoute": zod.string().min(1)
+})])
 
 
 /**
@@ -7670,10 +7681,24 @@ export const RequestAssistantUploadUrlBody = zod.object({
   "fileSize": zod.number().min(1).max(requestAssistantUploadUrlBodyFileSizeMax)
 })
 
-export const RequestAssistantUploadUrlResponse = zod.object({
+
+
+
+
+
+
+export const RequestAssistantUploadUrlResponse = zod.union([zod.object({
+  "driver": zod.enum(['signed-url']),
   "uploadURL": zod.string(),
-  "objectPath": zod.string()
-})
+  "objectPath": zod.string().min(1),
+  "method": zod.enum(['PUT']),
+  "headers": zod.record(zod.string(), zod.string()).optional()
+}),zod.object({
+  "driver": zod.enum(['vercel-blob']),
+  "objectPath": zod.string().min(1),
+  "pathname": zod.string().min(1),
+  "handleUploadRoute": zod.string().min(1)
+})])
 
 
 /**

@@ -5,9 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SignedUrlUploadInstruction } from './signedUrlUploadInstruction';
+import type { VercelBlobUploadInstruction } from './vercelBlobUploadInstruction';
 
-export interface TakeoffUploadResponse {
-  uploadURL: string;
-  /** @minLength 1 */
-  objectPath: string;
-}
+export type TakeoffUploadResponse = SignedUrlUploadInstruction | VercelBlobUploadInstruction;

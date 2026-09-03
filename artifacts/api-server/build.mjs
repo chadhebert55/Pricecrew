@@ -68,7 +68,14 @@ async function buildAll() {
       "googleapis",
       "firebase-admin",
       "@parcel/watcher",
+      // Sentry pulls in the @opentelemetry family and other native-ish
+      // integrations. Bundling it inlines require() calls that then
+      // can't resolve at runtime. Keep it fully external and resolved
+      // via node_modules when SENTRY_DSN is set.
+      "@sentry/node",
+      "@sentry/core",
       "@sentry/profiling-node",
+      "@sentry/*",
       "@tree-sitter/*",
       "aws-sdk",
       "classic-level",

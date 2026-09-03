@@ -1867,11 +1867,49 @@ export interface TakeoffUploadRequest {
   contentType: TakeoffUploadRequestContentType;
 }
 
-export interface TakeoffUploadResponse {
+export type SignedUrlUploadInstructionDriver = typeof SignedUrlUploadInstructionDriver[keyof typeof SignedUrlUploadInstructionDriver];
+
+
+export const SignedUrlUploadInstructionDriver = {
+  'signed-url': 'signed-url',
+} as const;
+
+export type SignedUrlUploadInstructionMethod = typeof SignedUrlUploadInstructionMethod[keyof typeof SignedUrlUploadInstructionMethod];
+
+
+export const SignedUrlUploadInstructionMethod = {
+  PUT: 'PUT',
+} as const;
+
+export type SignedUrlUploadInstructionHeaders = {[key: string]: string};
+
+export interface SignedUrlUploadInstruction {
+  driver: SignedUrlUploadInstructionDriver;
   uploadURL: string;
   /** @minLength 1 */
   objectPath: string;
+  method: SignedUrlUploadInstructionMethod;
+  headers?: SignedUrlUploadInstructionHeaders;
 }
+
+export type VercelBlobUploadInstructionDriver = typeof VercelBlobUploadInstructionDriver[keyof typeof VercelBlobUploadInstructionDriver];
+
+
+export const VercelBlobUploadInstructionDriver = {
+  'vercel-blob': 'vercel-blob',
+} as const;
+
+export interface VercelBlobUploadInstruction {
+  driver: VercelBlobUploadInstructionDriver;
+  /** @minLength 1 */
+  objectPath: string;
+  /** @minLength 1 */
+  pathname: string;
+  /** @minLength 1 */
+  handleUploadRoute: string;
+}
+
+export type TakeoffUploadResponse = SignedUrlUploadInstruction | VercelBlobUploadInstruction;
 
 export type TakeoffInputContentType = typeof TakeoffInputContentType[keyof typeof TakeoffInputContentType];
 
@@ -2704,10 +2742,7 @@ export interface AssistantUploadInput {
   fileSize: number;
 }
 
-export interface AssistantUploadResponse {
-  uploadURL: string;
-  objectPath: string;
-}
+export type AssistantUploadResponse = TakeoffUploadResponse;
 
 export interface AssistantImportReviewInput {
   conversationId: number;

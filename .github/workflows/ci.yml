@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Allow manual runs from the Actions tab (e.g. re-running against a branch
+  # without pushing a new commit).
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Cache-friendly, matches Vercel's default
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
+jobs:
+  quality:
+    name: Typecheck & Build
+    runs-on: ubuntu-latest
+    # esbuild + related linux-x64 platform pinning in pnpm-workspace.yaml
+    # means we MUST use Linux runners.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        # TODO: switch to --frozen-lockfile once local dev (pnpm 12) and
+        # CI (pnpm 9) agree on the overrides canonical form. Right now pnpm 9
+        # treats the identical-content overrides block as a config mismatch.
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Security audit (non-blocking)
+        # Reports high/critical vulns but does not fail the build. Once we
+        # have a clean baseline, tighten this to --fail-on high.
+        continue-on-error: true
+        run: pnpm audit --prod --audit-level=high
+
+  api-tests:
+    name: API Server Tests
+    runs-on: ubuntu-latest
+    # Uses a real Postgres via services; DB preflight expects DATABASE_URL.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pricecrew
+          POSTGRES_PASSWORD: pricecrew_test
+          POSTGRES_DB: pricecrew_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pricecrew -d pricecrew_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://pricecrew:pricecrew_test@localhost:5432/pricecrew_test
+      NODE_ENV: test
+      # Placeholder values so app modules that read these at import time do not crash.
+      # Real secrets are never used in CI.
+      # Clerk SDK validates the key format at boot. Use a well-formed
+      # but obviously fake test-mode key. b64 of "clerk.example.com$".
+      CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      ANTHROPIC_API_KEY: sk-ant-ci-placeholder
+      SESSION_SECRET: ci-placeholder-session-secret-32chars-long
+      PORT: "3001"
+      STORAGE_DRIVER: memory
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Push schema to test DB
+        working-directory: lib/db
+        run: node ./scripts/push-schema.mjs --force
+
+      - name: Advance identity sequences past reserved IDs
+        # ensureEstimatorSeed() explicitly inserts companies(id=1). Without
+        # bumping the SERIAL sequence, the next default insert reuses id=1
+        # and hits companies_pkey. Advance every SERIAL sequence past 1000
+        # so tests that grab a fresh company via default id never collide.
+        env:
+          PGPASSWORD: pricecrew_test
+        run: |
+          psql -h localhost -U pricecrew -d pricecrew_test -c "SELECT setval('companies_id_seq', 1000, true);"
+
+      - name: Build API
+        working-directory: artifacts/api-server
+        run: pnpm run build
+
+      - name: Run API tests
+        working-directory: artifacts/api-server
+        run: pnpm run test

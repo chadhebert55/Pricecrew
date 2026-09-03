@@ -60,7 +60,8 @@ import { searchAssistantGuide } from "../lib/assistant-guide";
 import { ensureEstimatorSeed } from "../lib/estimating-seed";
 import {
   requestTakeoffUploadUrl,
-  takeoffObjectFile,
+  headTakeoffObject,
+  downloadRawObject,
 } from "../lib/pdf-storage";
 import {
   calculateEstimate,
@@ -939,21 +940,18 @@ async function safeUploadedBuffer(input: {
   ) {
     throw new Error("This uploaded file does not belong to you.");
   }
-  const file = takeoffObjectFile(input.objectPath);
-  const [exists] = await file.exists();
-  if (!exists) throw new Error("The uploaded supplier file was not found.");
-  const [metadata] = await file.getMetadata();
-  const size = Number(metadata.size);
+  const metadata = await headTakeoffObject(input.objectPath);
+  const size = metadata.size;
   if (!Number.isFinite(size) || size <= 0 || size > MAX_UPLOAD_BYTES) {
     throw new Error("The uploaded supplier file is empty or too large.");
   }
   const extension = fileExtension(input.fileName);
   const allowedTypes = uploadTypes.get(extension);
-  const contentType = metadata.contentType?.split(";", 1)[0]?.trim();
+  const contentType = metadata.contentType;
   if (!allowedTypes || (contentType && !allowedTypes.has(contentType))) {
     throw new Error("The uploaded file type does not match its extension.");
   }
-  const [buffer] = await file.download();
+  const buffer = await downloadRawObject(input.objectPath);
   const isPdf = buffer.subarray(0, 5).toString("ascii") === "%PDF-";
   const isZip =
     buffer[0] === 0x50 &&

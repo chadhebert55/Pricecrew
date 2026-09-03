@@ -5,8 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TakeoffUploadResponse } from './takeoffUploadResponse';
 
-export interface AssistantUploadResponse {
-  uploadURL: string;
-  objectPath: string;
-}
+export type AssistantUploadResponse = TakeoffUploadResponse;
