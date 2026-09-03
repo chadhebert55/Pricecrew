@@ -37,6 +37,9 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
+      // 5174: authenticated E2E harness that bypasses the onboarding gate
+      // (renders PrivateRouteSwitch directly). Existing dashboard/quote-builder
+      // tests target this server.
       command:
         `NODE_ENV=test PORT=5174 BASE_PATH=/ E2E_API_URL=${apiUrl} VITE_E2E_AUTH=true pnpm --filter @workspace/electrical-estimator exec vite --config vite.config.ts --host 127.0.0.1 --mode e2e`,
       cwd: "..",
@@ -45,10 +48,21 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
+      // 5175: unauthenticated E2E harness (public landing page).
       command:
         `NODE_ENV=test PORT=5175 BASE_PATH=/ E2E_API_URL=${apiUrl} VITE_E2E_AUTH=false pnpm --filter @workspace/electrical-estimator exec vite --config vite.config.ts --host 127.0.0.1 --mode e2e`,
       cwd: "..",
       url: "http://127.0.0.1:5175",
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // 5176: authenticated E2E harness that renders the real onboarding gate
+      // (AuthenticatedPrivateRouter). Only the onboarding suite targets this.
+      command:
+        `NODE_ENV=test PORT=5176 BASE_PATH=/ E2E_API_URL=${apiUrl} VITE_E2E_AUTH=true VITE_E2E_ONBOARDING=true pnpm --filter @workspace/electrical-estimator exec vite --config vite.config.ts --host 127.0.0.1 --mode e2e`,
+      cwd: "..",
+      url: "http://127.0.0.1:5176",
       reuseExistingServer: false,
       timeout: 120_000,
     },

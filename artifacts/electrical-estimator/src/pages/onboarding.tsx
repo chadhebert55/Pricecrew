@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { useClerk } from "@clerk/react"
 import {
   useUpdateCompanyProfile,
   useUpdateCompanyOnboarding,
@@ -18,6 +17,11 @@ interface OnboardingProps {
   initialTrade?: CompanyTrade
   onComplete: (profile: CompanyProfile) => void
   onGoToPriceBook?: (profile: CompanyProfile) => void
+  /**
+   * Optional sign-out handler. Omitted from the E2E harness (Clerk isn't in
+   * the tree). When absent, the sign-out link isn't rendered.
+   */
+  onSignOut?: () => void
 }
 
 // The auto-provisioner assigns a placeholder company name for brand-new users.
@@ -29,6 +33,7 @@ export function Onboarding({
   initialTrade,
   onComplete,
   onGoToPriceBook,
+  onSignOut,
 }: OnboardingProps) {
   const [step, setStep] = useState(1)
   const [companyName, setCompanyName] = useState(
@@ -39,8 +44,6 @@ export function Onboarding({
   const [trade, setTrade] = useState<CompanyTrade | undefined>(initialTrade)
   const [priceBookChoice, setPriceBookChoice] = useState<"import" | "empty" | "skip">()
   const [error, setError] = useState<string | null>(null)
-
-  const { signOut } = useClerk()
 
   const updateProfile = useUpdateCompanyProfile()
   const updateOnboarding = useUpdateCompanyOnboarding()
@@ -114,14 +117,16 @@ export function Onboarding({
             <p className="text-muted-foreground">Let's set up your estimating workspace.</p>
           </div>
           <div className="flex-1 flex justify-end">
-            <button
-              type="button"
-              onClick={() => signOut()}
-              className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
-              data-testid="btn-sign-out"
-            >
-              Sign out
-            </button>
+            {onSignOut && (
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+                data-testid="btn-sign-out"
+              >
+                Sign out
+              </button>
+            )}
           </div>
         </div>
 
