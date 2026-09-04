@@ -5,6 +5,7 @@ import {
   companiesTable,
   companyMembersTable,
   companySettingsTable,
+  priceBookItemsTable,
   db,
 } from "@workspace/db";
 
@@ -47,9 +48,15 @@ async function cleanupOnboardingUser(
   companyId: number | undefined,
 ): Promise<void> {
   if (companyId === undefined) return;
+
   await db
     .delete(companySettingsTable)
     .where(eq(companySettingsTable.companyId, companyId));
+
+  await db
+    .delete(priceBookItemsTable)
+    .where(eq(priceBookItemsTable.companyId, companyId));
+
   await db
     .delete(companyMembersTable)
     .where(eq(companyMembersTable.userId, userId));
