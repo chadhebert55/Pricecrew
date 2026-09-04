@@ -5,6 +5,7 @@ import {
   companiesTable,
   companyMembersTable,
   companySettingsTable,
+  priceBookItemsTable,
   db,
 } from "@workspace/db";
 
