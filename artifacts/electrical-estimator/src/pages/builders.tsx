@@ -5,7 +5,7 @@ import { Link } from "wouter"
 import { Zap, Construction, AlertTriangle, ArrowRight, Waves, UtensilsCrossed, Lightbulb, Wrench, Clock, Shapes, House, HousePlus } from "lucide-react"
 import type { CompanyTrade } from "@workspace/api-client-react"
 
-export function Builders({ trade }: { trade: CompanyTrade }) {
+export function Builders({ trade, choosingQuote = false }: { trade: CompanyTrade; choosingQuote?: boolean }) {
   const modules = [
     {
       id: "new-house",
@@ -61,7 +61,7 @@ export function Builders({ trade }: { trade: CompanyTrade }) {
       description: "Complete builder for Level 2 EV charging circuits, including wire sizing, conduit routing, and panel capacity checks.",
       icon: Zap,
       status: "live",
-      href: "/quotes/new"
+      href: "/quotes/new/ev-charger"
     },
     {
       id: "kitchen",
@@ -106,9 +106,9 @@ export function Builders({ trade }: { trade: CompanyTrade }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quote Builders</h1>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">{choosingQuote ? "New Quote" : "Quote Builders"}</h1>
         <p className="text-muted-foreground mt-1">
-          {trade === "Electrical"
+          {choosingQuote ? "Choose the type of job you want to quote." : trade === "Electrical"
             ? "Electrical estimating modules designed for speed and accuracy."
             : `Start with flexible ${trade} quote builders while trade-specific modules are developed.`}
         </p>
@@ -116,10 +116,10 @@ export function Builders({ trade }: { trade: CompanyTrade }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleModules.map((mod) => (
-          <Card key={mod.id} className={`flex flex-col ${mod.status === 'upcoming' ? 'opacity-70 bg-muted/30' : 'border-primary shadow-sm hover:shadow-md transition-shadow'}`}>
+          <Card key={mod.id} data-testid={`builder-card-${mod.id}`} className={`flex flex-col ${mod.status === 'upcoming' ? 'opacity-70 bg-muted/30' : 'shadow-sm hover:border-primary transition-colors'}`}>
             <CardHeader>
               <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-lg ${mod.status === 'live' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                <div className={mod.status === 'live' ? 'text-primary' : 'text-muted-foreground'}>
                   <mod.icon size={24} />
                 </div>
                 <Badge variant={mod.status === 'live' ? 'default' : 'outline'}>
@@ -127,15 +127,13 @@ export function Builders({ trade }: { trade: CompanyTrade }) {
                 </Badge>
               </div>
               <CardTitle>{mod.title}</CardTitle>
-              <CardDescription className="h-12">{mod.description}</CardDescription>
+              <CardDescription>{mod.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-end pt-4">
               {mod.status === 'live' ? (
-                <Link href={mod.href} className="w-full">
-                  <Button className="w-full gap-2">
-                    Use Builder
-                    <ArrowRight size={16} />
-                  </Button>
+                <Link href={mod.href} data-testid={`select-builder-${mod.id}`} aria-label={`Start ${mod.title} quote`} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring">
+                    {choosingQuote ? "Start quote" : "Use Builder"}
+                    <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               ) : (
                 <Button variant="secondary" className="w-full" disabled>

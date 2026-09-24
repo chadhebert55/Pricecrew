@@ -1,5 +1,6 @@
 @layer theme, base, clerk, components, utilities;
-@import url('https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,500&f[]=satoshi@400,500,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import '@clerk/themes/shadcn.css';
 @import 'tw-animate-css';
@@ -52,86 +53,89 @@
 }
 
 :root {
-  --app-font-sans: 'Chivo', system-ui, sans-serif;
+  --app-font-sans: 'Satoshi', system-ui, sans-serif;
+  --app-font-display: 'Cabinet Grotesk', 'Satoshi', system-ui, sans-serif;
   --app-font-mono: 'JetBrains Mono', monospace;
   
-  --background: 210 20% 98%; /* Light cool steel */
-  --foreground: 222 47% 11%;
+  /* Brand colors from https://getpricecrew.com/style.css. */
+  --background: 48 23.81% 95.88%;
+  --foreground: 43.64 15.94% 13.53%;
   
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --card-border: 214 32% 91%;
+  --card: 45 25% 96.86%;
+  --card-foreground: var(--foreground);
+  --card-border: 42 10.42% 81.18%;
   
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --popover-border: 214 32% 91%;
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --popover-border: var(--card-border);
   
-  --primary: 24 95% 53%; /* Safety Orange / Copper */
-  --primary-foreground: 0 0% 100%;
-  --primary-border: 24 95% 45%;
+  --primary: 183.27 98.21% 21.96%;
+  --primary-foreground: 48 29.41% 96.67%;
+  --primary-border: hsl(185 75% 18.82%);
   
-  --secondary: 217 33% 17%; /* Dark Steel */
-  --secondary-foreground: 210 40% 98%;
-  --secondary-border: 217 33% 12%;
+  --secondary: 40 6.98% 8.43%;
+  --secondary-foreground: 48 29.41% 96.67%;
+  --secondary-border: hsl(40 2.7% 21.76%);
   
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --muted-border: 214 32% 91%;
+  --muted: 40 23.08% 92.35%;
+  --muted-foreground: 45 3.88% 40.39%;
+  --muted-border: hsl(var(--card-border));
   
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
-  --accent-border: 214 32% 91%;
+  --accent: 162.86 16.67% 83.53%;
+  --accent-foreground: var(--foreground);
+  --accent-border: hsl(var(--card-border));
   
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --destructive-border: 0 84% 50%;
   
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 24 95% 53%;
+  --border: var(--card-border);
+  --input: var(--card-border);
+  --ring: var(--primary);
   
-  --sidebar: 217 33% 17%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 12%;
+  --sidebar: var(--secondary);
+  --sidebar-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--secondary-border);
   
-  --radius: 0.25rem;
+  --radius: 0.5rem;
 }
 
 .dark {
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
+  color-scheme: dark;
+  --background: 40 6.98% 8.43%;
+  --foreground: 40 2.91% 79.8%;
   
-  --card: 217 33% 17%;
-  --card-foreground: 210 40% 98%;
-  --card-border: 217 33% 22%;
+  --card: 40 5.66% 10.39%;
+  --card-foreground: var(--foreground);
+  --card-border: 40 2.7% 21.76%;
   
-  --popover: 217 33% 17%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 217 33% 22%;
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --popover-border: var(--card-border);
   
-  --primary: 24 95% 53%;
-  --primary-foreground: 0 0% 100%;
-  --primary-border: 24 95% 45%;
+  --primary: 187.86 34.71% 47.45%;
+  --primary-foreground: 40 6.98% 8.43%;
+  --primary-border: hsl(186.86 60.69% 33.92%);
   
-  --secondary: 215 28% 22%;
-  --secondary-foreground: 210 40% 98%;
-  --secondary-border: 215 28% 18%;
+  --secondary: 40 4.92% 11.96%;
+  --secondary-foreground: 48 29.41% 96.67%;
+  --secondary-border: hsl(40 2.7% 21.76%);
   
-  --muted: 215 28% 22%;
-  --muted-foreground: 215 20% 65%;
-  --muted-border: 215 28% 26%;
+  --muted: 40 4.92% 11.96%;
+  --muted-foreground: 30 0.95% 58.82%;
+  --muted-border: hsl(var(--card-border));
   
-  --accent: 215 28% 22%;
-  --accent-foreground: 210 40% 98%;
-  --accent-border: 215 28% 26%;
+  --accent: 183.53 16.83% 19.8%;
+  --accent-foreground: var(--foreground);
+  --accent-border: hsl(var(--card-border));
   
   --destructive: 0 62% 30%;
   --destructive-foreground: 210 40% 98%;
   --destructive-border: 0 62% 25%;
   
-  --border: 217 33% 22%;
-  --input: 217 33% 22%;
-  --ring: 24 95% 53%;
+  --border: var(--card-border);
+  --input: var(--card-border);
+  --ring: var(--primary);
 }
 
 @layer base {
@@ -141,6 +145,9 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     overflow-x: hidden;
+  }
+  h1, h2, h3 {
+    font-family: var(--app-font-display);
   }
 }
 

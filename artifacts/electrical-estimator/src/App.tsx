@@ -28,6 +28,7 @@ import {
 } from 'wouter';
 
 import { E2eShell, Shell } from '@/components/layout/shell';
+import { BrandLogo, ThemeToggle } from '@/components/brand';
 
 const Dashboard = lazy(() =>
   import('@/pages/dashboard').then(({ Dashboard }) => ({ default: Dashboard })),
@@ -154,16 +155,16 @@ const clerkAppearance = {
     logoLinkUrl: basePath || '/',
   },
   variables: {
-    colorPrimary: '#f97316',
-    colorForeground: '#0f172a',
-    colorMutedForeground: '#64748b',
+    colorPrimary: '#01696f',
+    colorForeground: '#28251d',
+    colorMutedForeground: '#6b6963',
     colorDanger: '#dc2626',
-    colorBackground: '#ffffff',
-    colorInput: '#f8fafc',
-    colorInputForeground: '#0f172a',
-    colorNeutral: '#cbd5e1',
-    fontFamily: 'Chivo, system-ui, sans-serif',
-    borderRadius: '0.25rem',
+    colorBackground: '#f9f8f5',
+    colorInput: '#f7f6f2',
+    colorInputForeground: '#28251d',
+    colorNeutral: '#d4d1ca',
+    fontFamily: 'Satoshi, system-ui, sans-serif',
+    borderRadius: '0.5rem',
   },
   elements: {
     rootBox: 'w-full flex justify-center',
@@ -174,16 +175,16 @@ const clerkAppearance = {
     headerSubtitle: 'text-slate-600',
     socialButtonsBlockButtonText: 'text-slate-900',
     formFieldLabel: 'text-slate-800',
-    footerActionLink: 'text-orange-600 font-semibold',
+    footerActionLink: 'text-[#01696f] font-semibold',
     footerActionText: 'text-slate-600',
     dividerText: 'text-slate-500',
-    identityPreviewEditButton: 'text-orange-600',
+    identityPreviewEditButton: 'text-[#01696f]',
     formFieldSuccessText: 'text-emerald-700',
     alertText: 'text-red-800',
     logoBox: 'h-12',
     logoImage: 'h-12 w-auto',
     socialButtonsBlockButton: 'border-slate-300 hover:bg-slate-50',
-    formButtonPrimary: 'bg-orange-600 hover:bg-orange-700 text-white',
+    formButtonPrimary: 'bg-[#01696f] hover:bg-[#0c4e54] text-white',
     formFieldInput: 'bg-slate-50 border-slate-300 text-slate-950',
     footerAction: 'bg-transparent',
     dividerLine: 'bg-slate-200',
@@ -203,8 +204,8 @@ function PrivateRouteSwitch({ trade }: { trade: CompanyTrade }) {
             <Route path="/dashboard" component={() => <Redirect to="/" />} />
             <Route path="/" component={Dashboard} />
             <Route path="/quotes" component={QuotesList} />
-            {isElectrical && <Route path="/quotes/new" component={NewQuote} />}
-            {!isElectrical && <Route path="/quotes/new" component={() => <Redirect to="/builders" />} />}
+            <Route path="/quotes/new" component={() => <Builders trade={trade} choosingQuote />} />
+            {isElectrical && <Route path="/quotes/new/ev-charger" component={NewQuote} />}
             {isElectrical && <Route path="/quotes/new/bathroom" component={NewBathroomQuote} />}
             {isElectrical && <Route path="/quotes/new/kitchen" component={NewKitchenQuote} />}
             {isElectrical && <Route path="/quotes/new/addition" component={NewAdditionQuote} />}
@@ -310,19 +311,20 @@ function AuthenticatedPrivateRouter({
 
 function PrivateLanding() {
   return (
-    <main className="min-h-screen bg-secondary px-6 py-16 text-secondary-foreground">
+    <main className="min-h-screen bg-background px-6 py-10 text-foreground">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+        <BrandLogo />
+        <ThemeToggle />
+      </div>
       <div className="mx-auto flex min-h-[70vh] max-w-4xl flex-col justify-center">
-        <div className="mb-8 flex items-center gap-3">
-          <span className="text-2xl font-black tracking-tight text-primary">PriceCrew</span>
-        </div>
-        <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
+        <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
           Private estimating for your service business.
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-secondary-foreground/70">
+        <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
           Build quotes, manage customers, and maintain company pricing in one
           protected workspace.
         </p>
-        <div className="mt-10 flex gap-3">
+        <div className="mt-10 flex flex-wrap gap-3">
           <Link
             href="/sign-in"
             className="rounded bg-primary px-5 py-3 font-semibold text-primary-foreground"
@@ -331,7 +333,7 @@ function PrivateLanding() {
           </Link>
           <Link
             href="/sign-up"
-            className="rounded border border-secondary-foreground/25 px-5 py-3 font-semibold"
+            className="rounded border border-border px-5 py-3 font-semibold"
           >
             Create account
           </Link>
@@ -343,7 +345,9 @@ function PrivateLanding() {
 
 function SignInPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 py-8">
+      <BrandLogo />
+      <ThemeToggle />
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
@@ -355,7 +359,9 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 py-8">
+      <BrandLogo />
+      <ThemeToggle />
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}

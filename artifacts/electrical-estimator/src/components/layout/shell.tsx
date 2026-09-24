@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter"
 import { useClerk, useUser } from "@clerk/react"
 import { LayoutDashboard, FileText, Blocks, BookOpen, Users, Settings, LogOut, Menu, X, CreditCard } from "lucide-react"
 import { lazy, Suspense, useEffect, useState } from "react"
+import { BrandLogo, ThemeToggle } from "@/components/brand"
 
 const ProposalNotificationCenter = lazy(() =>
   import("@/components/proposal-notification-center").then((module) => ({
@@ -79,7 +80,7 @@ function ShellFrame({
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-secondary text-secondary-foreground md:flex">
         <div className="flex items-center gap-3 border-b border-secondary-border p-4">
-          <span className="text-xl font-black tracking-tight text-primary">PriceCrew</span>
+          <BrandLogo />
         </div>
         {navigation}
         {account}
@@ -97,7 +98,7 @@ function ShellFrame({
           <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-secondary-border bg-secondary text-secondary-foreground shadow-xl md:hidden">
             <div className="flex items-center justify-between border-b border-secondary-border p-4">
               <div className="flex items-center gap-3">
-                <span className="text-xl font-black tracking-tight text-primary">PriceCrew</span>
+                <BrandLogo />
               </div>
               <button
                 type="button"
@@ -128,8 +129,10 @@ function ShellFrame({
             >
               <Menu size={20} />
             </button>
-            <span className="text-lg font-black tracking-tight text-primary">PriceCrew</span>
+            <BrandLogo />
           </div>
+          <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Suspense
             fallback={
               <div
@@ -140,6 +143,7 @@ function ShellFrame({
           >
             <ProposalNotificationCenter />
           </Suspense>
+          </div>
         </header>
         <main className="min-w-0 flex-1 overflow-auto">
           <div className="mx-auto w-full max-w-6xl p-3 sm:p-4 md:p-6">

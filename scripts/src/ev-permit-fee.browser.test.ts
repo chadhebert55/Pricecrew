@@ -25,7 +25,7 @@ test("EV job permit fee previews, restores, persists, and revises without changi
       .where(eq(companyMembersTable.userId, userId))
     companyId = membership!.companyId
     const page = await context.newPage()
-    await page.goto(`/quotes/new?draftScope=permit-${marker}`)
+    await page.goto(`/quotes/new/ev-charger?draftScope=permit-${marker}`)
     const fee = page.getByLabel("Permit Fee ($)", { exact: true })
     const requirement = page.getByLabel("Permit Requirement", { exact: true })
     await expect(fee).toHaveValue("")

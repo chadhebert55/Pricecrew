@@ -51,15 +51,17 @@ export function PriceBookImportPanel({
   const { toast } = useToast()
   const [file, setFile] = useState<File | null>(null)
   const [sourceDate, setSourceDate] = useState("")
+  const [reviewPage, setReviewPage] = useState(0)
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   const [acknowledgeStalePriceWarning, setAcknowledgeStalePriceWarning] = useState(false)
 
   useEffect(() => {
+    setReviewPage(0)
     setSelectedRows(
       new Set(
         review?.status === "review"
           ? review.rows
-              .filter((row) => row.status === "proposed")
+              .filter((row) => row.status === "proposed" && row.action === "update")
               .map((row) => row.rowNumber)
           : [],
       ),
@@ -75,7 +77,7 @@ export function PriceBookImportPanel({
         setSelectedRows(
           new Set(
             result.rows
-              .filter((row) => row.status === "proposed")
+              .filter((row) => row.status === "proposed" && row.action === "update")
               .map((row) => row.rowNumber),
           ),
         )
@@ -215,6 +217,14 @@ export function PriceBookImportPanel({
             {previewImport.isPending ? "Reviewing…" : "Review changes"}
           </Button>
         </div>
+        <p className="text-sm text-muted-foreground">
+          Google Sheets: use File → Download → Comma-separated values (.csv), then upload here.
+          Northeast title rows and dated headers are supported. Exact SKU/UPC matches keep
+          existing builder links; new each-priced products go into Supplier catalog.
+          Bulk units and uncertain matches stay flagged for review. This is a reviewed
+          file import, not a live Google Sheets connection. Only existing-item updates
+          are selected initially; select new products explicitly before applying.
+        </p>
 
         {review && (
           <>
@@ -264,10 +274,10 @@ export function PriceBookImportPanel({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {review.rows.map((row) => (
+                  {review.rows.slice(reviewPage * 100, (reviewPage + 1) * 100).map((row) => (
                     <TableRow
                       key={row.rowNumber}
-                      className={row.action === "unresolved" ? "bg-amber-50/60" : undefined}
+                      className={row.action === "unresolved" ? "bg-amber-50/60 dark:bg-amber-950/20" : undefined}
                     >
                       <TableCell>
                         {row.status === "proposed" ? (
@@ -319,6 +329,7 @@ export function PriceBookImportPanel({
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs">
                         {money(row.incoming.unitCost)}
+                        <div className="text-muted-foreground">/ {row.incoming.unit}</div>
                       </TableCell>
                       <TableCell className="max-w-md text-xs text-muted-foreground">
                         {row.reason}
@@ -327,6 +338,25 @@ export function PriceBookImportPanel({
                   ))}
                 </TableBody>
               </Table>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-sm text-muted-foreground">
+                Showing {review.rows.length ? reviewPage * 100 + 1 : 0}–{Math.min((reviewPage + 1) * 100, review.rows.length)} of {review.rows.length} rows
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {review.status === "review" && (
+                  <>
+                    <Button type="button" variant="outline" onClick={() => setSelectedRows(new Set())}>Deselect all</Button>
+                    <Button type="button" variant="outline" onClick={() => setSelectedRows((current) => new Set([
+                      ...current,
+                      ...review.rows.slice(reviewPage * 100, (reviewPage + 1) * 100)
+                        .filter((row) => row.status === "proposed").map((row) => row.rowNumber),
+                    ]))}>Select this page</Button>
+                  </>
+                )}
+                <Button type="button" variant="outline" disabled={reviewPage === 0} onClick={() => setReviewPage((page) => page - 1)}>Previous rows</Button>
+                <Button type="button" variant="outline" disabled={(reviewPage + 1) * 100 >= review.rows.length} onClick={() => setReviewPage((page) => page + 1)}>Next rows</Button>
+              </div>
             </div>
 
             {review.status === "review" && (

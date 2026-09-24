@@ -42,8 +42,8 @@ test("unfinished quote drafts restore, clear, and stay isolated by user", async 
       extraHTTPHeaders: { "x-test-clerk-user-id": userId },
     })
     const page = await context.newPage()
-    const firstBuilderUrl = `/quotes/new?draftScope=${encodeURIComponent(firstScope)}`
-    const secondBuilderUrl = `/quotes/new?draftScope=${encodeURIComponent(secondScope)}`
+    const firstBuilderUrl = `/quotes/new/ev-charger?draftScope=${encodeURIComponent(firstScope)}`
+    const secondBuilderUrl = `/quotes/new/ev-charger?draftScope=${encodeURIComponent(secondScope)}`
 
     await page.goto(firstBuilderUrl)
     await expect(page.getByRole("heading", { name: "New Quote" })).toBeVisible()
@@ -199,7 +199,7 @@ test("unfinished quote warns when browser storage blocks or rejects draft writes
       }, storageFailure)
 
       const page = await context.newPage()
-      await page.goto(`/quotes/new?draftScope=storage-warning-${storageFailure}-${marker}`)
+      await page.goto(`/quotes/new/ev-charger?draftScope=storage-warning-${storageFailure}-${marker}`)
       await expect(page.getByRole("heading", { name: "New Quote" })).toBeVisible()
       await page.locator("#customerName").fill(`Storage test ${storageFailure} ${marker}`)
       await expect(page.getByTestId("alert-quote-draft-storage")).toBeVisible()

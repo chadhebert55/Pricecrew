@@ -25,7 +25,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Overview of your estimating performance.</p>
@@ -60,7 +60,7 @@ export function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-              <div data-testid="text-dashboard-total-quoted-value" className="text-4xl font-bold font-mono text-primary">
+              <div data-testid="text-dashboard-total-quoted-value" className="text-4xl font-bold font-mono text-secondary-foreground">
                {formatCurrency(summary.totalQuoted)}
             </div>
           </CardContent>

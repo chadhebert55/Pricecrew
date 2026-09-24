@@ -178,3 +178,77 @@ test("proposes a new exact-identity row as an insert", () => {
   assert.equal(result.rows[0]?.status, "proposed");
   assert.equal(result.rows[0]?.incoming.sourceDate, "2026-09-01");
 });
+
+function northeastExport(rows: string[]) {
+  return [
+    "NORTHEAST ELECTRICAL",
+    "** Price Sheet as of 08/25/26 **",
+    "** Prices are subject to change without Notice **",
+    "SKU............,STOCK NUMBER...,DESCRIPTION................,UPC........,UOM.,PRICE.....",
+    "",
+    "Price Sheet for: TEST CONTRACTOR",
+    "",
+    ...rows,
+  ].join("\n");
+}
+
+test("reads raw Northeast headers and preserves the builder mapping for an exact wire SKU", () => {
+  const result = parsePriceBookImport(northeastExport([
+    "3873,WIC. ROMEX 12/2,SUPPLIER ABBREVIATED DESCRIPTION,98010026266,m,750",
+  ]), [existing()]);
+  const row = result.rows[0]!;
+  assert.equal(row.rowNumber, 8);
+  assert.equal(row.action, "update");
+  assert.equal(row.incoming.item, "12/2 NM-B cable");
+  assert.equal(row.incoming.category, "Conductor");
+  assert.equal(row.incoming.unit, "ft");
+  assert.equal(row.incoming.unitCost, 0.75);
+  assert.equal(row.incoming.sourceDate, "2026-08-25");
+  assert.equal(row.incoming.manufacturerPartNumber, "WIC. ROMEX 12/2");
+});
+
+test("raw supplier imports add each-priced products but never infer bulk units or truncated MPNs", () => {
+  const result = parsePriceBookImport(northeastExport([
+    "TEST-EA,BRAND SHORT,NEW PRODUCT,TEST-UPC,ea,12.50",
+    "TEST-C,BRAND SHORT,CLAMP,TEST-C-UPC,c,250",
+    "TEST-M,BRAND SHORT,CABLE TIE,TEST-M-UPC,m,200",
+    ",,,,,10.42",
+  ]), []);
+  assert.deepEqual(result.report, { inserted: 1, updated: 0, skipped: 0, unresolved: 3 });
+  assert.equal(result.rows[0]!.incoming.category, "Supplier catalog");
+  assert.equal(result.rows[0]!.incoming.manufacturerPartNumber, null);
+  assert.equal(result.rows[0]!.incoming.supplier, "Northeast Electrical");
+  assert.match(result.rows[1]!.reason ?? "", /verified.*conversion/);
+  assert.match(result.rows[2]!.reason ?? "", /verified.*conversion/);
+  assert.equal(result.rows[3]!.rowNumber, 11);
+  assert.match(result.rows[3]!.reason ?? "", /Missing unit/);
+});
+
+test("a supplier description cannot rename an existing builder-linked material", () => {
+  const result = parsePriceBookImport(
+    "Category,Description,UOM,Customer Price,SKU\nSupplier category,SUPPLIER SHORT NAME,ft,0.75,3873",
+    [existing()],
+  );
+  assert.equal(result.rows[0]!.incoming.item, "12/2 NM-B cable");
+  assert.equal(result.rows[0]!.incoming.category, "Conductor");
+});
+
+test("raw supplier imports reject identity conflicts and protect contractor-owned prices", () => {
+  const conflicting = parsePriceBookImport(northeastExport([
+    "3873,WIC. ROMEX 12/2,CABLE,OTHER-UPC,m,750",
+  ]), [existing()]);
+  assert.equal(conflicting.rows[0]!.action, "unresolved");
+  const owned = parsePriceBookImport(northeastExport([
+    "3873,WIC. ROMEX 12/2,CABLE,98010026266,m,750",
+  ]), [existing({ isContractorOwned: true })]);
+  assert.equal(owned.rows[0]!.action, "skip");
+});
+
+test("an exact existing SKU supplies the canonical description when the raw export leaves it blank", () => {
+  const result = parsePriceBookImport(northeastExport([
+    "3873,WIC. ROMEX 12/2,,98010026266,m,750",
+  ]), [existing()]);
+  assert.equal(result.rows[0]!.action, "update");
+  assert.equal(result.rows[0]!.incoming.item, "12/2 NM-B cable");
+  assert.equal(result.rows[0]!.incoming.unitCost, 0.75);
+});

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { CreateQuoteBody, PreviewQuoteBody } from "@workspace/api-zod";
+import { parsePriceBookImport } from "./price-book-import";
 import {
   auditPriceBookItem,
   calculateAdditionEstimate,
@@ -43,6 +44,31 @@ const settings: EstimatingSettings = {
   materialMarkup: 0.25,
   targetMargin: 0.4,
 };
+
+test("a raw supplier price update still auto-fills the canonical material in an addition quote", () => {
+  const existing = {
+    id: 1, category: "Conductor", item: "12/2 NM-B cable", unit: "ft",
+    unitCost: 0.5, supplier: "Northeast Electrical", supplierSku: "TEST-WIRE",
+    manufacturer: null, manufacturerPartNumber: null, upc: null,
+    sourceDate: "2026-08-25", amperage: null, poleCount: null, protectionType: null,
+    isDefault: false, isContractorOwned: false,
+  };
+  const imported = parsePriceBookImport([
+    "NORTHEAST ELECTRICAL",
+    "** Price Sheet as of 09/24/26 **",
+    "SKU,STOCK NUMBER,DESCRIPTION,UPC,UOM,PRICE",
+    "TEST-WIRE,TRUNCATED STOCK,,,m,750",
+  ].join("\n"), [existing]);
+  assert.equal(imported.rows[0]!.action, "update");
+  const updated = { ...existing, ...imported.rows[0]!.incoming };
+  const estimate = calculateAdditionEstimate(
+    { ...additionInputs, cableType: "12/2 NM-B", breakerAmperage: 20 },
+    settings,
+    [updated],
+  );
+  assert.equal(estimate.assembly.find(line => line.id === "addition-cable")?.unitCost, 0.75);
+  assert.equal(updated.item, existing.item);
+});
 
 const catalogRow = (
   item: string,
