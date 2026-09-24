@@ -27,7 +27,7 @@ test("unauthenticated dashboard entry points stay on the public landing page", a
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const logo = page.getByTestId("pricecrew-logo");
   await expect(logo).toBeVisible();
-  await expect.poll(() => logo.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect.poll(() => logo.evaluate((img) => (img as unknown as { naturalWidth: number }).naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(247, 246, 242)");
   await page.getByRole("button", { name: "Switch to dark mode" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
@@ -101,7 +101,7 @@ test("authenticated dashboard bookmarks redirect, survive reload, and keep new q
     // The small-screen entry point, actual logo, theme, and navigation remain usable.
     await page.setViewportSize({ width: 375, height: 812 });
     await expect(page.getByTestId("pricecrew-logo").last()).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    expect(await page.locator("html").evaluate((el) => (el as unknown as { scrollWidth: number }).scrollWidth)).toBeLessThanOrEqual(375);
     await page.getByRole("button", { name: "Open navigation" }).click();
     await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Builders", exact: true }).click();
     await expect(page).toHaveURL(/\/builders$/);
