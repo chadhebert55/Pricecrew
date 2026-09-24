@@ -8,6 +8,22 @@ const encodedHost = Buffer.from("clerk.example.com$").toString("base64");
 const valid = { VITE_CLERK_PUBLISHABLE_KEY: `pk_test_${encodedHost}` };
 const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url)));
 
+test("Vercel configuration contains only the supported top-level fields used by this deployment", () => {
+  // JSON parses arbitrary properties, but Vercel rejects comment-like fields
+  // such as "//". Keep prose in docs/estimating-frontend-deployment.md.
+  // This guard covers our current fields, not the entire Vercel schema.
+  const supported = new Set([
+    "$schema",
+    "buildCommand",
+    "outputDirectory",
+    "installCommand",
+    "framework",
+    "rewrites",
+    "headers",
+  ]);
+  assert.deepEqual(Object.keys(config).filter((key) => !supported.has(key)), []);
+});
+
 test("preflight accepts well-formed test and live keys without treating them as verified credentials", () => {
   assert.deepEqual(validateDeploymentEnvironment(valid), []);
   assert.deepEqual(validateDeploymentEnvironment({

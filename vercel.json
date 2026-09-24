@@ -1,19 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
 
-  "//": [
-    "Vercel deploys the frontend only. The API server has native deps",
-    "(@gutenye/ocr-node with ONNX, @napi-rs/canvas, pdf-parse) that are",
-    "not viable in Vercel serverless functions:",
-    "  - OCR bundle alone exceeds the 250MB unzipped Function limit",
-    "  - Cold starts on native modules run 3-10s",
-    "  - Long-running Anthropic streams and PDF parsing want a warm server",
-    "The API lives on Railway. Same-origin /api rewrites preserve Clerk",
-    "session cookies and the Vercel Blob client-upload callback route.",
-    "Leave VITE_API_BASE_URL unset. Do not use the marketing Vercel project.",
-    "See docs/estimating-frontend-deployment.md for setup and release gates."
-  ],
-
   "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "artifacts/electrical-estimator/dist/public",
   "installCommand": "npx --yes pnpm@9.15.9 install --frozen-lockfile=false",
