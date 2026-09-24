@@ -2033,6 +2033,12 @@ components:
           type: string
         permit:
           type: string
+        permitFee:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 999999999.99
+          description: Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.
         loadManagement:
           type: string
         disconnect:

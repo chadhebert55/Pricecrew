@@ -221,6 +221,12 @@ export interface EvChargerInputs {
   breakerRequirement: string;
   access: string;
   permit: string;
+  /**
+     * Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.
+     * @minimum 0
+     * @maximum 999999999.99
+     */
+  permitFee?: number | null;
   loadManagement: string;
   disconnect: string;
   surgeProtection: string;

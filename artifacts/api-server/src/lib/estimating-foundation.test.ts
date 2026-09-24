@@ -151,6 +151,113 @@ const evInputs: EvChargerInputRecord = {
   laborRateType: "residential",
 };
 
+test("EV permit fee uses this job's amount, not a global catalog allowance", () => {
+  const catalog = [qf250a, catalogRow("8/2 SER cable", 2), catalogRow("permit allowance", 999)];
+  const baseline = calculateEvChargerEstimate(evInputs, settings, catalog);
+  const jobInputs = { ...evInputs, permit: "Required", permitFee: 150.25 };
+  const result = calculateEvChargerEstimate(jobInputs, settings, catalog);
+  const permit = result.assembly.find(line => line.id === "permit");
+  assert.equal(permit?.unitCost, 150.25);
+  assert.equal(permit?.extendedCost, 150.25);
+  assert.equal(permit?.source, "Job-specific permit fee");
+  assert.equal(result.pricing.materialCost, baseline.pricing.materialCost + 150.25);
+  assert.equal(result.pricing.laborCost, baseline.pricing.laborCost);
+  assert.equal(result.pricing.finalSellingPrice, Number(Math.max(
+    result.pricing.materialCost * 1.25 + 450,
+    (result.pricing.materialCost + result.pricing.laborCost) / 0.6,
+  ).toFixed(2)));
+  assert.equal(evaluateCustomerReadyPricing({ ...result, jobInputs }).allowed, true);
+});
+
+test("EV required permit distinguishes confirmed zero from unknown and legacy inputs", () => {
+  const catalog = [qf250a, catalogRow("8/2 SER cable", 2), catalogRow("permit allowance", 999)];
+  const jobInputs = { ...evInputs, permit: "Required", permitFee: 0 };
+  const zero = calculateEvChargerEstimate(jobInputs, settings, catalog);
+  assert.match(zero.assembly.find(line => line.id === "permit")?.intentionalExclusionReason ?? "", /confirmed no permit fee/);
+  assert.equal(evaluateCustomerReadyPricing({ ...zero, jobInputs }).allowed, true);
+  for (const permitFee of [undefined, null, -1, NaN, Infinity, 1e9]) {
+    const unknownInputs = { ...jobInputs, permitFee };
+    const result = calculateEvChargerEstimate(unknownInputs, settings, catalog);
+    const warnings = result.pricing.pricingWarnings.filter(warning =>
+      typeof warning !== "string" && warning.code === "EV_PERMIT_FEE_REQUIRED");
+    assert.equal(warnings.length, 1);
+    assert.equal(result.assembly.find(line => line.id === "permit")?.unitCost, 0);
+    assert.equal(result.assembly.find(line => line.id === "permit")?.intentionalExclusionReason, undefined);
+    assert.equal(evaluateCustomerReadyPricing({ ...result, jobInputs: unknownInputs }).allowed, false);
+  }
+});
+
+test("EV Not Required ignores a retained permit fee and adds no permit blocker", () => {
+  const catalog = [qf250a, catalogRow("8/2 SER cable", 2)];
+  const baseline = calculateEvChargerEstimate(evInputs, settings, catalog);
+  for (const permitFee of [undefined, null, 0, 250]) {
+    const jobInputs = { ...evInputs, permitFee };
+    const result = calculateEvChargerEstimate(jobInputs, settings, catalog);
+    assert.equal(result.assembly.some(line => line.id === "permit"), false);
+    assert.deepEqual(result.pricing, baseline.pricing);
+    assert.equal(evaluateCustomerReadyPricing({ ...result, jobInputs }).allowed, true);
+  }
+});
+
+test("EV permit fee request schemas retain zero, allow unknown, and reject invalid fees", () => {
+  for (const permitFee of [undefined, null, 0, 123.45]) {
+    const jobInputs = { ...evInputs, permit: "Required", permitFee };
+    const preview = PreviewQuoteBody.parse({ module: "EV_CHARGER", jobInputs });
+    const create = CreateQuoteBody.parse({
+      module: "EV_CHARGER", customerName: "Permit test", projectName: "Permit test",
+      proposalDescription: "Test permit fee", jobInputs,
+    });
+    assert.equal((preview.jobInputs as EvChargerInputRecord).permitFee, permitFee);
+    assert.equal((create.jobInputs as EvChargerInputRecord).permitFee, permitFee);
+  }
+  for (const permitFee of [-0.01, NaN, Infinity, -Infinity, 1e9, "150"]) {
+    const payload = { module: "EV_CHARGER", customerName: "Permit test",
+      projectName: "Permit test", proposalDescription: "Test permit fee",
+      jobInputs: { ...evInputs, permit: "Required", permitFee } };
+    assert.equal(PreviewQuoteBody.safeParse(payload).success, false);
+    assert.equal(CreateQuoteBody.safeParse(payload).success, false);
+  }
+});
+
+test("EV permit fee survives API save and reload; ready blocks unknown but accepts zero", async () => {
+  const { server, baseUrl } = await startTestServer();
+  try {
+    for (const permitFee of [undefined, null, 0, 150.25]) {
+      const jobInputs: EvChargerInputRecord = {
+        ...evInputs, wiringMethod: "Romex (NM-B)", cableType: "8/3 NM-B",
+        permit: "Required", permitFee,
+      };
+      const preview = await previewQuote(baseUrl, { module: "EV_CHARGER", jobInputs });
+      const created = await postQuote(baseUrl, {
+        module: "EV_CHARGER", customerName: "Permit API test",
+        projectName: "Job-specific fee", proposalDescription: "Permit fee persistence",
+        jobInputs,
+      });
+      const saved = await getQuote(baseUrl, created.id);
+      assert.equal(saved.jobInputs.permitFee, permitFee);
+      assert.deepEqual(saved.assembly, preview.assembly);
+      assert.deepEqual(saved.pricing, preview.pricing);
+      const ready = await fetch(`${baseUrl}/api/quotes/${created.id}`, {
+        method: "PATCH", headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({ status: "ready" }),
+      });
+      assert.equal(ready.status, permitFee == null ? 409 : 200, await ready.text());
+    }
+    for (const path of ["/api/quotes", "/api/quotes/preview"]) {
+      const invalid = await fetch(`${baseUrl}${path}`, {
+        method: "POST", headers: authenticatedHeaders(baseUrl),
+        body: JSON.stringify({
+          module: "EV_CHARGER", customerName: "Invalid fee test", projectName: "Invalid fee",
+          jobInputs: { ...evInputs, permit: "Required", permitFee: -1 },
+        }),
+      });
+      assert.equal(invalid.status, 400);
+    }
+  } finally {
+    await closeTestServer(server);
+  }
+});
+
 test("EV resolves the exact Siemens QF250A price and structures missing material warnings", () => {
   assert.equal(SIEMENS_QF250A_SEED_COST, 151.702);
   const result = calculateEvChargerEstimate(evInputs, settings, [qf250a]);

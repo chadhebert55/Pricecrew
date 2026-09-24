@@ -170,6 +170,9 @@ export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
 
 export const createQuoteBodyJobInputsOneRouteLengthMin = 0;
 
+export const createQuoteBodyJobInputsOnePermitFeeMin = 0;
+export const createQuoteBodyJobInputsOnePermitFeeMax = 999999999.99;
+
 export const createQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
 
 export const createQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -620,6 +623,7 @@ export const CreateQuoteBody = zod.object({
   "breakerRequirement": zod.string(),
   "access": zod.string(),
   "permit": zod.string(),
+  "permitFee": zod.number().min(createQuoteBodyJobInputsOnePermitFeeMin).max(createQuoteBodyJobInputsOnePermitFeeMax).nullish().describe('Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.'),
   "loadManagement": zod.string(),
   "disconnect": zod.string(),
   "surgeProtection": zod.string(),
@@ -1057,6 +1061,9 @@ export const CreateQuoteBody = zod.object({
 })
 
 export const createQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsOnePermitFeeMin = 0;
+export const createQuoteResponseTwoJobInputsOnePermitFeeMax = 999999999.99;
 
 export const createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
@@ -1540,6 +1547,7 @@ export const CreateQuoteResponse = zod.object({
   "breakerRequirement": zod.string(),
   "access": zod.string(),
   "permit": zod.string(),
+  "permitFee": zod.number().min(createQuoteResponseTwoJobInputsOnePermitFeeMin).max(createQuoteResponseTwoJobInputsOnePermitFeeMax).nullish().describe('Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.'),
   "loadManagement": zod.string(),
   "disconnect": zod.string(),
   "surgeProtection": zod.string(),
@@ -2075,6 +2083,9 @@ export const CreateQuoteResponse = zod.object({
  */
 export const previewQuoteBodyJobInputsOneRouteLengthMin = 0;
 
+export const previewQuoteBodyJobInputsOnePermitFeeMin = 0;
+export const previewQuoteBodyJobInputsOnePermitFeeMax = 999999999.99;
+
 export const previewQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
 
 export const previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -2517,6 +2528,7 @@ export const PreviewQuoteBody = zod.object({
   "breakerRequirement": zod.string(),
   "access": zod.string(),
   "permit": zod.string(),
+  "permitFee": zod.number().min(previewQuoteBodyJobInputsOnePermitFeeMin).max(previewQuoteBodyJobInputsOnePermitFeeMax).nullish().describe('Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.'),
   "loadManagement": zod.string(),
   "disconnect": zod.string(),
   "surgeProtection": zod.string(),
@@ -3585,6 +3597,9 @@ export const GetQuoteParams = zod.object({
 
 export const getQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
 
+export const getQuoteResponseTwoJobInputsOnePermitFeeMin = 0;
+export const getQuoteResponseTwoJobInputsOnePermitFeeMax = 999999999.99;
+
 export const getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -4067,6 +4082,7 @@ export const GetQuoteResponse = zod.object({
   "breakerRequirement": zod.string(),
   "access": zod.string(),
   "permit": zod.string(),
+  "permitFee": zod.number().min(getQuoteResponseTwoJobInputsOnePermitFeeMin).max(getQuoteResponseTwoJobInputsOnePermitFeeMax).nullish().describe('Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.'),
   "loadManagement": zod.string(),
   "disconnect": zod.string(),
   "surgeProtection": zod.string(),
@@ -4628,6 +4644,9 @@ export const UpdateQuoteBody = zod.object({
 
 export const updateQuoteResponseOneTwoJobInputsOneRouteLengthMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsOnePermitFeeMin = 0;
+export const updateQuoteResponseOneTwoJobInputsOnePermitFeeMax = 999999999.99;
+
 export const updateQuoteResponseOneTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -5110,6 +5129,7 @@ export const UpdateQuoteResponse = zod.object({
   "breakerRequirement": zod.string(),
   "access": zod.string(),
   "permit": zod.string(),
+  "permitFee": zod.number().min(updateQuoteResponseOneTwoJobInputsOnePermitFeeMin).max(updateQuoteResponseOneTwoJobInputsOnePermitFeeMax).nullish().describe('Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.'),
   "loadManagement": zod.string(),
   "disconnect": zod.string(),
   "surgeProtection": zod.string(),
@@ -5895,6 +5915,9 @@ export const DuplicateQuoteParams = zod.object({
 
 export const duplicateQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsOnePermitFeeMin = 0;
+export const duplicateQuoteResponseTwoJobInputsOnePermitFeeMax = 999999999.99;
+
 export const duplicateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -6377,6 +6400,7 @@ export const DuplicateQuoteResponse = zod.object({
   "breakerRequirement": zod.string(),
   "access": zod.string(),
   "permit": zod.string(),
+  "permitFee": zod.number().min(duplicateQuoteResponseTwoJobInputsOnePermitFeeMin).max(duplicateQuoteResponseTwoJobInputsOnePermitFeeMax).nullish().describe('Job-specific permit cost before material markup. Omitted or null means unknown; zero explicitly confirms no fee. Ignored when the permit is Not Required.'),
   "loadManagement": zod.string(),
   "disconnect": zod.string(),
   "surgeProtection": zod.string(),
