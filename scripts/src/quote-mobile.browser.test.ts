@@ -170,8 +170,24 @@ test("quote building and export surfaces work at phone and tablet widths", async
       ),
     ).toBe(true);
 
+    // New companies are provisioned with trade "Other", so no Electrical
+    // starter catalog is seeded. Insert a few fixture rows so the Price Book
+    // table (and its horizontal scroller) actually renders at tablet width.
+    await db.insert(priceBookItemsTable).values(
+      Array.from({ length: 3 }, (_, index) => ({
+        companyId: companyId!,
+        category: "Devices",
+        item: `Mobile fixture item ${index + 1} ${marker.slice(0, 8)}`,
+        unit: "ea",
+        unitCost: 0,
+        supplier: "quote-mobile fixture",
+      })),
+    );
+
     await page.goto("/price-book");
-    await expect(page.getByRole("heading", { name: "Price Book" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Price Book", exact: true }),
+    ).toBeVisible();
     const priceBookScroller = page.locator(".table-scroll").first();
     await expect(priceBookScroller).toBeVisible();
     expect(

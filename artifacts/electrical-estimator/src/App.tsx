@@ -126,6 +126,13 @@ const isE2eMode =
 // onboardingCompleted) instead of the bypass switch used by other E2E tests.
 const isE2eOnboardingMode =
   isE2eMode && import.meta.env.VITE_E2E_ONBOARDING === 'true';
+// Anonymous public-landing harness (5175): MODE=e2e with VITE_E2E_AUTH=false.
+// Skips ClerkProvider so CI does not need a real Clerk publishable key (the
+// placeholder key makes Clerk try to load clerk.browser.js from
+// clerk.127.0.0.1, which never resolves, so the landing never renders).
+const isE2eAnonymousMode =
+  import.meta.env.MODE === 'e2e' &&
+  import.meta.env.VITE_E2E_AUTH === 'false';
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -275,7 +282,9 @@ function AuthenticatedPrivateRouter({
       <Suspense fallback={<RouteLoading />}>
         <Onboarding
           initialCompanyName={company.data.companyName}
-          initialTrade={company.data.trade}
+          // Do not pass company.data.trade: the auto-provisioner stores a
+          // placeholder trade ("Other") on new companies, which would silently
+          // pre-select a trade the user never chose and skip step 2 validation.
           onSignOut={onSignOut}
           onComplete={(profile) => {
             updateCompanyCache(profile);
@@ -485,6 +494,25 @@ function E2eBypassProviderWithRoutes() {
   );
 }
 
+/**
+ * Anonymous E2E harness (port 5175). Mirrors the signed-out Clerk experience
+ * (public landing on every private path, public proposals still reachable)
+ * without loading Clerk.
+ */
+function E2eAnonymousProviderWithRoutes() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Switch>
+          <Route path="/proposals/:token" component={QuoteProposal} />
+          <Route component={PrivateLanding} />
+        </Switch>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
 function App() {
   return (
     <WouterRouter base={basePath}>
@@ -492,6 +520,8 @@ function App() {
         <E2eOnboardingProviderWithRoutes />
       ) : isE2eMode ? (
         <E2eBypassProviderWithRoutes />
+      ) : isE2eAnonymousMode ? (
+        <E2eAnonymousProviderWithRoutes />
       ) : (
         <ClerkProviderWithRoutes />
       )}
