@@ -519,7 +519,28 @@ export function parsePriceBookImport(
       continue;
     }
 
+    // Apply rechecks the merged record, including identifiers retained from the
+    // catalog. Surface inherited ambiguities now instead of proposing an update
+    // that will deterministically fail even when the catalog has not changed.
     const isCurrent = sameValue(match, mergedIncoming);
+    const mergedMatches = new Set(identifiers(mergedIncoming).flatMap((identifier) =>
+      [...(identifierIndex.get(`${identifier.field}:${identifier.value}`) ?? [])],
+    ));
+    if (!isCurrent && (mergedMatches.size !== 1 || !mergedMatches.has(match))) {
+      rows.push({
+        rowNumber,
+        action: "unresolved",
+        status: "unresolved",
+        stale: false,
+        reason:
+          "Identifiers retained from the existing catalog also match another catalog row. Review duplicate or truncated catalog identifiers before importing this item.",
+        matchedItemId: match.id,
+        incoming: mergedIncoming,
+        before: importValue(match),
+      });
+      continue;
+    }
+
     const stale = isOlderPriceBookSourceDate(
       incoming.sourceDate,
       match.sourceDate,
