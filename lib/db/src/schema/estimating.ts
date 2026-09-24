@@ -128,6 +128,7 @@ export type EvChargerInputRecord = {
   breakerRequirement: string;
   access: string;
   permit: string;
+  permitFee?: number | null;
   loadManagement: string;
   disconnect: string;
   surgeProtection: string;

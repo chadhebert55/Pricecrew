@@ -102,6 +102,17 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("EV permit fee")) {
+    return {
+      code: "EV_PERMIT_FEE_REQUIRED",
+      severity: "error",
+      category: "missing-price",
+      source: "ev-permit",
+      context: {
+        rule: "enter this job's confirmed permit fee, including an explicit zero, or select Not Required",
+      },
+    };
+  }
   if (message.startsWith("Duplicate Price Book matches found")) {
     const count = Number(message.match(/\((\d+) active compatible/)?.[1]);
     return {
@@ -1391,6 +1402,7 @@ function finalizeEstimate(
   for (const line of zeroCostMaterialLines) {
     const hasLineWarning = pricingWarnings.some(
       (warning) =>
+        (line.id === "permit" && warning.startsWith("EV permit fee")) ||
         warning.includes("No verified price is available") ||
         warning.startsWith("Exact catalog selection") ||
         warning.startsWith("Unresolved breaker:") ||
@@ -1766,15 +1778,25 @@ export function calculateEvChargerEstimate(
   }
 
   if (inputs.permit === "Required") {
-    const item = unitCost("permit allowance", priceBook, pricingWarnings);
+    const fee = inputs.permitFee;
+    const confirmed =
+      typeof fee === "number" && Number.isFinite(fee) && fee >= 0 && fee <= 999999999.99;
+    if (!confirmed) {
+      pricingWarnings.push(
+        "EV permit fee is unconfirmed. Enter this job's permit fee (0 only if confirmed no fee), or select Not Required.",
+      );
+    }
     addLine(assembly, {
       id: "permit",
       category: "Permit",
-      description: "Permit allowance",
+      description: "Job-specific permit fee",
       quantity: 1,
-      unit: "allowance",
-      unitCost: item.value,
-      source: item.source,
+      unit: "job",
+      unitCost: confirmed ? fee : 0,
+      source: confirmed ? "Job-specific permit fee" : "Unconfirmed job-specific permit fee",
+      ...(confirmed && fee === 0
+        ? { intentionalExclusionReason: "Contractor confirmed no permit fee for this job." }
+        : {}),
     });
   }
 

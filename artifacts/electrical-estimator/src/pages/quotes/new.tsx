@@ -60,6 +60,7 @@ export function NewQuote() {
     breakerRequirement: "GFCI 2-Pole",
     access: "Standard",
     permit: "Required",
+    permitFee: null,
     loadManagement: "None",
     disconnect: "Not Required",
     surgeProtection: "None",
@@ -482,8 +483,9 @@ export function NewQuote() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Permit Requirement</Label>
-                      <BasicSelect 
+                      <Label htmlFor="permitRequirement">Permit Requirement</Label>
+                      <BasicSelect
+                        id="permitRequirement"
                         value={inputs.permit} 
                         onChange={v => setInputs({...inputs, permit: v})}
                         options={[
@@ -491,7 +493,33 @@ export function NewQuote() {
                           {value: "Not Required", label: "Not Required"},
                         ]}
                       />
+                      {inputs.permit === "Not Required" && (
+                        <p className="text-xs text-muted-foreground">No permit fee is included in this quote.</p>
+                      )}
                     </div>
+                    {inputs.permit === "Required" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="permitFee">Permit Fee ($)</Label>
+                        <Input
+                          id="permitFee"
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          max="999999999.99"
+                          step="0.01"
+                          placeholder="Enter this job's fee"
+                          value={inputs.permitFee ?? ""}
+                          onChange={e => setInputs({
+                            ...inputs,
+                            permitFee: Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : null,
+                          })}
+                          aria-describedby="permitFeeHelp"
+                        />
+                        <p id="permitFeeHelp" className="text-xs text-muted-foreground">
+                          Cost for this job only, before material markup. Leave blank if unknown; enter 0 only if confirmed no fee. A confirmed fee is needed before marking the quote ready.
+                        </p>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label>Labor Adjustment (Hours)</Label>
                       <Input
