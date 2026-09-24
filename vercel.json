@@ -8,21 +8,34 @@
     "  - OCR bundle alone exceeds the 250MB unzipped Function limit",
     "  - Cold starts on native modules run 3-10s",
     "  - Long-running Anthropic streams and PDF parsing want a warm server",
-    "So the API lives on a container host (Fly.io / Railway / Render) and",
-    "the frontend calls it via VITE_API_BASE_URL at build time.",
-    "See infra/README.md for the API host runbook."
+    "The API lives on Railway. Same-origin /api rewrites preserve Clerk",
+    "session cookies and the Vercel Blob client-upload callback route.",
+    "Leave VITE_API_BASE_URL unset. Do not use the marketing Vercel project.",
+    "See docs/estimating-frontend-deployment.md for setup and release gates."
   ],
 
-  "buildCommand": "pnpm --filter @workspace/electrical-estimator run build",
+  "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "artifacts/electrical-estimator/dist/public",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "npx --yes pnpm@9.15.9 install --frozen-lockfile=false",
   "framework": null,
 
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://workspaceapi-server-production-2d60.up.railway.app/api/:path*"
+    },
+    { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
   ],
 
   "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
+        { "key": "Cache-Control", "value": "private, no-store" },
+        { "key": "CDN-Cache-Control", "value": "no-store" }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [

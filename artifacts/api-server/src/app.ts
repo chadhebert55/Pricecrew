@@ -39,10 +39,11 @@ app.use(express.json({ limit: "6mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(
   clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
+    // A configured live key must not be replaced by one inferred from the
+    // Railway/proxy hostname. Frontend and backend must use the same instance.
+    publishableKey:
+      process.env.CLERK_PUBLISHABLE_KEY?.trim() ||
+      publishableKeyFromHost(getClerkProxyHost(req) ?? ""),
   })),
 );
 

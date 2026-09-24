@@ -133,10 +133,11 @@ const isE2eOnboardingMode =
 const isE2eAnonymousMode =
   import.meta.env.MODE === 'e2e' &&
   import.meta.env.VITE_E2E_AUTH === 'false';
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
+// The host helper ignores live fallback keys. Prefer the configured instance,
+// including on preview hosts, and retain host inference for legacy Replit use.
+const clerkPubKey =
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim() ||
+  publishableKeyFromHost(window.location.hostname);
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 function stripBase(path: string): string {
