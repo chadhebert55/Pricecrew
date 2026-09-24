@@ -934,6 +934,16 @@ export const ServiceUpgradeInputsServiceToPanelConductor = {
   Other_configured_conductor: 'Other configured conductor',
 } as const;
 
+/**
+ * Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.
+ */
+export interface AllowancesNotRequired {
+  permit?: boolean;
+  inspection?: boolean;
+  utility?: boolean;
+  miscellaneous?: boolean;
+}
+
 export type ExistingBreakerCountProtectionType = typeof ExistingBreakerCountProtectionType[keyof typeof ExistingBreakerCountProtectionType];
 
 
@@ -1040,6 +1050,7 @@ export interface ServiceUpgradeInputs {
   inspectionAllowance: number;
   /** @minimum 0 */
   utilityCoordinationAllowance?: number;
+  allowancesNotRequired?: AllowancesNotRequired;
   /** @minimum 0 */
   miscellaneousAllowance: number;
   /** @minimum 1 */
@@ -1118,6 +1129,7 @@ export const PanelReplacementInputsFeederConductor = {
 
 export interface PanelReplacementInputs {
   exactCatalogParts?: ExactCatalogPartSelectors;
+  allowancesNotRequired?: AllowancesNotRequired;
   replacementType: PanelReplacementInputsReplacementType;
   panelManufacturer: PanelReplacementInputsPanelManufacturer;
   panelAmperage: PanelReplacementInputsPanelAmperage;

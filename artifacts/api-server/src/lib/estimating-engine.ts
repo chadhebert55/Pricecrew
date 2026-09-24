@@ -3193,7 +3193,17 @@ export function calculateServiceUpgradeEstimate(
     label: string,
     key: string,
     amount: number,
+    notRequired = false,
   ) => {
+    if (notRequired === true) {
+      addLine(assembly, {
+        id, category: "Allowance", description: `${label} — not required / $0`,
+        quantity: 1, unit: "allowance", unitCost: 0,
+        source: "Contractor-confirmed no charge for this job",
+        intentionalExclusionReason: `Contractor confirmed ${label.toLowerCase()} is not required / $0 for this job.`,
+      });
+      return;
+    }
     const enteredAmount = safeNumber(amount);
     const price =
       enteredAmount > 0
@@ -3744,24 +3754,28 @@ export function calculateServiceUpgradeEstimate(
     "Permit",
     "service upgrade permit allowance",
     inputs.permitAllowance,
+    inputs.allowancesNotRequired?.permit,
   );
   addAllowance(
     "inspection-allowance",
     "Inspection",
     "service upgrade inspection allowance",
     inputs.inspectionAllowance,
+    inputs.allowancesNotRequired?.inspection,
   );
   addAllowance(
     "utility-coordination-allowance",
     "Utility",
     "service upgrade utility coordination allowance",
     inputs.utilityCoordinationAllowance ?? 0,
+    inputs.allowancesNotRequired?.utility,
   );
   addAllowance(
     "miscellaneous-allowance",
     "Miscellaneous",
     "service upgrade miscellaneous allowance",
     inputs.miscellaneousAllowance,
+    inputs.allowancesNotRequired?.miscellaneous,
   );
 
   pricingWarnings.push(
@@ -3865,7 +3879,17 @@ export function calculatePanelReplacementEstimate(
     label: string,
     key: string,
     amount: number,
+    notRequired = false,
   ) => {
+    if (notRequired === true) {
+      addLine(assembly, {
+        id, category: "Allowance", description: `${label} — not required / $0`,
+        quantity: 1, unit: "allowance", unitCost: 0,
+        source: "Contractor-confirmed no charge for this job",
+        intentionalExclusionReason: `Contractor confirmed ${label.toLowerCase()} is not required / $0 for this job.`,
+      });
+      return;
+    }
     const enteredAmount = safeNumber(amount);
     const price =
       enteredAmount > 0
@@ -4154,18 +4178,21 @@ export function calculatePanelReplacementEstimate(
     "Permit",
     "panel replacement permit allowance",
     inputs.permitAllowance,
+    inputs.allowancesNotRequired?.permit,
   );
   addAllowance(
     "panel-inspection-allowance",
     "Inspection",
     "panel replacement inspection allowance",
     inputs.inspectionAllowance,
+    inputs.allowancesNotRequired?.inspection,
   );
   addAllowance(
     "panel-miscellaneous-allowance",
     "Miscellaneous",
     "panel replacement miscellaneous allowance",
     inputs.miscellaneousAllowance,
+    inputs.allowancesNotRequired?.miscellaneous,
   );
 
   assembly.push({

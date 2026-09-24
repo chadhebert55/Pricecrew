@@ -19,6 +19,7 @@ export * from './additionInputsCableType';
 export * from './additionInputsPanelManufacturer';
 export * from './additionInputsRecessedLightSize';
 export * from './additionInputsSubpanelOption';
+export * from './allowancesNotRequired';
 export * from './assemblyLine';
 export * from './assistantActionConfirmationInput';
 export * from './assistantActionResult';

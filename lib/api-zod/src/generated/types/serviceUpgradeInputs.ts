@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AllowancesNotRequired } from './allowancesNotRequired';
 import type { ExactCatalogPartSelectors } from './exactCatalogPartSelectors';
 import type { ExistingBreakerCount } from './existingBreakerCount';
 import type { LaborRateType } from './laborRateType';
@@ -102,6 +103,7 @@ export interface ServiceUpgradeInputs {
   inspectionAllowance: number;
   /** @minimum 0 */
   utilityCoordinationAllowance?: number;
+  allowancesNotRequired?: AllowancesNotRequired;
   /** @minimum 0 */
   miscellaneousAllowance: number;
   /** @minimum 1 */

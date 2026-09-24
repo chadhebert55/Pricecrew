@@ -851,6 +851,12 @@ export const CreateQuoteBody = zod.object({
   "permitAllowance": zod.number().min(createQuoteBodyJobInputsSixPermitAllowanceMin),
   "inspectionAllowance": zod.number().min(createQuoteBodyJobInputsSixInspectionAllowanceMin),
   "utilityCoordinationAllowance": zod.number().min(createQuoteBodyJobInputsSixUtilityCoordinationAllowanceMin).optional(),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "miscellaneousAllowance": zod.number().min(createQuoteBodyJobInputsSixMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(createQuoteBodyJobInputsSixCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
@@ -899,6 +905,12 @@ export const CreateQuoteBody = zod.object({
   "electricalTape": zod.string().optional(),
   "panelProduct": zod.string().optional()
 }).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),
@@ -1775,6 +1787,12 @@ export const CreateQuoteResponse = zod.object({
   "permitAllowance": zod.number().min(createQuoteResponseTwoJobInputsSixPermitAllowanceMin),
   "inspectionAllowance": zod.number().min(createQuoteResponseTwoJobInputsSixInspectionAllowanceMin),
   "utilityCoordinationAllowance": zod.number().min(createQuoteResponseTwoJobInputsSixUtilityCoordinationAllowanceMin).optional(),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "miscellaneousAllowance": zod.number().min(createQuoteResponseTwoJobInputsSixMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(createQuoteResponseTwoJobInputsSixCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
@@ -1823,6 +1841,12 @@ export const CreateQuoteResponse = zod.object({
   "electricalTape": zod.string().optional(),
   "panelProduct": zod.string().optional()
 }).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),
@@ -2756,6 +2780,12 @@ export const PreviewQuoteBody = zod.object({
   "permitAllowance": zod.number().min(previewQuoteBodyJobInputsSixPermitAllowanceMin),
   "inspectionAllowance": zod.number().min(previewQuoteBodyJobInputsSixInspectionAllowanceMin),
   "utilityCoordinationAllowance": zod.number().min(previewQuoteBodyJobInputsSixUtilityCoordinationAllowanceMin).optional(),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "miscellaneousAllowance": zod.number().min(previewQuoteBodyJobInputsSixMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(previewQuoteBodyJobInputsSixCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
@@ -2804,6 +2834,12 @@ export const PreviewQuoteBody = zod.object({
   "electricalTape": zod.string().optional(),
   "panelProduct": zod.string().optional()
 }).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),
@@ -4310,6 +4346,12 @@ export const GetQuoteResponse = zod.object({
   "permitAllowance": zod.number().min(getQuoteResponseTwoJobInputsSixPermitAllowanceMin),
   "inspectionAllowance": zod.number().min(getQuoteResponseTwoJobInputsSixInspectionAllowanceMin),
   "utilityCoordinationAllowance": zod.number().min(getQuoteResponseTwoJobInputsSixUtilityCoordinationAllowanceMin).optional(),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "miscellaneousAllowance": zod.number().min(getQuoteResponseTwoJobInputsSixMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(getQuoteResponseTwoJobInputsSixCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
@@ -4358,6 +4400,12 @@ export const GetQuoteResponse = zod.object({
   "electricalTape": zod.string().optional(),
   "panelProduct": zod.string().optional()
 }).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),
@@ -5357,6 +5405,12 @@ export const UpdateQuoteResponse = zod.object({
   "permitAllowance": zod.number().min(updateQuoteResponseOneTwoJobInputsSixPermitAllowanceMin),
   "inspectionAllowance": zod.number().min(updateQuoteResponseOneTwoJobInputsSixInspectionAllowanceMin),
   "utilityCoordinationAllowance": zod.number().min(updateQuoteResponseOneTwoJobInputsSixUtilityCoordinationAllowanceMin).optional(),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "miscellaneousAllowance": zod.number().min(updateQuoteResponseOneTwoJobInputsSixMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(updateQuoteResponseOneTwoJobInputsSixCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
@@ -5405,6 +5459,12 @@ export const UpdateQuoteResponse = zod.object({
   "electricalTape": zod.string().optional(),
   "panelProduct": zod.string().optional()
 }).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),
@@ -6628,6 +6688,12 @@ export const DuplicateQuoteResponse = zod.object({
   "permitAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPermitAllowanceMin),
   "inspectionAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixInspectionAllowanceMin),
   "utilityCoordinationAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixUtilityCoordinationAllowanceMin).optional(),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "miscellaneousAllowance": zod.number().min(duplicateQuoteResponseTwoJobInputsSixMiscellaneousAllowanceMin),
   "crewSize": zod.number().min(1),
   "crewHours": zod.number().min(duplicateQuoteResponseTwoJobInputsSixCrewHoursMin).describe('Hours per person; baseline person-hours equal crewSize multiplied by crewHours.'),
@@ -6676,6 +6742,12 @@ export const DuplicateQuoteResponse = zod.object({
   "electricalTape": zod.string().optional(),
   "panelProduct": zod.string().optional()
 }).optional().describe('Optional exact canonical price-book item names for otherwise unresolved service material groups. Values are item strings, never database IDs.'),
+  "allowancesNotRequired": zod.object({
+  "permit": zod.boolean().optional(),
+  "inspection": zod.boolean().optional(),
+  "utility": zod.boolean().optional(),
+  "miscellaneous": zod.boolean().optional()
+}).optional().describe('Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.'),
   "replacementType": zod.enum(['Like-for-like panel replacement', 'Subpanel addition']),
   "panelManufacturer": zod.enum(['Siemens', 'Eaton', 'Square D']),
   "panelAmperage": zod.union([zod.literal(100),zod.literal(150),zod.literal(200)]),

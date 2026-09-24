@@ -821,6 +821,70 @@ const panelReplacementPriceBook: PriceBookItem[] = [
   catalogRow("electrical tape", 4),
 ];
 
+for (const module of ["SERVICE_UPGRADE", "PANEL_REPLACEMENT"] as const) {
+  const service = module === "SERVICE_UPGRADE";
+  const base = service ? serviceUpgradeInputs : panelReplacementInputs;
+  const estimate = (inputs: typeof base, catalog: PriceBookItem[] = []) =>
+    service
+      ? calculateServiceUpgradeEstimate(inputs as ServiceUpgradeInputRecord, settings, catalog)
+      : calculatePanelReplacementEstimate(inputs as PanelReplacementInputRecord, settings, catalog);
+  const allowances = [
+    ["permit", "permitAllowance", "permit-allowance", "permit"],
+    ["inspection", "inspectionAllowance", "inspection-allowance", "inspection"],
+    ["miscellaneous", "miscellaneousAllowance", "miscellaneous-allowance", "miscellaneous"],
+    ...(service ? [["utility", "utilityCoordinationAllowance", "utility-coordination-allowance", "utility coordination"]] : []),
+  ] as const;
+
+  for (const [confirmation, field, lineId, catalogName] of allowances) {
+    const id = service ? lineId : `panel-${lineId}`;
+    const key = `${service ? "service upgrade" : "panel replacement"} ${catalogName} allowance`;
+    test(`${module} ${confirmation}: explicit zero overrides retained amount/default without hiding other warnings`, () => {
+      const baseline = estimate({ ...base, [field]: 0 });
+      const waived = estimate({
+        ...base, [field]: 250,
+        allowancesNotRequired: { [confirmation]: true },
+      }, [catalogRow(key, 999)]);
+      const line = waived.assembly.find(row => row.id === id)!;
+      assert.equal(line.unitCost, 0);
+      assert.equal(line.extendedCost, 0);
+      assert.match(line.intentionalExclusionReason ?? "", /not required \/ \$0/);
+      assert.equal(waived.pricing.materialCost, baseline.pricing.materialCost);
+      assert.equal(waived.pricing.laborCost, baseline.pricing.laborCost);
+      assert.equal(waived.pricing.finalSellingPrice, baseline.pricing.finalSellingPrice);
+      const warningText = JSON.stringify(waived.pricing.pricingWarnings);
+      assert.equal(warningText.includes(key), false);
+      assert.match(warningText, /unresolved/i); // Other missing materials remain blockers.
+      if (service) assert.match(warningText, /field verification/);
+    });
+    test(`${module} ${confirmation}: legacy zero stays unresolved, default and entered cost still work`, () => {
+      for (const allowancesNotRequired of [undefined, {}, { [confirmation]: false }]) {
+        const legacy = estimate({ ...base, [field]: 0, allowancesNotRequired });
+        assert.equal(legacy.assembly.find(row => row.id === id)?.intentionalExclusionReason, undefined);
+        assert.ok(JSON.stringify(legacy.pricing.pricingWarnings).includes(key));
+        const company = estimate({ ...base, [field]: 0, allowancesNotRequired }, [catalogRow(key, 90)]);
+        assert.equal(company.assembly.find(row => row.id === id)?.unitCost, 90);
+        const entered = estimate({ ...base, [field]: 12.34, allowancesNotRequired }, [catalogRow(key, 90)]);
+        assert.equal(entered.assembly.find(row => row.id === id)?.unitCost, 12.34);
+        assert.equal(entered.pricing.materialCost, Number((legacy.pricing.materialCost + 12.34).toFixed(2)));
+      }
+    });
+  }
+  test(`${module} API schemas preserve explicit zero decisions and reject non-boolean confirmations`, () => {
+    const flags = { permit: true, inspection: false, utility: true, miscellaneous: true };
+    const payload = { module, customerName: "Allowance test", projectName: "Allowance test",
+      proposalDescription: "Explicit zero", jobInputs: { ...base, allowancesNotRequired: flags } };
+    for (const schema of [PreviewQuoteBody, CreateQuoteBody]) {
+      const parsed = schema.parse(payload).jobInputs as typeof base;
+      assert.deepEqual(parsed.allowancesNotRequired, flags);
+      for (const permit of ["true", "false", 1, null]) {
+        assert.equal(schema.safeParse({
+          ...payload, jobInputs: { ...base, allowancesNotRequired: { permit } },
+        }).success, false);
+      }
+    }
+  });
+}
+
 test("panel replacement preview and create accept the same immutable input shape", () => {
   assert.equal(
     PreviewQuoteBody.safeParse({
