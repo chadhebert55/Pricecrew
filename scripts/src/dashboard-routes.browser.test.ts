@@ -25,6 +25,14 @@ test("unauthenticated dashboard entry points stay on the public landing page", a
   await expect(page).toHaveURL(`${anonymousWebUrl}/`);
   await expect(page.getByRole("heading", { name: landingHeading })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  const logo = page.getByTestId("pricecrew-logo");
+  await expect(logo).toBeVisible();
+  await expect.poll(() => logo.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(247, 246, 242)");
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
 
   await page.goto(`${anonymousWebUrl}/dashboard`);
   await expect(page).toHaveURL(`${anonymousWebUrl}/dashboard`);
@@ -66,9 +74,40 @@ test("authenticated dashboard bookmarks redirect, survive reload, and keep new q
     await expect(page).toHaveURL(`${authenticatedWebUrl}/`);
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-    await page.goto(`${authenticatedWebUrl}/quotes/new`);
+    await page.getByRole("link", { name: "New Quote" }).click();
     await expect(page).toHaveURL(`${authenticatedWebUrl}/quotes/new`);
     await expect(page.getByRole("heading", { name: "New Quote" })).toBeVisible();
+    await expect(page.getByText("Choose the type of job you want to quote.")).toBeVisible();
+    await expect(page.getByTestId("builder-card-ev-charger")).toBeVisible();
+    await expect(page.getByTestId("builder-card-panel-swap")).toBeVisible();
+    await page.getByRole("button", { name: "Switch to dark mode" }).click();
+    await expect(page.getByTestId("builder-card-ev-charger")).toHaveCSS("background-color", "rgb(28, 27, 25)");
+    await expect(page.getByTestId("builder-card-ev-charger")).toHaveCSS("color", "rgb(205, 204, 202)");
+    await page.getByRole("button", { name: "Switch to light mode" }).click();
+    await expect(page.getByTestId("builder-card-ev-charger")).toHaveCSS("background-color", "rgb(249, 248, 245)");
+    await expect(page.getByLabel("Permit Fee ($)", { exact: true })).toHaveCount(0);
+    await page.getByTestId("select-builder-panel-swap").click();
+    await expect(page).toHaveURL(/\/quotes\/new\/panel-replacement$/);
+    await page.goBack();
+    await page.getByTestId("select-builder-ev-charger").click();
+    await expect(page).toHaveURL(/\/quotes\/new\/ev-charger$/);
+    await expect(page.getByLabel("Permit Fee ($)", { exact: true })).toBeVisible();
+    await page.goto(`${authenticatedWebUrl}/quotes`);
+    await page.getByRole("link", { name: "New Quote" }).click();
+    await expect(page.getByText("Choose the type of job you want to quote.")).toBeVisible();
+    await page.reload();
+    await expect(page.getByTestId("builder-card-service-call")).toBeVisible();
+
+    // The small-screen entry point, actual logo, theme, and navigation remain usable.
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect(page.getByTestId("pricecrew-logo").last()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    await page.getByRole("button", { name: "Open navigation" }).click();
+    await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Builders", exact: true }).click();
+    await expect(page).toHaveURL(/\/builders$/);
+    await expect(page.getByRole("heading", { name: "Quote Builders" })).toBeVisible();
+    await page.getByTestId("select-builder-service-call").click();
+    await expect(page).toHaveURL(/\/quotes\/new\/service-call$/);
 
     await context.close();
   } finally {

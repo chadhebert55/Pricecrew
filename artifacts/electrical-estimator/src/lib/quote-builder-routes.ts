@@ -1,6 +1,6 @@
 const routesByModuleKey: Record<string, string> = {
-  EVCHARGER: "/quotes/new",
-  EVCHARGERBUILDER: "/quotes/new",
+  EVCHARGER: "/quotes/new/ev-charger",
+  EVCHARGERBUILDER: "/quotes/new/ev-charger",
   BATHROOM: "/quotes/new/bathroom",
   BATHROOMBUILDER: "/quotes/new/bathroom",
   KITCHEN: "/quotes/new/kitchen",
