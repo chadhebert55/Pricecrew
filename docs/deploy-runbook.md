@@ -1,5 +1,13 @@
 # PriceCrew — Post-Merge Deploy Runbook
 
+> Historical migration notes. For the current Vercel + Railway frontend setup,
+> use [Estimating frontend deployment](estimating-frontend-deployment.md).
+> Its same-origin proxy configuration supersedes the cross-origin instructions
+> and build settings below. Do not connect the existing marketing project.
+> A database credential formerly embedded in this file has been redacted.
+> Treat that credential as exposed: coordinate rotation in Neon and update
+> Railway's DATABASE_URL before launch. Redaction does not erase Git history.
+
 Follow this once, top to bottom, the first time you take the `neon-migration` PR to production. Everything after that is a subset (skip whatever's already done).
 
 **Time budget:** ~45 minutes on your first pass. Subsequent deploys are `git push` + smoke test (~5 min).
@@ -59,7 +67,7 @@ fly launch --no-deploy --copy-config --name pricecrew-api
 # Region: iad (Ashburn) — matches Neon prod
 
 fly secrets set \
-  DATABASE_URL='postgresql://pricecrew_owner:npg_E7rKDA1NjTzq@ep-noisy-wildflower-ax1bw4b4.us-east-2.aws.neon.tech/pricecrew?sslmode=require' \
+  DATABASE_URL='postgresql://<user>:<password>@<host>/<database>?sslmode=require' \
   CLERK_PUBLISHABLE_KEY='<rotated>' \
   CLERK_SECRET_KEY='<rotated>' \
   ANTHROPIC_API_KEY='<rotated>' \
