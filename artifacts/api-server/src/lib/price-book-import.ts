@@ -86,14 +86,27 @@ function splitCsvLine(line: string) {
 
 function parseCsv(csv: string) {
   const lines = csv.replace(/^\uFEFF/, "").split(/\r?\n/);
-  const headerIndex = lines.findIndex((line) => line.trim().length > 0);
-  if (headerIndex < 0) return { headers: [], rows: [] as string[][] };
+  // Supplier exports may contain a title, date, and account notes before the table.
+  const headerIndex = lines.findIndex((line) => {
+    const headers = splitCsvLine(line).map(normalizeHeader);
+    return headers.some((h) => ["item", "description", "product", "productdescription", "name"].includes(h))
+      && headers.some((h) => ["unitcost", "cost", "price", "customerprice", "customerpriceperunit", "netprice"].includes(h));
+  });
+  const preamble = lines.slice(0, Math.max(0, headerIndex)).join("\n");
+  const northeast = /NORTHEAST ELECTRICAL/i.test(preamble);
+  const priceDate = /Price Sheet as of (\d{2})\/(\d{2})\/(\d{2}|\d{4})\b/i.exec(preamble);
+  const sourceDate = priceDate
+    ? `${priceDate[1]}/${priceDate[2]}/${priceDate[3].length === 2 ? `20${priceDate[3]}` : priceDate[3]}`
+    : null;
+  if (headerIndex < 0) return { headers: [], rows: [] as { cells: string[]; rowNumber: number }[], northeast, sourceDate };
   const headers = splitCsvLine(lines[headerIndex]).map(normalizeHeader);
   const rows = lines
     .slice(headerIndex + 1)
-    .filter((line) => line.trim().length > 0)
-    .map(splitCsvLine);
-  return { headers, rows };
+    .map((line, index) => ({ cells: splitCsvLine(line), rowNumber: headerIndex + index + 2 }))
+    .filter(({ cells }) => cells.some((value) => value.trim().length > 0))
+    .filter(({ cells }) => !/^Price Sheet for:/i.test(cells[0]?.trim() ?? ""))
+    .filter(({ cells }) => cells.map(normalizeHeader).join(",") !== headers.join(","));
+  return { headers, rows, northeast, sourceDate };
 }
 
 function column(headers: string[], aliases: string[]) {
@@ -109,6 +122,7 @@ function parseIncomingRow(
   headers: string[],
   row: string[],
   sourceDate: string | null,
+  deferUnits = false,
 ): { incoming: PriceBookImportValueRecord; reason: string | null } {
   const category = nullable(
     cell(
@@ -150,19 +164,19 @@ function parseIncomingRow(
     sourceDate;
   const sourceDateValue = canonicalSourceDate(rawSourceDate);
 
-  if (!item) reason = "Missing item description.";
-  else if (!category) reason = "Missing category.";
+  if (!item && !deferUnits) reason = "Missing item description.";
+  else if (!category && !deferUnits) reason = "Missing category.";
   else if (!unitValue) reason = "Missing unit of measure.";
   else if (rawCost === null || rawCost < 0) {
     reason = "Missing or invalid customer price.";
-  } else if (normalizedUnit === "m" || normalizedUnit === "per thousand feet") {
+  } else if (!deferUnits && (normalizedUnit === "m" || normalizedUnit === "per thousand feet")) {
     if (!isWireFamily) {
       reason = "The per-thousand unit is only safe for an explicit wire or cable row.";
     } else {
       unit = "ft";
       unitCost = rawCost / 1000;
     }
-  } else if (normalizedUnit === "c" || normalizedUnit.includes("package")) {
+  } else if (!deferUnits && (normalizedUnit === "c" || normalizedUnit.includes("package"))) {
     if (!packageQuantity || packageQuantity <= 0) {
       reason =
         "Ambiguous package unit; include a positive package quantity before importing.";
@@ -318,7 +332,17 @@ export function parsePriceBookImport(
   existingItems: ExistingPriceBookItem[],
   sourceDate: string | null = null,
 ) {
-  const { headers, rows: csvRows } = parseCsv(csv);
+  const { headers, rows: csvRows, northeast, sourceDate: fileDate } = parseCsv(csv);
+  const rawNortheast = northeast && headers.includes("stocknumber");
+  const identifierIndex = new Map<string, Set<ExistingPriceBookItem>>();
+  for (const existing of existingItems) {
+    for (const identifier of identifiers(existing)) {
+      const key = `${identifier.field}:${identifier.value}`;
+      const values = identifierIndex.get(key) ?? new Set<ExistingPriceBookItem>();
+      values.add(existing);
+      identifierIndex.set(key, values);
+    }
+  }
   const rows: PriceBookImportRowRecord[] = [];
   if (headers.length === 0) {
     rows.push({
@@ -348,13 +372,14 @@ export function parsePriceBookImport(
     return { rows, report: reportForImportRows(rows) };
   }
 
-  for (const [index, csvRow] of csvRows.entries()) {
-    const rowNumber = index + 2;
+  for (const { cells: csvRow, rowNumber } of csvRows) {
     const { incoming, reason: parseReason } = parseIncomingRow(
       headers,
       csvRow,
-      sourceDate,
+      sourceDate ?? fileDate,
+      rawNortheast,
     );
+    if (rawNortheast) incoming.supplier = "Northeast Electrical";
     if (parseReason) {
       rows.push({
         rowNumber,
@@ -384,15 +409,9 @@ export function parsePriceBookImport(
       continue;
     }
 
-    const matches = existingItems.filter((existing) =>
-      identifiers(existing).some((candidate) =>
-        incomingIdentifiers.some(
-          (incomingIdentifier) =>
-            incomingIdentifier.field === candidate.field &&
-            incomingIdentifier.value === candidate.value,
-        ),
-      ),
-    );
+    const matches = [...new Set(incomingIdentifiers.flatMap((identifier) =>
+      [...(identifierIndex.get(`${identifier.field}:${identifier.value}`) ?? [])],
+    ))];
     if (matches.length > 1) {
       rows.push({
         rowNumber,
@@ -409,6 +428,43 @@ export function parsePriceBookImport(
     }
 
     const match = matches[0];
+    if (!incoming.item && !match) {
+      rows.push({
+        rowNumber, action: "unresolved", status: "unresolved", stale: false,
+        reason: "Missing item description and no unique catalog match to supply it.",
+        matchedItemId: null, incoming, before: null,
+      });
+      continue;
+    }
+    if (rawNortheast) {
+      // The export's stock number is often truncated and shared by variants.
+      // Match only SKU/UPC; do not turn that stock number into an exact MPN.
+      const rawUnit = incoming.unit.toLowerCase();
+      const canonicalUnit = match?.unit.toLowerCase();
+      let unsafeUnit = false;
+      if (rawUnit === "ea") {
+        unsafeUnit = Boolean(match && canonicalUnit !== "ea" && canonicalUnit !== "each");
+        incoming.unit = match?.unit ?? "ea";
+      } else if (rawUnit === "m" && match && canonicalUnit === "ft"
+        && /conductor|wire|cable|thhn|xhhw|ser|nm-b/i.test(`${match.category} ${match.item}`)) {
+        incoming.unit = match.unit;
+        incoming.unitCost = Number((incoming.unitCost / 1000).toFixed(6));
+      } else if (rawUnit === "c" && match && /\b100(?:[\s-]+)(?:unit|foot|feet|ft|count|pack)/i.test(match.item)) {
+        incoming.unit = match.unit;
+        incoming.unitCost = Number((incoming.unitCost / 100).toFixed(6));
+      } else {
+        unsafeUnit = true;
+      }
+      incoming.category = match?.category ?? "Supplier catalog";
+      if (unsafeUnit) {
+        rows.push({
+          rowNumber, action: "unresolved", status: "unresolved", stale: false,
+          reason: `Supplier unit "${rawUnit}" needs a verified each/foot or package conversion before importing. No price was selected.`,
+          matchedItemId: match?.id ?? null, incoming, before: match ? importValue(match) : null,
+        });
+        continue;
+      }
+    }
     if (!match) {
       rows.push({
         rowNumber,
@@ -445,6 +501,10 @@ export function parsePriceBookImport(
     }
 
     const mergedIncoming = mergeMissingImportValues(incoming, match);
+    // Builders resolve canonical item names/categories, not supplier descriptions.
+    // Updating a price must never silently disconnect a material from a builder.
+    mergedIncoming.item = match.item;
+    mergedIncoming.category = match.category;
     if (match.isContractorOwned) {
       rows.push({
         rowNumber,
