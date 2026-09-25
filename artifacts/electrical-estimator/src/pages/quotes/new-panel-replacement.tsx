@@ -16,6 +16,7 @@ import { Calculator, TriangleAlert, AlertTriangle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
+import { AllowanceField } from "@/components/allowance-field"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
@@ -611,18 +612,19 @@ export function NewPanelReplacementQuote() {
                 <section>
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Allowances & Miscellaneous</h3>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="pr-permit">Permit Allowance ($)</Label>
-                      <Input id="pr-permit" data-testid="input-permit" type="number" min="0" step="1" value={inputs.permitAllowance} onChange={(e) => setNumber("permitAllowance", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="pr-inspect">Inspection Allowance ($)</Label>
-                      <Input id="pr-inspect" data-testid="input-inspect" type="number" min="0" step="1" value={inputs.inspectionAllowance} onChange={(e) => setNumber("inspectionAllowance", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="pr-misc">Misc Allowance ($)</Label>
-                      <Input id="pr-misc" data-testid="input-misc" type="number" min="0" step="1" value={inputs.miscellaneousAllowance} onChange={(e) => setNumber("miscellaneousAllowance", e.target.value)} />
-                    </div>
+                    {([
+                      ["pr-permit", "Permit Allowance", "permitAllowance", "permit", "input-permit"],
+                      ["pr-inspect", "Inspection Allowance", "inspectionAllowance", "inspection", "input-inspect"],
+                      ["pr-misc", "Misc Allowance", "miscellaneousAllowance", "miscellaneous", "input-misc"],
+                    ] as const).map(([id, label, field, confirmation, testId]) => (
+                      <AllowanceField key={id} id={id} label={label} testId={testId}
+                        amount={inputs[field]} notRequired={inputs.allowancesNotRequired?.[confirmation]}
+                        onChange={(amount, notRequired) => setInputs(current => ({
+                          ...current, [field]: amount,
+                          allowancesNotRequired: { ...current.allowancesNotRequired, [confirmation]: notRequired },
+                        }))}
+                      />
+                    ))}
                   </div>
                 </section>
 
