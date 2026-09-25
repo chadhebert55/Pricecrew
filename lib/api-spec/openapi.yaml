@@ -2593,6 +2593,18 @@ components:
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+    AllowancesNotRequired:
+      type: object
+      description: Explicit job-specific zero-cost confirmations. Missing or false preserves legacy allowance lookup; true overrides any retained amount and company price with zero.
+      properties:
+        permit:
+          type: boolean
+        inspection:
+          type: boolean
+        utility:
+          type: boolean
+        miscellaneous:
+          type: boolean
     ServiceUpgradeInputs:
       type: object
       required:
@@ -2780,6 +2792,8 @@ components:
         utilityCoordinationAllowance:
           type: number
           minimum: 0
+        allowancesNotRequired:
+          $ref: "#/components/schemas/AllowancesNotRequired"
         miscellaneousAllowance:
           type: number
           minimum: 0
@@ -2853,6 +2867,8 @@ components:
       properties:
         exactCatalogParts:
           $ref: "#/components/schemas/ExactCatalogPartSelectors"
+        allowancesNotRequired:
+          $ref: "#/components/schemas/AllowancesNotRequired"
         replacementType:
           type: string
           enum: [Like-for-like panel replacement, Subpanel addition]

@@ -315,7 +315,16 @@ export type RecessedLightingInputRecord = {
   cableType: CableType;
 };
 
+/** Missing/false preserves legacy allowance lookup; true explicitly confirms $0. */
+export type AllowancesNotRequired = {
+  permit?: boolean;
+  inspection?: boolean;
+  utility?: boolean;
+  miscellaneous?: boolean;
+};
+
 export type ServiceUpgradeInputRecord = {
+  allowancesNotRequired?: AllowancesNotRequired;
   /**
    * Optional canonical price-book item names.  These deliberately remain
    * strings (rather than price-book ids) so a saved quote is portable.
@@ -391,6 +400,7 @@ export type ServiceUpgradeInputRecord = {
 };
 
 export type PanelReplacementInputRecord = {
+  allowancesNotRequired?: AllowancesNotRequired;
   exactCatalogParts?: ExactCatalogPartSelectors;
   replacementType: PanelReplacementType;
   panelManufacturer: PanelReplacementPanelManufacturer;

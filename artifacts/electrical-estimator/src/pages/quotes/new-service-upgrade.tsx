@@ -17,6 +17,7 @@ import { Calculator, Info, Construction, TriangleAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import { CustomerPicker } from "@/components/customer-picker"
+import { AllowanceField } from "@/components/allowance-field"
 import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
@@ -754,22 +755,20 @@ export function NewServiceUpgradeQuote() {
                 <section>
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Allowances & Labor</h3>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="su-permit">Permit Allowance ($)</Label>
-                      <Input id="su-permit" type="number" min="0" step="1" value={inputs.permitAllowance} onChange={(e) => setNumber("permitAllowance", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="su-inspection">Inspection Allowance ($)</Label>
-                      <Input id="su-inspection" type="number" min="0" step="1" value={inputs.inspectionAllowance} onChange={(e) => setNumber("inspectionAllowance", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="su-misc">Misc Allowance ($)</Label>
-                      <Input id="su-misc" type="number" min="0" step="1" value={inputs.miscellaneousAllowance} onChange={(e) => setNumber("miscellaneousAllowance", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="su-util-coord">Utility Coordination Allowance ($)</Label>
-                      <Input id="su-util-coord" type="number" min="0" step="1" value={inputs.utilityCoordinationAllowance} onChange={(e) => setNumber("utilityCoordinationAllowance", e.target.value)} />
-                    </div>
+                    {([
+                      ["su-permit", "Permit Allowance", "permitAllowance", "permit"],
+                      ["su-inspection", "Inspection Allowance", "inspectionAllowance", "inspection"],
+                      ["su-misc", "Misc Allowance", "miscellaneousAllowance", "miscellaneous"],
+                      ["su-util-coord", "Utility Coordination Allowance", "utilityCoordinationAllowance", "utility"],
+                    ] as const).map(([id, label, field, confirmation]) => (
+                      <AllowanceField key={id} id={id} label={label}
+                        amount={inputs[field]} notRequired={inputs.allowancesNotRequired?.[confirmation]}
+                        onChange={(amount, notRequired) => setInputs(current => ({
+                          ...current, [field]: amount,
+                          allowancesNotRequired: { ...current.allowancesNotRequired, [confirmation]: notRequired },
+                        }))}
+                      />
+                    ))}
                     
                     <div className="space-y-2 md:col-span-2 mt-4 pt-4 border-t border-border">
                       <Label htmlFor="su-labor-rate">Labor Sell Rate</Label>
