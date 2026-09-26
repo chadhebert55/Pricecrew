@@ -3,6 +3,10 @@ import type {
   QuoteExportPreflightIssue,
 } from "@workspace/api-zod";
 import { quotesTable, type AssemblyLineRecord } from "@workspace/db";
+import {
+  hasUnresolvedMaterialCost,
+  isIncludedPanelCloseoutLabor,
+} from "@workspace/api-zod/pricing-readiness";
 
 export const JOBBER_DESTINATION = "jobber" as const;
 export const JOBBER_CSV_FORMAT = "csv" as const;
@@ -225,12 +229,7 @@ function blockingSavedPricingIssues(quote: QuoteRecord) {
   }
 
   quote.assembly?.forEach((line, index) => {
-    if (
-      line.quantity > 0 &&
-      line.unitCost <= 0 &&
-      (!line.intentionalExclusionReason ||
-        line.intentionalExclusionReason.trim().length < 10)
-    ) {
+    if (hasUnresolvedMaterialCost(line)) {
       issues.push(
         issue(
           "UNRESOLVED_MATERIAL_COST",
@@ -389,7 +388,8 @@ export function preflightJobberQuoteExport(
 }
 
 function jobberCategory(line: AssemblyLineRecord) {
-  return /labor|service|install/i.test(`${line.category} ${line.description}`)
+  return isIncludedPanelCloseoutLabor(line) ||
+    /labor|service|install/i.test(`${line.category} ${line.description}`)
     ? "Service"
     : "Product";
 }
