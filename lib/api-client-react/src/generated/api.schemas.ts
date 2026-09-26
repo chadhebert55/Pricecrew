@@ -96,6 +96,8 @@ export interface CustomerProposalLine {
   description: string;
   quantity: number;
   unit: string;
+  /** Customer-facing inclusion or quantity label, independent of internal material quantities. */
+  displayValue?: string;
 }
 
 export interface ProposalCompanyPresentation {
@@ -133,12 +135,15 @@ export interface CustomerProposal {
   createdAt: string;
   finalSellingPrice: number;
   scope: CustomerProposalLine[];
+  assumptions?: string[];
   company: ProposalCompanyPresentation;
   terms: string;
   decision: ProposalDecisionPublic | null;
 }
 
 export interface ProposalDecisionInput {
+  /** Must be true to accept the proposed scope, total investment, and terms. */
+  scopeAcknowledged?: boolean;
   decision: ProposalDecisionType;
   /**
      * @minLength 1

@@ -215,7 +215,7 @@ export function QuoteExportCard({
             <AlertTitle>QuickBooks invoice-import spreadsheet</AlertTitle>
             <AlertDescription>
               This CSV may open in Excel. It is for importing an invoice into QuickBooks Online, not a customer-facing quote or estimate.
-              Use View Customer Quote above to print or save a PDF for your customer.
+              Use View Customer Quote above, then Download PDF for your customer.
             </AlertDescription>
           </Alert>
         )}

@@ -19,6 +19,7 @@ export interface CustomerProposal {
   createdAt: Date;
   finalSellingPrice: number;
   scope: CustomerProposalLine[];
+  assumptions?: string[];
   company: ProposalCompanyPresentation;
   terms: string;
   decision: ProposalDecisionPublic | null;

@@ -27,6 +27,11 @@
   .customer-proposal td { color: #111; }
   .customer-proposal thead { display: table-header-group; }
   .customer-proposal .table-scroll { overflow: visible; }
+  .customer-proposal .proposal-heading { flex-direction: row; justify-content: space-between; }
+  .customer-proposal .proposal-scope { break-inside: avoid; }
+  .customer-proposal .proposal-total, .customer-proposal .proposal-acceptance { break-inside: avoid; }
+  .customer-proposal h2 { break-after: avoid; }
+  .customer-proposal .space-y-8 > :not(:last-child) { margin-block-end: 1rem; }
 }
 
 @theme inline {

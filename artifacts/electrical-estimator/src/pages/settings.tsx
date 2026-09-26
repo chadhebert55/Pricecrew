@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { DEFAULT_PROPOSAL_TERMS } from "@/lib/proposal-presentation"
 
 function NumberField({ label, testId, value, onChange, min, step = "0.01" }: { label: string; testId: string; value: string; onChange: (value: string) => void; min: string; step?: string }) {
   return <div className="space-y-2"><Label>{label}</Label><Input data-testid={testId} type="number" min={min} step={step} className="font-mono" value={value} onChange={(event) => onChange(event.target.value)} /></div>
@@ -239,7 +240,14 @@ export function Settings() {
             <div className="space-y-2"><Label>Proposal Accent Color</Label><Input data-testid="input-proposal-accent-color" value={form.proposalAccentColor} onChange={(e) => setForm(f => ({ ...f, proposalAccentColor: e.target.value }))} placeholder="#2563eb" /></div>
             <div className="space-y-2"><Label>Proposal Address</Label><Input data-testid="input-proposal-address" value={form.contactAddress} onChange={(e) => setForm(f => ({ ...f, contactAddress: e.target.value }))} /></div>
           </div>
-          <div className="space-y-2"><Label>Proposal Terms</Label><textarea data-testid="input-proposal-terms" className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.proposalTerms} onChange={(e) => setForm(f => ({ ...f, proposalTerms: e.target.value }))} /></div>
+          <div className="space-y-2">
+            <Label>Proposal Terms</Label>
+            <textarea data-testid="input-proposal-terms" className="flex min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder={DEFAULT_PROPOSAL_TERMS} value={form.proposalTerms} onChange={(e) => setForm(f => ({ ...f, proposalTerms: e.target.value }))} />
+            <p className="text-xs text-muted-foreground">Blank uses the starter terms shown here. Review and customize validity, payment, concealed conditions, changes, permit responsibility, and scheduling for your business. Have your terms reviewed for local requirements before customer use.</p>
+            <Button type="button" variant="outline" size="sm" disabled={Boolean(form.proposalTerms.trim())}
+              onClick={() => setForm(f => ({ ...f, proposalTerms: DEFAULT_PROPOSAL_TERMS }))}>Customize starter terms</Button>
+          </div>
         </CardContent>
       </Card>
 

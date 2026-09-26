@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -19,7 +18,8 @@ import {
   useSubmitProposalDecision,
 } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, Printer, XCircle } from "lucide-react"
+import { CheckCircle2, Download, Printer, XCircle } from "lucide-react"
+import { proposalDate, proposalScopeValue, proposalTerms } from "@/lib/proposal-presentation"
 import { useEffect, useRef, useState } from "react"
 import { useParams } from "wouter"
 
@@ -38,6 +38,9 @@ export function QuoteProposal() {
   const [signature, setSignature] = useState("")
   const [explanation, setExplanation] = useState("")
   const [submitError, setSubmitError] = useState("")
+  const [pdfPending, setPdfPending] = useState(false)
+  const [pdfError, setPdfError] = useState("")
+  const [scopeAcknowledged, setScopeAcknowledged] = useState(false)
   const initializedForToken = useRef("")
   const { data: quote, isLoading } = useGetCustomerProposal(token, {
     query: { enabled: token.length > 0, queryKey: getGetCustomerProposalQueryKey(token) },
@@ -79,6 +82,7 @@ export function QuoteProposal() {
     if (quote && initializedForToken.current !== token) {
       initializedForToken.current = token
       setCustomerName(quote.customerName)
+      setScopeAcknowledged(false)
     }
   }, [quote, token])
 
@@ -101,17 +105,29 @@ export function QuoteProposal() {
 
   const canPrint = quote.status === "ready"
   const accentColor = safeCssColor(quote.company.accentColor)
+  const downloadPdf = async () => {
+    setPdfPending(true); setPdfError("")
+    try {
+      const { downloadProposalPdf } = await import("@/lib/proposal-pdf")
+      await downloadProposalPdf(quote)
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : "PDF download failed. Please try again.")
+    } finally { setPdfPending(false) }
+  }
   const openDecisionDialog = (decision: "accepted" | "declined") => {
+    if (decision === "accepted" && !scopeAcknowledged) return
     setSubmitError("")
     setDialog(decision)
   }
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     if (!dialog) return
+    if (dialog === "accepted" && !scopeAcknowledged) return
     submitDecision.mutate({
       token,
       data: {
         decision: dialog,
+        scopeAcknowledged: dialog === "accepted" ? scopeAcknowledged : undefined,
         customerName: customerName.trim() || undefined,
         signature: dialog === "accepted" ? signature.trim() || undefined : undefined,
         explanation: explanation.trim() || undefined,
@@ -123,31 +139,36 @@ export function QuoteProposal() {
     <div className="customer-proposal mx-auto max-w-4xl space-y-6 pb-16 print:max-w-none print:pb-0">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <p className="text-sm text-muted-foreground">
-          To download a PDF, choose Save as PDF in your browser&apos;s print window.
+          Download a customer-ready PDF with your company footer. For browser printing, turn off Headers and footers to hide the web address.
         </p>
-        <Button className="w-full shrink-0 sm:w-auto" data-testid="button-print-customer-quote" disabled={!canPrint} onClick={() => window.print()}>
-          <Printer size={16} className="mr-2" /> Print / Save PDF
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" data-testid="button-print-customer-quote" disabled={!canPrint} onClick={() => window.print()}>
+            <Printer size={16} className="mr-2" /> Print
+          </Button>
+          <Button data-testid="button-download-customer-pdf" disabled={!canPrint || pdfPending} onClick={downloadPdf}>
+            <Download size={16} className="mr-2" /> {pdfPending ? "Preparing PDF…" : "Download PDF"}
+          </Button>
+        </div>
       </div>
+      {pdfError && <p className="text-sm text-destructive print:hidden" role="alert">{pdfError}</p>}
 
       <Card className="print:border-0 print:shadow-none" style={{ borderTopColor: accentColor, borderTopWidth: "4px" }}>
         <CardHeader className="border-b">
-          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="proposal-heading flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: accentColor }}>Customer Proposal</p>
               <CardTitle className="mt-2 text-3xl">{quote.projectName}</CardTitle>
               <p className="mt-2 text-muted-foreground">Prepared for {quote.customerName}</p>
             </div>
             <div className="text-sm text-muted-foreground md:text-right">
+              <div className="mb-4" data-testid="proposal-reference">
+                <p className="font-semibold text-foreground">Proposal #{quote.quoteNumber}</p>
+                <p>{proposalDate(quote.createdAt)}</p>
+              </div>
               <p className="font-semibold text-foreground">{quote.company.displayName}</p>
               {quote.company.contactPhone && <p>{quote.company.contactPhone}</p>}
               {quote.company.contactEmail && <p>{quote.company.contactEmail}</p>}
               {quote.company.contactAddress && <p className="whitespace-pre-wrap">{quote.company.contactAddress}</p>}
-            </div>
-            <div className="md:text-right">
-              <Badge variant={canPrint ? "success" : "secondary"} className="capitalize">{quote.status}</Badge>
-              <p className="mt-2 font-mono text-sm text-muted-foreground">{quote.quoteNumber}</p>
-              <p className="text-sm text-muted-foreground">{new Date(quote.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
         </CardHeader>
@@ -158,28 +179,34 @@ export function QuoteProposal() {
           </section>
 
           {quote.scope.length > 0 && (
-            <section>
+            <section className="proposal-scope">
               <h2 className="mb-3 text-lg font-semibold">Included Scope</h2>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
+                    <TableHead className="text-right">Scope</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {quote.scope.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell>{line.description}</TableCell>
-                      <TableCell className="text-right font-mono">{line.quantity} {line.unit}</TableCell>
+                      <TableCell className="text-right">{proposalScopeValue(line)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </section>
           )}
+          {!!quote.assumptions?.length && (
+            <section className="text-sm">
+              <h2 className="mb-2 text-lg font-semibold">Assumptions</h2>
+              {quote.assumptions.map((assumption, index) => <p key={index} className="leading-6 text-muted-foreground">{assumption}</p>)}
+            </section>
+          )}
 
-          <section className="rounded-lg bg-primary/5 p-6 text-right">
+          <section className="proposal-total rounded-lg bg-primary/5 p-6 text-right">
             <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Total Investment</p>
             <p className="mt-1 font-mono text-4xl font-bold" style={{ color: accentColor }}>
               ${quote.finalSellingPrice.toLocaleString(undefined, {
@@ -222,12 +249,21 @@ export function QuoteProposal() {
               <div className="rounded-lg border bg-muted/20 p-5">
                 <h2 className="text-lg font-semibold">Your decision</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Review the scope, total, and terms above before accepting or declining.
+                  Review the scope, total investment, and terms before making your decision.
                 </p>
+                <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-6">
+                  <input type="checkbox" className="mt-1 h-4 w-4 shrink-0"
+                    style={{ accentColor }} data-testid="checkbox-proposal-agreement"
+                    checked={scopeAcknowledged}
+                    onChange={(event) => setScopeAcknowledged(event.target.checked)} />
+                  <span>I have reviewed and agree to the proposed scope, total investment, and terms.</span>
+                </label>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <Button
                     data-testid="button-accept-proposal"
                     className="h-11"
+                    style={{ backgroundColor: accentColor, color: "#ffffff" }}
+                    disabled={!scopeAcknowledged}
                     onClick={() => openDecisionDialog("accepted")}
                   >
                     <CheckCircle2 size={17} className="mr-2" />
@@ -249,8 +285,16 @@ export function QuoteProposal() {
 
           <section className="border-t pt-5 text-sm text-muted-foreground">
             <h2 className="mb-2 font-semibold text-foreground">Terms</h2>
-            <p className="whitespace-pre-wrap">{quote.terms || "Final installation details remain subject to site conditions and the proposed scope above."}</p>
+            <p className="whitespace-pre-wrap leading-6">{proposalTerms(quote)}</p>
           </section>
+          <section className="proposal-acceptance hidden print:block text-sm">
+            <h2 className="mb-3 font-semibold">Acceptance</h2>
+            <p>Customer name: __________________  Signature: __________________  Date: __________</p>
+            <p className="mt-2 text-xs text-muted-foreground">By signing, the customer approves the scope, total, and terms of this proposal.</p>
+          </section>
+          <footer className="border-t pt-3 text-xs text-muted-foreground">
+            {[quote.company.displayName, quote.company.contactPhone, quote.company.contactEmail].filter(Boolean).join(" | ")}
+          </footer>
         </CardContent>
       </Card>
 
@@ -341,10 +385,11 @@ export function QuoteProposal() {
                 data-testid="button-submit-decision"
                 type="submit"
                 variant={dialog === "declined" ? "destructive" : "default"}
+                style={dialog === "accepted" ? { backgroundColor: accentColor, color: "#ffffff" } : undefined}
                 disabled={
                   submitDecision.isPending ||
                   (dialog === "accepted" &&
-                    (!customerName.trim() || !signature.trim()))
+                    (!scopeAcknowledged || !customerName.trim() || !signature.trim()))
                 }
               >
                 {submitDecision.isPending

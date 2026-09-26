@@ -389,7 +389,7 @@ export function QuoteDetail() {
         pricingBlockers={exportPricingBlockers}
         onOpenCustomerProposal={handleOpenProposal}
         customerProposalDisabled={status !== "ready" || hasBlockingWarnings || isDirty || updateQuote.isPending}
-        customerProposalHelp={hasBlockingWarnings ? "Resolve pricing issues before preparing a customer quote." : status !== "ready" ? "Mark this quote ready to open the customer version." : isDirty ? "Save Changes before opening the customer version." : "Open the customer version, then use Print / Save PDF or share its link."}
+        customerProposalHelp={hasBlockingWarnings ? "Resolve pricing issues before preparing a customer quote." : status !== "ready" ? "Mark this quote ready to open the customer version." : isDirty ? "Save Changes before opening the customer version." : "Open the customer version, then use Download PDF or share its link."}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

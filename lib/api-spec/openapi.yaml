@@ -1211,6 +1211,9 @@ components:
           type: number
         unit:
           type: string
+        displayValue:
+          type: string
+          description: Customer-facing inclusion or quantity label, independent of internal material quantities.
     CustomerProposal:
       type: object
       required:
@@ -1245,6 +1248,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CustomerProposalLine"
+        assumptions:
+          type: array
+          items:
+            type: string
         company:
           $ref: "#/components/schemas/ProposalCompanyPresentation"
         terms:
@@ -1261,6 +1268,9 @@ components:
       required: [decision]
       additionalProperties: false
       properties:
+        scopeAcknowledged:
+          type: boolean
+          description: Must be true to accept the proposed scope, total investment, and terms.
         decision:
           $ref: "#/components/schemas/ProposalDecisionType"
         customerName:

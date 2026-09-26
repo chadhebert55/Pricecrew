@@ -333,8 +333,8 @@ test(`saved quote export preserves the exact saved total: ${exportCase}`, async 
       await page.getByTestId("button-open-customer-quote").click();
       await expect(page).toHaveURL(/\/proposals\//);
       await expect(page.getByRole("heading", { name: "Included Scope" })).toBeVisible();
-      await expect(page.getByRole("cell", { name: "Panel grounding bars", exact: true })).toBeVisible();
-      await expect(page.getByRole("cell", { name: "Electrical insulating tape", exact: true })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "Grounding & bonding", exact: true })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "Panel installation materials", exact: true })).toBeVisible();
       await expect(page.locator(".customer-proposal")).not.toContainText("Saved supplier fixture");
       await expect(page.locator(".customer-proposal")).not.toContainText("Gross Profit");
       await expect(page.locator(".customer-proposal")).toContainText("$2,345.67");

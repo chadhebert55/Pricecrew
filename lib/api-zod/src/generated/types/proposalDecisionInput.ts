@@ -8,6 +8,8 @@
 import type { ProposalDecisionType } from './proposalDecisionType';
 
 export interface ProposalDecisionInput {
+  /** Must be true to accept the proposed scope, total investment, and terms. */
+  scopeAcknowledged?: boolean;
   decision: ProposalDecisionType;
   /**
      * @minLength 1
