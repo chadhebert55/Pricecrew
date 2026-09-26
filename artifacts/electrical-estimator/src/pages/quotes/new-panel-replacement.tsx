@@ -27,6 +27,7 @@ const selectClassName =
 
 const exactCatalogItems = {
   panelProduct: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511",
+  siemensMainBreakerPanel: "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599",
   siemensGroundBar: "Siemens ECGB20 20-position ground bar — SKU 35113",
   universalGroundBar: "GE TGK12 12-hole ground bar — SKU 17742",
   squareDGroundBar: "Square D PK3GTA1 ground bar — SKU 86163",
@@ -41,6 +42,11 @@ type ExactCatalogPartKey = keyof NonNullable<PanelReplacementInputs["exactCatalo
 
 function isCompatiblePanelProduct(inputs: Pick<PanelReplacementInputs, "panelManufacturer" | "panelAmperage" | "panelSpaceCount">, item: string) {
   return (
+    item === exactCatalogItems.siemensMainBreakerPanel &&
+    inputs.panelManufacturer === "Siemens" &&
+    inputs.panelAmperage === 200 &&
+    inputs.panelSpaceCount === 40
+  ) || (
     item === exactCatalogItems.panelProduct &&
     inputs.panelManufacturer === "Square D" &&
     inputs.panelAmperage === 100 &&
@@ -56,6 +62,7 @@ const initialInputs: PanelReplacementInputs = {
   breakerAmperage: 200,
   breakerPoleCount: 2,
   breakerProtectionType: "Standard",
+  exactCatalogParts: { panelProduct: exactCatalogItems.siemensMainBreakerPanel },
   feederConductor: "4/0 aluminum XHHW conductor",
   feederLength: 10,
   feederConductorQuantity: 3,
@@ -409,6 +416,9 @@ export function NewPanelReplacementQuote() {
                       <Label htmlFor="pr-panel-product">Panel material</Label>
                       <select id="pr-panel-product" data-testid="select-panel-product" className={selectClassName} value={inputs.exactCatalogParts?.panelProduct ?? ""} onChange={(e) => setExactCatalogPart("panelProduct", e.target.value)}>
                         <option value="">Company price-book key / unresolved</option>
+                        {isCompatiblePanelProduct(inputs, exactCatalogItems.siemensMainBreakerPanel) && (
+                          <option value={exactCatalogItems.siemensMainBreakerPanel}>Siemens PN4040B1200C 200A 40-space (main breaker included)</option>
+                        )}
                         {isCompatiblePanelProduct(inputs, exactCatalogItems.panelProduct) && (
                           <option value={exactCatalogItems.panelProduct}>100A Square D panel</option>
                         )}
@@ -419,6 +429,15 @@ export function NewPanelReplacementQuote() {
 
                 <section>
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Main Breaker</h3>
+                  {inputs.exactCatalogParts?.panelProduct === exactCatalogItems.siemensMainBreakerPanel &&
+                    isCompatiblePanelProduct(inputs, exactCatalogItems.siemensMainBreakerPanel) &&
+                    inputs.breakerAmperage === 200 && inputs.breakerPoleCount === 2 &&
+                    inputs.breakerProtectionType === "Standard" && (
+                    <p className="mb-4 text-sm text-muted-foreground" data-testid="text-included-main-breaker">
+                      The PN4040B1200C includes its 200A 2-pole standard main breaker.
+                      No separate breaker charge is added when this exact panel has verified catalog pricing.
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                     <div className="space-y-2">
                       <Label htmlFor="pr-b-amps">Breaker Amperage</Label>
