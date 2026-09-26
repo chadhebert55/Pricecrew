@@ -9,11 +9,21 @@ import type { KitchenInputsApplianceCircuitCableType } from './kitchenInputsAppl
 import type { KitchenInputsBreaker15AProtectionType } from './kitchenInputsBreaker15AProtectionType';
 import type { KitchenInputsBreaker20AProtectionType } from './kitchenInputsBreaker20AProtectionType';
 import type { KitchenInputsCableType } from './kitchenInputsCableType';
+import type { KitchenInputsCircuitConfigurationVersion } from './kitchenInputsCircuitConfigurationVersion';
 import type { KitchenInputsLightingCircuitAmperage } from './kitchenInputsLightingCircuitAmperage';
 import type { KitchenInputsRecessedLightSize } from './kitchenInputsRecessedLightSize';
 import type { LaborRateType } from './laborRateType';
+import type { RemodelCircuit } from './remodelCircuit';
 
 export interface KitchenInputs {
+  circuitConfigurationVersion?: KitchenInputsCircuitConfigurationVersion;
+  circuitConfigurations?: RemodelCircuit[];
+  additionalBreakers?: RemodelCircuit[];
+  /** @minimum 0 */
+  wallOvenCircuits?: number;
+  /** @minimum 0 */
+  smartSwitches?: number;
+  customerSuppliedRecessedLights?: boolean;
   /** @minimum 0 */
   refrigeratorCircuits: number;
   /** @minimum 0 */

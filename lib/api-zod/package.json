@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./pricing-readiness": "./src/pricing-readiness.ts",
+    "./remodel-circuits": "./src/remodel-circuits.ts",
     "./jobber-export-layout": "./src/jobber-export-layout.ts"
   },
   "dependencies": {
