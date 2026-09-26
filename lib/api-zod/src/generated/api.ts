@@ -173,6 +173,30 @@ export const createQuoteBodyJobInputsOneRouteLengthMin = 0;
 export const createQuoteBodyJobInputsOnePermitFeeMin = 0;
 export const createQuoteBodyJobInputsOnePermitFeeMax = 999999999.99;
 
+export const createQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMin = 0;
+export const createQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMultipleOf = 1;
+
+export const createQuoteBodyJobInputsTwoBathroomCircuitsItemRouteLengthMin = 0;
+
+export const createQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMin = 0;
+export const createQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf = 1;
+
+export const createQuoteBodyJobInputsTwoHeatedFloorConfigurationRouteLengthMin = 0;
+
+export const createQuoteBodyJobInputsTwoBranchWiringLengthMin = 0;
+
+export const createQuoteBodyJobInputsTwoThreeWaySwitchesMin = 0;
+export const createQuoteBodyJobInputsTwoThreeWaySwitchesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsTwoDimmersMin = 0;
+export const createQuoteBodyJobInputsTwoDimmersMultipleOf = 1;
+
+export const createQuoteBodyJobInputsTwoSmartSwitchesMin = 0;
+export const createQuoteBodyJobInputsTwoSmartSwitchesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsTwoShowerLightsMin = 0;
+export const createQuoteBodyJobInputsTwoShowerLightsMultipleOf = 1;
+
 export const createQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
 
 export const createQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -652,6 +676,36 @@ export const CreateQuoteBody = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "bathroomCircuits": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(createQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
+})).optional(),
+  "heatedFloorConfiguration": zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(createQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsTwoHeatedFloorConfigurationRouteLengthMin).optional()
+}).optional(),
+  "heatedFloorCircuitKey": zod.string().optional(),
+  "heatedFloorThermostat": zod.boolean().optional(),
+  "branchWiringLength": zod.number().min(createQuoteBodyJobInputsTwoBranchWiringLengthMin).optional(),
+  "threeWaySwitches": zod.number().min(createQuoteBodyJobInputsTwoThreeWaySwitchesMin).multipleOf(createQuoteBodyJobInputsTwoThreeWaySwitchesMultipleOf).optional(),
+  "dimmers": zod.number().min(createQuoteBodyJobInputsTwoDimmersMin).multipleOf(createQuoteBodyJobInputsTwoDimmersMultipleOf).optional(),
+  "smartSwitches": zod.number().min(createQuoteBodyJobInputsTwoSmartSwitchesMin).multipleOf(createQuoteBodyJobInputsTwoSmartSwitchesMultipleOf).optional(),
+  "showerLights": zod.number().min(createQuoteBodyJobInputsTwoShowerLightsMin).multipleOf(createQuoteBodyJobInputsTwoShowerLightsMultipleOf).optional(),
+  "fanControl": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "gfciReceptacles": zod.number().min(createQuoteBodyJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(createQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
   "vanityLights": zod.number().min(createQuoteBodyJobInputsTwoVanityLightsMin),
@@ -1123,6 +1177,30 @@ export const createQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsOnePermitFeeMin = 0;
 export const createQuoteResponseTwoJobInputsOnePermitFeeMax = 999999999.99;
+
+export const createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoBranchWiringLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsTwoThreeWaySwitchesMin = 0;
+export const createQuoteResponseTwoJobInputsTwoThreeWaySwitchesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsTwoDimmersMin = 0;
+export const createQuoteResponseTwoJobInputsTwoDimmersMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsTwoSmartSwitchesMin = 0;
+export const createQuoteResponseTwoJobInputsTwoSmartSwitchesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsTwoShowerLightsMin = 0;
+export const createQuoteResponseTwoJobInputsTwoShowerLightsMultipleOf = 1;
 
 export const createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
@@ -1635,6 +1713,36 @@ export const CreateQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "bathroomCircuits": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
+})).optional(),
+  "heatedFloorConfiguration": zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin).optional()
+}).optional(),
+  "heatedFloorCircuitKey": zod.string().optional(),
+  "heatedFloorThermostat": zod.boolean().optional(),
+  "branchWiringLength": zod.number().min(createQuoteResponseTwoJobInputsTwoBranchWiringLengthMin).optional(),
+  "threeWaySwitches": zod.number().min(createQuoteResponseTwoJobInputsTwoThreeWaySwitchesMin).multipleOf(createQuoteResponseTwoJobInputsTwoThreeWaySwitchesMultipleOf).optional(),
+  "dimmers": zod.number().min(createQuoteResponseTwoJobInputsTwoDimmersMin).multipleOf(createQuoteResponseTwoJobInputsTwoDimmersMultipleOf).optional(),
+  "smartSwitches": zod.number().min(createQuoteResponseTwoJobInputsTwoSmartSwitchesMin).multipleOf(createQuoteResponseTwoJobInputsTwoSmartSwitchesMultipleOf).optional(),
+  "showerLights": zod.number().min(createQuoteResponseTwoJobInputsTwoShowerLightsMin).multipleOf(createQuoteResponseTwoJobInputsTwoShowerLightsMultipleOf).optional(),
+  "fanControl": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "gfciReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
   "vanityLights": zod.number().min(createQuoteResponseTwoJobInputsTwoVanityLightsMin),
@@ -2207,6 +2315,30 @@ export const previewQuoteBodyJobInputsOneRouteLengthMin = 0;
 export const previewQuoteBodyJobInputsOnePermitFeeMin = 0;
 export const previewQuoteBodyJobInputsOnePermitFeeMax = 999999999.99;
 
+export const previewQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMin = 0;
+export const previewQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsTwoBathroomCircuitsItemRouteLengthMin = 0;
+
+export const previewQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMin = 0;
+export const previewQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsTwoHeatedFloorConfigurationRouteLengthMin = 0;
+
+export const previewQuoteBodyJobInputsTwoBranchWiringLengthMin = 0;
+
+export const previewQuoteBodyJobInputsTwoThreeWaySwitchesMin = 0;
+export const previewQuoteBodyJobInputsTwoThreeWaySwitchesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsTwoDimmersMin = 0;
+export const previewQuoteBodyJobInputsTwoDimmersMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsTwoSmartSwitchesMin = 0;
+export const previewQuoteBodyJobInputsTwoSmartSwitchesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsTwoShowerLightsMin = 0;
+export const previewQuoteBodyJobInputsTwoShowerLightsMultipleOf = 1;
+
 export const previewQuoteBodyJobInputsTwoGfciReceptaclesMin = 0;
 
 export const previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -2678,6 +2810,36 @@ export const PreviewQuoteBody = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "bathroomCircuits": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(previewQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
+})).optional(),
+  "heatedFloorConfiguration": zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(previewQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsTwoHeatedFloorConfigurationRouteLengthMin).optional()
+}).optional(),
+  "heatedFloorCircuitKey": zod.string().optional(),
+  "heatedFloorThermostat": zod.boolean().optional(),
+  "branchWiringLength": zod.number().min(previewQuoteBodyJobInputsTwoBranchWiringLengthMin).optional(),
+  "threeWaySwitches": zod.number().min(previewQuoteBodyJobInputsTwoThreeWaySwitchesMin).multipleOf(previewQuoteBodyJobInputsTwoThreeWaySwitchesMultipleOf).optional(),
+  "dimmers": zod.number().min(previewQuoteBodyJobInputsTwoDimmersMin).multipleOf(previewQuoteBodyJobInputsTwoDimmersMultipleOf).optional(),
+  "smartSwitches": zod.number().min(previewQuoteBodyJobInputsTwoSmartSwitchesMin).multipleOf(previewQuoteBodyJobInputsTwoSmartSwitchesMultipleOf).optional(),
+  "showerLights": zod.number().min(previewQuoteBodyJobInputsTwoShowerLightsMin).multipleOf(previewQuoteBodyJobInputsTwoShowerLightsMultipleOf).optional(),
+  "fanControl": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "gfciReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(previewQuoteBodyJobInputsTwoAdditionalReceptaclesMin),
   "vanityLights": zod.number().min(previewQuoteBodyJobInputsTwoVanityLightsMin),
@@ -3786,6 +3948,30 @@ export const getQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
 export const getQuoteResponseTwoJobInputsOnePermitFeeMin = 0;
 export const getQuoteResponseTwoJobInputsOnePermitFeeMax = 999999999.99;
 
+export const getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoBranchWiringLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsTwoThreeWaySwitchesMin = 0;
+export const getQuoteResponseTwoJobInputsTwoThreeWaySwitchesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsTwoDimmersMin = 0;
+export const getQuoteResponseTwoJobInputsTwoDimmersMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsTwoSmartSwitchesMin = 0;
+export const getQuoteResponseTwoJobInputsTwoSmartSwitchesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsTwoShowerLightsMin = 0;
+export const getQuoteResponseTwoJobInputsTwoShowerLightsMultipleOf = 1;
+
 export const getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -4297,6 +4483,36 @@ export const GetQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "bathroomCircuits": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
+})).optional(),
+  "heatedFloorConfiguration": zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin).optional()
+}).optional(),
+  "heatedFloorCircuitKey": zod.string().optional(),
+  "heatedFloorThermostat": zod.boolean().optional(),
+  "branchWiringLength": zod.number().min(getQuoteResponseTwoJobInputsTwoBranchWiringLengthMin).optional(),
+  "threeWaySwitches": zod.number().min(getQuoteResponseTwoJobInputsTwoThreeWaySwitchesMin).multipleOf(getQuoteResponseTwoJobInputsTwoThreeWaySwitchesMultipleOf).optional(),
+  "dimmers": zod.number().min(getQuoteResponseTwoJobInputsTwoDimmersMin).multipleOf(getQuoteResponseTwoJobInputsTwoDimmersMultipleOf).optional(),
+  "smartSwitches": zod.number().min(getQuoteResponseTwoJobInputsTwoSmartSwitchesMin).multipleOf(getQuoteResponseTwoJobInputsTwoSmartSwitchesMultipleOf).optional(),
+  "showerLights": zod.number().min(getQuoteResponseTwoJobInputsTwoShowerLightsMin).multipleOf(getQuoteResponseTwoJobInputsTwoShowerLightsMultipleOf).optional(),
+  "fanControl": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "gfciReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
   "vanityLights": zod.number().min(getQuoteResponseTwoJobInputsTwoVanityLightsMin),
@@ -4895,6 +5111,30 @@ export const updateQuoteResponseOneTwoJobInputsOneRouteLengthMin = 0;
 export const updateQuoteResponseOneTwoJobInputsOnePermitFeeMin = 0;
 export const updateQuoteResponseOneTwoJobInputsOnePermitFeeMax = 999999999.99;
 
+export const updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemQuantityMin = 0;
+export const updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationQuantityMin = 0;
+export const updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoBranchWiringLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsTwoThreeWaySwitchesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsTwoThreeWaySwitchesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsTwoDimmersMin = 0;
+export const updateQuoteResponseOneTwoJobInputsTwoDimmersMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsTwoSmartSwitchesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsTwoSmartSwitchesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsTwoShowerLightsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsTwoShowerLightsMultipleOf = 1;
+
 export const updateQuoteResponseOneTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -5406,6 +5646,36 @@ export const UpdateQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "bathroomCircuits": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
+})).optional(),
+  "heatedFloorConfiguration": zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin).optional()
+}).optional(),
+  "heatedFloorCircuitKey": zod.string().optional(),
+  "heatedFloorThermostat": zod.boolean().optional(),
+  "branchWiringLength": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoBranchWiringLengthMin).optional(),
+  "threeWaySwitches": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoThreeWaySwitchesMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoThreeWaySwitchesMultipleOf).optional(),
+  "dimmers": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoDimmersMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoDimmersMultipleOf).optional(),
+  "smartSwitches": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoSmartSwitchesMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoSmartSwitchesMultipleOf).optional(),
+  "showerLights": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoShowerLightsMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoShowerLightsMultipleOf).optional(),
+  "fanControl": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "gfciReceptacles": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoAdditionalReceptaclesMin),
   "vanityLights": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoVanityLightsMin),
@@ -6229,6 +6499,30 @@ export const duplicateQuoteResponseTwoJobInputsOneRouteLengthMin = 0;
 export const duplicateQuoteResponseTwoJobInputsOnePermitFeeMin = 0;
 export const duplicateQuoteResponseTwoJobInputsOnePermitFeeMax = 999999999.99;
 
+export const duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoBranchWiringLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsTwoThreeWaySwitchesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsTwoThreeWaySwitchesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsTwoDimmersMin = 0;
+export const duplicateQuoteResponseTwoJobInputsTwoDimmersMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsTwoSmartSwitchesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsTwoSmartSwitchesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsTwoShowerLightsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsTwoShowerLightsMultipleOf = 1;
+
 export const duplicateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin = 0;
@@ -6740,6 +7034,36 @@ export const DuplicateQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "laborAdjustmentHours": zod.number().optional().describe('Quote-level adjustment added to the detailed task labor calculation.')
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "bathroomCircuits": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
+})).optional(),
+  "heatedFloorConfiguration": zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationRouteLengthMin).optional()
+}).optional(),
+  "heatedFloorCircuitKey": zod.string().optional(),
+  "heatedFloorThermostat": zod.boolean().optional(),
+  "branchWiringLength": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoBranchWiringLengthMin).optional(),
+  "threeWaySwitches": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoThreeWaySwitchesMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoThreeWaySwitchesMultipleOf).optional(),
+  "dimmers": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoDimmersMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoDimmersMultipleOf).optional(),
+  "smartSwitches": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoSmartSwitchesMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoSmartSwitchesMultipleOf).optional(),
+  "showerLights": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoShowerLightsMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoShowerLightsMultipleOf).optional(),
+  "fanControl": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "gfciReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoGfciReceptaclesMin),
   "additionalReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoAdditionalReceptaclesMin),
   "vanityLights": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoVanityLightsMin),

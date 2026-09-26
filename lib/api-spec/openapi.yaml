@@ -2082,6 +2082,43 @@ components:
         - customerSuppliedFixtures
         - notes
       properties:
+        circuitConfigurationVersion:
+          type: number
+          enum: [2]
+        bathroomCircuits:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemodelCircuit"
+        heatedFloorConfiguration:
+          $ref: "#/components/schemas/RemodelCircuit"
+        heatedFloorCircuitKey:
+          type: string
+        heatedFloorThermostat:
+          type: boolean
+        branchWiringLength:
+          type: number
+          minimum: 0
+        threeWaySwitches:
+          type: number
+          minimum: 0
+          multipleOf: 1
+        dimmers:
+          type: number
+          minimum: 0
+          multipleOf: 1
+        smartSwitches:
+          type: number
+          minimum: 0
+          multipleOf: 1
+        showerLights:
+          type: number
+          minimum: 0
+          multipleOf: 1
+        fanControl:
+          type: string
+          enum: [Standard switch, Timer switch, Humidity-sensing control]
+        customerSuppliedRecessedLights:
+          type: boolean
         gfciReceptacles:
           type: number
           minimum: 0
