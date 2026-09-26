@@ -815,6 +815,72 @@ export interface AdditionInputs {
   notes: string;
 }
 
+export type RecessedLightingInputsCircuitConfigurationVersion = typeof RecessedLightingInputsCircuitConfigurationVersion[keyof typeof RecessedLightingInputsCircuitConfigurationVersion];
+
+
+export const RecessedLightingInputsCircuitConfigurationVersion = {
+  NUMBER_2: 2,
+} as const;
+
+export type RecessedLightingInputsWiringScope = typeof RecessedLightingInputsWiringScope[keyof typeof RecessedLightingInputsWiringScope];
+
+
+export const RecessedLightingInputsWiringScope = {
+  'Existing_wiring_/_fixture_replacement': 'Existing wiring / fixture replacement',
+  Extend_existing_lighting_circuit: 'Extend existing lighting circuit',
+  New_wiring_from_nearby_source: 'New wiring from nearby source',
+  New_home_run_to_panel: 'New home run to panel',
+} as const;
+
+export type RecessedLightingInputsLocationType = typeof RecessedLightingInputsLocationType[keyof typeof RecessedLightingInputsLocationType];
+
+
+export const RecessedLightingInputsLocationType = {
+  Replace_existing_fixtures: 'Replace existing fixtures',
+  Create_new_light_locations: 'Create new light locations',
+} as const;
+
+export type LightingGroupControlType = typeof LightingGroupControlType[keyof typeof LightingGroupControlType];
+
+
+export const LightingGroupControlType = {
+  Existing_switch: 'Existing switch',
+  'Single-pole_switch': 'Single-pole switch',
+  Dimmer: 'Dimmer',
+  Smart_switch: 'Smart switch',
+  '3-way_switching': '3-way switching',
+  '3-way_dimmer': '3-way dimmer',
+} as const;
+
+export interface LightingGroup {
+  key: string;
+  /** @minimum 0 */
+  quantity: number;
+  controlType: LightingGroupControlType;
+  /** @minimum 0 */
+  fourWayLocations?: number;
+  /** @minimum 0 */
+  travelerLength?: number;
+}
+
+export type RecessedLightingInputsAdvancedCableType = typeof RecessedLightingInputsAdvancedCableType[keyof typeof RecessedLightingInputsAdvancedCableType];
+
+
+export const RecessedLightingInputsAdvancedCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '12/3_NM-B': '12/3 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
+
+export type RecessedLightingInputsQuantitySource = typeof RecessedLightingInputsQuantitySource[keyof typeof RecessedLightingInputsQuantitySource];
+
+
+export const RecessedLightingInputsQuantitySource = {
+  Manual: 'Manual',
+  Planning_suggestion: 'Planning suggestion',
+} as const;
+
 export type RecessedLightingInputsFixtureSize = typeof RecessedLightingInputsFixtureSize[keyof typeof RecessedLightingInputsFixtureSize];
 
 
@@ -907,6 +973,21 @@ export const RecessedLightingInputsCableType = {
 } as const;
 
 export interface RecessedLightingInputs {
+  circuitConfigurationVersion?: RecessedLightingInputsCircuitConfigurationVersion;
+  wiringScope?: RecessedLightingInputsWiringScope;
+  locationType?: RecessedLightingInputsLocationType;
+  lightingGroups?: LightingGroup[];
+  protectionUpgrade?: boolean;
+  advancedCableType?: RecessedLightingInputsAdvancedCableType;
+  /** @minimum 0 */
+  fixtureSpacingFeet?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  wireWastePercent?: number;
+  insulationPresent?: boolean;
+  quantitySource?: RecessedLightingInputsQuantitySource;
   /** @minimum 0 */
   roomLength: number;
   /** @minimum 0 */

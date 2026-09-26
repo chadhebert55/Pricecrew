@@ -90,3 +90,24 @@ export function bathroomCircuitPlan(inputs: {
   }
   return circuits;
 }
+
+export type LightingGroupPlan = {key:string;quantity:number;controlType:string;fourWayLocations?:number;travelerLength?:number};
+export const lightingControls = ["Existing switch","Single-pole switch","Dimmer","Smart switch","3-way switching","3-way dimmer"];
+export const lightingWiringScopes = ["Existing wiring / fixture replacement","Extend existing lighting circuit","New wiring from nearby source","New home run to panel"];
+export function recessedWiringPlan(inputs: {
+  fixtureQuantity:number;lightingGroups?:LightingGroupPlan[];wiringScope?:string;breakerAmperage:number;
+  advancedCableType?:string;wireRunLength:number;fixtureSpacingFeet?:number;wireWastePercent?:number;wiringAllowanceFeet:number;
+}) {
+  const groups=inputs.lightingGroups ?? [{key:"main",quantity:inputs.fixtureQuantity,controlType:"Existing switch"}];
+  const newWiring=inputs.wiringScope!==lightingWiringScopes[0];
+  const homeRun=inputs.wiringScope===lightingWiringScopes[3];
+  const cable=inputs.advancedCableType || (inputs.breakerAmperage===20?"12/2 NM-B":"14/2 NM-B");
+  const route=newWiring?inputs.wireRunLength:0;
+  const interconnect=newWiring?groups.reduce((s,g)=>s+Math.max(0,g.quantity-1)*(inputs.fixtureSpacingFeet??8),0):0;
+  const manual=newWiring?inputs.wiringAllowanceFeet:0;
+  const waste=newWiring?Math.ceil((route+interconnect)*(inputs.wireWastePercent??0)/100*100)/100:0;
+  const total=Number((route+interconnect+manual+waste).toFixed(2));
+  const travelerCable=inputs.breakerAmperage===20?"12/3 NM-B":"14/3 NM-B";
+  const travelers=groups.filter(g=>g.quantity>0&&g.controlType.startsWith("3-way")).reduce((s,g)=>s+(g.travelerLength??0),0);
+  return {groups,newWiring,homeRun,cable,route,interconnect,manual,waste,total,travelerCable,travelers};
+}

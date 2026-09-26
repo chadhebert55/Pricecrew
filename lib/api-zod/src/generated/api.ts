@@ -341,6 +341,19 @@ export const createQuoteBodyJobInputsFourFeederDistanceMin = 0;
 
 export const createQuoteBodyJobInputsFourCrewHoursMin = 0;
 
+export const createQuoteBodyJobInputsFiveLightingGroupsItemQuantityMin = 0;
+export const createQuoteBodyJobInputsFiveLightingGroupsItemQuantityMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMin = 0;
+export const createQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFiveLightingGroupsItemTravelerLengthMin = 0;
+
+export const createQuoteBodyJobInputsFiveFixtureSpacingFeetMin = 0;
+
+export const createQuoteBodyJobInputsFiveWireWastePercentMin = 0;
+export const createQuoteBodyJobInputsFiveWireWastePercentMax = 100;
+
 export const createQuoteBodyJobInputsFiveRoomLengthMin = 0;
 
 export const createQuoteBodyJobInputsFiveRoomWidthMin = 0;
@@ -848,6 +861,22 @@ export const CreateQuoteBody = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "wiringScope": zod.enum(['Existing wiring / fixture replacement', 'Extend existing lighting circuit', 'New wiring from nearby source', 'New home run to panel']).optional(),
+  "locationType": zod.enum(['Replace existing fixtures', 'Create new light locations']).optional(),
+  "lightingGroups": zod.array(zod.object({
+  "key": zod.string(),
+  "quantity": zod.number().min(createQuoteBodyJobInputsFiveLightingGroupsItemQuantityMin).multipleOf(createQuoteBodyJobInputsFiveLightingGroupsItemQuantityMultipleOf),
+  "controlType": zod.enum(['Existing switch', 'Single-pole switch', 'Dimmer', 'Smart switch', '3-way switching', '3-way dimmer']),
+  "fourWayLocations": zod.number().min(createQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMin).multipleOf(createQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf).optional(),
+  "travelerLength": zod.number().min(createQuoteBodyJobInputsFiveLightingGroupsItemTravelerLengthMin).optional()
+})).optional(),
+  "protectionUpgrade": zod.boolean().optional(),
+  "advancedCableType": zod.enum(['12/2 NM-B', '12/3 NM-B', '14/2 NM-B', '14/3 NM-B']).optional(),
+  "fixtureSpacingFeet": zod.number().min(createQuoteBodyJobInputsFiveFixtureSpacingFeetMin).optional(),
+  "wireWastePercent": zod.number().min(createQuoteBodyJobInputsFiveWireWastePercentMin).max(createQuoteBodyJobInputsFiveWireWastePercentMax).optional(),
+  "insulationPresent": zod.boolean().optional(),
+  "quantitySource": zod.enum(['Manual', 'Planning suggestion']).optional(),
   "roomLength": zod.number().min(createQuoteBodyJobInputsFiveRoomLengthMin),
   "roomWidth": zod.number().min(createQuoteBodyJobInputsFiveRoomWidthMin),
   "fixtureQuantity": zod.number().min(1),
@@ -1345,6 +1374,19 @@ export const createQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
 
 
 export const createQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin = 0;
+export const createQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFiveLightingGroupsItemTravelerLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveFixtureSpacingFeetMin = 0;
+
+export const createQuoteResponseTwoJobInputsFiveWireWastePercentMin = 0;
+export const createQuoteResponseTwoJobInputsFiveWireWastePercentMax = 100;
 
 export const createQuoteResponseTwoJobInputsFiveRoomLengthMin = 0;
 
@@ -1885,6 +1927,22 @@ export const CreateQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "wiringScope": zod.enum(['Existing wiring / fixture replacement', 'Extend existing lighting circuit', 'New wiring from nearby source', 'New home run to panel']).optional(),
+  "locationType": zod.enum(['Replace existing fixtures', 'Create new light locations']).optional(),
+  "lightingGroups": zod.array(zod.object({
+  "key": zod.string(),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf),
+  "controlType": zod.enum(['Existing switch', 'Single-pole switch', 'Dimmer', 'Smart switch', '3-way switching', '3-way dimmer']),
+  "fourWayLocations": zod.number().min(createQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin).multipleOf(createQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf).optional(),
+  "travelerLength": zod.number().min(createQuoteResponseTwoJobInputsFiveLightingGroupsItemTravelerLengthMin).optional()
+})).optional(),
+  "protectionUpgrade": zod.boolean().optional(),
+  "advancedCableType": zod.enum(['12/2 NM-B', '12/3 NM-B', '14/2 NM-B', '14/3 NM-B']).optional(),
+  "fixtureSpacingFeet": zod.number().min(createQuoteResponseTwoJobInputsFiveFixtureSpacingFeetMin).optional(),
+  "wireWastePercent": zod.number().min(createQuoteResponseTwoJobInputsFiveWireWastePercentMin).max(createQuoteResponseTwoJobInputsFiveWireWastePercentMax).optional(),
+  "insulationPresent": zod.boolean().optional(),
+  "quantitySource": zod.enum(['Manual', 'Planning suggestion']).optional(),
   "roomLength": zod.number().min(createQuoteResponseTwoJobInputsFiveRoomLengthMin),
   "roomWidth": zod.number().min(createQuoteResponseTwoJobInputsFiveRoomWidthMin),
   "fixtureQuantity": zod.number().min(1),
@@ -2483,6 +2541,19 @@ export const previewQuoteBodyJobInputsFourFeederDistanceMin = 0;
 
 export const previewQuoteBodyJobInputsFourCrewHoursMin = 0;
 
+export const previewQuoteBodyJobInputsFiveLightingGroupsItemQuantityMin = 0;
+export const previewQuoteBodyJobInputsFiveLightingGroupsItemQuantityMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMin = 0;
+export const previewQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFiveLightingGroupsItemTravelerLengthMin = 0;
+
+export const previewQuoteBodyJobInputsFiveFixtureSpacingFeetMin = 0;
+
+export const previewQuoteBodyJobInputsFiveWireWastePercentMin = 0;
+export const previewQuoteBodyJobInputsFiveWireWastePercentMax = 100;
+
 export const previewQuoteBodyJobInputsFiveRoomLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFiveRoomWidthMin = 0;
@@ -2982,6 +3053,22 @@ export const PreviewQuoteBody = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "wiringScope": zod.enum(['Existing wiring / fixture replacement', 'Extend existing lighting circuit', 'New wiring from nearby source', 'New home run to panel']).optional(),
+  "locationType": zod.enum(['Replace existing fixtures', 'Create new light locations']).optional(),
+  "lightingGroups": zod.array(zod.object({
+  "key": zod.string(),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsFiveLightingGroupsItemQuantityMin).multipleOf(previewQuoteBodyJobInputsFiveLightingGroupsItemQuantityMultipleOf),
+  "controlType": zod.enum(['Existing switch', 'Single-pole switch', 'Dimmer', 'Smart switch', '3-way switching', '3-way dimmer']),
+  "fourWayLocations": zod.number().min(previewQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMin).multipleOf(previewQuoteBodyJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf).optional(),
+  "travelerLength": zod.number().min(previewQuoteBodyJobInputsFiveLightingGroupsItemTravelerLengthMin).optional()
+})).optional(),
+  "protectionUpgrade": zod.boolean().optional(),
+  "advancedCableType": zod.enum(['12/2 NM-B', '12/3 NM-B', '14/2 NM-B', '14/3 NM-B']).optional(),
+  "fixtureSpacingFeet": zod.number().min(previewQuoteBodyJobInputsFiveFixtureSpacingFeetMin).optional(),
+  "wireWastePercent": zod.number().min(previewQuoteBodyJobInputsFiveWireWastePercentMin).max(previewQuoteBodyJobInputsFiveWireWastePercentMax).optional(),
+  "insulationPresent": zod.boolean().optional(),
+  "quantitySource": zod.enum(['Manual', 'Planning suggestion']).optional(),
   "roomLength": zod.number().min(previewQuoteBodyJobInputsFiveRoomLengthMin),
   "roomWidth": zod.number().min(previewQuoteBodyJobInputsFiveRoomWidthMin),
   "fixtureQuantity": zod.number().min(1),
@@ -4116,6 +4203,19 @@ export const getQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
 
+export const getQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin = 0;
+export const getQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFiveLightingGroupsItemTravelerLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveFixtureSpacingFeetMin = 0;
+
+export const getQuoteResponseTwoJobInputsFiveWireWastePercentMin = 0;
+export const getQuoteResponseTwoJobInputsFiveWireWastePercentMax = 100;
+
 export const getQuoteResponseTwoJobInputsFiveRoomLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFiveRoomWidthMin = 0;
@@ -4655,6 +4755,22 @@ export const GetQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "wiringScope": zod.enum(['Existing wiring / fixture replacement', 'Extend existing lighting circuit', 'New wiring from nearby source', 'New home run to panel']).optional(),
+  "locationType": zod.enum(['Replace existing fixtures', 'Create new light locations']).optional(),
+  "lightingGroups": zod.array(zod.object({
+  "key": zod.string(),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf),
+  "controlType": zod.enum(['Existing switch', 'Single-pole switch', 'Dimmer', 'Smart switch', '3-way switching', '3-way dimmer']),
+  "fourWayLocations": zod.number().min(getQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin).multipleOf(getQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf).optional(),
+  "travelerLength": zod.number().min(getQuoteResponseTwoJobInputsFiveLightingGroupsItemTravelerLengthMin).optional()
+})).optional(),
+  "protectionUpgrade": zod.boolean().optional(),
+  "advancedCableType": zod.enum(['12/2 NM-B', '12/3 NM-B', '14/2 NM-B', '14/3 NM-B']).optional(),
+  "fixtureSpacingFeet": zod.number().min(getQuoteResponseTwoJobInputsFiveFixtureSpacingFeetMin).optional(),
+  "wireWastePercent": zod.number().min(getQuoteResponseTwoJobInputsFiveWireWastePercentMin).max(getQuoteResponseTwoJobInputsFiveWireWastePercentMax).optional(),
+  "insulationPresent": zod.boolean().optional(),
+  "quantitySource": zod.enum(['Manual', 'Planning suggestion']).optional(),
   "roomLength": zod.number().min(getQuoteResponseTwoJobInputsFiveRoomLengthMin),
   "roomWidth": zod.number().min(getQuoteResponseTwoJobInputsFiveRoomWidthMin),
   "fixtureQuantity": zod.number().min(1),
@@ -5279,6 +5395,19 @@ export const updateQuoteResponseOneTwoJobInputsFourFeederDistanceMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFourCrewHoursMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemQuantityMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemTravelerLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsFiveFixtureSpacingFeetMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsFiveWireWastePercentMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFiveWireWastePercentMax = 100;
+
 export const updateQuoteResponseOneTwoJobInputsFiveRoomLengthMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFiveRoomWidthMin = 0;
@@ -5818,6 +5947,22 @@ export const UpdateQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "wiringScope": zod.enum(['Existing wiring / fixture replacement', 'Extend existing lighting circuit', 'New wiring from nearby source', 'New home run to panel']).optional(),
+  "locationType": zod.enum(['Replace existing fixtures', 'Create new light locations']).optional(),
+  "lightingGroups": zod.array(zod.object({
+  "key": zod.string(),
+  "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf),
+  "controlType": zod.enum(['Existing switch', 'Single-pole switch', 'Dimmer', 'Smart switch', '3-way switching', '3-way dimmer']),
+  "fourWayLocations": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf).optional(),
+  "travelerLength": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveLightingGroupsItemTravelerLengthMin).optional()
+})).optional(),
+  "protectionUpgrade": zod.boolean().optional(),
+  "advancedCableType": zod.enum(['12/2 NM-B', '12/3 NM-B', '14/2 NM-B', '14/3 NM-B']).optional(),
+  "fixtureSpacingFeet": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveFixtureSpacingFeetMin).optional(),
+  "wireWastePercent": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveWireWastePercentMin).max(updateQuoteResponseOneTwoJobInputsFiveWireWastePercentMax).optional(),
+  "insulationPresent": zod.boolean().optional(),
+  "quantitySource": zod.enum(['Manual', 'Planning suggestion']).optional(),
   "roomLength": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveRoomLengthMin),
   "roomWidth": zod.number().min(updateQuoteResponseOneTwoJobInputsFiveRoomWidthMin),
   "fixtureQuantity": zod.number().min(1),
@@ -6667,6 +6812,19 @@ export const duplicateQuoteResponseTwoJobInputsFourFeederDistanceMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFourCrewHoursMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemTravelerLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveFixtureSpacingFeetMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFiveWireWastePercentMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFiveWireWastePercentMax = 100;
+
 export const duplicateQuoteResponseTwoJobInputsFiveRoomLengthMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFiveRoomWidthMin = 0;
@@ -7206,6 +7364,22 @@ export const DuplicateQuoteResponse = zod.object({
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
   "notes": zod.string()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "wiringScope": zod.enum(['Existing wiring / fixture replacement', 'Extend existing lighting circuit', 'New wiring from nearby source', 'New home run to panel']).optional(),
+  "locationType": zod.enum(['Replace existing fixtures', 'Create new light locations']).optional(),
+  "lightingGroups": zod.array(zod.object({
+  "key": zod.string(),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemQuantityMultipleOf),
+  "controlType": zod.enum(['Existing switch', 'Single-pole switch', 'Dimmer', 'Smart switch', '3-way switching', '3-way dimmer']),
+  "fourWayLocations": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemFourWayLocationsMultipleOf).optional(),
+  "travelerLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveLightingGroupsItemTravelerLengthMin).optional()
+})).optional(),
+  "protectionUpgrade": zod.boolean().optional(),
+  "advancedCableType": zod.enum(['12/2 NM-B', '12/3 NM-B', '14/2 NM-B', '14/3 NM-B']).optional(),
+  "fixtureSpacingFeet": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveFixtureSpacingFeetMin).optional(),
+  "wireWastePercent": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveWireWastePercentMin).max(duplicateQuoteResponseTwoJobInputsFiveWireWastePercentMax).optional(),
+  "insulationPresent": zod.boolean().optional(),
+  "quantitySource": zod.enum(['Manual', 'Planning suggestion']).optional(),
   "roomLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveRoomLengthMin),
   "roomWidth": zod.number().min(duplicateQuoteResponseTwoJobInputsFiveRoomWidthMin),
   "fixtureQuantity": zod.number().min(1),

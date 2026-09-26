@@ -1,5 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
-import { kitchenCircuitPlan, bathroomCircuitPlan, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
+import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
   AdditionCircuitEntry,
   AdditionInputRecord,
@@ -4474,6 +4474,79 @@ export function calculatePanelReplacementEstimate(
 }
 
 export function calculateRecessedLightingEstimate(
+  inputs: RecessedLightingInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
+  if (inputs.circuitConfigurationVersion !== 2) return calculateLegacyRecessedLightingEstimate(inputs, settings, priceBook);
+  const assembly: AssemblyLineRecord[] = [], warnings: string[] = [];
+  const plan = recessedWiringPlan(inputs);
+  const count = inputs.fixtureQuantity;
+  if (!Number.isInteger(count) || count < 1) warnings.push("Remodel circuit: enter a positive whole-number fixture quantity.");
+  if (!lightingWiringScopes.includes(inputs.wiringScope ?? ""))
+    warnings.push("Remodel circuit: select the recessed-lighting wiring scope.");
+  if (plan.groups.reduce((s, g) => s + g.quantity, 0) !== count)
+    warnings.push("Remodel circuit: lighting group fixture quantities must add up to the quoted fixture quantity.");
+  if (new Set(plan.groups.map(g => g.key)).size !== plan.groups.length)
+    warnings.push("Remodel circuit: lighting group identifiers must be unique.");
+  const circuit: RemodelCircuit = {key:"lighting",label:"Lighting home run",quantity:1,amperage:inputs.breakerAmperage,
+    poleCount:1,protectionType:inputs.breakerProtectionType,cableType:plan.cable,routeLength:plan.route};
+  if (plan.newWiring) {
+    const issue = circuitCompatibilityIssue(circuit);
+    if (issue) warnings.push(`Remodel circuit: ${issue}`);
+    if (plan.route <= 0) warnings.push("Remodel circuit: enter the route from the supplying source or panel.");
+  }
+  const priced = (id:string,key:string,quantity:number,category:string,unit="ea",supplied=false,description=key) => {
+    if (quantity<=0) return;
+    const price = supplied ? {value:0,source:"Customer supplied fixture"} : unitCost(key,priceBook,warnings);
+    addLine(assembly,{id,category,description,quantity,unit,unitCost:price.value,source:price.source,
+      ...(supplied?{intentionalExclusionReason:"Customer is supplying this fixture; contractor material cost is intentionally excluded."}:{})});
+  };
+  priced("recessed-fixtures",inputs.fixtureSize==="6-inch"?JUNO_WF6_VERIFIED:JUNO_WF4_VERIFIED,count,"Lighting","ea",inputs.customerSuppliedFixtures);
+  priced("recessed-installation-materials","recessed fixture installation consumables",count,"Rough-in");
+  if (plan.homeRun) addRemodelCircuits("recessed",[circuit],[],inputs.panelManufacturer,assembly,warnings,priceBook);
+  else if (inputs.protectionUpgrade && plan.newWiring)
+    addRemodelCircuits("recessed",[],[circuit],inputs.panelManufacturer,assembly,warnings,priceBook);
+  if (plan.total>0) priced("recessed-branch-wiring",`${plan.cable} cable`,Number((plan.total-(plan.homeRun?plan.route:0)).toFixed(2)),
+    "Conductor","ft",false,`${plan.cable}: ${plan.homeRun?"home run priced separately; ":`${plan.route} FT source route + `}${plan.interconnect} FT fixture-to-fixture + ${plan.waste} FT waste + ${plan.manual} FT manual allowance`);
+  priced("recessed-traveler-wire",`${plan.travelerCable} cable`,plan.travelers,"Conductor","ft",false,
+    `${plan.travelerCable}: total entered multi-location traveler routes (${plan.travelers} FT)`);
+  let controlCount=0,controlHours=0;
+  for (const [index,g] of plan.groups.entries()) {
+    if (!Number.isInteger(g.quantity) || g.quantity<0 || !lightingControls.includes(g.controlType))
+      warnings.push("Remodel circuit: lighting group quantity and control type require correction.");
+    if (!g.quantity) continue;
+    const id=`recessed-group-${index}`;
+    const multi=g.controlType.startsWith("3-way"), four=multi?g.fourWayLocations??0:0;
+    if (multi && (g.travelerLength??0)<=0)
+      warnings.push(`Remodel circuit: lighting group ${index+1} needs its new 3-way/4-way traveler wiring route.`);
+    if (g.controlType==="Single-pole switch") {
+      priced(`${id}-switch`,"Pass & Seymour TM870-W 15A single-pole switch — SKU 3211",1,"Controls"); controlCount++; controlHours+=.5;
+    } else if (g.controlType==="Dimmer") {
+      priced(`${id}-dimmer`,"Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",1,"Controls"); controlCount++; controlHours+=.5;
+    } else if (g.controlType==="Smart switch") {
+      priced(`${id}-smart`,"smart switch",1,"Controls"); controlCount++; controlHours+=.75;
+    } else if (multi) {
+      priced(`${id}-three-way`,"Pass & Seymour TM873-W 15A 3-way switch — SKU 32128",g.controlType==="3-way dimmer"?1:2,"Controls");
+      if (g.controlType==="3-way dimmer") priced(`${id}-dimmer`,"Lutron DVCL-153P-WH Diva LED+ dimmer — SKU 607393",1,"Controls");
+      priced(`${id}-four-way`,"Legrand radiant TM874WCC10 15A 4-way switch",four,"Controls");
+      controlCount+=2+four; controlHours+=1.25+four*.75;
+    }
+  }
+  priced("recessed-control-boxes","Pass & Seymour S1-18-W 1-gang box — SKU 18134",controlCount,"Rough-in");
+  priced("recessed-control-plates","Legrand radiant RWP26WCC10 1-gang screwless wall plate",controlCount,"Trim");
+  const newLocations=inputs.locationType!=="Replace existing fixtures";
+  if (newLocations&&!plan.newWiring) warnings.push("Remodel circuit: new light locations require a wiring scope that includes new wiring.");
+  const height=/vault/i.test(inputs.ceilingHeight)?1.35:/high/i.test(inputs.ceilingHeight)?1.15:1;
+  const access=/limited|difficult/i.test(inputs.accessDifficulty)?1.25:/attic|open/i.test(inputs.accessDifficulty)?0:.5;
+  const calculated=(1.25+count*(newLocations?.85:.45)+controlHours+(plan.total+plan.travelers)/40
+    +(plan.homeRun?2.5:inputs.protectionUpgrade&&plan.newWiring?.25:0)+access
+    +(newLocations&&inputs.insulationPresent?count*.1:0))*height;
+  warnings.push("Recessed lighting assumptions require field verification of existing circuit capacity, protection, ceiling construction, fixture support/rating, insulation clearance and control compatibility. Planning suggestions are not a photometric or code-compliance design.");
+  return finalizeRemodelEstimate(assembly,calculated,inputs.laborAdjustmentHours,settings,warnings,inputs.laborRateType);
+}
+
+function calculateLegacyRecessedLightingEstimate(
   inputs: RecessedLightingInputRecord,
   settings: EstimatingSettings,
   priceBook: PriceBookItem[],

@@ -307,6 +307,16 @@ export type AdditionInputRecord = {
   notes: string;
 };
 export type RecessedLightingInputRecord = {
+  circuitConfigurationVersion?: number;
+  wiringScope?: string;
+  locationType?: string;
+  lightingGroups?: {key: string; quantity: number; controlType: string; fourWayLocations?: number; travelerLength?: number}[];
+  protectionUpgrade?: boolean;
+  advancedCableType?: string;
+  fixtureSpacingFeet?: number;
+  wireWastePercent?: number;
+  insulationPresent?: boolean;
+  quantitySource?: string;
   roomLength: number;
   roomWidth: number;
   fixtureQuantity: number;
