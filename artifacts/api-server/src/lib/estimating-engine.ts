@@ -647,7 +647,7 @@ const EXACT_SELECTOR_SKU_BUILDERS: Record<
 > = {
   "304898": ["Service Upgrade"],
   "132873": ["Service Upgrade"],
-  "1552599": ["Service Upgrade"],
+  "1552599": ["Service Upgrade", "Panel Replacement"],
   "79511": ["Service Upgrade", "Panel Replacement"],
   "8891": ["Service Upgrade", "Panel Replacement"],
   "512902": ["Service Upgrade"],
@@ -1199,6 +1199,7 @@ function exactCatalogCost(
   return {
     value: selected.match.unitCost,
     source: catalogSource(selected.match),
+    item: selected.match,
   };
 }
 
@@ -3940,36 +3941,11 @@ export function calculatePanelReplacementEstimate(
   const breakerPoleCount = Math.max(1, Number(inputs.breakerPoleCount) || 1);
   const breakerMatchesPanel =
     breakerAmperage === panelAmperage && breakerPoleCount === 2;
-  const breaker = resolveBreaker(
-    {
-      manufacturer: inputs.panelManufacturer,
-      amperage: breakerAmperage,
-      poleCount: breakerPoleCount,
-      protectionType: inputs.breakerProtectionType,
-    },
+  const panelPrice = exactCatalogCost(
+    inputs.exactCatalogParts?.panelProduct,
+    "panelProduct",
     priceBook,
     pricingWarnings,
-  );
-  addLine(assembly, {
-    id: "panel-replacement-breaker",
-    category: "Protection",
-    description: breaker.description,
-    quantity: 1,
-    unit: "ea",
-    unitCost: breakerMatchesPanel ? breaker.value : 0,
-    source: breakerMatchesPanel
-      ? breaker.source
-      : "Unresolved panel/breaker compatibility — select a supported exact configuration",
-  });
-
-  addExactOrLegacy(
-    "panel-replacement-panel",
-    "Panel",
-    "panelProduct",
-    `${inputs.panelManufacturer} ${panelAmperage}A panel replacement enclosure`,
-    `${inputs.panelManufacturer} ${panelAmperage}A ${inputs.panelSpaceCount}-space panel — ${inputs.replacementType}`,
-    1,
-    "ea",
     (item) =>
       itemInCategory(item, "Panel") &&
       normalized(item.manufacturer ?? "") ===
@@ -3977,7 +3953,58 @@ export function calculatePanelReplacementEstimate(
       item.amperage === panelAmperage &&
       catalogSpaceCount(item) === inputs.panelSpaceCount &&
       (itemHasTerms(item, "panel") || itemHasTerms(item, "load center")),
+  ) ?? unitCost(
+    `${inputs.panelManufacturer} ${panelAmperage}A panel replacement enclosure`,
+    priceBook,
+    pricingWarnings,
   );
+  // Only this source-backed, exact MPN is known to include a main breaker.
+  // Never infer inclusion from a generic panel name or the user's selection text.
+  const panelIncludesMainBreaker = Boolean(
+    inputs.exactCatalogParts?.panelProduct &&
+    panelPrice.value > 0 &&
+    hasSourceBackedCatalogPricing(panelPrice.item) &&
+    normalized(panelPrice.item?.manufacturer ?? "") === "siemens" &&
+    normalized(panelPrice.item?.manufacturerPartNumber ?? "") === "pn4040b1200c" &&
+    panelAmperage === 200 && inputs.panelSpaceCount === 40 &&
+    breakerMatchesPanel &&
+    normalized(inputs.breakerProtectionType) === "standard",
+  );
+  if (panelIncludesMainBreaker) {
+    addLine(assembly, {
+      id: "panel-replacement-breaker", category: "Protection",
+      description: "Siemens 200A 2-pole Standard main breaker — included with PN4040B1200C",
+      quantity: 1, unit: "ea", unitCost: 0,
+      source: panelPrice.source,
+      intentionalExclusionReason: "Main breaker is included in the Siemens PN4040B1200C panel price; no separate charge.",
+    });
+  } else {
+    const breaker = resolveBreaker(
+      {
+        manufacturer: inputs.panelManufacturer,
+        amperage: breakerAmperage,
+        poleCount: breakerPoleCount,
+        protectionType: inputs.breakerProtectionType,
+      },
+      priceBook,
+      pricingWarnings,
+    );
+    addLine(assembly, {
+      id: "panel-replacement-breaker", category: "Protection",
+      description: breaker.description, quantity: 1, unit: "ea",
+      unitCost: breakerMatchesPanel ? breaker.value : 0,
+      source: breakerMatchesPanel
+        ? breaker.source
+        : "Unresolved panel/breaker compatibility — select a supported exact configuration",
+    });
+  }
+  addLine(assembly, {
+    id: "panel-replacement-panel", category: "Panel",
+    description: panelIncludesMainBreaker
+      ? `Siemens PN4040B1200C 200A 40-space panel (main breaker included) — ${inputs.replacementType}`
+      : `${inputs.panelManufacturer} ${panelAmperage}A ${inputs.panelSpaceCount}-space panel — ${inputs.replacementType}`,
+    quantity: 1, unit: "ea", unitCost: panelPrice.value, source: panelPrice.source,
+  });
   addPricedItem(
     "panel-space-fillers",
     "Panel",

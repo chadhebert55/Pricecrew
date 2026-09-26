@@ -934,6 +934,76 @@ test("panel replacement resolves exact panel, breaker, and compatible feeder row
   assert.equal(result.pricing.laborCost, 24 * settings.loadedLaborCost);
 });
 
+const includedMainPanel = "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599";
+const includedMainPanelRow = catalogRow(includedMainPanel, 294.625, {
+  category: "Panel", manufacturer: "Siemens", amperage: 200,
+  manufacturerPartNumber: "PN4040B1200C", supplierSku: "1552599",
+});
+
+test("PN4040B1200C charges the panel once and bypasses duplicate standalone mains, not branch breakers", () => {
+  const duplicateMain = catalogRow("Siemens 200A 2-pole Standard breaker", 180, {
+    manufacturer: "Siemens", amperage: 200, poleCount: 2, protectionType: "Standard",
+  });
+  const result = calculatePanelReplacementEstimate({
+    ...panelReplacementInputs,
+    exactCatalogParts: { panelProduct: includedMainPanel },
+    existingBreakers: [{ amperage: 20, poleCount: 1, protectionType: "Standard", quantity: 2 }],
+  }, settings, [includedMainPanelRow, duplicateMain, { ...duplicateMain, unitCost: 0 }]);
+  const panel = result.assembly.find(line => line.id === "panel-replacement-panel")!;
+  const main = result.assembly.find(line => line.id === "panel-replacement-breaker")!;
+  assert.equal(panel.extendedCost, 294.625);
+  assert.match(panel.description, /main breaker included/);
+  assert.equal(main.extendedCost, 0);
+  assert.match(main.intentionalExclusionReason!, /included.*no separate charge/);
+  assert.doesNotMatch(JSON.stringify(result.pricing.pricingWarnings), /Duplicate.*200A 2-pole/);
+  assert.match(JSON.stringify(result.pricing.pricingWarnings), /20A/);
+  assert.match(JSON.stringify(result.pricing.pricingWarnings), /feeder raceway/);
+});
+
+test("included main never suppresses pricing for incompatible, missing, ambiguous, or unsourced panels", () => {
+  const scenarios: Array<{
+    name: string; inputs?: Partial<PanelReplacementInputRecord>; rows: PriceBookItem[];
+  }> = [
+    { name: "missing", rows: [] },
+    { name: "unpriced", rows: [{ ...includedMainPanelRow, unitCost: 0 }] },
+    { name: "duplicate", rows: [includedMainPanelRow, { ...includedMainPanelRow }] },
+    { name: "default", rows: [{ ...includedMainPanelRow, isDefault: true }] },
+    { name: "no supplier", rows: [{ ...includedMainPanelRow, supplier: null }] },
+    { name: "no date", rows: [{ ...includedMainPanelRow, sourceDate: null }] },
+    { name: "MLO MPN", rows: [{ ...includedMainPanelRow, manufacturerPartNumber: "SN4040L1200" }] },
+    { name: "missing MPN", rows: [{ ...includedMainPanelRow, manufacturerPartNumber: null }] },
+    { name: "wrong manufacturer", rows: [{ ...includedMainPanelRow, manufacturer: "Square D" }] },
+    { name: "wrong category", rows: [{ ...includedMainPanelRow, category: "Other" }] },
+    { name: "30 spaces", inputs: { panelSpaceCount: 30 }, rows: [includedMainPanelRow] },
+    { name: "100 amps", inputs: { panelAmperage: 100 }, rows: [includedMainPanelRow] },
+    { name: "100A breaker", inputs: { breakerAmperage: 100 }, rows: [includedMainPanelRow] },
+    { name: "one pole", inputs: { breakerPoleCount: 1 }, rows: [includedMainPanelRow] },
+    { name: "GFCI", inputs: { breakerProtectionType: "GFCI" }, rows: [includedMainPanelRow] },
+    { name: "legacy quote", inputs: { exactCatalogParts: undefined }, rows: [includedMainPanelRow] },
+  ];
+  for (const scenario of scenarios) {
+    const result = calculatePanelReplacementEstimate({
+      ...panelReplacementInputs, exactCatalogParts: { panelProduct: includedMainPanel },
+      ...scenario.inputs,
+    }, settings, scenario.rows);
+    assert.equal(result.assembly.find(line => line.id === "panel-replacement-breaker")
+      ?.intentionalExclusionReason, undefined, scenario.name);
+    assert.match(JSON.stringify(result.pricing.pricingWarnings), /breaker/i, scenario.name);
+  }
+});
+
+test("a Siemens MLO panel still charges a separately priced main", () => {
+  const mlo = "Siemens SN4040L1200 200A 40-space MLO panel — SKU 1532840";
+  const result = calculatePanelReplacementEstimate({
+    ...panelReplacementInputs, exactCatalogParts: { panelProduct: mlo },
+  }, settings, [...panelReplacementPriceBook, catalogRow(mlo, 222.443, {
+    category: "Panel", manufacturer: "Siemens", amperage: 200,
+    manufacturerPartNumber: "SN4040L1200", supplierSku: "1532840",
+  })]);
+  assert.equal(result.assembly.find(line => line.id === "panel-replacement-panel")?.unitCost, 222.443);
+  assert.equal(result.assembly.find(line => line.id === "panel-replacement-breaker")?.unitCost, 180);
+});
+
 test("panel exact selections enforce product role, manufacturer, amperage, and space compatibility", () => {
   const exactPanel =
     "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511";
@@ -3473,7 +3543,7 @@ test("every service and panel builder material is assigned only to its consuming
   const inventory: readonly AuditInventoryItem[] = [
     { kind: "exact", key: "304898", builders: ["Service Upgrade"] },
     { kind: "exact", key: "132873", builders: ["Service Upgrade"] },
-    { kind: "exact", key: "1552599", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "1552599", builders: ["Service Upgrade", "Panel Replacement"] },
     { kind: "exact", key: "79511", builders: ["Service Upgrade", "Panel Replacement"] },
     { kind: "exact", key: "8891", builders: ["Service Upgrade", "Panel Replacement"] },
     { kind: "exact", key: "512902", builders: ["Service Upgrade"] },
