@@ -3274,6 +3274,34 @@ test("Custom and T&M zero-cost contractor materials block readiness without an a
   }
 });
 
+test("legacy panel closeout labor permits readiness without waiving missing materials", () => {
+  const pricing = {
+    materialCost: 100, laborCost: 130, materialMarkup: 0.25,
+    calculatedSellingPrice: 425, finalSellingPrice: 425,
+    laborOverride: null, sellingPriceOverride: null,
+    grossProfit: 195, grossMargin: 0.4588, pricingWarnings: [],
+  };
+  for (const id of ["panel-directory-labeling", "panel-replacement-closeout"]) {
+    const labor = {
+      id, category: "Closeout",
+      description: "Prepare panel directory and complete final circuit labeling",
+      quantity: 1, unit: "scope", unitCost: 0, extendedCost: 0,
+      source: "Included labor scope",
+    };
+    assert.equal(evaluateCustomerReadyPricing({
+      pricing, assembly: [labor], jobInputs: {},
+    }).allowed, true);
+    for (const extra of [
+      { ...labor, id: "ground-bar", description: "Ground bar" },
+      { ...labor, source: "Unresolved material" },
+    ]) {
+      assert.equal(evaluateCustomerReadyPricing({
+        pricing, assembly: [labor, extra], jobInputs: {},
+      }).allowed, false);
+    }
+  }
+});
+
 test("an explicit material exclusion reason is stored and permits readiness", () => {
   const reason = "Customer is purchasing this material directly.";
   const jobInputs: TimeMaterialsInputRecord = {

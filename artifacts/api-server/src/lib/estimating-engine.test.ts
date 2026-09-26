@@ -806,6 +806,21 @@ const panelReplacementInputs: PanelReplacementInputRecord = {
   notes: "",
 };
 
+test("panel closeout rows explicitly record included labor without a material charge", () => {
+  const estimates = [
+    calculateServiceUpgradeEstimate(serviceUpgradeInputs, settings, []),
+    calculatePanelReplacementEstimate(panelReplacementInputs, settings, []),
+  ];
+  for (const estimate of estimates) {
+    const closeout = estimate.assembly.find(line => line.category === "Closeout")!;
+    assert.equal(closeout.unitCost, 0);
+    assert.equal(closeout.extendedCost, 0);
+    assert.match(closeout.intentionalExclusionReason ?? "", /included in the assembly labor/);
+    assert.ok(!estimate.pricing.pricingWarnings.some(warning =>
+      JSON.stringify(warning).includes(closeout.description)));
+  }
+});
+
 test("Panel Replacement SER prices a complete cable once per foot and preserves legacy conductors", () => {
   for (const conductor of ["4/0 aluminum SER", "2/0 copper SER"] as const) {
     const result = calculatePanelReplacementEstimate({

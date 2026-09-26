@@ -406,6 +406,48 @@ test("all exports block active zero-cost materials unless intentionally excluded
   );
 });
 
+test("legacy panel closeout labor exports without repricing; near-match materials remain blocked", () => {
+  const quickBooksMapping = {
+    quickBooksCustomer: "Ada Lovelace",
+    quickBooksInvoiceDate: "2026-08-30",
+    quickBooksDueDate: "2026-08-30",
+  };
+  for (const id of ["panel-directory-labeling", "panel-replacement-closeout"]) {
+    const labor = {
+      id, category: "Closeout",
+      description: "Prepare panel directory and complete final circuit labeling",
+      quantity: 1, unit: "scope", unitCost: 0, extendedCost: 0,
+      source: "Included labor scope",
+    };
+    const quote = savedQuote({ assembly: [labor] });
+    const original = structuredClone(quote);
+    assert.deepEqual(preflightJobberQuoteExport(quote, validMapping), []);
+    assert.deepEqual(preflightQuickBooksQuoteExport(quote, quickBooksMapping), []);
+    assert.deepEqual(preflightHousecallProQuoteExport(quote, {}), []);
+    const jobber = buildJobberQuoteCsv(quote, validMapping);
+    assert.match(jobber.csv ?? "", /"Service","Prepare panel directory/);
+    assert.match(jobber.csv ?? "", /2345\.67/);
+    assert.match(buildQuickBooksQuoteCsv(quote, quickBooksMapping).csv ?? "", /2345\.67/);
+    assert.match(buildHousecallProQuoteCsv(quote, {}).csv ?? "", /2345\.67/);
+    assert.deepEqual(quote, original, "exports must not rewrite the saved snapshot");
+
+    for (const changed of [
+      { id: "ground-bar" }, { category: "Material" }, { description: "Ground bar" },
+      { source: "Unresolved material" }, { unit: "ea" }, { quantity: 2 },
+      { unitCost: -1 }, { extendedCost: 10 },
+    ]) {
+      const unresolved = savedQuote({ assembly: [{ ...labor, ...changed }] });
+      for (const issues of [
+        preflightJobberQuoteExport(unresolved, validMapping),
+        preflightQuickBooksQuoteExport(unresolved, quickBooksMapping),
+        preflightHousecallProQuoteExport(unresolved, {}),
+      ]) {
+        assert.ok(issues.some((issue) => issue.code === "UNRESOLVED_MATERIAL_COST"));
+      }
+    }
+  }
+});
+
 test("all exports block saved error-level pricing warnings", () => {
   const quote = savedQuote({
     pricing: {

@@ -1,6 +1,7 @@
 import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness";
 import {
   CreateQuoteBody,
   CreateQuoteResponse,
@@ -1186,11 +1187,7 @@ export function evaluateCustomerReadyPricing({
   }
 
   const unresolvedMaterials = assembly.filter(
-    (line) =>
-      line.quantity > 0 &&
-      line.unitCost <= 0 &&
-      (!line.intentionalExclusionReason ||
-        line.intentionalExclusionReason.trim().length < 10),
+    hasUnresolvedMaterialCost,
   );
   if (unresolvedMaterials.length > 0) {
     return {

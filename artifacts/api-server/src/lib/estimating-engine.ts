@@ -1,3 +1,4 @@
+import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
 import type {
   AdditionCircuitEntry,
   AdditionInputRecord,
@@ -1398,11 +1399,7 @@ function finalizeEstimate(
   requestedLaborRateType?: string,
 ): EstimateResult {
   const zeroCostMaterialLines = assembly.filter(
-    (line) =>
-      line.quantity > 0 &&
-      line.unitCost <= 0 &&
-      !line.intentionalExclusionReason &&
-      line.source !== "Included labor scope",
+    hasUnresolvedMaterialCost,
   );
   for (const line of zeroCostMaterialLines) {
     const hasLineWarning = pricingWarnings.some(
@@ -3740,6 +3737,7 @@ export function calculateServiceUpgradeEstimate(
     unit: "scope",
     unitCost: 0,
     source: "Included labor scope",
+    intentionalExclusionReason: PANEL_CLOSEOUT_LABOR_REASON,
   });
 
   for (const [index, existingBreaker] of (
@@ -4289,6 +4287,7 @@ export function calculatePanelReplacementEstimate(
     unitCost: 0,
     extendedCost: 0,
     source: "Included labor scope",
+    intentionalExclusionReason: PANEL_CLOSEOUT_LABOR_REASON,
   });
   pricingWarnings.push(
     "Panel Replacement assumptions require field verification of the existing panel, feeder routing, working clearances, grounding, and circuit protection; selections are configurable estimating assumptions, not universal code requirements.",

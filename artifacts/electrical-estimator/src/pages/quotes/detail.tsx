@@ -9,6 +9,7 @@ import {
   useUpdateQuote,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
+import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness"
 import { contractorMaterialName, contractorMaterialSource } from "@/lib/material-display"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useParams } from "wouter"
@@ -206,10 +207,7 @@ export function QuoteDetail() {
       ? (quote.jobInputs as { circuitEntries?: AdditionCircuitEntry[] }).circuitEntries
       : undefined
   const unresolvedMaterialLines = quote.assembly.filter(
-    (line) =>
-      line.quantity > 0 &&
-      line.unitCost <= 0 &&
-      (!line.intentionalExclusionReason || line.intentionalExclusionReason.trim().length < 10),
+    hasUnresolvedMaterialCost,
   )
   const negativeLaborAdjustmentKeys = new Set([
     "laborAdjustmentHours",

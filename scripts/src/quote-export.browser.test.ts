@@ -106,7 +106,8 @@ const jobInputs: AdditionInputRecord = {
   notes: "",
 };
 
-test("saved quote export preflight leads to a Jobber CSV with the exact saved total", async ({
+for (const withLegacyCloseout of [false, true]) {
+test(`saved quote export preserves the exact saved total${withLegacyCloseout ? " with legacy panel closeout labor" : ""}`, async ({
   browser,
 }) => {
   const marker = randomUUID();
@@ -138,9 +139,26 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
         customerName: `Jobber customer ${marker}`,
         customerEmail: `jobber-${marker}@example.com`,
         projectName: `Jobber export quote ${marker}`,
-        module: "ADDITION",
+        module: withLegacyCloseout ? "PANEL_REPLACEMENT" : "ADDITION",
         status: "ready",
-        jobInputs,
+        jobInputs: withLegacyCloseout ? {
+          replacementType: "Like-for-like panel replacement", panelManufacturer: "Siemens",
+          panelAmperage: 200, panelSpaceCount: 40, breakerAmperage: 200,
+          breakerPoleCount: 2, breakerProtectionType: "Standard",
+          feederConductor: "Reuse existing cable", feederLength: 15,
+          feederConductorQuantity: 1, includeFeederRaceway: false,
+          feederRacewayFootage: 0, feederRacewayFittingsQuantity: 0,
+          groundBarQuantity: 0, groundRodQuantity: 0, groundingConductorFootage: 0,
+          bondingConductorFootage: 0, existingBreakers: [], existingOtherBreakerQuantity: 0,
+          fillerPlateQuantity: 0, knockoutSealQuantity: 0, plywoodQuantity: 0,
+          studsQuantity: 0, antiOxidantQuantity: 0, electricalTapeQuantity: 0,
+          permitAllowance: 0, inspectionAllowance: 0, miscellaneousAllowance: 0,
+          allowancesNotRequired: { permit: true, inspection: true, miscellaneous: true },
+          crewSize: 1, crewHours: 8, panelRemovalLaborHours: 0,
+          feederInstallationLaborHours: 0, groundingLaborHours: 0,
+          accessDifficultyLaborHours: 0, generalLaborAdjustmentHours: 0,
+          laborRateType: "residential", notes: "",
+        } : jobInputs,
         assembly: [
           {
             id: "export-wire",
@@ -162,6 +180,12 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
             extendedCost: 34,
             source: "Saved quote fixture",
           },
+          ...(withLegacyCloseout ? [{
+            id: "panel-replacement-closeout", category: "Closeout",
+            description: "Prepare panel directory and complete final circuit labeling",
+            quantity: 1, unit: "scope", unitCost: 0, extendedCost: 0,
+            source: "Included labor scope",
+          }] : []),
         ],
         pricing: {
           materialCost: 184,
@@ -195,13 +219,24 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
     await expect(
       page.getByRole("heading", { name: `Jobber export quote ${marker}` }),
     ).toBeVisible();
+    if (withLegacyCloseout) {
+      const [before] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+      await expect(page.getByText("Pricing must be resolved before export")).toHaveCount(0);
+      await page.reload();
+      await expect(page.getByText("Pricing must be resolved before export")).toHaveCount(0);
+      const [after] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+      expect(after.status).toBe("ready");
+      expect(after.assembly).toEqual(before.assembly);
+      expect(after.total).toBe(before.total);
+      expect(after.pricing).toEqual(before.pricing);
+    }
 
     const readiness = page.getByTestId("export-readiness");
     await expect(readiness).toContainText("Jobber export readiness");
     await expect(readiness).toContainText(
       "Jobber needs a mapped Property ID or Property Street 1",
     );
-    await expect(readiness).toContainText("3 of 10 line items");
+    await expect(readiness).toContainText(`${withLegacyCloseout ? 4 : 3} of 10 line items`);
     await expect(readiness).toContainText(
       "Includes one line for the exact saved quote total.",
     );
@@ -275,7 +310,14 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
       "8.50",
       "",
     ]);
-    expect(lineItemValues(3)).toEqual([
+    if (withLegacyCloseout) {
+      expect(lineItemValues(3)).toEqual([
+        "Service", "Prepare panel directory and complete final circuit labeling",
+        "Saved assembly category: Closeout; Unit: scope; Source: Included labor scope; Saved extended cost: $0.00",
+        "1", "", "0.00", "",
+      ]);
+    }
+    expect(lineItemValues(withLegacyCloseout ? 4 : 3)).toEqual([
       "Service",
       jobberImportFixture.lineItemRules.savedTotalName,
       "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
@@ -285,7 +327,7 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
       "",
     ]);
     for (
-      let lineNumber = 4;
+      let lineNumber = withLegacyCloseout ? 5 : 4;
       lineNumber <= jobberImportFixture.maxLineItems;
       lineNumber += 1
     ) {
@@ -293,6 +335,29 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
         lineItemValues(lineNumber),
         `Jobber line item ${lineNumber} after saved total`,
       ).toEqual(["", "", "", "", "", "", ""]);
+    }
+    if (withLegacyCloseout) {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await readiness.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: test.info().outputPath("closeout-export-desktop.png") });
+      await page.setViewportSize({ width: 375, height: 812 });
+      await readiness.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: test.info().outputPath("closeout-export-mobile.png") });
+      const [saved] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+      expect(saved.assembly[2].intentionalExclusionReason).toBeUndefined();
+      expect(saved.total).toBe(finalSellingPrice);
+      await db.update(quotesTable).set({
+        status: "draft",
+        assembly: [...saved.assembly, {
+          id: "missing-ground-bar", category: "Material", description: "Ground bar",
+          quantity: 1, unit: "ea", unitCost: 0, extendedCost: 0,
+          source: "Included labor scope",
+        }],
+      }).where(eq(quotesTable.id, quoteId));
+      await page.reload();
+      await expect(page.getByText("Pricing must be resolved before export")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Mark Ready", exact: true })).toBeDisabled();
+      await expect(page.getByTestId("button-download-quote-csv")).toBeDisabled();
     }
   } finally {
     await context?.close();
@@ -314,3 +379,4 @@ test("saved quote export preflight leads to a Jobber CSV with the exact saved to
     }
   }
 });
+}
