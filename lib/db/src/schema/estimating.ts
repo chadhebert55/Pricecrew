@@ -926,6 +926,7 @@ export const customersTable = pgTable(
       .references(() => companiesTable.id),
     name: text("name").notNull(),
     email: text("email"),
+    integrationMapping: jsonb("integration_mapping").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

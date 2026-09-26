@@ -40,6 +40,19 @@ const scenarios:Array<[string,Partial<KitchenInputRecord>,number,number]> = [
   ["additional identical breakers",{additionalBreakers:[{...defaultCircuit("extra"),quantity:3,protectionType:"GFCI"}]},10,400],
   ["customer-supplied decorative fixtures",{sinkLights:2,islandPendants:3,undercabinetLighting:2,customerSuppliedFixtures:true},7,400],
 ];
+test("Kitchen undercabinet lights are contractor supplied even when decorative fixtures are customer supplied", () => {
+  const inputs={...modernKitchenInputs,sinkLights:2,islandPendants:3,undercabinetLighting:2,customerSuppliedFixtures:true};
+  const result=calculateKitchenEstimate(inputs,settings,kitchenTestCatalog);
+  const under=result.assembly.find(l=>l.id==="undercabinet-lighting")!;
+  assert.equal(under.extendedCost,20);
+  assert.equal(under.intentionalExclusionReason,undefined);
+  assert.equal(result.assembly.find(l=>l.id==="sink-lights")!.extendedCost,0);
+  assert.equal(result.assembly.find(l=>l.id==="island-pendants")!.extendedCost,0);
+  const missing=calculateKitchenEstimate(inputs,settings,kitchenTestCatalog.filter(r=>r.item!=="undercabinet lighting"));
+  assert.ok(hasUnresolvedMaterialCost(missing.assembly.find(l=>l.id==="undercabinet-lighting")!));
+  assert.equal(missing.pricing.finalLaborHours,result.pricing.finalLaborHours);
+  assert.equal(result.pricing.materialCost-missing.pricing.materialCost,20);
+});
 for(const [name,changes,breakers,footage] of scenarios) test(`Kitchen v2 ${name}: complete circuit-to-price trace`,()=>{
   const inputs={...modernKitchenInputs,...changes};
   const result=calculateKitchenEstimate(inputs,settings,kitchenTestCatalog);

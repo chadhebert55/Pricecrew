@@ -2505,9 +2505,9 @@ function calculateLegacyKitchenEstimate(
     "undercabinet-lighting",
     "Lighting",
     "Unverified allowance — undercabinet lighting",
-    "Undercabinet lighting allowance",
+    inputs.circuitConfigurationVersion === 2 ? "Contractor-supplied undercabinet lighting" : "Undercabinet lighting allowance",
     inputs.undercabinetLighting,
-    inputs.customerSuppliedFixtures,
+    inputs.circuitConfigurationVersion === 2 ? false : inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "recessed-lights",

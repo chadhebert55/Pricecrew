@@ -50,7 +50,90 @@ export const ListCustomersQueryParams = zod.object({
   "search": zod.coerce.string().optional()
 })
 
+export const listCustomersResponseIntegrationMappingNewTaxRateMin = 0;
+export const listCustomersResponseIntegrationMappingNewTaxRateMax = 100;
+
+export const listCustomersResponseIntegrationMappingExistingTaxRatePercentageMin = 0;
+export const listCustomersResponseIntegrationMappingExistingTaxRatePercentageMax = 100;
+
+export const listCustomersResponseIntegrationMappingDiscountAmountMin = 0;
+
+export const listCustomersResponseIntegrationMappingDepositAmountMin = 0;
+
+export const listCustomersResponseIntegrationMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const listCustomersResponseIntegrationMappingScopeLinesItemUnitPriceMin = 0;
+
+export const listCustomersResponseIntegrationMappingScopeLinesItemUnitCostMin = 0;
+
+export const listCustomersResponseIntegrationMappingScopeLinesMax = 10;
+
+
+
 export const ListCustomersResponseItem = zod.object({
+  "integrationMapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(listCustomersResponseIntegrationMappingNewTaxRateMin).max(listCustomersResponseIntegrationMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(listCustomersResponseIntegrationMappingExistingTaxRatePercentageMin).max(listCustomersResponseIntegrationMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(listCustomersResponseIntegrationMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(listCustomersResponseIntegrationMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(listCustomersResponseIntegrationMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(listCustomersResponseIntegrationMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(listCustomersResponseIntegrationMappingScopeLinesItemUnitCostMin).optional()
+})).max(listCustomersResponseIntegrationMappingScopeLinesMax).optional(),
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+}).optional(),
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string().nullable(),
@@ -65,15 +148,179 @@ export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
 /**
  * @summary Create a company customer
  */
+export const createCustomerBodyIntegrationMappingNewTaxRateMin = 0;
+export const createCustomerBodyIntegrationMappingNewTaxRateMax = 100;
+
+export const createCustomerBodyIntegrationMappingExistingTaxRatePercentageMin = 0;
+export const createCustomerBodyIntegrationMappingExistingTaxRatePercentageMax = 100;
+
+export const createCustomerBodyIntegrationMappingDiscountAmountMin = 0;
+
+export const createCustomerBodyIntegrationMappingDepositAmountMin = 0;
+
+export const createCustomerBodyIntegrationMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const createCustomerBodyIntegrationMappingScopeLinesItemUnitPriceMin = 0;
+
+export const createCustomerBodyIntegrationMappingScopeLinesItemUnitCostMin = 0;
+
+export const createCustomerBodyIntegrationMappingScopeLinesMax = 10;
+
 
 
 
 export const CreateCustomerBody = zod.object({
+  "integrationMapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(createCustomerBodyIntegrationMappingNewTaxRateMin).max(createCustomerBodyIntegrationMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(createCustomerBodyIntegrationMappingExistingTaxRatePercentageMin).max(createCustomerBodyIntegrationMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(createCustomerBodyIntegrationMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(createCustomerBodyIntegrationMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(createCustomerBodyIntegrationMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(createCustomerBodyIntegrationMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(createCustomerBodyIntegrationMappingScopeLinesItemUnitCostMin).optional()
+})).max(createCustomerBodyIntegrationMappingScopeLinesMax).optional(),
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+}).optional(),
   "name": zod.string().min(1),
   "email": zod.string().nullish()
 })
 
+export const createCustomerResponseIntegrationMappingNewTaxRateMin = 0;
+export const createCustomerResponseIntegrationMappingNewTaxRateMax = 100;
+
+export const createCustomerResponseIntegrationMappingExistingTaxRatePercentageMin = 0;
+export const createCustomerResponseIntegrationMappingExistingTaxRatePercentageMax = 100;
+
+export const createCustomerResponseIntegrationMappingDiscountAmountMin = 0;
+
+export const createCustomerResponseIntegrationMappingDepositAmountMin = 0;
+
+export const createCustomerResponseIntegrationMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const createCustomerResponseIntegrationMappingScopeLinesItemUnitPriceMin = 0;
+
+export const createCustomerResponseIntegrationMappingScopeLinesItemUnitCostMin = 0;
+
+export const createCustomerResponseIntegrationMappingScopeLinesMax = 10;
+
+
+
 export const CreateCustomerResponse = zod.object({
+  "integrationMapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(createCustomerResponseIntegrationMappingNewTaxRateMin).max(createCustomerResponseIntegrationMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(createCustomerResponseIntegrationMappingExistingTaxRatePercentageMin).max(createCustomerResponseIntegrationMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(createCustomerResponseIntegrationMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(createCustomerResponseIntegrationMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(createCustomerResponseIntegrationMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(createCustomerResponseIntegrationMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(createCustomerResponseIntegrationMappingScopeLinesItemUnitCostMin).optional()
+})).max(createCustomerResponseIntegrationMappingScopeLinesMax).optional(),
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+}).optional(),
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string().nullable(),
@@ -91,7 +338,90 @@ export const GetCustomerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getCustomerResponseOneIntegrationMappingNewTaxRateMin = 0;
+export const getCustomerResponseOneIntegrationMappingNewTaxRateMax = 100;
+
+export const getCustomerResponseOneIntegrationMappingExistingTaxRatePercentageMin = 0;
+export const getCustomerResponseOneIntegrationMappingExistingTaxRatePercentageMax = 100;
+
+export const getCustomerResponseOneIntegrationMappingDiscountAmountMin = 0;
+
+export const getCustomerResponseOneIntegrationMappingDepositAmountMin = 0;
+
+export const getCustomerResponseOneIntegrationMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const getCustomerResponseOneIntegrationMappingScopeLinesItemUnitPriceMin = 0;
+
+export const getCustomerResponseOneIntegrationMappingScopeLinesItemUnitCostMin = 0;
+
+export const getCustomerResponseOneIntegrationMappingScopeLinesMax = 10;
+
+
+
 export const GetCustomerResponse = zod.object({
+  "integrationMapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(getCustomerResponseOneIntegrationMappingNewTaxRateMin).max(getCustomerResponseOneIntegrationMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(getCustomerResponseOneIntegrationMappingExistingTaxRatePercentageMin).max(getCustomerResponseOneIntegrationMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(getCustomerResponseOneIntegrationMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(getCustomerResponseOneIntegrationMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(getCustomerResponseOneIntegrationMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(getCustomerResponseOneIntegrationMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(getCustomerResponseOneIntegrationMappingScopeLinesItemUnitCostMin).optional()
+})).max(getCustomerResponseOneIntegrationMappingScopeLinesMax).optional(),
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+}).optional(),
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string().nullable(),
@@ -121,15 +451,179 @@ export const UpdateCustomerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updateCustomerBodyIntegrationMappingNewTaxRateMin = 0;
+export const updateCustomerBodyIntegrationMappingNewTaxRateMax = 100;
+
+export const updateCustomerBodyIntegrationMappingExistingTaxRatePercentageMin = 0;
+export const updateCustomerBodyIntegrationMappingExistingTaxRatePercentageMax = 100;
+
+export const updateCustomerBodyIntegrationMappingDiscountAmountMin = 0;
+
+export const updateCustomerBodyIntegrationMappingDepositAmountMin = 0;
+
+export const updateCustomerBodyIntegrationMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const updateCustomerBodyIntegrationMappingScopeLinesItemUnitPriceMin = 0;
+
+export const updateCustomerBodyIntegrationMappingScopeLinesItemUnitCostMin = 0;
+
+export const updateCustomerBodyIntegrationMappingScopeLinesMax = 10;
+
 
 
 
 export const UpdateCustomerBody = zod.object({
+  "integrationMapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(updateCustomerBodyIntegrationMappingNewTaxRateMin).max(updateCustomerBodyIntegrationMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(updateCustomerBodyIntegrationMappingExistingTaxRatePercentageMin).max(updateCustomerBodyIntegrationMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(updateCustomerBodyIntegrationMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(updateCustomerBodyIntegrationMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(updateCustomerBodyIntegrationMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(updateCustomerBodyIntegrationMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(updateCustomerBodyIntegrationMappingScopeLinesItemUnitCostMin).optional()
+})).max(updateCustomerBodyIntegrationMappingScopeLinesMax).optional(),
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+}).optional(),
   "name": zod.string().min(1).optional(),
   "email": zod.string().nullish()
 })
 
+export const updateCustomerResponseIntegrationMappingNewTaxRateMin = 0;
+export const updateCustomerResponseIntegrationMappingNewTaxRateMax = 100;
+
+export const updateCustomerResponseIntegrationMappingExistingTaxRatePercentageMin = 0;
+export const updateCustomerResponseIntegrationMappingExistingTaxRatePercentageMax = 100;
+
+export const updateCustomerResponseIntegrationMappingDiscountAmountMin = 0;
+
+export const updateCustomerResponseIntegrationMappingDepositAmountMin = 0;
+
+export const updateCustomerResponseIntegrationMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const updateCustomerResponseIntegrationMappingScopeLinesItemUnitPriceMin = 0;
+
+export const updateCustomerResponseIntegrationMappingScopeLinesItemUnitCostMin = 0;
+
+export const updateCustomerResponseIntegrationMappingScopeLinesMax = 10;
+
+
+
 export const UpdateCustomerResponse = zod.object({
+  "integrationMapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(updateCustomerResponseIntegrationMappingNewTaxRateMin).max(updateCustomerResponseIntegrationMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(updateCustomerResponseIntegrationMappingExistingTaxRatePercentageMin).max(updateCustomerResponseIntegrationMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(updateCustomerResponseIntegrationMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(updateCustomerResponseIntegrationMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(updateCustomerResponseIntegrationMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(updateCustomerResponseIntegrationMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(updateCustomerResponseIntegrationMappingScopeLinesItemUnitCostMin).optional()
+})).max(updateCustomerResponseIntegrationMappingScopeLinesMax).optional(),
+  "jobberClientId": zod.string().nullish(),
+  "quickBooksCustomer": zod.string().nullish(),
+  "quickBooksInvoiceDate": zod.string().nullish(),
+  "quickBooksDueDate": zod.string().nullish(),
+  "housecallCustomerId": zod.string().nullish(),
+  "housecallJobId": zod.string().nullish(),
+  "clientTitle": zod.string().nullish(),
+  "clientFirstName": zod.string().nullish(),
+  "clientLastName": zod.string().nullish(),
+  "clientCompanyName": zod.string().nullish(),
+  "clientEmail": zod.string().nullish(),
+  "clientMainPhone": zod.string().nullish(),
+  "clientHomePhone": zod.string().nullish(),
+  "clientWorkPhone": zod.string().nullish(),
+  "clientMobilePhone": zod.string().nullish(),
+  "clientFaxPhone": zod.string().nullish(),
+  "clientOtherPhone": zod.string().nullish(),
+  "clientSmsEnabledPhoneNumber": zod.string().nullish(),
+  "jobberPropertyId": zod.string().nullish(),
+  "propertyStreet1": zod.string().nullish(),
+  "propertyStreet2": zod.string().nullish(),
+  "propertyCity": zod.string().nullish(),
+  "propertyStateProvince": zod.string().nullish(),
+  "propertyZipPostalCode": zod.string().nullish(),
+  "propertyCountry": zod.string().nullish(),
+  "billingStreet1": zod.string().nullish(),
+  "billingStreet2": zod.string().nullish(),
+  "billingCity": zod.string().nullish(),
+  "billingStateProvince": zod.string().nullish(),
+  "billingZipPostalCode": zod.string().nullish(),
+  "billingCountry": zod.string().nullish()
+}).optional(),
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string().nullable(),
@@ -1728,6 +2222,13 @@ export const CreateQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerScope": zod.array(zod.object({
+  "id": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
+})).optional(),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
@@ -4556,6 +5057,13 @@ export const GetQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerScope": zod.array(zod.object({
+  "id": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
+})).optional(),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
@@ -5748,6 +6256,13 @@ export const UpdateQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerScope": zod.array(zod.object({
+  "id": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
+})).optional(),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
@@ -6432,10 +6947,60 @@ export const PreflightQuoteExportParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const preflightQuoteExportBodyMappingNewTaxRateMin = 0;
+export const preflightQuoteExportBodyMappingNewTaxRateMax = 100;
+
+export const preflightQuoteExportBodyMappingExistingTaxRatePercentageMin = 0;
+export const preflightQuoteExportBodyMappingExistingTaxRatePercentageMax = 100;
+
+export const preflightQuoteExportBodyMappingDiscountAmountMin = 0;
+
+export const preflightQuoteExportBodyMappingDepositAmountMin = 0;
+
+export const preflightQuoteExportBodyMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const preflightQuoteExportBodyMappingScopeLinesItemUnitPriceMin = 0;
+
+export const preflightQuoteExportBodyMappingScopeLinesItemUnitCostMin = 0;
+
+export const preflightQuoteExportBodyMappingScopeLinesMax = 10;
+
+
+
 export const PreflightQuoteExportBody = zod.object({
   "destination": zod.enum(['jobber', 'quickbooks', 'housecall_pro']),
   "format": zod.enum(['csv']),
   "mapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(preflightQuoteExportBodyMappingNewTaxRateMin).max(preflightQuoteExportBodyMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(preflightQuoteExportBodyMappingExistingTaxRatePercentageMin).max(preflightQuoteExportBodyMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(preflightQuoteExportBodyMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(preflightQuoteExportBodyMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(preflightQuoteExportBodyMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(preflightQuoteExportBodyMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(preflightQuoteExportBodyMappingScopeLinesItemUnitCostMin).optional()
+})).max(preflightQuoteExportBodyMappingScopeLinesMax).optional(),
   "jobberClientId": zod.string().nullish(),
   "quickBooksCustomer": zod.string().nullish(),
   "quickBooksInvoiceDate": zod.string().nullish(),
@@ -6493,10 +7058,60 @@ export const ExportJobberQuoteCsvParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const exportJobberQuoteCsvBodyMappingNewTaxRateMin = 0;
+export const exportJobberQuoteCsvBodyMappingNewTaxRateMax = 100;
+
+export const exportJobberQuoteCsvBodyMappingExistingTaxRatePercentageMin = 0;
+export const exportJobberQuoteCsvBodyMappingExistingTaxRatePercentageMax = 100;
+
+export const exportJobberQuoteCsvBodyMappingDiscountAmountMin = 0;
+
+export const exportJobberQuoteCsvBodyMappingDepositAmountMin = 0;
+
+export const exportJobberQuoteCsvBodyMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const exportJobberQuoteCsvBodyMappingScopeLinesItemUnitPriceMin = 0;
+
+export const exportJobberQuoteCsvBodyMappingScopeLinesItemUnitCostMin = 0;
+
+export const exportJobberQuoteCsvBodyMappingScopeLinesMax = 10;
+
+
+
 export const ExportJobberQuoteCsvBody = zod.object({
   "destination": zod.enum(['jobber']),
   "format": zod.enum(['csv']),
   "mapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(exportJobberQuoteCsvBodyMappingNewTaxRateMin).max(exportJobberQuoteCsvBodyMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(exportJobberQuoteCsvBodyMappingExistingTaxRatePercentageMin).max(exportJobberQuoteCsvBodyMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(exportJobberQuoteCsvBodyMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(exportJobberQuoteCsvBodyMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(exportJobberQuoteCsvBodyMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(exportJobberQuoteCsvBodyMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(exportJobberQuoteCsvBodyMappingScopeLinesItemUnitCostMin).optional()
+})).max(exportJobberQuoteCsvBodyMappingScopeLinesMax).optional(),
   "jobberClientId": zod.string().nullish(),
   "quickBooksCustomer": zod.string().nullish(),
   "quickBooksInvoiceDate": zod.string().nullish(),
@@ -6542,10 +7157,60 @@ export const ExportQuickBooksQuoteCsvParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const exportQuickBooksQuoteCsvBodyMappingNewTaxRateMin = 0;
+export const exportQuickBooksQuoteCsvBodyMappingNewTaxRateMax = 100;
+
+export const exportQuickBooksQuoteCsvBodyMappingExistingTaxRatePercentageMin = 0;
+export const exportQuickBooksQuoteCsvBodyMappingExistingTaxRatePercentageMax = 100;
+
+export const exportQuickBooksQuoteCsvBodyMappingDiscountAmountMin = 0;
+
+export const exportQuickBooksQuoteCsvBodyMappingDepositAmountMin = 0;
+
+export const exportQuickBooksQuoteCsvBodyMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const exportQuickBooksQuoteCsvBodyMappingScopeLinesItemUnitPriceMin = 0;
+
+export const exportQuickBooksQuoteCsvBodyMappingScopeLinesItemUnitCostMin = 0;
+
+export const exportQuickBooksQuoteCsvBodyMappingScopeLinesMax = 10;
+
+
+
 export const ExportQuickBooksQuoteCsvBody = zod.object({
   "destination": zod.enum(['quickbooks']),
   "format": zod.enum(['csv']),
   "mapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(exportQuickBooksQuoteCsvBodyMappingNewTaxRateMin).max(exportQuickBooksQuoteCsvBodyMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(exportQuickBooksQuoteCsvBodyMappingExistingTaxRatePercentageMin).max(exportQuickBooksQuoteCsvBodyMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(exportQuickBooksQuoteCsvBodyMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(exportQuickBooksQuoteCsvBodyMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(exportQuickBooksQuoteCsvBodyMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(exportQuickBooksQuoteCsvBodyMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(exportQuickBooksQuoteCsvBodyMappingScopeLinesItemUnitCostMin).optional()
+})).max(exportQuickBooksQuoteCsvBodyMappingScopeLinesMax).optional(),
   "jobberClientId": zod.string().nullish(),
   "quickBooksCustomer": zod.string().nullish(),
   "quickBooksInvoiceDate": zod.string().nullish(),
@@ -6591,10 +7256,60 @@ export const ExportHousecallProQuoteCsvParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const exportHousecallProQuoteCsvBodyMappingNewTaxRateMin = 0;
+export const exportHousecallProQuoteCsvBodyMappingNewTaxRateMax = 100;
+
+export const exportHousecallProQuoteCsvBodyMappingExistingTaxRatePercentageMin = 0;
+export const exportHousecallProQuoteCsvBodyMappingExistingTaxRatePercentageMax = 100;
+
+export const exportHousecallProQuoteCsvBodyMappingDiscountAmountMin = 0;
+
+export const exportHousecallProQuoteCsvBodyMappingDepositAmountMin = 0;
+
+export const exportHousecallProQuoteCsvBodyMappingScopeLinesItemQuantityExclusiveMin = 0;
+
+export const exportHousecallProQuoteCsvBodyMappingScopeLinesItemUnitPriceMin = 0;
+
+export const exportHousecallProQuoteCsvBodyMappingScopeLinesItemUnitCostMin = 0;
+
+export const exportHousecallProQuoteCsvBodyMappingScopeLinesMax = 10;
+
+
+
 export const ExportHousecallProQuoteCsvBody = zod.object({
   "destination": zod.enum(['housecall_pro']),
   "format": zod.enum(['csv']),
   "mapping": zod.object({
+  "quoteStatus": zod.enum(['Draft', 'Awaiting Response']).optional(),
+  "lineItemDetail": zod.enum(['summary', 'scope']).optional(),
+  "includeInternalCost": zod.boolean().optional(),
+  "taxConfirmed": zod.boolean().optional(),
+  "taxable": zod.enum(['TRUE', 'FALSE']).optional(),
+  "taxMethod": zod.enum(['Inclusive', 'Exclusive']).optional(),
+  "existingTaxRateName": zod.string().optional(),
+  "newTaxRateName": zod.string().optional(),
+  "newTaxRate": zod.number().min(exportHousecallProQuoteCsvBodyMappingNewTaxRateMin).max(exportHousecallProQuoteCsvBodyMappingNewTaxRateMax).optional(),
+  "existingTaxRatePercentage": zod.number().min(exportHousecallProQuoteCsvBodyMappingExistingTaxRatePercentageMin).max(exportHousecallProQuoteCsvBodyMappingExistingTaxRatePercentageMax).optional(),
+  "discountType": zod.enum(['Unit', 'Percentage']).optional(),
+  "discountAmount": zod.number().min(exportHousecallProQuoteCsvBodyMappingDiscountAmountMin).optional(),
+  "depositType": zod.enum(['Unit', 'Percentage']).optional(),
+  "depositAmount": zod.number().min(exportHousecallProQuoteCsvBodyMappingDepositAmountMin).optional(),
+  "quoteMessage": zod.string().optional(),
+  "introductionTitle": zod.string().optional(),
+  "introductionBody": zod.string().optional(),
+  "contractDisclaimer": zod.string().optional(),
+  "autoVisitReminders": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoJobFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoQuoteFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoInvoiceFollowups": zod.enum(['TRUE', 'FALSE']).optional(),
+  "autoReviewRequests": zod.enum(['TRUE', 'FALSE']).optional(),
+  "scopeLines": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number().gt(exportHousecallProQuoteCsvBodyMappingScopeLinesItemQuantityExclusiveMin),
+  "unitPrice": zod.number().min(exportHousecallProQuoteCsvBodyMappingScopeLinesItemUnitPriceMin),
+  "unitCost": zod.number().min(exportHousecallProQuoteCsvBodyMappingScopeLinesItemUnitCostMin).optional()
+})).max(exportHousecallProQuoteCsvBodyMappingScopeLinesMax).optional(),
   "jobberClientId": zod.string().nullish(),
   "quickBooksCustomer": zod.string().nullish(),
   "quickBooksInvoiceDate": zod.string().nullish(),
@@ -7165,6 +7880,13 @@ export const DuplicateQuoteResponse = zod.object({
   "margin": zod.number(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "customerScope": zod.array(zod.object({
+  "id": zod.string(),
+  "description": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
+})).optional(),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({

@@ -4,9 +4,9 @@ export const MAX_JOBBER_LINE_ITEMS = 10;
 export const MAX_JOBBER_ASSEMBLY_LINES = MAX_JOBBER_LINE_ITEMS - 1;
 
 export function jobberExportLayout(assemblyLineCount: number) {
-  const summarized = assemblyLineCount > MAX_JOBBER_ASSEMBLY_LINES;
+  // Kept for old callers: internal takeoff size never controls customer lines.
   return {
-    summarized,
-    lineItemCount: summarized ? 1 : assemblyLineCount + 1,
+    summarized: true,
+    lineItemCount: 1,
   };
 }

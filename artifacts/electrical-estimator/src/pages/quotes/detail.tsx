@@ -7,6 +7,7 @@ import {
   type QuoteStatus,
   useGetQuote,
   useUpdateQuote,
+  useGetSettings,
 } from "@workspace/api-client-react"
 import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
 import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness"
@@ -27,6 +28,7 @@ import { useToast } from "@/hooks/use-toast"
 import { quoteBuilderRoute } from "@/lib/quote-builder-routes"
 import { QuoteExportCard } from "@/components/quote-export-card"
 import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
+import { DEFAULT_PROPOSAL_TERMS } from "@/lib/proposal-presentation"
 
 export function QuoteDetail() {
   const params = useParams<{ id: string }>()
@@ -34,6 +36,8 @@ export function QuoteDetail() {
   const [_, setLocation] = useLocation()
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const [view, setView] = useState<"internal" | "customer">("internal")
+  const { data: settings } = useGetSettings()
   
   const { data: quote, isLoading } = useGetQuote(quoteId, {
     query: { enabled: !!quoteId, queryKey: getGetQuoteQueryKey(quoteId) }
@@ -198,8 +202,8 @@ export function QuoteDetail() {
   const requiresDeliberateLossConfirmation = effectiveSellingPrice + 0.005 < totalCost
   const validDeliberateLossConfirmation =
     deliberateLossConfirmed && deliberateLossReason.trim().length >= 10
-  const gp = quote.pricing.grossProfit
-  const margin = quote.pricing.grossMargin * 100
+  const gp = effectiveSellingPrice - totalCost
+  const margin = effectiveSellingPrice > 0 ? gp / effectiveSellingPrice * 100 : 0
   const estimatorNotes =
     typeof quote.jobInputs.notes === "string" ? quote.jobInputs.notes : ""
   const additionCircuitEntries =
@@ -225,6 +229,9 @@ export function QuoteDetail() {
   const hasNegativeLaborAdjustment = Object.entries(quote.jobInputs).some(
     ([key, value]) =>
       negativeLaborAdjustmentKeys.has(key) &&
+      !(key === "laborAdjustmentHours" && "circuitConfigurationVersion" in quote.jobInputs &&
+        quote.jobInputs.circuitConfigurationVersion === 2 &&
+        ["KITCHEN", "BATHROOM", "RECESSED_LIGHTING"].includes(quote.module)) &&
       typeof value === "number" &&
       value < 0,
   )
@@ -253,10 +260,16 @@ export function QuoteDetail() {
               {status}
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+          <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 break-words">
             <span className="font-mono text-primary font-medium">{quote.quoteNumber}</span> &bull; 
             {quote.customerName} {quote.customerEmail && `(${quote.customerEmail})`}
           </p>
+          <p className="mt-2 text-sm">Proposal: {quote.proposalDecision?.decision === "accepted" ? "Accepted" :
+            quote.proposalDecision?.decision === "declined" ? "Declined" : "No decision recorded"}</p>
+          {view === "internal" && <div className="mt-3">
+            <p className="text-xl font-semibold text-primary">Selling Price: ${quote.pricing.finalSellingPrice.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">Cost: ${(quote.pricing.materialCost + (quote.pricing.laborOverride ?? quote.pricing.laborCost)).toFixed(2)} | Gross Profit: ${quote.pricing.grossProfit.toFixed(2)} | Margin: {(quote.pricing.grossMargin * 100).toFixed(1)}%</p>
+          </div>}
         </div>
         
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -268,7 +281,7 @@ export function QuoteDetail() {
             disabled={hasBlockingWarnings}
             title={hasBlockingWarnings ? "Resolve pricing errors before opening export" : undefined}
           >
-            <Download size={16} className="mr-2" /> App / Accounting Export
+            <Download size={16} className="mr-2" /> Export
           </Button>
           <Button className="w-full sm:w-auto" data-testid="button-duplicate-quote" variant="outline" onClick={handleDuplicate}>
             <Copy size={16} className="mr-2" /> Duplicate / Revise
@@ -292,7 +305,7 @@ export function QuoteDetail() {
         </div>
       )}
 
-      <Card data-testid="quote-proposal-decision">
+      {(quote.proposalDecision || quote.proposalDecisions.length > 0) && <Card data-testid="quote-proposal-decision">
         <CardHeader>
           <div className="flex items-center gap-2">
             {quote.proposalDecision?.decision === "accepted" ? (
@@ -302,7 +315,7 @@ export function QuoteDetail() {
             ) : (
               <FileText className="text-muted-foreground" size={20} />
             )}
-            <CardTitle>Proposal Decision</CardTitle>
+            <CardTitle>Proposal Activity / Decision</CardTitle>
           </div>
           <CardDescription>
             Decisions are tied to the exact saved proposal revision and kept as an immutable audit trail.
@@ -378,21 +391,24 @@ export function QuoteDetail() {
             </div>
           )}
         </CardContent>
-      </Card>
-
-      <QuoteExportCard
-        quoteId={quote.id}
-        customerName={quote.customerName}
-        customerEmail={quote.customerEmail}
-        isDirty={isDirty}
-        assemblyLineCount={quote.assembly.length}
-        pricingBlockers={exportPricingBlockers}
-        onOpenCustomerProposal={handleOpenProposal}
-        customerProposalDisabled={status !== "ready" || hasBlockingWarnings || isDirty || updateQuote.isPending}
-        customerProposalHelp={hasBlockingWarnings ? "Resolve pricing issues before preparing a customer quote." : status !== "ready" ? "Mark this quote ready to open the customer version." : isDirty ? "Save Changes before opening the customer version." : "Open the customer version, then use Download PDF or share its link."}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      </Card>}
+      <div className="flex gap-2" aria-label="Quote view">
+        <Button variant={view === "internal" ? "default" : "outline"} onClick={() => setView("internal")}>Internal View</Button>
+        <Button variant={view === "customer" ? "default" : "outline"} onClick={() => setView("customer")}>Customer View</Button>
+      </div>
+      {view === "customer" && <Card data-testid="customer-view-preview">
+        <CardHeader><CardTitle>{settings?.companyName ?? "Customer proposal"}</CardTitle><CardDescription>Proposal #{quote.quoteNumber} · {new Date(quote.createdAt).toLocaleDateString()}</CardDescription></CardHeader>
+        <CardContent className="space-y-5">
+          <h2 className="text-xl font-semibold">{quote.projectName}</h2>
+          <p className="whitespace-pre-wrap">{proposalDesc}</p>
+          <div><h3 className="font-semibold">Included Scope</h3><ul className="mt-2 space-y-2">{quote.customerScope?.map(line =>
+            <li key={line.id} className="flex justify-between gap-3"><span>{line.description}</span><span>{line.displayValue ?? `${line.quantity} ${line.unit}`}</span></li>)}</ul></div>
+          <div><p>Total Investment</p><p className="text-3xl font-bold text-primary">${quote.pricing.finalSellingPrice.toFixed(2)}</p></div>
+          <div><h3 className="font-semibold">Terms</h3><p className="whitespace-pre-wrap text-sm">{settings?.proposalTerms || DEFAULT_PROPOSAL_TERMS}</p></div>
+          <p className="text-xs text-muted-foreground">Preview only. Use Customer Proposal for the version with acceptance controls. Save any edits first.</p>
+        </CardContent>
+      </Card>}
+      {view === "internal" && <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Col - Proposal & Assembly */}
         <div className="lg:col-span-2 space-y-6">
@@ -400,7 +416,7 @@ export function QuoteDetail() {
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <FileText className="text-muted-foreground" size={20} />
-                <CardTitle>Proposal Description</CardTitle>
+                <CardTitle>Customer-Facing Scope / Proposal Description</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -464,7 +480,11 @@ export function QuoteDetail() {
                       <TableCell className="text-right font-mono">{line.quantity}</TableCell>
                       <TableCell className="text-right text-xs font-mono text-muted-foreground">{line.unit}</TableCell>
                       <TableCell className="text-right font-mono">
-                        ${line.extendedCost.toFixed(2)}
+                        {line.extendedCost === 0 && line.intentionalExclusionReason ?
+                          /customer.supplied/i.test(line.intentionalExclusionReason) ? "Customer Supplied" :
+                          /reus|existing/i.test(line.intentionalExclusionReason) ? "Existing / Reused" :
+                          /included/i.test(line.intentionalExclusionReason) ? "Included" : "No additional charge"
+                          : `$${line.extendedCost.toFixed(2)}`}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -478,7 +498,9 @@ export function QuoteDetail() {
             </CardContent>
           </Card>
 
-          <Card>
+          <details className="rounded-lg border bg-card p-4">
+            <summary className="cursor-pointer text-sm font-semibold">Advanced → Builder Inputs & Calculation Details</summary>
+          <Card className="mt-3 border-0 shadow-none">
             <CardHeader>
               <CardTitle>Builder Inputs Record</CardTitle>
               <CardDescription>The parametric values used to generate this estimate.</CardDescription>
@@ -496,7 +518,7 @@ export function QuoteDetail() {
                   return (
                     <div key={key} className="flex flex-col">
                       <span className="text-muted-foreground text-xs uppercase tracking-wider truncate">{label}</span>
-                      <span className="font-medium truncate">{String(value)}</span>
+                      <span className="font-medium whitespace-pre-wrap break-words">{readableInput(value)}</span>
                     </div>
                   )
                 })}
@@ -522,6 +544,7 @@ export function QuoteDetail() {
               )}
             </CardContent>
           </Card>
+          </details>
 
           {quote.takeoffReview && (
             <Card data-testid="quote-takeoff-audit">
@@ -675,21 +698,25 @@ export function QuoteDetail() {
         </div>
 
         {/* Right Col - Pricing & Overrides */}
-        <div className="space-y-6">
-          {quote.pricing.pricingWarnings.length > 0 && (
-            <Card className="border-amber-300 bg-amber-50 text-amber-950">
+        <div className="space-y-6 lg:sticky lg:top-4 self-start">
+          {(quote.pricing.pricingWarnings.length > 0 || exportPricingBlockers.length > 0 || quote.assembly.some(l => /customer.supplied/i.test(l.intentionalExclusionReason ?? ""))) && (
+            <Card className="border-amber-500/30">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <TriangleAlert size={20} />
-                  <CardTitle className="text-lg">Pricing needs confirmation</CardTitle>
+                  <CardTitle className="text-lg">Issues to Review</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-1 pl-5 text-sm list-disc">
-                  {quote.pricing.pricingWarnings.map((warning, index) => (
-                    <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>
-                  ))}
-                </ul>
+                <p className="text-sm">{exportPricingBlockers.length} pricing issues · {quote.pricing.pricingWarnings.filter(w => w.severity !== "error").length} field-verification notes · {quote.assembly.filter(l => /customer.supplied/i.test(l.intentionalExclusionReason ?? "")).length} customer-supplied items</p>
+                <details className="mt-2"><summary className="cursor-pointer text-sm">Review Issues</summary>
+                  {(["Pricing", "Field Verification", "Customer-Supplied"] as const).map(group => <div key={group} className="mt-3 text-sm">
+                    <h4 className="font-semibold">{group}</h4><ul className="list-disc space-y-1 pl-5">
+                      {group === "Customer-Supplied" ? quote.assembly.filter(l => /customer.supplied/i.test(l.intentionalExclusionReason ?? "")).map(l => <li key={l.id}>{l.description}: purchase cost intentionally excluded.</li>) :
+                        quote.pricing.pricingWarnings.filter(w => group === "Pricing" ? w.severity === "error" : w.severity !== "error").map((warning, index) =>
+                          <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>)}
+                    </ul></div>)}
+                </details>
               </CardContent>
             </Card>
           )}
@@ -710,7 +737,7 @@ export function QuoteDetail() {
                 </div>
                 <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
                   <span>Loaded Internal Labor Cost</span>
-                  <span className="font-mono">${quote.pricing.laborCost.toFixed(2)}</span>
+                  <span className="font-mono">${effectiveLabor.toFixed(2)}</span>
                 </div>
                 {quote.pricing.laborSellAmount !== undefined && (
                   <div className="flex justify-between items-center text-sm text-secondary-foreground/80">
@@ -727,7 +754,7 @@ export function QuoteDetail() {
                 )}
                 
                 <div className="border-t border-secondary-border pt-3 flex justify-between items-center font-bold">
-                  <span>Total Cost</span>
+                  <span>Total Internal Cost</span>
                   <span className="font-mono">${totalCost.toFixed(2)}</span>
                 </div>
               </div>
@@ -767,7 +794,9 @@ export function QuoteDetail() {
             </CardContent>
           </Card>
 
-          <Card>
+          <details className="rounded-lg border bg-card p-4">
+            <summary className="cursor-pointer text-sm font-semibold">Advanced Pricing Overrides {laborOverride !== "" || priceOverride !== "" ? "· Active" : ""}</summary>
+          <Card className="mt-3 border-0 shadow-none">
             <CardHeader>
               <CardTitle>Overrides</CardTitle>
               <CardDescription>Adjust final numbers manually. Leaves calculated assembly intact.</CardDescription>
@@ -831,8 +860,19 @@ export function QuoteDetail() {
               )}
             </CardContent>
           </Card>
+          </details>
         </div>
-      </div>
+      </div>}
+      {view === "internal" && <QuoteExportCard quote={quote} isDirty={isDirty} pricingBlockers={exportPricingBlockers}/>}
     </div>
   )
+}
+
+function readableInput(value: unknown): string {
+  if (value == null) return "Not set"
+  if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (Array.isArray(value)) return value.map((v, i) => `${i + 1}. ${readableInput(v)}`).join("\n") || "None"
+  if (typeof value === "object") return Object.entries(value).map(([k, v]) =>
+    `${k.replace(/([A-Z])/g, " $1")}: ${readableInput(v)}`).join(" · ")
+  return String(value)
 }

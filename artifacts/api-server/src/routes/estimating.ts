@@ -4,8 +4,8 @@ import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness";
-import { jobberExportLayout } from "@workspace/api-zod/jobber-export-layout";
 import {
+  type QuoteExportMapping,
   CreateQuoteBody,
   CreateQuoteResponse,
   CreateCustomerBody,
@@ -389,6 +389,7 @@ function serializeQuote(
     assembly: quote.assembly,
     pricing: serializePricing(quote.pricing),
     proposalDescription: quote.proposalDescription,
+    customerScope: customerProposalScope(quote.module, quote.assembly).scope,
     sourceQuoteId: quote.sourceQuoteId,
     revisionNumber: quote.revisionNumber,
     proposalDecision: currentDecision
@@ -583,6 +584,7 @@ function serializeCustomerSummary(
     id: customer.id,
     name: customer.name,
     email: customer.email,
+    integrationMapping: customer.integrationMapping,
     quoteCount: customerQuotes.length,
     totalQuoted: Number(
       customerQuotes.reduce((sum, quote) => sum + quote.total, 0).toFixed(2),
@@ -592,8 +594,8 @@ function serializeCustomerSummary(
   };
 }
 
-export function matchCustomerForQuote(
-  customers: Array<typeof customersTable.$inferSelect>,
+export function matchCustomerForQuote<T extends Pick<typeof customersTable.$inferSelect, "id" | "name" | "email">>(
+  customers: T[],
   input: { name: string; email?: string | null },
 ) {
   const normalizedName = normalizeCustomerName(input.name);
@@ -1445,6 +1447,7 @@ router.post("/customers", async (req, res): Promise<void> => {
         companyId,
         name: parsed.data.name.trim().replace(/\s+/g, " "),
         email,
+        integrationMapping: parsed.data.integrationMapping ?? {},
       })
       .returning();
   } catch (error) {
@@ -1563,6 +1566,7 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
       .set({
         name: parsed.data.name?.trim().replace(/\s+/g, " ") ?? existing.name,
         email,
+        integrationMapping: parsed.data.integrationMapping ?? existing.integrationMapping,
       })
       .where(
         and(
@@ -2201,6 +2205,18 @@ router.post("/quotes/:id/decision", async (req, res): Promise<void> => {
   );
 });
 
+async function resolvedExportMapping(quote: typeof quotesTable.$inferSelect, mapping: QuoteExportMapping): Promise<QuoteExportMapping> {
+  const [customer] = quote.customerId ? await db.select().from(customersTable).where(and(
+    eq(customersTable.id, quote.customerId), eq(customersTable.companyId, quote.companyId),
+  )) : [];
+  const [settings] = await db.select().from(companySettingsTable).where(eq(companySettingsTable.companyId, quote.companyId));
+  const identity = Object.fromEntries(Object.entries(customer?.integrationMapping ?? {}).filter(([k]) =>
+    /^(client|jobber|property|billing)/.test(k)));
+  const result = PreflightQuoteExportBody.safeParse({ destination: "jobber", format: "csv",
+    mapping: { ...identity, contractDisclaimer: settings?.proposalTerms ?? "", ...mapping } });
+  return result.success ? result.data.mapping : mapping;
+}
+
 router.post(
   "/quotes/:id/exports/preflight",
   async (req, res): Promise<void> => {
@@ -2230,6 +2246,7 @@ router.post(
       return;
     }
 
+    const mapping = await resolvedExportMapping(quote, parsed.data.mapping);
     const adapter =
       parsed.data.destination === QUICKBOOKS_DESTINATION
         ? {
@@ -2247,7 +2264,7 @@ router.post(
               format: HOUSECALL_PRO_CSV_FORMAT,
               issues: QUOTE_EXPORT_ADAPTERS_V1.housecall_pro.preflight(
                 quote,
-                parsed.data.mapping,
+                mapping,
               ),
               lineItemCount: 1,
             }
@@ -2256,11 +2273,10 @@ router.post(
               format: JOBBER_CSV_FORMAT,
               issues: QUOTE_EXPORT_ADAPTERS_V1.jobber.preflight(
                 quote,
-                parsed.data.mapping,
+                mapping,
               ),
-              lineItemCount: Array.isArray(quote.assembly)
-                ? jobberExportLayout(quote.assembly.length).lineItemCount
-                : 0,
+              lineItemCount: parsed.data.mapping.lineItemDetail === "scope"
+                ? parsed.data.mapping.scopeLines?.length ?? 0 : 1,
             };
     res.json(
       PreflightQuoteExportResponse.parse({
@@ -2313,7 +2329,7 @@ router.post(
 
     const result = QUOTE_EXPORT_ADAPTERS_V1.jobber.build(
       quote,
-      parsed.data.mapping,
+      await resolvedExportMapping(quote, parsed.data.mapping),
     );
     if (!result.csv) {
       res.status(422).json({

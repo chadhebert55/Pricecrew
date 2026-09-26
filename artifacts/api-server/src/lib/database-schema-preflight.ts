@@ -50,6 +50,7 @@ export const requiredTables = [
 ] as const;
 
 export const requiredColumns: ColumnRequirement[] = [
+  { table: "customers", column: "integration_mapping" },
   { table: "companies", column: "trade" },
   { table: "companies", column: "onboarding_completed" },
 ];

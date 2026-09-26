@@ -5,8 +5,55 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { QuoteExportMappingAutoInvoiceFollowups } from './quoteExportMappingAutoInvoiceFollowups';
+import type { QuoteExportMappingAutoJobFollowups } from './quoteExportMappingAutoJobFollowups';
+import type { QuoteExportMappingAutoQuoteFollowups } from './quoteExportMappingAutoQuoteFollowups';
+import type { QuoteExportMappingAutoReviewRequests } from './quoteExportMappingAutoReviewRequests';
+import type { QuoteExportMappingAutoVisitReminders } from './quoteExportMappingAutoVisitReminders';
+import type { QuoteExportMappingDepositType } from './quoteExportMappingDepositType';
+import type { QuoteExportMappingDiscountType } from './quoteExportMappingDiscountType';
+import type { QuoteExportMappingLineItemDetail } from './quoteExportMappingLineItemDetail';
+import type { QuoteExportMappingQuoteStatus } from './quoteExportMappingQuoteStatus';
+import type { QuoteExportMappingScopeLinesItem } from './quoteExportMappingScopeLinesItem';
+import type { QuoteExportMappingTaxable } from './quoteExportMappingTaxable';
+import type { QuoteExportMappingTaxMethod } from './quoteExportMappingTaxMethod';
 
 export interface QuoteExportMapping {
+  quoteStatus?: QuoteExportMappingQuoteStatus;
+  lineItemDetail?: QuoteExportMappingLineItemDetail;
+  includeInternalCost?: boolean;
+  taxConfirmed?: boolean;
+  taxable?: QuoteExportMappingTaxable;
+  taxMethod?: QuoteExportMappingTaxMethod;
+  existingTaxRateName?: string;
+  newTaxRateName?: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  newTaxRate?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  existingTaxRatePercentage?: number;
+  discountType?: QuoteExportMappingDiscountType;
+  /** @minimum 0 */
+  discountAmount?: number;
+  depositType?: QuoteExportMappingDepositType;
+  /** @minimum 0 */
+  depositAmount?: number;
+  quoteMessage?: string;
+  introductionTitle?: string;
+  introductionBody?: string;
+  contractDisclaimer?: string;
+  autoVisitReminders?: QuoteExportMappingAutoVisitReminders;
+  autoJobFollowups?: QuoteExportMappingAutoJobFollowups;
+  autoQuoteFollowups?: QuoteExportMappingAutoQuoteFollowups;
+  autoInvoiceFollowups?: QuoteExportMappingAutoInvoiceFollowups;
+  autoReviewRequests?: QuoteExportMappingAutoReviewRequests;
+  /** @maxItems 10 */
+  scopeLines?: QuoteExportMappingScopeLinesItem[];
   /** @nullable */
   jobberClientId?: string | null;
   /** @nullable */

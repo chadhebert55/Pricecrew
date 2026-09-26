@@ -56,13 +56,13 @@ export function KitchenBuilderFields({inputs:i,onChange:set,pricing}: {inputs:Ki
       </div>
     </BuilderSection>
     <BuilderSection title="Lighting" summary={`${i.sinkLights+i.islandPendants+i.undercabinetLighting+i.recessedLights} lighting locations`}>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{quantity("sinkLights","Sink lights")}{quantity("islandPendants","Island pendants")}{quantity("undercabinetLighting","Undercabinet lighting")}{quantity("recessedLights","Recessed lights")}</div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{quantity("sinkLights","Sink lights")}{quantity("islandPendants","Island pendants")}{quantity("undercabinetLighting","Undercabinet lighting","Contractor supplied. Uses the company Price Book cost; missing pricing requires review.")}{quantity("recessedLights","Recessed lights")}</div>
       <SelectField id="kitchen-recessed-size" label="Recessed light size" value={i.recessedLightSize ?? "4-inch"} options={["4-inch","6-inch"]} onChange={v=>put("recessedLightSize",v)}/>
       <label className="flex items-center gap-3 text-sm"><Checkbox checked={!!i.includeLightingCircuit} onCheckedChange={v=>put("includeLightingCircuit",v===true)}/>Include new lighting circuit</label>
       {i.includeLightingCircuit && <CircuitFields id="kitchen-lighting" circuit={rows.find(c=>c.key==="lighting")!} onChange={updateCircuit}/>}
     </BuilderSection>
     <BuilderSection title="Customer-Supplied Items" summary="Purchase cost excluded; installation labor retained">
-      {supplied("customerSuppliedFixtures","Customer supplies sink, pendant and undercabinet fixtures")}
+      {supplied("customerSuppliedFixtures","Customer supplies sink and pendant fixtures")}
       {supplied("customerSuppliedRecessedLights","Customer supplies recessed fixtures")}
     </BuilderSection>
     <BuilderSection title="Wiring & Pricing" summary={`${i.routeLength} FT branch interconnect, separate from home runs`}>

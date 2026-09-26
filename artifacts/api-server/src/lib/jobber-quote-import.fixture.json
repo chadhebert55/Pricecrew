@@ -3,8 +3,9 @@
   "document": "Quote",
   "format": "CSV",
   "contractVersion": 1,
-  "source": "Jobber quote CSV import template",
-  "reviewedOn": "2026-08-31",
+  "source": "https://help.getjobber.com/help-center/files/39456455271831/quotes-sample-file.csv",
+  "reviewedOn": "2026-09-26",
+  "columnCount": 119,
   "maxLineItems": 10,
   "baseHeaders": [
     "Jobber Client ID",
@@ -91,6 +92,6 @@
   "lineItemRules": {
     "categories": ["Service", "Product"],
     "requiredFields": ["Category", "Name", "Description", "Quantity"],
-    "savedTotalName": "Saved quote total"
+    "default": "One summarized Service line using saved project title, customer-facing scope and final selling price"
   }
 }

@@ -107,3 +107,21 @@ test("other modules retain useful saved scope and hide only zero allowances", ()
   assert.equal(scope.length, 1);
   assert.equal(scope[0]!.description, "Reconnect existing outlet");
 });
+
+test("remodel and lighting proposals group work without exposing raw takeoff or costs", () => {
+  for (const module of ["KITCHEN", "BATHROOM", "RECESSED_LIGHTING"]) {
+    const assembly = [
+      line("wire", "PRIVATE 12/2 SKU123", 20, { category: "Conductor", quantity: 120, unit: "ft" }),
+      line("connectors", "PRIVATE stock", 10, { category: "Rough-in" }),
+      line("wafer", "PRIVATE model", 0, { category: "Fixtures", intentionalExclusionReason: "Customer supplied" }),
+      line("permit-allowance", "Permit", 0, { unit: "allowance" }),
+    ];
+    const before = structuredClone(assembly);
+    const { scope } = customerProposalScope(module, assembly);
+    assert.equal(scope.length, 2);
+    assert.equal(scope[0]!.description, "Wiring & installation materials");
+    assert.equal(scope[1]!.displayValue, "Install customer-supplied items");
+    assert.doesNotMatch(JSON.stringify(scope), /PRIVATE|SKU|unitCost|120|Permit/);
+    assert.deepEqual(assembly, before);
+  }
+});

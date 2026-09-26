@@ -5,8 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { QuoteExportMapping } from './quoteExportMapping';
 
 export interface CustomerUpdate {
+  integrationMapping?: QuoteExportMapping;
   /** @minLength 1 */
   name?: string;
   /** @nullable */
