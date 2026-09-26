@@ -82,9 +82,9 @@ test("Kitchen circuits, readiness, saved totals, and responsive draft recovery",
     await expect(page.getByRole("button",{name:"Generate Kitchen Quote",exact:true})).toBeEnabled()
     for(const width of [1280,768,375]){
       await page.setViewportSize({width,height:900})
-      await page.evaluate(()=>document.documentElement.classList.add("dark"))
+      await page.evaluate("document.documentElement.classList.add('dark')")
       await page.getByText("Kitchen Summary",{exact:true}).scrollIntoViewIfNeeded()
-      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+      expect(await page.evaluate("document.documentElement.scrollWidth")).toBeLessThanOrEqual(width)
       await page.screenshot({path:info.outputPath(`kitchen-${width}.png`),fullPage:true})
     }
     await page.setViewportSize({width:1280,height:900})
