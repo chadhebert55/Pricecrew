@@ -6,12 +6,32 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BathroomInputsCableType } from './bathroomInputsCableType';
+import type { BathroomInputsCircuitConfigurationVersion } from './bathroomInputsCircuitConfigurationVersion';
 import type { BathroomInputsCircuitOption } from './bathroomInputsCircuitOption';
+import type { BathroomInputsFanControl } from './bathroomInputsFanControl';
 import type { BathroomInputsNewCircuitBreakerProtectionType } from './bathroomInputsNewCircuitBreakerProtectionType';
 import type { BathroomInputsRecessedLightSize } from './bathroomInputsRecessedLightSize';
 import type { LaborRateType } from './laborRateType';
+import type { RemodelCircuit } from './remodelCircuit';
 
 export interface BathroomInputs {
+  circuitConfigurationVersion?: BathroomInputsCircuitConfigurationVersion;
+  bathroomCircuits?: RemodelCircuit[];
+  heatedFloorConfiguration?: RemodelCircuit;
+  heatedFloorCircuitKey?: string;
+  heatedFloorThermostat?: boolean;
+  /** @minimum 0 */
+  branchWiringLength?: number;
+  /** @minimum 0 */
+  threeWaySwitches?: number;
+  /** @minimum 0 */
+  dimmers?: number;
+  /** @minimum 0 */
+  smartSwitches?: number;
+  /** @minimum 0 */
+  showerLights?: number;
+  fanControl?: BathroomInputsFanControl;
+  customerSuppliedRecessedLights?: boolean;
   /** @minimum 0 */
   gfciReceptacles: number;
   /** @minimum 0 */

@@ -143,6 +143,18 @@ export type EvChargerInputRecord = {
 };
 
 export type BathroomInputRecord = {
+  circuitConfigurationVersion?: number;
+  bathroomCircuits?: RemodelCircuitRecord[];
+  heatedFloorConfiguration?: RemodelCircuitRecord;
+  heatedFloorCircuitKey?: string;
+  heatedFloorThermostat?: boolean;
+  branchWiringLength?: number;
+  threeWaySwitches?: number;
+  dimmers?: number;
+  smartSwitches?: number;
+  showerLights?: number;
+  fanControl?: string;
+  customerSuppliedRecessedLights?: boolean;
   gfciReceptacles: number;
   additionalReceptacles: number;
   vanityLights: number;

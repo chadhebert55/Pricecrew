@@ -76,3 +76,17 @@ export function breakerRequirements(circuits: RemodelCircuit[]) {
   }
   return [...grouped.values()];
 }
+
+export function bathroomCircuitPlan(inputs: {
+  bathroomCircuits?: RemodelCircuit[]; routeLength?: number; heatedFloorCircuit?: boolean;
+  heatedFloorCircuitKey?: string; heatedFloorConfiguration?: RemodelCircuit;
+}): RemodelCircuit[] {
+  const circuits = (inputs.bathroomCircuits ?? []).filter(c => c.quantity > 0)
+    .map(c => ({...c, routeLength: c.routeLength ?? inputs.routeLength ?? 0}));
+  if (inputs.heatedFloorCircuit && !inputs.heatedFloorCircuitKey) {
+    circuits.push({...defaultCircuit("heated-floor", "Heated floor", 1), protectionType: "GFCI",
+      ...inputs.heatedFloorConfiguration, key: "heated-floor", quantity: 1,
+      routeLength: inputs.heatedFloorConfiguration?.routeLength ?? inputs.routeLength ?? 0});
+  }
+  return circuits;
+}

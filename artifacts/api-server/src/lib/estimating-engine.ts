@@ -1,5 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
-import { kitchenCircuitPlan, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
+import { kitchenCircuitPlan, bathroomCircuitPlan, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
   AdditionCircuitEntry,
   AdditionInputRecord,
@@ -1830,6 +1830,61 @@ export function calculateBathroomEstimate(
   settings: EstimatingSettings,
   priceBook: PriceBookItem[],
 ): EstimateResult {
+  if (inputs.circuitConfigurationVersion !== 2) return calculateLegacyBathroomEstimate(inputs, settings, priceBook);
+  const base = calculateLegacyBathroomEstimate({...inputs, circuitOption: "Reuse existing circuit",
+    heatedFloorCircuit: false, additionalSwitches: 0, laborAdjustmentHours: 0,
+    routeLength: inputs.branchWiringLength ?? 0}, settings, priceBook);
+  const assembly = base.assembly;
+  const warnings = base.pricing.pricingWarnings.map(w => typeof w === "string" ? w : w.message)
+    .filter(w => !w.startsWith("Customer-supplied material") && !w.startsWith("Bathroom route length is unresolved"));
+  const circuits = bathroomCircuitPlan(inputs);
+  if (circuits.length) {
+    const i = warnings.findIndex(w => w.startsWith("Existing bathroom circuit reuse"));
+    if (i >= 0) warnings.splice(i, 1);
+  }
+  if (new Set(circuits.map(c => c.key)).size !== circuits.length)
+    warnings.push("Remodel circuit: circuit row identifiers must be unique.");
+  if (inputs.heatedFloorCircuit && inputs.heatedFloorCircuitKey && !circuits.some(c => c.key === inputs.heatedFloorCircuitKey))
+    warnings.push("Remodel circuit: select an active existing row for heated-floor power or configure a new heated-floor circuit.");
+  addRemodelCircuits("bathroom", circuits, [], inputs.panelManufacturer ?? "", assembly, warnings, priceBook);
+  const priced = (id: string, key: string, quantity: number, category = "Controls") => {
+    if (quantity <= 0) return;
+    const cost = unitCost(key, priceBook, warnings);
+    addLine(assembly, {id, category, description: key, quantity, unit: "ea", unitCost: cost.value, source: cost.source});
+  };
+  const single = inputs.additionalSwitches, three = inputs.threeWaySwitches ?? 0,
+    dimmers = inputs.dimmers ?? 0, smart = inputs.smartSwitches ?? 0;
+  const fans = inputs.exhaustFans + inputs.fanLights + inputs.fanLightHeatUnits;
+  const fanControl = inputs.fanControl ?? "Standard switch";
+  priced("bathroom-single-pole", "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211", single);
+  priced("bathroom-three-way", "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128", three);
+  priced("bathroom-dimmers", "Lutron DVCL-153P-WH Diva dimmer — SKU 160288", dimmers);
+  priced("bathroom-smart", "smart switch", smart);
+  priced("bathroom-fan-controls", fanControl === "Standard switch" ? "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211"
+    : fanControl === "Timer switch" ? "fan timer switch" : "fan humidity-sensing control", fans);
+  const thermostat = inputs.heatedFloorCircuit && inputs.heatedFloorThermostat ? 1 : 0;
+  priced("bathroom-floor-thermostat", "heated-floor thermostat", thermostat);
+  priced("bathroom-shower-lights", "wet-location recessed light", inputs.showerLights ?? 0, "Lighting");
+  const controls = single + three + dimmers + smart + fans + thermostat;
+  const devices = inputs.gfciReceptacles + inputs.additionalReceptacles + controls;
+  priced("bathroom-device-boxes", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", devices, "Rough-in");
+  priced("bathroom-decora-plates", "Legrand radiant RWP26WCC10 1-gang screwless wall plate", devices - inputs.additionalReceptacles, "Trim");
+  priced("bathroom-duplex-plates", "duplex receptacle wall plate", inputs.additionalReceptacles, "Trim");
+  priced("bathroom-fixture-boxes", "fixture outlet box", inputs.vanityLights, "Rough-in");
+  const calculated = (base.pricing.finalLaborHours ?? 0) + single * .5 + three * .5 + dimmers * .5 + smart * .75
+    + fans * (fanControl === "Standard switch" ? .5 : .75) + (inputs.showerLights ?? 0) * .9 + thermostat * .75
+    + circuits.reduce((s, c) => s + c.quantity * (3 + (c.routeLength ?? 0) / 30), 0);
+  warnings.push("Bathroom quantities use shared remodel setup and incremental installation labor, not repeated service calls. Verify circuit assignment, wet-location fixture suitability, equipment instructions, control count and field conditions.");
+  if (inputs.heatedFloorCircuit)
+    warnings.push("Heated-floor scope includes the configured power circuit and optional thermostat only, not a heating mat or floor installation. Verify equipment load and protection.");
+  return finalizeRemodelEstimate(assembly, calculated, inputs.laborAdjustmentHours ?? 0, settings, warnings, inputs.laborRateType);
+}
+
+function calculateLegacyBathroomEstimate(
+  inputs: BathroomInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
   const assembly: AssemblyLineRecord[] = [];
   const pricingWarnings: string[] = [];
 
@@ -1907,10 +1962,10 @@ export function calculateBathroomEstimate(
   addPricedItem(
     "vanity-lights",
     "Lighting",
-    "Unverified allowance — vanity light",
-    "Customer-supplied vanity light fixture",
+    inputs.circuitConfigurationVersion === 2 ? "vanity light" : "Unverified allowance — vanity light",
+    inputs.circuitConfigurationVersion === 2 && !inputs.customerSuppliedFixtures ? "Vanity light fixture" : "Customer-supplied vanity light fixture",
     inputs.vanityLights,
-    true,
+    inputs.circuitConfigurationVersion === 2 ? inputs.customerSuppliedFixtures : true,
   );
   addPricedItem(
     "recessed-lights",
@@ -1920,7 +1975,7 @@ export function calculateBathroomEstimate(
       : JUNO_WF4_VERIFIED,
     `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
-    false,
+    inputs.circuitConfigurationVersion === 2 && !!inputs.customerSuppliedRecessedLights,
   );
   addPricedItem(
     "exhaust-fans",
@@ -2038,14 +2093,14 @@ export function calculateBathroomEstimate(
     inputs.exhaustFans +
     inputs.fanLights +
     inputs.fanLightHeatUnits;
-  addPricedItem(
+  if (inputs.circuitConfigurationVersion !== 2) addPricedItem(
     "bathroom-boxes",
     "Rough-in",
     "Unverified allowance — single-gang box",
     "Bathroom device and fixture box allowance",
     deviceCount,
   );
-  addPricedItem(
+  if (inputs.circuitConfigurationVersion !== 2) addPricedItem(
     "bathroom-plates",
     "Trim",
     "Unverified allowance — device plate",
