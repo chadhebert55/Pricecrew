@@ -1185,6 +1185,7 @@ export const CreateQuoteBody = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "bathroomCircuits": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(createQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
@@ -1195,6 +1196,7 @@ export const CreateQuoteBody = zod.object({
   "routeLength": zod.number().min(createQuoteBodyJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
 })).optional(),
   "heatedFloorConfiguration": zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(createQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
@@ -1246,6 +1248,7 @@ export const CreateQuoteBody = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "circuitConfigurations": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(createQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
@@ -1256,6 +1259,7 @@ export const CreateQuoteBody = zod.object({
   "routeLength": zod.number().min(createQuoteBodyJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
 })).optional(),
   "additionalBreakers": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(createQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
@@ -2258,6 +2262,7 @@ export const CreateQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "bathroomCircuits": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
@@ -2268,6 +2273,7 @@ export const CreateQuoteResponse = zod.object({
   "routeLength": zod.number().min(createQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
 })).optional(),
   "heatedFloorConfiguration": zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(createQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
@@ -2319,6 +2325,7 @@ export const CreateQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "circuitConfigurations": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
@@ -2329,6 +2336,7 @@ export const CreateQuoteResponse = zod.object({
   "routeLength": zod.number().min(createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
 })).optional(),
   "additionalBreakers": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
@@ -2772,7 +2780,24 @@ export const CreateQuoteResponse = zod.object({
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
   "source": zod.string(),
-  "intentionalExclusionReason": zod.string().min(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
+  "intentionalExclusionReason": zod.string().min(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional(),
+  "resolutionStatus": zod.string().optional(),
+  "materialSnapshot": zod.object({
+  "catalogId": zod.number().nullable(),
+  "requestKey": zod.string(),
+  "supplier": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "description": zod.string(),
+  "supplierCost": zod.number().nullable(),
+  "supplierUom": zod.string().nullable(),
+  "normalizedUnit": zod.string().nullable(),
+  "normalizedUnitCost": zod.number().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "resolutionStatus": zod.string()
+}).optional(),
+  "materialRequestKey": zod.string().optional()
 })),
   "pricing": zod.object({
   "calculatedLaborHours": zod.number().optional(),
@@ -3384,6 +3409,7 @@ export const PreviewQuoteBody = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "bathroomCircuits": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(previewQuoteBodyJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
@@ -3394,6 +3420,7 @@ export const PreviewQuoteBody = zod.object({
   "routeLength": zod.number().min(previewQuoteBodyJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
 })).optional(),
   "heatedFloorConfiguration": zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(previewQuoteBodyJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
@@ -3445,6 +3472,7 @@ export const PreviewQuoteBody = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "circuitConfigurations": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(previewQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
@@ -3455,6 +3483,7 @@ export const PreviewQuoteBody = zod.object({
   "routeLength": zod.number().min(previewQuoteBodyJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
 })).optional(),
   "additionalBreakers": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(previewQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
@@ -3918,7 +3947,24 @@ export const PreviewQuoteResponse = zod.object({
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
   "source": zod.string(),
-  "intentionalExclusionReason": zod.string().min(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMin).max(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMax).optional()
+  "intentionalExclusionReason": zod.string().min(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMin).max(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMax).optional(),
+  "resolutionStatus": zod.string().optional(),
+  "materialSnapshot": zod.object({
+  "catalogId": zod.number().nullable(),
+  "requestKey": zod.string(),
+  "supplier": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "description": zod.string(),
+  "supplierCost": zod.number().nullable(),
+  "supplierUom": zod.string().nullable(),
+  "normalizedUnit": zod.string().nullable(),
+  "normalizedUnitCost": zod.number().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "resolutionStatus": zod.string()
+}).optional(),
+  "materialRequestKey": zod.string().optional()
 })),
   "pricing": zod.object({
   "calculatedLaborHours": zod.number().optional(),
@@ -5093,6 +5139,7 @@ export const GetQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "bathroomCircuits": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
@@ -5103,6 +5150,7 @@ export const GetQuoteResponse = zod.object({
   "routeLength": zod.number().min(getQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
 })).optional(),
   "heatedFloorConfiguration": zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(getQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
@@ -5154,6 +5202,7 @@ export const GetQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "circuitConfigurations": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
@@ -5164,6 +5213,7 @@ export const GetQuoteResponse = zod.object({
   "routeLength": zod.number().min(getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
 })).optional(),
   "additionalBreakers": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
@@ -5607,7 +5657,24 @@ export const GetQuoteResponse = zod.object({
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
   "source": zod.string(),
-  "intentionalExclusionReason": zod.string().min(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
+  "intentionalExclusionReason": zod.string().min(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional(),
+  "resolutionStatus": zod.string().optional(),
+  "materialSnapshot": zod.object({
+  "catalogId": zod.number().nullable(),
+  "requestKey": zod.string(),
+  "supplier": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "description": zod.string(),
+  "supplierCost": zod.number().nullable(),
+  "supplierUom": zod.string().nullable(),
+  "normalizedUnit": zod.string().nullable(),
+  "normalizedUnitCost": zod.number().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "resolutionStatus": zod.string()
+}).optional(),
+  "materialRequestKey": zod.string().optional()
 })),
   "pricing": zod.object({
   "calculatedLaborHours": zod.number().optional(),
@@ -6292,6 +6359,7 @@ export const UpdateQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "bathroomCircuits": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
@@ -6302,6 +6370,7 @@ export const UpdateQuoteResponse = zod.object({
   "routeLength": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
 })).optional(),
   "heatedFloorConfiguration": zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
@@ -6353,6 +6422,7 @@ export const UpdateQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "circuitConfigurations": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
@@ -6363,6 +6433,7 @@ export const UpdateQuoteResponse = zod.object({
   "routeLength": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
 })).optional(),
   "additionalBreakers": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
@@ -6806,7 +6877,24 @@ export const UpdateQuoteResponse = zod.object({
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
   "source": zod.string(),
-  "intentionalExclusionReason": zod.string().min(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMax).optional()
+  "intentionalExclusionReason": zod.string().min(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMax).optional(),
+  "resolutionStatus": zod.string().optional(),
+  "materialSnapshot": zod.object({
+  "catalogId": zod.number().nullable(),
+  "requestKey": zod.string(),
+  "supplier": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "description": zod.string(),
+  "supplierCost": zod.number().nullable(),
+  "supplierUom": zod.string().nullable(),
+  "normalizedUnit": zod.string().nullable(),
+  "normalizedUnitCost": zod.number().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "resolutionStatus": zod.string()
+}).optional(),
+  "materialRequestKey": zod.string().optional()
 })),
   "pricing": zod.object({
   "calculatedLaborHours": zod.number().optional(),
@@ -7916,6 +8004,7 @@ export const DuplicateQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "bathroomCircuits": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemQuantityMultipleOf),
@@ -7926,6 +8015,7 @@ export const DuplicateQuoteResponse = zod.object({
   "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoBathroomCircuitsItemRouteLengthMin).optional()
 })).optional(),
   "heatedFloorConfiguration": zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsTwoHeatedFloorConfigurationQuantityMultipleOf),
@@ -7977,6 +8067,7 @@ export const DuplicateQuoteResponse = zod.object({
 }),zod.object({
   "circuitConfigurationVersion": zod.literal(2).optional(),
   "circuitConfigurations": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
@@ -7987,6 +8078,7 @@ export const DuplicateQuoteResponse = zod.object({
   "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
 })).optional(),
   "additionalBreakers": zod.array(zod.object({
+  "connectionMethod": zod.enum(['Unspecified', 'Receptacle-connected', 'Hardwired']).optional(),
   "key": zod.string(),
   "label": zod.string().optional(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
@@ -8430,7 +8522,24 @@ export const DuplicateQuoteResponse = zod.object({
   "unitCost": zod.number(),
   "extendedCost": zod.number(),
   "source": zod.string(),
-  "intentionalExclusionReason": zod.string().min(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
+  "intentionalExclusionReason": zod.string().min(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional(),
+  "resolutionStatus": zod.string().optional(),
+  "materialSnapshot": zod.object({
+  "catalogId": zod.number().nullable(),
+  "requestKey": zod.string(),
+  "supplier": zod.string().nullable(),
+  "supplierSku": zod.string().nullable(),
+  "manufacturer": zod.string().nullable(),
+  "manufacturerPartNumber": zod.string().nullable(),
+  "description": zod.string(),
+  "supplierCost": zod.number().nullable(),
+  "supplierUom": zod.string().nullable(),
+  "normalizedUnit": zod.string().nullable(),
+  "normalizedUnitCost": zod.number().nullable(),
+  "sourceDate": zod.string().nullable(),
+  "resolutionStatus": zod.string()
+}).optional(),
+  "materialRequestKey": zod.string().optional()
 })),
   "pricing": zod.object({
   "calculatedLaborHours": zod.number().optional(),
@@ -8527,6 +8636,12 @@ export const DuplicateQuoteResponse = zod.object({
 /**
  * @summary List price book items
  */
+export const listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax = 300;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax = 100;
+
+
+
 export const ListPriceBookItemsResponseItem = zod.object({
   "id": zod.number(),
   "category": zod.string(),
@@ -8544,6 +8659,17 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
   "isContractorOwned": zod.boolean(),
+  "materialPreferences": zod.array(zod.object({
+  "requestKey": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax),
+  "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
+  "manufacturer": zod.string().max(listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax).optional()
+})).optional(),
+  "panelFamily": zod.string().nullish(),
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "builders": zod.array(zod.string()),
   "activeSelection": zod.boolean(),
   "isUnresolved": zod.boolean(),
@@ -8585,6 +8711,11 @@ export const ListPriceBookImportsResponse = zod.object({
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8600,6 +8731,11 @@ export const ListPriceBookImportsResponse = zod.object({
   "protectionType": zod.string().nullable()
 }),
   "before": zod.union([zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8661,6 +8797,11 @@ export const PreviewPriceBookImportResponse = zod.object({
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8676,6 +8817,11 @@ export const PreviewPriceBookImportResponse = zod.object({
   "protectionType": zod.string().nullable()
 }),
   "before": zod.union([zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8722,6 +8868,11 @@ export const GetPriceBookImportResponse = zod.object({
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8737,6 +8888,11 @@ export const GetPriceBookImportResponse = zod.object({
   "protectionType": zod.string().nullable()
 }),
   "before": zod.union([zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8795,6 +8951,11 @@ export const ApplyPriceBookImportResponse = zod.object({
   "reason": zod.string().nullable(),
   "matchedItemId": zod.number().nullable(),
   "incoming": zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8810,6 +8971,11 @@ export const ApplyPriceBookImportResponse = zod.object({
   "protectionType": zod.string().nullable()
 }),
   "before": zod.union([zod.object({
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "category": zod.string(),
   "item": zod.string(),
   "unit": zod.string(),
@@ -8845,11 +9011,35 @@ export const UpdatePriceBookItemParams = zod.object({
 
 export const updatePriceBookItemBodyUnitCostMin = 0;
 
+export const updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax = 300;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax = 100;
+
+export const updatePriceBookItemBodyMaterialPreferencesMax = 50;
+
+export const updatePriceBookItemBodyPanelFamilyMax = 100;
+
+export const updatePriceBookItemBodySupplierUnitQuantityMin = 0.000001;
+
 
 
 export const UpdatePriceBookItemBody = zod.object({
-  "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin)
+  "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin).optional(),
+  "materialPreferences": zod.array(zod.object({
+  "requestKey": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax),
+  "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
+  "manufacturer": zod.string().max(updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax).optional()
+})).max(updatePriceBookItemBodyMaterialPreferencesMax).optional(),
+  "panelFamily": zod.string().max(updatePriceBookItemBodyPanelFamilyMax).nullish(),
+  "normalizedUnit": zod.enum(['ea', 'ft']).optional(),
+  "supplierUnitQuantity": zod.number().min(updatePriceBookItemBodySupplierUnitQuantityMin).optional()
 })
+
+export const updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax = 300;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemManufacturerMax = 100;
+
+
 
 export const UpdatePriceBookItemResponse = zod.object({
   "id": zod.number(),
@@ -8868,6 +9058,17 @@ export const UpdatePriceBookItemResponse = zod.object({
   "protectionType": zod.string().nullish(),
   "isDefault": zod.boolean(),
   "isContractorOwned": zod.boolean(),
+  "materialPreferences": zod.array(zod.object({
+  "requestKey": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax),
+  "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
+  "manufacturer": zod.string().max(updatePriceBookItemResponseMaterialPreferencesItemManufacturerMax).optional()
+})).optional(),
+  "panelFamily": zod.string().nullish(),
+  "supplierCost": zod.number().nullish(),
+  "supplierUom": zod.string().nullish(),
+  "normalizedUnit": zod.string().nullish(),
+  "normalizedUnitCost": zod.number().nullish(),
+  "supplierUnitQuantity": zod.number().nullish(),
   "builders": zod.array(zod.string()),
   "activeSelection": zod.boolean(),
   "isUnresolved": zod.boolean(),

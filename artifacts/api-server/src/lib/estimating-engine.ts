@@ -1,4 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
+import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
   AdditionCircuitEntry,
@@ -24,7 +25,9 @@ import type {
 
 const JUNO_WF4_VERIFIED = "Juno WF4DREGSMAL 4-inch regressed wafer light";
 const JUNO_WF6_VERIFIED = "Juno WF6-DREG 6-inch regressed wafer light";
-export type PriceBookItem = {
+export type PriceBookItem = CatalogMaterial & {
+  resolutionStatus?: string;
+  requestKey?: string;
   id?: number;
   category: string;
   item: string;
@@ -619,19 +622,24 @@ type PriceBookMatch =
 function resolvePriceBookMatch(
   priceBook: PriceBookItem[],
   predicate: (item: PriceBookItem) => boolean,
+  requestKey = "",
+  manufacturer?: string,
 ): PriceBookMatch {
-  const candidates = priceBook.filter(predicate);
-  if (candidates.length === 0) {
-    return { status: "none", candidates: [] };
+  const selected = selectCatalogMaterial(priceBook, predicate, requestKey, manufacturer);
+  if (selected.status === "unique" && selected.match) {
+    const match = { ...selected.match, unitCost: usableCatalogCost(selected.match) ?? 0,
+      resolutionStatus: selected.resolutionStatus, requestKey };
+    return { status: "unique", candidates: [match], match };
   }
-  if (candidates.length === 1) {
-    return {
-      status: "unique",
-      candidates: [candidates[0]!],
-      match: candidates[0]!,
-    };
-  }
-  return { status: "ambiguous", candidates };
+  return selected.status === "ambiguous" ? { status: "ambiguous", candidates: selected.candidates }
+    : { status: "none", candidates: [] };
+}
+
+function resolvedMaterial(cost: { item?: PriceBookItem; value: number; requestKey?: string }) {
+  if (!cost.item) return { materialRequestKey: cost.requestKey };
+  const materialSnapshot = catalogSnapshot(cost.item, cost.item.resolutionStatus ?? "RESOLVED_SUPPLIER_EXACT",
+    cost.item.requestKey || cost.item.item);
+  return { materialSnapshot, resolutionStatus: materialSnapshot.resolutionStatus };
 }
 
 function duplicatePriceBookWarning(identity: string, matchCount: number) {
@@ -1049,8 +1057,7 @@ export function auditPriceBookItem(
     }
   }
   const isUnresolved =
-    !Number.isFinite(item.unitCost) ||
-    item.unitCost <= 0 ||
+    usableCatalogCost(item) === null ||
     item.isDefault ||
     name.startsWith("unverified ");
   const builderList = BUILDER_NAMES.filter((builder) => builders.has(builder));
@@ -1094,7 +1101,11 @@ function hasSourceBackedCatalogPricing(item: PriceBookItem | undefined) {
   return Boolean(item?.supplier?.trim() && item.sourceDate?.trim());
 }
 
-function unitCost(
+function unitCost(key: string, priceBook: PriceBookItem[], pricingWarnings: string[], expectedCategory?: string) {
+  return { ...lookupUnitCost(key, priceBook, pricingWarnings, expectedCategory), requestKey: key };
+}
+
+function lookupUnitCost(
   key: string,
   priceBook: PriceBookItem[],
   pricingWarnings: string[],
@@ -1103,10 +1114,11 @@ function unitCost(
   const match = resolvePriceBookMatch(
     priceBook,
     (item) =>
-      normalized(item.item) === normalized(key) &&
+      (normalized(item.item) === normalized(key) || matchingPreferences(item, key).length > 0) &&
       (!expectedCategory || itemInCategory(item, expectedCategory)) &&
       !item.isDefault &&
       !normalized(item.item).startsWith("unverified "),
+    key,
   );
   if (match.status === "ambiguous") {
     pricingWarnings.push(
@@ -1132,9 +1144,15 @@ function unitCost(
   pricingWarnings.push(
     `No verified price is available for "${key}". This material is unresolved and excluded from material cost until a sourced catalog item is added.`,
   );
+  const invalidUnit = priceBook.find(item => (normalized(item.item) === normalized(key) ||
+    matchingPreferences(item, key).length > 0) && item.supplierUom && usableCatalogCost(item) === null);
+  if (invalidUnit) {
+    pricingWarnings.push(`Supplier UOM needs review for "${key}": ${invalidUnit.supplierCost ?? "unknown"} / ${invalidUnit.supplierUom}. Confirm its base unit and conversion in the Price Book.`);
+    return { value: 0, source: "Unresolved supplier UOM — verify base unit", item: { ...invalidUnit, requestKey: key } };
+  }
   return {
     value: 0,
-    source: "Unresolved — no verified catalog price",
+    source: "Needs company material selection — no verified catalog price",
   };
 }
 
@@ -1217,8 +1235,21 @@ function addLine(
   assembly: AssemblyLineRecord[],
   line: Omit<AssemblyLineRecord, "extendedCost">,
 ) {
+  const baseUnit = line.materialSnapshot?.normalizedUnit?.toLowerCase();
+  const dimension = (unit: string) => ["each", "ea"].includes(unit) ? "ea" : ["foot", "feet", "ft"].includes(unit) ? "ft" : unit;
+  if (baseUnit && ["ea", "ft"].includes(dimension(line.unit)) && dimension(baseUnit) !== dimension(line.unit)) {
+    line = { ...line, unitCost: 0, resolutionStatus: "UNRESOLVED_UOM",
+      source: `Catalog unit ${baseUnit} cannot price assembly unit ${line.unit}; verify company material selection.`,
+      materialSnapshot: {...line.materialSnapshot!, resolutionStatus:"UNRESOLVED_UOM", normalizedUnitCost:null} };
+  }
   assembly.push({
     ...line,
+    resolutionStatus: line.resolutionStatus ?? (
+      /customer.?supplied/i.test(`${line.source} ${line.intentionalExclusionReason ?? ""}`) ? "CUSTOMER_SUPPLIED"
+      : line.intentionalExclusionReason ? "INCLUDED"
+      : /duplicate/i.test(line.source) ? "UNRESOLVED_AMBIGUOUS"
+      : line.unitCost <= 0 ? "UNRESOLVED_NEEDS_COMPANY_SELECTION"
+      : /override/i.test(line.source) ? "MANUAL_OVERRIDE" : "RESOLVED_SUPPLIER_EXACT"),
     extendedCost: Number((line.quantity * line.unitCost).toFixed(3)),
   });
 }
@@ -1274,11 +1305,11 @@ function resolveBreaker(
     selection.poleCount === 2 &&
     exactProtectionType === "GFCI" &&
     [40, 50, 60].includes(selection.amperage);
+  const breakerIdentity = `${selection.manufacturer || "selected manufacturer"} ${selection.amperage || "selected amperage"}A ${selection.poleCount || "selected pole count"}-pole ${exactProtectionType} breaker`;
   const match = resolvePriceBookMatch(
     priceBook,
     (item) =>
-      normalized(item.manufacturer ?? "") ===
-        normalized(selection.manufacturer) &&
+      breakerManufacturerCompatible(item, selection.manufacturer) &&
       item.amperage === selection.amperage &&
       item.poleCount === selection.poleCount &&
       normalized(item.protectionType ?? "") ===
@@ -1289,9 +1320,10 @@ function resolveBreaker(
         )) &&
       !item.isDefault &&
       !normalized(item.item).startsWith("unverified "),
+    breakerIdentity,
+    selection.manufacturer,
   );
 
-  const breakerIdentity = `${selection.manufacturer || "selected manufacturer"} ${selection.amperage || "selected amperage"}A ${selection.poleCount || "selected pole count"}-pole ${exactProtectionType} breaker`;
   if (match.status === "ambiguous") {
     pricingWarnings.push(
       duplicatePriceBookWarning(breakerIdentity, match.candidates.length),
@@ -1619,7 +1651,7 @@ export function calculateEvChargerEstimate(
     quantity,
     unit: "ea",
     unitCost: breaker.value,
-    source: breaker.source,
+    ...resolvedMaterial(breaker), source: breaker.source,
   });
 
   if (inputs.chargerSupply === "Contractor Provided") {
@@ -1631,7 +1663,7 @@ export function calculateEvChargerEstimate(
       quantity,
       unit: "ea",
       unitCost: charger.value,
-      source: charger.source,
+      ...resolvedMaterial(charger), source: charger.source,
     });
   }
 
@@ -1653,7 +1685,7 @@ export function calculateEvChargerEstimate(
       quantity: routeLength * 2 * quantity,
       unit: "ft",
       unitCost: hot.value,
-      source: hot.source,
+      ...resolvedMaterial(hot), source: hot.source,
     });
     addLine(assembly, {
       id: "ground",
@@ -1662,7 +1694,7 @@ export function calculateEvChargerEstimate(
       quantity: routeLength * quantity,
       unit: "ft",
       unitCost: ground.value,
-      source: ground.source,
+      ...resolvedMaterial(ground), source: ground.source,
     });
     addLine(assembly, {
       id: "raceway",
@@ -1671,7 +1703,7 @@ export function calculateEvChargerEstimate(
       quantity: routeLength * quantity,
       unit: "ft",
       unitCost: conduit.value,
-      source: conduit.source,
+      ...resolvedMaterial(conduit), source: conduit.source,
     });
   } else {
     const cableType =
@@ -1704,7 +1736,7 @@ export function calculateEvChargerEstimate(
       quantity: routeLength * quantity,
       unit: "ft",
       unitCost: cable.value,
-      source: cable.source,
+      ...resolvedMaterial(cable), source: cable.source,
     });
   }
 
@@ -1723,7 +1755,7 @@ export function calculateEvChargerEstimate(
       quantity,
       unit: "ea",
       unitCost: receptacle.value,
-      source: receptacle.source,
+      ...resolvedMaterial(receptacle), source: receptacle.source,
     });
   }
 
@@ -1736,7 +1768,7 @@ export function calculateEvChargerEstimate(
       quantity,
       unit: "ea",
       unitCost: item.value,
-      source: item.source,
+      ...resolvedMaterial(item), source: item.source,
     });
   }
 
@@ -1749,7 +1781,7 @@ export function calculateEvChargerEstimate(
       quantity,
       unit: "ea",
       unitCost: item.value,
-      source: item.source,
+      ...resolvedMaterial(item), source: item.source,
     });
   }
 
@@ -1766,7 +1798,7 @@ export function calculateEvChargerEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: item.value,
-      source: item.source,
+      ...resolvedMaterial(item), source: item.source,
     });
   }
 
@@ -1783,7 +1815,7 @@ export function calculateEvChargerEstimate(
       quantity: 1,
       unit: "allowance",
       unitCost: item.value,
-      source: item.source,
+      ...resolvedMaterial(item), source: item.source,
     });
   }
 
@@ -1850,7 +1882,7 @@ export function calculateBathroomEstimate(
   const priced = (id: string, key: string, quantity: number, category = "Controls") => {
     if (quantity <= 0) return;
     const cost = unitCost(key, priceBook, warnings);
-    addLine(assembly, {id, category, description: key, quantity, unit: "ea", unitCost: cost.value, source: cost.source});
+    addLine(assembly, {id, category, description: key, quantity, unit: "ea", unitCost: cost.value, ...resolvedMaterial(cost), source: cost.source});
   };
   const single = inputs.additionalSwitches, three = inputs.threeWaySwitches ?? 0,
     dimmers = inputs.dimmers ?? 0, smart = inputs.smartSwitches ?? 0;
@@ -1932,7 +1964,7 @@ function calculateLegacyBathroomEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
       ...(customerSupplied
         ? {
             intentionalExclusionReason:
@@ -2070,7 +2102,7 @@ function calculateLegacyBathroomEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
   } else {
     pricingWarnings.push(
@@ -2183,19 +2215,31 @@ export function calculateKitchenEstimate(
   const priced = (id: string, key: string, quantity: number, category = "Devices") => {
     if (quantity <= 0) return;
     const cost = unitCost(key, priceBook, warnings);
-    addLine(assembly, { id, category, description: key, quantity, unit: "ea", unitCost: cost.value, source: cost.source });
+    addLine(assembly, { id, category, description: key, quantity, unit: "ea", unitCost: cost.value, ...resolvedMaterial(cost), source: cost.source });
   };
   const smart = Math.max(0, inputs.smartSwitches ?? 0);
   priced("kitchen-smart-switches", "smart switch", smart, "Controls");
   priced("kitchen-smart-boxes", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", smart, "Rough-in");
   priced("kitchen-smart-plates", "Legrand radiant RWP26WCC10 1-gang screwless wall plate", smart, "Trim");
   // Appliance connections are separate from the countertop receptacle quantities.
-  const applianceDevices = circuits.filter(c => !["smallApplianceCircuits", "lighting", "electricRangeCircuits", "wallOvenCircuits"].includes(c.key))
+  const applianceDevices = circuits.filter(c => !["smallApplianceCircuits", "lighting", "electricRangeCircuits", "wallOvenCircuits"].includes(c.key) &&
+    c.connectionMethod !== "Hardwired" && c.connectionMethod !== "Unspecified")
     .reduce((sum, c) => sum + c.quantity, 0);
   priced("kitchen-appliance-devices", "Pass & Seymour 3232-TRW 15A TR duplex receptacle", applianceDevices);
   priced("kitchen-appliance-boxes", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", applianceDevices, "Rough-in");
   priced("kitchen-appliance-plates", "duplex receptacle wall plate", applianceDevices, "Trim");
-  priced("kitchen-heavy-connections", "appliance connection box", (inputs.electricRangeCircuits ?? 0) + (inputs.wallOvenCircuits ?? 0), "Rough-in");
+  for (const c of circuits) {
+    const heavy = ["electricRangeCircuits", "wallOvenCircuits"].includes(c.key);
+    if (!heavy && !["Hardwired", "Unspecified"].includes(c.connectionMethod ?? "")) continue;
+    const method = c.connectionMethod ?? "Unspecified";
+    const key = c.key === "electricRangeCircuits" && method === "Receptacle-connected"
+      ? "range dryer receptacle box"
+      : method === "Hardwired" ? `${c.label} hardwired connection box` : `${c.label} connection box — select connection method`;
+    priced(`kitchen-connection-${c.key}`, key, c.quantity, "Rough-in");
+    if (method === "Unspecified") warnings.push(`Remodel circuit: Select the connection method for ${c.label}; no appliance box compatibility was assumed.`);
+    if (heavy && method === "Receptacle-connected")
+      priced(`kitchen-receptacle-${c.key}`, `${c.label} ${c.amperage}A 4-wire receptacle and cover`, c.quantity);
+  }
   const applianceLabor: Record<string, number> = { refrigeratorCircuits: 1.5, dishwasherCircuits: 1.5,
     disposalCircuits: 1.25, gasRangeCircuits: 1.25, electricRangeCircuits: 2, wallOvenCircuits: 2,
     additionalDedicatedCircuits: 1.5, smallApplianceCircuits: 3, microwaveCircuits: 3,
@@ -2230,7 +2274,7 @@ function addRemodelCircuits(prefix: string, circuits: RemodelCircuit[], addition
     const cost = unitCost(`${c.cableType} cable`, priceBook, warnings);
     addLine(assembly, { id: `${prefix}-home-run-${c.key}`, category: "Conductor",
       description: `${c.label || c.key}: ${c.cableType} (${length} FT × ${c.quantity} circuits = ${length * c.quantity} FT)`,
-      quantity: length * c.quantity, unit: "ft", unitCost: cost.value, source: cost.source });
+      quantity: length * c.quantity, unit: "ft", unitCost: cost.value, ...resolvedMaterial(cost), source: cost.source });
   }
   for (const b of breakerRequirements([...circuits, ...additionalBreakers])) {
     if (!Number.isInteger(b.quantity)) warnings.push("Remodel circuit: breaker quantities must be whole numbers.");
@@ -2238,13 +2282,14 @@ function addRemodelCircuits(prefix: string, circuits: RemodelCircuit[], addition
       warnings.push(`Remodel circuit: unsupported two-pole ${b.protectionType} breaker configuration.`);
     const cost = resolveBreaker({ manufacturer, amperage: b.amperage, poleCount: b.poleCount, protectionType: b.protectionType }, priceBook, warnings);
     addLine(assembly, { id: `${prefix}-breaker-${b.key}`, category: "Protection", description: cost.description,
-      quantity: b.quantity, unit: "ea", unitCost: cost.value, source: cost.source });
+      quantity: b.quantity, unit: "ea", unitCost: cost.value, ...resolvedMaterial(cost), source: cost.source });
   }
-  const circuitCount = circuits.reduce((sum, c) => sum + c.quantity, 0);
-  if (circuitCount > 0) {
-    const cost = unitCost("NM cable connector", priceBook, warnings);
-    addLine(assembly, { id: `${prefix}-circuit-connectors`, category: "Rough-in",
-      description: "NM cable connectors, two per new home run", quantity: circuitCount * 2, unit: "ea", unitCost: cost.value, source: cost.source });
+  const cableCounts = new Map<string, number>();
+  for (const c of circuits) if (c.quantity > 0) cableCounts.set(c.cableType, (cableCounts.get(c.cableType) ?? 0) + c.quantity);
+  for (const [cable, count] of cableCounts) {
+    const cost = unitCost(`NM cable connector for ${cable}`, priceBook, warnings);
+    addLine(assembly, { id: `${prefix}-circuit-connectors-${normalized(cable)}`, category: "Rough-in",
+      description: `NM cable connectors for ${cable}, two per new home run`, quantity: count * 2, unit: "ea", unitCost: cost.value, ...resolvedMaterial(cost), source: cost.source });
   }
 }
 
@@ -2284,7 +2329,7 @@ function calculateLegacyKitchenEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
       ...(customerSupplied
         ? {
             intentionalExclusionReason:
@@ -2332,7 +2377,7 @@ function calculateLegacyKitchenEstimate(
       quantity: safeQuantity,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
   };
 
@@ -2379,7 +2424,7 @@ function calculateLegacyKitchenEstimate(
         quantity: safeQuantity,
         unit: "ea",
         unitCost: breaker.value,
-        source: breaker.source,
+        ...resolvedMaterial(breaker), source: breaker.source,
       });
     }
 
@@ -2398,7 +2443,7 @@ function calculateLegacyKitchenEstimate(
           quantity: safeFootage,
           unit: "ft",
           unitCost: cable.value,
-          source: cable.source,
+          ...resolvedMaterial(cable), source: cable.source,
         });
       } else {
         pricingWarnings.push(
@@ -2564,7 +2609,7 @@ function calculateLegacyKitchenEstimate(
         quantity: fourWayCableFootage,
         unit: "ft",
         unitCost: fourWayCable.value,
-        source: fourWayCable.source,
+        ...resolvedMaterial(fourWayCable), source: fourWayCable.source,
       });
     } else {
       pricingWarnings.push(
@@ -2589,16 +2634,17 @@ function calculateLegacyKitchenEstimate(
     "kitchen-boxes",
     "Rough-in",
     "Pass & Seymour S1-18-W 1-gang box — SKU 18134",
-    "Kitchen device box allowance",
+    "Countertop receptacle and lighting-control boxes (excludes appliance boxes)",
     deviceCount,
   );
-  addPricedItem(
-    "kitchen-plates",
-    "Trim",
-    "Unverified allowance — device plate",
-    "Kitchen device plate allowance",
-    deviceCount,
-  );
+  if (inputs.circuitConfigurationVersion === 2) {
+    addPricedItem("kitchen-countertop-plates", "Trim", "duplex receptacle wall plate",
+      "Countertop duplex receptacle wall plates", inputs.countertopReceptacles);
+    addPricedItem("kitchen-decorator-plates", "Trim", "Legrand radiant RWP26WCC10 1-gang screwless wall plate",
+      "USB and dimmer decorator plates", inputs.usbReceptacles + inputs.dimmers);
+    addPricedItem("kitchen-switch-plates", "Trim", "toggle switch wall plate",
+      "Three-way switch wall plates", inputs.threeWayOptions * 2);
+  } else addPricedItem("kitchen-plates", "Trim", "Unverified allowance — device plate", "Kitchen device plate allowance", deviceCount);
   if (inputs.routeLength > 0) {
     addPricedItem(
       "kitchen-wiring",
@@ -2805,7 +2851,7 @@ function calculateLegacyKitchenEstimate(
         quantity: applianceHomeRunFootage,
         unit: "ft",
         unitCost: cable.value,
-        source: cable.source,
+        ...resolvedMaterial(cable), source: cable.source,
       });
     } else {
       pricingWarnings.push(
@@ -2842,7 +2888,7 @@ function calculateLegacyKitchenEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
     pricingWarnings.push(
       "Countertop receptacle spacing, GFCI protection, and box locations must be field-verified.",
@@ -2970,7 +3016,7 @@ export function calculateAdditionEstimate(
       quantity: n(quantity),
       unit: "ea",
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
   catalogLine(
@@ -3039,7 +3085,7 @@ export function calculateAdditionEstimate(
       quantity: fans,
       unit: "ea",
       unitCost: fanPrice.value,
-      source: fanPrice.source,
+      ...resolvedMaterial(fanPrice), source: fanPrice.source,
       ...(inputs.customerSuppliedFans
         ? {
             intentionalExclusionReason:
@@ -3093,7 +3139,7 @@ export function calculateAdditionEstimate(
           quantity: footage,
           unit: "ft",
           unitCost: cable.value,
-          source: cable.source,
+          ...resolvedMaterial(cable), source: cable.source,
         });
       } else {
         pricingWarnings.push(
@@ -3117,7 +3163,7 @@ export function calculateAdditionEstimate(
         quantity,
         unit: "ea",
         unitCost: breaker.value,
-        source: breaker.source,
+        ...resolvedMaterial(breaker), source: breaker.source,
       });
     }
   } else {
@@ -3154,7 +3200,7 @@ export function calculateAdditionEstimate(
         quantity: footage,
         unit: "ft",
         unitCost: cable.value,
-        source: cable.source,
+        ...resolvedMaterial(cable), source: cable.source,
       });
     } else if (circuits) {
       pricingWarnings.push(
@@ -3179,7 +3225,7 @@ export function calculateAdditionEstimate(
         quantity: circuits,
         unit: "ea",
         unitCost: breaker.value,
-        source: breaker.source,
+        ...resolvedMaterial(breaker), source: breaker.source,
       });
     }
   }
@@ -3210,7 +3256,7 @@ export function calculateAdditionEstimate(
       quantity: feederDistance,
       unit: "ft",
       unitCost: feeder.value,
-      source: feeder.source,
+      ...resolvedMaterial(feeder), source: feeder.source,
     });
 
     const feederBreaker = resolveBreaker(
@@ -3230,7 +3276,7 @@ export function calculateAdditionEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: feederBreaker.value,
-      source: feederBreaker.source,
+      ...resolvedMaterial(feederBreaker), source: feederBreaker.source,
     });
 
     const panel = unitCost(panelKey, priceBook, pricingWarnings, "Panel");
@@ -3249,7 +3295,7 @@ export function calculateAdditionEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: panel.value,
-      source: panel.source,
+      ...resolvedMaterial(panel), source: panel.source,
     });
   }
 
@@ -3308,7 +3354,7 @@ export function calculateServiceUpgradeEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
   const addExactOrLegacy = (
@@ -3338,7 +3384,7 @@ export function calculateServiceUpgradeEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
 
@@ -3378,7 +3424,7 @@ export function calculateServiceUpgradeEstimate(
       quantity: 1,
       unit: "allowance",
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
 
@@ -3414,7 +3460,7 @@ export function calculateServiceUpgradeEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
   }
 
@@ -3639,7 +3685,7 @@ export function calculateServiceUpgradeEstimate(
         : 1),
     unit: "ft",
     unitCost: serviceConductor.value,
-    source: serviceConductor.source,
+    ...resolvedMaterial(serviceConductor), source: serviceConductor.source,
   });
   if (inputs.serviceToPanelConductor === "4/0 aluminum XHHW in raceway") {
     addExactOrLegacy(
@@ -3914,7 +3960,7 @@ export function calculateServiceUpgradeEstimate(
       quantity,
       unit: "ea",
       unitCost: resolved.value,
-      source: resolved.source,
+      ...resolvedMaterial(resolved), source: resolved.source,
     });
   }
   addPricedItem(
@@ -4016,7 +4062,7 @@ export function calculatePanelReplacementEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
   const addExactOrLegacy = (
@@ -4046,7 +4092,7 @@ export function calculatePanelReplacementEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
 
@@ -4086,7 +4132,7 @@ export function calculatePanelReplacementEstimate(
       quantity: 1,
       unit: "allowance",
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
 
@@ -4129,7 +4175,7 @@ export function calculatePanelReplacementEstimate(
       id: "panel-replacement-breaker", category: "Protection",
       description: "Siemens 200A 2-pole Standard main breaker — included with PN4040B1200C",
       quantity: 1, unit: "ea", unitCost: 0,
-      source: panelPrice.source,
+      ...resolvedMaterial(panelPrice), source: panelPrice.source,
       intentionalExclusionReason: "Main breaker is included in the Siemens PN4040B1200C panel price; no separate charge.",
     });
   } else {
@@ -4157,7 +4203,7 @@ export function calculatePanelReplacementEstimate(
     description: panelIncludesMainBreaker
       ? `Siemens PN4040B1200C 200A 40-space panel (main breaker included) — ${inputs.replacementType}`
       : `${inputs.panelManufacturer} ${panelAmperage}A ${inputs.panelSpaceCount}-space panel — ${inputs.replacementType}`,
-    quantity: 1, unit: "ea", unitCost: panelPrice.value, source: panelPrice.source,
+    quantity: 1, unit: "ea", unitCost: panelPrice.value, ...resolvedMaterial(panelPrice), source: panelPrice.source,
   });
   addPricedItem(
     "panel-space-fillers",
@@ -4255,7 +4301,7 @@ export function calculatePanelReplacementEstimate(
       quantity: feederQuantity,
       unit: "ft",
       unitCost: feeder.value,
-      source: feeder.source,
+      ...resolvedMaterial(feeder), source: feeder.source,
     });
   }
   // Absent flags preserve historical individual-conductor quotes. New SER/reuse
@@ -4397,7 +4443,7 @@ export function calculatePanelReplacementEstimate(
       quantity,
       unit: "ea",
       unitCost: resolved.value,
-      source: resolved.source,
+      ...resolvedMaterial(resolved), source: resolved.source,
     });
   }
   addPricedItem(
@@ -4616,7 +4662,7 @@ function calculateLegacyRecessedLightingEstimate(
       quantity: safeQuantity,
       unit,
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
       ...(customerSupplied
         ? {
             intentionalExclusionReason:
@@ -4721,7 +4767,7 @@ function calculateLegacyRecessedLightingEstimate(
           quantity: Number((cableFootage + wiringAllowanceFeet).toFixed(2)),
           unit: "ft",
           unitCost: cable.value,
-          source: cable.source,
+          ...resolvedMaterial(cable), source: cable.source,
         });
         if (isTraditionalThreeWay && cableFootage === 0) {
           pricingWarnings.push(
@@ -4760,7 +4806,7 @@ function calculateLegacyRecessedLightingEstimate(
       quantity: 1,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
   } else {
     pricingWarnings.push(
@@ -4849,7 +4895,7 @@ export function calculateServiceCallEstimate(
       quantity: selectedQuantity,
       unit: "ea",
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
 
@@ -5050,7 +5096,7 @@ export function calculateNewHouseEstimate(
       quantity: lineQuantity,
       unit: "ea",
       unitCost: price.value,
-      source: price.source,
+      ...resolvedMaterial(price), source: price.source,
     });
   };
 
@@ -5208,7 +5254,7 @@ export function calculateNewHouseEstimate(
         quantity: branchFootage,
         unit: "ft",
         unitCost: cable.value,
-        source: cable.source,
+        ...resolvedMaterial(cable), source: cable.source,
       });
     }
     const breaker = resolveHeavyCircuitBreaker(
@@ -5228,7 +5274,7 @@ export function calculateNewHouseEstimate(
       quantity: branchCircuitCount,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
   }
 
@@ -5265,7 +5311,7 @@ export function calculateNewHouseEstimate(
         quantity: equipmentFootage,
         unit: "ft",
         unitCost: cable.value,
-        source: cable.source,
+        ...resolvedMaterial(cable), source: cable.source,
       });
     }
     const breaker = resolveHeavyCircuitBreaker(
@@ -5285,7 +5331,7 @@ export function calculateNewHouseEstimate(
       quantity: equipmentCircuitCount,
       unit: "ea",
       unitCost: breaker.value,
-      source: breaker.source,
+      ...resolvedMaterial(breaker), source: breaker.source,
     });
   }
 

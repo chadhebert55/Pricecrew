@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MaterialSnapshot } from './materialSnapshot';
 
 export interface AssemblyLine {
   id: string;
@@ -20,4 +21,7 @@ export interface AssemblyLine {
      * @maxLength 500
      */
   intentionalExclusionReason?: string;
+  resolutionStatus?: string;
+  materialSnapshot?: MaterialSnapshot;
+  materialRequestKey?: string;
 }

@@ -2415,6 +2415,9 @@ components:
       type: object
       required: [key, quantity, amperage, poleCount, protectionType, cableType]
       properties:
+        connectionMethod:
+          type: string
+          enum: [Unspecified, Receptacle-connected, Hardwired]
         key:
           type: string
         label:
@@ -3575,6 +3578,56 @@ components:
           type: string
           minLength: 10
           maxLength: 500
+        resolutionStatus:
+          type: string
+        materialSnapshot:
+          $ref: '#/components/schemas/MaterialSnapshot'
+        materialRequestKey:
+          type: string
+    MaterialPreference:
+      type: object
+      required: [requestKey, kind]
+      properties:
+        requestKey:
+          type: string
+          minLength: 1
+          maxLength: 300
+        kind:
+          type: string
+          enum: [exact, manufacturer, family, alternate]
+        manufacturer:
+          type: string
+          maxLength: 100
+    MaterialSnapshot:
+      type: object
+      required: [catalogId, requestKey, supplier, supplierSku, manufacturer, manufacturerPartNumber, description, supplierCost, supplierUom, normalizedUnit, normalizedUnitCost, sourceDate, resolutionStatus]
+      properties:
+        catalogId:
+          type: ["number", "null"]
+        requestKey:
+          type: string
+        supplier:
+          type: ["string", "null"]
+        supplierSku:
+          type: ["string", "null"]
+        manufacturer:
+          type: ["string", "null"]
+        manufacturerPartNumber:
+          type: ["string", "null"]
+        description:
+          type: string
+        supplierCost:
+          type: ["number", "null"]
+        supplierUom:
+          type: ["string", "null"]
+        normalizedUnit:
+          type: ["string", "null"]
+        normalizedUnitCost:
+          type: ["number", "null"]
+        sourceDate:
+          type: ["string", "null"]
+        resolutionStatus:
+          type: string
     PricingInput:
       type: object
       required:
@@ -3774,6 +3827,22 @@ components:
           type: boolean
         isContractorOwned:
           type: boolean
+        materialPreferences:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialPreference'
+        panelFamily:
+          type: ["string", "null"]
+        supplierCost:
+          type: ["number", "null"]
+        supplierUom:
+          type: ["string", "null"]
+        normalizedUnit:
+          type: ["string", "null"]
+        normalizedUnitCost:
+          type: ["number", "null"]
+        supplierUnitQuantity:
+          type: ["number", "null"]
         builders:
           type: array
           items:
@@ -3789,12 +3858,24 @@ components:
           format: date-time
     PriceBookItemUpdate:
       type: object
-      required:
-        - unitCost
       properties:
         unitCost:
           type: number
           minimum: 0
+        materialPreferences:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/MaterialPreference'
+        panelFamily:
+          type: ["string", "null"]
+          maxLength: 100
+        normalizedUnit:
+          type: string
+          enum: [ea, ft]
+        supplierUnitQuantity:
+          type: number
+          minimum: 0.000001
     PriceBookImportPreviewInput:
       type: object
       required:
@@ -3844,6 +3925,16 @@ components:
         - poleCount
         - protectionType
       properties:
+        supplierCost:
+          type: ["number", "null"]
+        supplierUom:
+          type: ["string", "null"]
+        normalizedUnit:
+          type: ["string", "null"]
+        normalizedUnitCost:
+          type: ["number", "null"]
+        supplierUnitQuantity:
+          type: ["number", "null"]
         category:
           type: string
         item:

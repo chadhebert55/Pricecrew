@@ -452,6 +452,15 @@ export const BathroomInputsCircuitConfigurationVersion = {
   NUMBER_2: 2,
 } as const;
 
+export type RemodelCircuitConnectionMethod = typeof RemodelCircuitConnectionMethod[keyof typeof RemodelCircuitConnectionMethod];
+
+
+export const RemodelCircuitConnectionMethod = {
+  Unspecified: 'Unspecified',
+  'Receptacle-connected': 'Receptacle-connected',
+  Hardwired: 'Hardwired',
+} as const;
+
 export type RemodelCircuitAmperage = typeof RemodelCircuitAmperage[keyof typeof RemodelCircuitAmperage];
 
 
@@ -498,6 +507,7 @@ export const RemodelCircuitCableType = {
 } as const;
 
 export interface RemodelCircuit {
+  connectionMethod?: RemodelCircuitConnectionMethod;
   key: string;
   label?: string;
   /** @minimum 0 */
@@ -1930,6 +1940,32 @@ export interface NewHouseInputs {
  */
 export type QuoteJobInputsSnapshot = EvChargerInputs | BathroomInputs | KitchenInputs | AdditionInputs | RecessedLightingInputs | ServiceUpgradeInputs | PanelReplacementInputs | ServiceCallInputs | TimeMaterialsInputs | CustomInputs | NewHouseInputs | { [key: string]: unknown };
 
+export interface MaterialSnapshot {
+  /** @nullable */
+  catalogId: number | null;
+  requestKey: string;
+  /** @nullable */
+  supplier: string | null;
+  /** @nullable */
+  supplierSku: string | null;
+  /** @nullable */
+  manufacturer: string | null;
+  /** @nullable */
+  manufacturerPartNumber: string | null;
+  description: string;
+  /** @nullable */
+  supplierCost: number | null;
+  /** @nullable */
+  supplierUom: string | null;
+  /** @nullable */
+  normalizedUnit: string | null;
+  /** @nullable */
+  normalizedUnitCost: number | null;
+  /** @nullable */
+  sourceDate: string | null;
+  resolutionStatus: string;
+}
+
 export interface AssemblyLine {
   id: string;
   category: string;
@@ -1944,6 +1980,9 @@ export interface AssemblyLine {
      * @maxLength 500
      */
   intentionalExclusionReason?: string;
+  resolutionStatus?: string;
+  materialSnapshot?: MaterialSnapshot;
+  materialRequestKey?: string;
 }
 
 export interface DeliberateLossApproval {
@@ -2572,6 +2611,27 @@ export interface QuoteExportInvalid {
   issues: QuoteExportPreflightIssue[];
 }
 
+export type MaterialPreferenceKind = typeof MaterialPreferenceKind[keyof typeof MaterialPreferenceKind];
+
+
+export const MaterialPreferenceKind = {
+  exact: 'exact',
+  manufacturer: 'manufacturer',
+  family: 'family',
+  alternate: 'alternate',
+} as const;
+
+export interface MaterialPreference {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  requestKey: string;
+  kind: MaterialPreferenceKind;
+  /** @maxLength 100 */
+  manufacturer?: string;
+}
+
 export interface PriceBookItem {
   id: number;
   category: string;
@@ -2598,6 +2658,19 @@ export interface PriceBookItem {
   protectionType?: string | null;
   isDefault: boolean;
   isContractorOwned: boolean;
+  materialPreferences?: MaterialPreference[];
+  /** @nullable */
+  panelFamily?: string | null;
+  /** @nullable */
+  supplierCost?: number | null;
+  /** @nullable */
+  supplierUom?: string | null;
+  /** @nullable */
+  normalizedUnit?: string | null;
+  /** @nullable */
+  normalizedUnitCost?: number | null;
+  /** @nullable */
+  supplierUnitQuantity?: number | null;
   builders: string[];
   activeSelection: boolean;
   isUnresolved: boolean;
@@ -2606,9 +2679,27 @@ export interface PriceBookItem {
   updatedAt: string;
 }
 
+export type PriceBookItemUpdateNormalizedUnit = typeof PriceBookItemUpdateNormalizedUnit[keyof typeof PriceBookItemUpdateNormalizedUnit];
+
+
+export const PriceBookItemUpdateNormalizedUnit = {
+  ea: 'ea',
+  ft: 'ft',
+} as const;
+
 export interface PriceBookItemUpdate {
   /** @minimum 0 */
-  unitCost: number;
+  unitCost?: number;
+  /** @maxItems 50 */
+  materialPreferences?: MaterialPreference[];
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  panelFamily?: string | null;
+  normalizedUnit?: PriceBookItemUpdateNormalizedUnit;
+  /** @minimum 0.000001 */
+  supplierUnitQuantity?: number;
 }
 
 export interface PriceBookImportPreviewInput {
@@ -2640,6 +2731,16 @@ export interface PriceBookImportApplyInput {
 }
 
 export interface PriceBookImportValue {
+  /** @nullable */
+  supplierCost?: number | null;
+  /** @nullable */
+  supplierUom?: string | null;
+  /** @nullable */
+  normalizedUnit?: string | null;
+  /** @nullable */
+  normalizedUnitCost?: number | null;
+  /** @nullable */
+  supplierUnitQuantity?: number | null;
   category: string;
   item: string;
   unit: string;

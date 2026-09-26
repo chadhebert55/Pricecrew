@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MaterialPreference } from './materialPreference';
 
 export interface PriceBookItem {
   id: number;
@@ -32,6 +33,19 @@ export interface PriceBookItem {
   protectionType?: string | null;
   isDefault: boolean;
   isContractorOwned: boolean;
+  materialPreferences?: MaterialPreference[];
+  /** @nullable */
+  panelFamily?: string | null;
+  /** @nullable */
+  supplierCost?: number | null;
+  /** @nullable */
+  supplierUom?: string | null;
+  /** @nullable */
+  normalizedUnit?: string | null;
+  /** @nullable */
+  normalizedUnitCost?: number | null;
+  /** @nullable */
+  supplierUnitQuantity?: number | null;
   builders: string[];
   activeSelection: boolean;
   isUnresolved: boolean;

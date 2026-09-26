@@ -339,11 +339,10 @@ test("duplicate exact Siemens AFCI breaker identities fail closed", () => {
   }
 });
 
-test("generic material duplicates fail closed regardless of duplicate prices", () => {
+test("equally valid generic material duplicates fail closed", () => {
   const duplicateCosts = [
     [3.25, 4.75],
     [3.25, 3.25],
-    [3.25, 0],
   ] as const;
 
   for (const costs of duplicateCosts) {
@@ -1273,7 +1272,7 @@ test("duplicate compatible exact catalog selections fail closed", () => {
   const estimate = calculatePanelReplacementEstimate(inputs, settings, [
     ...panelReplacementPriceBook,
     duplicatePanel,
-    { ...duplicatePanel, id: 999, unitCost: 0 },
+    { ...duplicatePanel, id: 999, unitCost: 151.625 },
     catalogRow("Square D 100A 2-pole standard breaker", 95, {
       manufacturer: "Square D",
       amperage: 100,

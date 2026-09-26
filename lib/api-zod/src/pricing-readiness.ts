@@ -8,6 +8,7 @@ type SavedAssemblyCost = {
   unitCost: number;
   extendedCost: number;
   intentionalExclusionReason?: string | null;
+  resolutionStatus?: string;
 };
 
 export const PANEL_CLOSEOUT_LABOR_REASON =
@@ -34,6 +35,9 @@ export function isIncludedPanelCloseoutLabor(line: SavedAssemblyCost): boolean {
 }
 
 export function hasUnresolvedMaterialCost(line: SavedAssemblyCost): boolean {
+  if (line.quantity > 0 && line.resolutionStatus?.startsWith("UNRESOLVED_")) return true;
+  if (line.resolutionStatus === "CUSTOMER_SUPPLIED" && line.unitCost === 0 && line.extendedCost === 0 &&
+    (line.intentionalExclusionReason?.trim().length ?? 0) >= 10) return false;
   return (
     line.quantity > 0 &&
     line.unitCost <= 0 &&

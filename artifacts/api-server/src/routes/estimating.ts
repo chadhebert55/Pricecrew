@@ -1,4 +1,5 @@
 import { customerProposalScope } from "../lib/customer-scope";
+import { normalizeSupplierCost } from "../lib/material-resolution";
 export { customerMaterialDescription } from "../lib/customer-scope";
 import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
@@ -1200,6 +1201,14 @@ export async function calculateEstimate(
       poleCount: priceBookItemsTable.poleCount,
       protectionType: priceBookItemsTable.protectionType,
       isDefault: priceBookItemsTable.isDefault,
+      isContractorOwned: priceBookItemsTable.isContractorOwned,
+      supplierCost: priceBookItemsTable.supplierCost,
+      supplierUom: priceBookItemsTable.supplierUom,
+      normalizedUnit: priceBookItemsTable.normalizedUnit,
+      normalizedUnitCost: priceBookItemsTable.normalizedUnitCost,
+      supplierUnitQuantity: priceBookItemsTable.supplierUnitQuantity,
+      materialPreferences: priceBookItemsTable.materialPreferences,
+      panelFamily: priceBookItemsTable.panelFamily,
     })
     .from(priceBookItemsTable)
     .where(eq(priceBookItemsTable.companyId, companyId));
@@ -2705,6 +2714,11 @@ function serializePriceBookImport(
 
 function importedCatalogValues(value: PriceBookImportValueRecord) {
   return {
+    supplierCost: value.supplierCost,
+    supplierUom: value.supplierUom,
+    normalizedUnit: value.normalizedUnit,
+    normalizedUnitCost: value.normalizedUnitCost,
+    supplierUnitQuantity: value.supplierUnitQuantity,
     category: value.category,
     item: value.item,
     unit: value.unit,
@@ -3027,12 +3041,28 @@ router.patch("/price-book/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  const [current] = await db.select().from(priceBookItemsTable).where(and(
+    eq(priceBookItemsTable.id, params.data.id), eq(priceBookItemsTable.companyId, companyId)));
+  if (!current) { res.status(404).json({ error: "Price book item not found" }); return; }
+  const data = parsed.data;
+  if (Object.keys(data).length === 0) { res.status(400).json({ error: "No changes supplied" }); return; }
+  if (data.unitCost != null && (data.normalizedUnit || data.supplierUnitQuantity)) {
+    res.status(400).json({ error: "Choose either a manual cost override or supplier UOM normalization, not both." }); return;
+  }
+  const conversion = data.normalizedUnit && current.supplierCost != null && current.supplierUom
+    ? normalizeSupplierCost(current.supplierCost, current.supplierUom, data.normalizedUnit,
+      data.supplierUnitQuantity ?? current.supplierUnitQuantity) : null;
+  if ((data.normalizedUnit || data.supplierUnitQuantity) && !conversion) {
+    res.status(400).json({ error: "Supplier UOM conversion is not verified. Supply an explicit base unit and supported package quantity." }); return;
+  }
   const [item] = await db
     .update(priceBookItemsTable)
     .set({
-      unitCost: parsed.data.unitCost,
-      isDefault: false,
-      isContractorOwned: true,
+      ...(data.unitCost != null ? { unitCost: data.unitCost, isDefault: false, isContractorOwned: true } : {}),
+      ...(conversion ? { ...conversion, unit: conversion.normalizedUnit, unitCost: conversion.normalizedUnitCost,
+        isDefault: false, isContractorOwned: false } : {}),
+      ...(data.materialPreferences ? { materialPreferences: data.materialPreferences } : {}),
+      ...(data.panelFamily !== undefined ? { panelFamily: data.panelFamily } : {}),
     })
     .where(
       and(

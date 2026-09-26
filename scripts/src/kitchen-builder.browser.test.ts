@@ -30,11 +30,11 @@ test("Kitchen circuits, readiness, saved totals, and responsive draft recovery",
     const keys=new Set<string>(incomplete.pricing.pricingWarnings.map((w:any)=>w.context?.itemKey).filter(Boolean))
     for(const item of keys){
       if(/breaker/i.test(item)) continue
-      await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.includes("cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
+      await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.endsWith(" cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
     }
-    for(const item of ["appliance connection box","smart switch","duplex receptacle wall plate","NM cable connector","6/3 NM-B cable"]){
+    for(const item of ["Electric range hardwired connection box","Wall oven hardwired connection box","smart switch","duplex receptacle wall plate","toggle switch wall plate","NM cable connector for 6/3 NM-B","6/3 NM-B cable"]){
       if(keys.has(item)) continue
-      await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.includes("cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
+      await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.endsWith(" cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
     }
     for(const [amperage,poleCount,protectionType] of [[15,1,"Dual Function"],[20,1,"Dual Function"],[50,2,"Standard"],[20,1,"GFCI"]] as const){
       await db.insert(priceBookItemsTable).values({companyId,item:`Siemens ${amperage}A ${poleCount}-pole ${protectionType} breaker`,category:"Protection",unit:"ea",unitCost:40,
@@ -48,7 +48,11 @@ test("Kitchen circuits, readiness, saved totals, and responsive draft recovery",
     for(const item of ["Legrand radiant TM874WCC10 15A 4-way switch","Legrand radiant RWP26WCC10 1-gang screwless wall plate","14/3 NM-B cable"])
       if(!keys.has(item))await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.includes("cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
     for(const [index,changes] of scenarios.entries()){
-      const payload={...initial,jobInputs:{...initial.jobInputs,...changes,laborAdjustmentHours:-.5}}
+      const circuitConfigurations=[...(initial.jobInputs.circuitConfigurations ?? []).filter((c:any)=>
+        !["electricRangeCircuits","wallOvenCircuits"].includes(c.key)),
+        ...["electricRangeCircuits","wallOvenCircuits"].map(key=>({key,label:key==="electricRangeCircuits"?"Electric range":"Wall oven",
+          quantity:1,amperage:50,poleCount:2,protectionType:"Standard",cableType:"6/3 NM-B",connectionMethod:"Hardwired"}))]
+      const payload={...initial,jobInputs:{...initial.jobInputs,...changes,circuitConfigurations,laborAdjustmentHours:-.5}}
       const previewResponse=await request.post(`${api}/quotes/preview`,{headers,data:payload})
       expect(previewResponse.ok()).toBe(true)
       const preview=await previewResponse.json()
@@ -66,6 +70,8 @@ test("Kitchen circuits, readiness, saved totals, and responsive draft recovery",
     await pending
     await expect(page.locator("#kitchen-electricRangeCircuits-amperage")).toHaveValue("50")
     await page.locator("#kitchen-wallOvenCircuits-quantity").fill("1")
+    await page.locator("#kitchen-electricRangeCircuits-connection").selectOption("Hardwired")
+    await page.locator("#kitchen-wallOvenCircuits-connection").selectOption("Hardwired")
     await expect(page.getByRole("button",{name:"Generate Kitchen Quote",exact:true})).toBeEnabled()
     await page.getByText("Wiring & Pricing",{exact:false}).click()
     pending=next()

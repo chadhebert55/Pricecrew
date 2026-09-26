@@ -31,7 +31,7 @@ test("Recessed lighting scenarios, conditional controls, saved financials and re
       const p=await (await request.post(`${api}/quotes/preview`,{headers,data:{...initial,jobInputs}})).json()
       for(const w of p.pricing.pricingWarnings)if(w.context?.itemKey&&!/breaker/i.test(w.context.itemKey))keys.add(w.context.itemKey)
     }
-    for(const item of keys)await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.includes("cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
+    for(const item of keys)await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.endsWith(" cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
     await db.insert(priceBookItemsTable).values({companyId,item:"Siemens 15A 1-pole AFCI breaker",category:"Protection",unit:"ea",unitCost:40,manufacturer:"Siemens",amperage:15,poleCount:1,protectionType:"AFCI",supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
     for(const [index,jobInputs] of scenarios.entries()){
       const data={...initial,jobInputs:{...jobInputs,laborAdjustmentHours:-.5}}
