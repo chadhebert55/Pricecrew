@@ -61,7 +61,207 @@ export interface DashboardSummary {
   recentQuotes: QuoteSummary[];
 }
 
+export type QuoteExportMappingQuoteStatus = typeof QuoteExportMappingQuoteStatus[keyof typeof QuoteExportMappingQuoteStatus];
+
+
+export const QuoteExportMappingQuoteStatus = {
+  Draft: 'Draft',
+  Awaiting_Response: 'Awaiting Response',
+} as const;
+
+export type QuoteExportMappingLineItemDetail = typeof QuoteExportMappingLineItemDetail[keyof typeof QuoteExportMappingLineItemDetail];
+
+
+export const QuoteExportMappingLineItemDetail = {
+  summary: 'summary',
+  scope: 'scope',
+} as const;
+
+export type QuoteExportMappingTaxable = typeof QuoteExportMappingTaxable[keyof typeof QuoteExportMappingTaxable];
+
+
+export const QuoteExportMappingTaxable = {
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+} as const;
+
+export type QuoteExportMappingTaxMethod = typeof QuoteExportMappingTaxMethod[keyof typeof QuoteExportMappingTaxMethod];
+
+
+export const QuoteExportMappingTaxMethod = {
+  Inclusive: 'Inclusive',
+  Exclusive: 'Exclusive',
+} as const;
+
+export type QuoteExportMappingDiscountType = typeof QuoteExportMappingDiscountType[keyof typeof QuoteExportMappingDiscountType];
+
+
+export const QuoteExportMappingDiscountType = {
+  Unit: 'Unit',
+  Percentage: 'Percentage',
+} as const;
+
+export type QuoteExportMappingDepositType = typeof QuoteExportMappingDepositType[keyof typeof QuoteExportMappingDepositType];
+
+
+export const QuoteExportMappingDepositType = {
+  Unit: 'Unit',
+  Percentage: 'Percentage',
+} as const;
+
+export type QuoteExportMappingAutoVisitReminders = typeof QuoteExportMappingAutoVisitReminders[keyof typeof QuoteExportMappingAutoVisitReminders];
+
+
+export const QuoteExportMappingAutoVisitReminders = {
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+} as const;
+
+export type QuoteExportMappingAutoJobFollowups = typeof QuoteExportMappingAutoJobFollowups[keyof typeof QuoteExportMappingAutoJobFollowups];
+
+
+export const QuoteExportMappingAutoJobFollowups = {
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+} as const;
+
+export type QuoteExportMappingAutoQuoteFollowups = typeof QuoteExportMappingAutoQuoteFollowups[keyof typeof QuoteExportMappingAutoQuoteFollowups];
+
+
+export const QuoteExportMappingAutoQuoteFollowups = {
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+} as const;
+
+export type QuoteExportMappingAutoInvoiceFollowups = typeof QuoteExportMappingAutoInvoiceFollowups[keyof typeof QuoteExportMappingAutoInvoiceFollowups];
+
+
+export const QuoteExportMappingAutoInvoiceFollowups = {
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+} as const;
+
+export type QuoteExportMappingAutoReviewRequests = typeof QuoteExportMappingAutoReviewRequests[keyof typeof QuoteExportMappingAutoReviewRequests];
+
+
+export const QuoteExportMappingAutoReviewRequests = {
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+} as const;
+
+export type QuoteExportMappingScopeLinesItem = {
+  name: string;
+  description: string;
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+  /** @minimum 0 */
+  unitPrice: number;
+  /** @minimum 0 */
+  unitCost?: number;
+};
+
+export interface QuoteExportMapping {
+  quoteStatus?: QuoteExportMappingQuoteStatus;
+  lineItemDetail?: QuoteExportMappingLineItemDetail;
+  includeInternalCost?: boolean;
+  taxConfirmed?: boolean;
+  taxable?: QuoteExportMappingTaxable;
+  taxMethod?: QuoteExportMappingTaxMethod;
+  existingTaxRateName?: string;
+  newTaxRateName?: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  newTaxRate?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  existingTaxRatePercentage?: number;
+  discountType?: QuoteExportMappingDiscountType;
+  /** @minimum 0 */
+  discountAmount?: number;
+  depositType?: QuoteExportMappingDepositType;
+  /** @minimum 0 */
+  depositAmount?: number;
+  quoteMessage?: string;
+  introductionTitle?: string;
+  introductionBody?: string;
+  contractDisclaimer?: string;
+  autoVisitReminders?: QuoteExportMappingAutoVisitReminders;
+  autoJobFollowups?: QuoteExportMappingAutoJobFollowups;
+  autoQuoteFollowups?: QuoteExportMappingAutoQuoteFollowups;
+  autoInvoiceFollowups?: QuoteExportMappingAutoInvoiceFollowups;
+  autoReviewRequests?: QuoteExportMappingAutoReviewRequests;
+  /** @maxItems 10 */
+  scopeLines?: QuoteExportMappingScopeLinesItem[];
+  /** @nullable */
+  jobberClientId?: string | null;
+  /** @nullable */
+  quickBooksCustomer?: string | null;
+  /** @nullable */
+  quickBooksInvoiceDate?: string | null;
+  /** @nullable */
+  quickBooksDueDate?: string | null;
+  /** @nullable */
+  housecallCustomerId?: string | null;
+  /** @nullable */
+  housecallJobId?: string | null;
+  /** @nullable */
+  clientTitle?: string | null;
+  /** @nullable */
+  clientFirstName?: string | null;
+  /** @nullable */
+  clientLastName?: string | null;
+  /** @nullable */
+  clientCompanyName?: string | null;
+  /** @nullable */
+  clientEmail?: string | null;
+  /** @nullable */
+  clientMainPhone?: string | null;
+  /** @nullable */
+  clientHomePhone?: string | null;
+  /** @nullable */
+  clientWorkPhone?: string | null;
+  /** @nullable */
+  clientMobilePhone?: string | null;
+  /** @nullable */
+  clientFaxPhone?: string | null;
+  /** @nullable */
+  clientOtherPhone?: string | null;
+  /** @nullable */
+  clientSmsEnabledPhoneNumber?: string | null;
+  /** @nullable */
+  jobberPropertyId?: string | null;
+  /** @nullable */
+  propertyStreet1?: string | null;
+  /** @nullable */
+  propertyStreet2?: string | null;
+  /** @nullable */
+  propertyCity?: string | null;
+  /** @nullable */
+  propertyStateProvince?: string | null;
+  /** @nullable */
+  propertyZipPostalCode?: string | null;
+  /** @nullable */
+  propertyCountry?: string | null;
+  /** @nullable */
+  billingStreet1?: string | null;
+  /** @nullable */
+  billingStreet2?: string | null;
+  /** @nullable */
+  billingCity?: string | null;
+  /** @nullable */
+  billingStateProvince?: string | null;
+  /** @nullable */
+  billingZipPostalCode?: string | null;
+  /** @nullable */
+  billingCountry?: string | null;
+}
+
 export interface CustomerSummary {
+  integrationMapping?: QuoteExportMapping;
   id: number;
   name: string;
   /** @nullable */
@@ -78,6 +278,7 @@ export type CustomerDetail = CustomerSummary & {
 };
 
 export interface CustomerInput {
+  integrationMapping?: QuoteExportMapping;
   /** @minLength 1 */
   name: string;
   /** @nullable */
@@ -85,6 +286,7 @@ export interface CustomerInput {
 }
 
 export interface CustomerUpdate {
+  integrationMapping?: QuoteExportMapping;
   /** @minLength 1 */
   name?: string;
   /** @nullable */
@@ -1908,6 +2110,7 @@ export interface TakeoffQuoteSnapshot {
 }
 
 export type Quote = QuoteSummary & ({
+  customerScope?: CustomerProposalLine[];
   /**
      * Authenticated contractor-only customer identity used when revising a quote.
      * @nullable
@@ -2264,71 +2467,6 @@ export type QuoteExportRequestFormat = typeof QuoteExportRequestFormat[keyof typ
 export const QuoteExportRequestFormat = {
   csv: 'csv',
 } as const;
-
-export interface QuoteExportMapping {
-  /** @nullable */
-  jobberClientId?: string | null;
-  /** @nullable */
-  quickBooksCustomer?: string | null;
-  /** @nullable */
-  quickBooksInvoiceDate?: string | null;
-  /** @nullable */
-  quickBooksDueDate?: string | null;
-  /** @nullable */
-  housecallCustomerId?: string | null;
-  /** @nullable */
-  housecallJobId?: string | null;
-  /** @nullable */
-  clientTitle?: string | null;
-  /** @nullable */
-  clientFirstName?: string | null;
-  /** @nullable */
-  clientLastName?: string | null;
-  /** @nullable */
-  clientCompanyName?: string | null;
-  /** @nullable */
-  clientEmail?: string | null;
-  /** @nullable */
-  clientMainPhone?: string | null;
-  /** @nullable */
-  clientHomePhone?: string | null;
-  /** @nullable */
-  clientWorkPhone?: string | null;
-  /** @nullable */
-  clientMobilePhone?: string | null;
-  /** @nullable */
-  clientFaxPhone?: string | null;
-  /** @nullable */
-  clientOtherPhone?: string | null;
-  /** @nullable */
-  clientSmsEnabledPhoneNumber?: string | null;
-  /** @nullable */
-  jobberPropertyId?: string | null;
-  /** @nullable */
-  propertyStreet1?: string | null;
-  /** @nullable */
-  propertyStreet2?: string | null;
-  /** @nullable */
-  propertyCity?: string | null;
-  /** @nullable */
-  propertyStateProvince?: string | null;
-  /** @nullable */
-  propertyZipPostalCode?: string | null;
-  /** @nullable */
-  propertyCountry?: string | null;
-  /** @nullable */
-  billingStreet1?: string | null;
-  /** @nullable */
-  billingStreet2?: string | null;
-  /** @nullable */
-  billingCity?: string | null;
-  /** @nullable */
-  billingStateProvince?: string | null;
-  /** @nullable */
-  billingZipPostalCode?: string | null;
-  /** @nullable */
-  billingCountry?: string | null;
-}
 
 export interface QuoteExportRequest {
   destination: QuoteExportRequestDestination;

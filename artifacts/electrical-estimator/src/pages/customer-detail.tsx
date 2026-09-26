@@ -3,6 +3,7 @@ import {
   getListCustomersQueryKey,
   useGetCustomer,
   useUpdateCustomer,
+  type QuoteExportMapping,
 } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, Mail, Pencil, Save } from "lucide-react"
@@ -14,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { CustomerIntegrationFields } from "@/components/quote-export-card"
 
 export function CustomerDetail() {
   const params = useParams<{ id: string }>()
@@ -30,11 +32,13 @@ export function CustomerDetail() {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [integrationMapping, setIntegrationMapping] = useState<QuoteExportMapping>({})
 
   useEffect(() => {
     if (!customer) return
     setName(customer.name)
     setEmail(customer.email ?? "")
+    setIntegrationMapping(customer.integrationMapping ?? {})
   }, [customer])
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading customer...</div>
@@ -42,7 +46,7 @@ export function CustomerDetail() {
 
   const save = () => {
     updateCustomer.mutate(
-      { id: customer.id, data: { name, email: email || null } },
+      { id: customer.id, data: { name, email: email || null, integrationMapping } },
       {
         onSuccess: (updated) => {
           queryClient.setQueryData(getGetCustomerQueryKey(customer.id), {
@@ -78,6 +82,7 @@ export function CustomerDetail() {
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2"><Label htmlFor="customer-detail-name">Name</Label><Input id="customer-detail-name" value={name} onChange={(event) => setName(event.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="customer-detail-email">Email</Label><Input id="customer-detail-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></div>
+            <details className="md:col-span-2"><summary className="cursor-pointer text-sm font-semibold">Jobber / primary property mapping (optional)</summary><div className="mt-3"><CustomerIntegrationFields mapping={integrationMapping} onChange={setIntegrationMapping}/></div></details>
             {updateCustomer.isError && <p className="text-sm text-destructive md:col-span-2">This customer could not be updated. Check that the email is not already in use.</p>}
           </CardContent>
         </Card>

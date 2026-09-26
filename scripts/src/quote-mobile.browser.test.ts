@@ -162,8 +162,8 @@ test("quote building and export surfaces work at phone and tablet widths", async
     ).toBe(true);
 
     await page.getByTestId("button-export-quote-header").click();
-    await expect(page.getByTestId("button-download-quote-csv")).toBeVisible();
-    await expect(page.getByTestId("select-export-destination")).toBeVisible();
+    await expect(page.getByTestId("button-download-jobber-csv")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Generic Quote CSV" })).toBeVisible();
     expect(
       await page.evaluate(
         "document.documentElement.scrollWidth <= window.innerWidth",

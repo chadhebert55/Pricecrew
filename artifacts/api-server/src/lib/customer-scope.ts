@@ -15,6 +15,29 @@ export function customerProposalScope(module: string, assembly: AssemblyLineReco
     const allowance = line.unit === "allowance" || /-allowance$/.test(line.id);
     return !(allowance && line.unitCost === 0);
   });
+  if (["KITCHEN", "BATHROOM", "RECESSED_LIGHTING"].includes(module)) {
+    // Group saved work, not catalog products. Never invent scope or recalculate.
+    const groups = new Map<string, { supplied: boolean; contractor: boolean }>();
+    for (const line of lines) {
+      const category = line.category.toLowerCase();
+      const label = /allowance|permit/.test(category) ? "Selected job allowances"
+        : /protection|circuit/.test(category) ? "Circuit connections & protection"
+        : /conductor|cable|wire|raceway|rough/.test(category) ? "Wiring & installation materials"
+        : /control|switch/.test(category) ? "Lighting & equipment controls"
+        : /device|receptacle/.test(category) ? "Receptacles & controls"
+        : /fixture|light/.test(category) ? "Lighting installation"
+        : /equipment|fan|heat/.test(category) ? "Electrical equipment installation"
+        : "Electrical installation work";
+      const group = groups.get(label) ?? { supplied: false, contractor: false };
+      if (/customer.supplied/i.test(line.intentionalExclusionReason ?? "")) group.supplied = true;
+      else group.contractor = true;
+      groups.set(label, group);
+    }
+    return { scope: [...groups].map(([description, group], i) => ({
+      id: `customer-work-${i}`, description, quantity: 1, unit: "scope",
+      displayValue: group.supplied ? (group.contractor ? "Included; some items customer supplied" : "Install customer-supplied items") : "Included",
+    })), assumptions: [] };
+  }
   if (module !== "PANEL_REPLACEMENT") {
     return { scope: lines.map(line => ({
       id: line.id, description: customerMaterialDescription(line.description, line),

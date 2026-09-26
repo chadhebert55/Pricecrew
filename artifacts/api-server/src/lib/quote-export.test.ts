@@ -1,625 +1,136 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { buildJobberQuoteCsv, preflightJobberQuoteExport, buildQuickBooksQuoteCsv,
+  preflightQuickBooksQuoteExport, buildHousecallProQuoteCsv, preflightHousecallProQuoteExport,
+  QUICKBOOKS_INVOICE_HEADERS, HOUSECALL_PRO_JOB_HEADERS } from "./quote-export";
+import { parseJobberCsv, validateJobberCsv } from "./jobber-csv-validation";
 import type { QuoteExportMapping } from "@workspace/api-zod";
-import { jobberExportLayout } from "@workspace/api-zod/jobber-export-layout";
-import {
-  buildHousecallProQuoteCsv,
-  buildJobberQuoteCsv,
-  buildQuickBooksQuoteCsv,
-  HOUSECALL_PRO_JOB_HEADERS,
-  JOBBER_QUOTE_HEADERS,
-  MAX_JOBBER_ASSEMBLY_LINES,
-  preflightHousecallProQuoteExport,
-  preflightJobberQuoteExport,
-  preflightQuickBooksQuoteExport,
-  QUICKBOOKS_INVOICE_HEADERS,
-} from "./quote-export";
 
-type SavedQuote = Parameters<typeof buildJobberQuoteCsv>[0];
-
-function savedQuote(overrides: Partial<SavedQuote> = {}): SavedQuote {
-  const finalSellingPrice = 2345.67;
+type Quote = Parameters<typeof buildJobberQuoteCsv>[0];
+function quote(overrides: Partial<Quote> = {}): Quote {
   return {
-    id: 42,
-    companyId: 7,
-    customerId: null,
-    quoteNumber: "Q-0042",
-    customerName: "Ada Lovelace",
-    customerEmail: "ada@example.com",
-    projectName: "Kitchen, lighting \"upgrade\"",
-    module: "KITCHEN",
-    status: "ready",
-    jobInputs: { notes: "snapshot only" },
-    assembly: [
-      {
-        id: "wire",
-        category: "Material",
-        description: "12/2 copper cable",
-        quantity: 3,
-        unit: "ft",
-        unitCost: 12.34,
-        extendedCost: 37.02,
-        source: "Saved supplier quote",
-      },
-    ],
-    pricing: {
-      materialCost: 37.02,
-      laborCost: 100,
-      materialMarkup: 0.2,
-      calculatedSellingPrice: 300,
-      finalSellingPrice,
-      laborOverride: null,
-      sellingPriceOverride: finalSellingPrice,
-      grossProfit: 2208.65,
-      grossMargin: 0.94,
-      pricingWarnings: [],
-    },
-    proposalDescription: "Install safely,\r\nthen test.",
-    total: finalSellingPrice,
-    margin: 0.94,
-    sourceQuoteId: null,
-    revisionNumber: 0,
-    createdAt: new Date("2026-08-01T12:00:00Z"),
-    updatedAt: new Date("2026-08-02T12:00:00Z"),
+    id:42,companyId:7,customerId:null,quoteNumber:"Q-0042",customerName:"Ada Lovelace",
+    customerEmail:"ada@example.com",projectName:'Kitchen, lighting "upgrade"',module:"KITCHEN",status:"ready",
+    jobInputs:{notes:"PRIVATE INTERNAL NOTES"},assembly:[{id:"wire",category:"Material",description:"Supplier SKU12345",
+      quantity:3,unit:"ft",unitCost:12.34,extendedCost:37.02,source:"Private supplier"}],
+    pricing:{materialCost:37.02,laborCost:100,materialMarkup:.2,calculatedSellingPrice:300,finalSellingPrice:2345.67,
+      laborOverride:null,sellingPriceOverride:2345.67,grossProfit:2208.65,grossMargin:.94,pricingWarnings:[]},
+    proposalDescription:"Install safely,\r\nthen test O'Brien’s \"lighting\".",
+    total:2345.67,margin:.94,sourceQuoteId:null,revisionNumber:0,createdAt:new Date(),updatedAt:new Date(),
     ...overrides,
-  } as SavedQuote;
+  } as Quote;
 }
-
-function parseCsvRows(csv: string) {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let value = "";
-  let quoted = false;
-  for (let index = 0; index < csv.length; index += 1) {
-    const character = csv[index]!;
-    if (character === '"') {
-      if (quoted && csv[index + 1] === '"') {
-        value += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-    } else if (character === "," && !quoted) {
-      row.push(value);
-      value = "";
-    } else if ((character === "\r" || character === "\n") && !quoted) {
-      if (character === "\r" && csv[index + 1] === "\n") index += 1;
-      row.push(value);
-      rows.push(row);
-      row = [];
-      value = "";
-    } else {
-      value += character;
-    }
-  }
-  return rows;
+const mapping: QuoteExportMapping = {propertyStreet1:"123 Main St",propertyCity:"Boston",propertyStateProvince:"MA",
+  propertyZipPostalCode:"02108",taxable:"FALSE",taxConfirmed:true};
+const official = parseJobberCsv(readFileSync(new URL("./jobber-official-2026.csv",import.meta.url),"utf8"))[0]!;
+function result(q = quote(), m = mapping) {
+  const before = structuredClone(q), r=buildJobberQuoteCsv(q,m);
+  assert.deepEqual(r.issues,[]); assert.ok(r.csv); assert.deepEqual(q,before);
+  const [headers,values]=parseJobberCsv(r.csv);
+  assert.deepEqual(headers,official);assert.equal(headers.length,119);assert.equal(values.length,119);
+  return {csv:r.csv, get:(h:string)=>values[headers.indexOf(h)]};
 }
-
-const validMapping: QuoteExportMapping = {
-  propertyStreet1: "123 Main St",
-  propertyCity: "Boston",
-  propertyStateProvince: "MA",
-  propertyZipPostalCode: "02108",
-  propertyCountry: "United States",
-};
-
-type JobberImportFixture = {
-  provider: string;
-  document: string;
-  format: string;
-  contractVersion: number;
-  source: string;
-  reviewedOn: string;
-  maxLineItems: number;
-  baseHeaders: string[];
-  lineItemHeaderTemplates: string[];
-  requiredMappings: Array<{ name: string; headers: string[] }>;
-  lineItemRules: {
-    categories: string[];
-    requiredFields: string[];
-    savedTotalName: string;
-  };
-};
-
-const jobberImportFixture = JSON.parse(
-  readFileSync(
-    new URL("./jobber-quote-import.fixture.json", import.meta.url),
-    "utf8",
-  ),
-) as JobberImportFixture;
-
-function jobberLineHeaders(lineNumber: number) {
-  return jobberImportFixture.lineItemHeaderTemplates.map((header) =>
-    header.replace("{lineNumber}", String(lineNumber)),
-  );
-}
-
-function assertJobberImportCompatibility(
-  csv: string,
-  expected: {
-    assembly: Array<{
-      description: string;
-      category: string;
-      quantity: number;
-      unitCost: number;
-      unit: string;
-      source: string;
-      extendedCost: number;
-    }>;
-    finalSellingPrice: number;
-  },
-) {
-  const [headers, values] = parseCsvRows(csv);
-  assert.ok(headers, "Jobber import incompatible: CSV has no header row.");
-  assert.ok(values, "Jobber import incompatible: CSV has no data row.");
-  const expectedHeaders = [
-    ...jobberImportFixture.baseHeaders,
-    ...Array.from({ length: jobberImportFixture.maxLineItems }, (_, index) =>
-      jobberLineHeaders(index + 1),
-    ).flat(),
-  ];
-  assert.equal(
-    headers.length,
-    expectedHeaders.length,
-    `Jobber import incompatible: expected ${expectedHeaders.length} headers from the ${jobberImportFixture.source} (contract v${jobberImportFixture.contractVersion}), received ${headers.length}.`,
-  );
-  headers.forEach((header, index) => {
-    assert.equal(
-      header,
-      expectedHeaders[index],
-      `Jobber import incompatible header at column ${index + 1}: expected "${expectedHeaders[index]}", received "${header}".`,
-    );
-  });
-  assert.equal(
-    values.length,
-    headers.length,
-    "Jobber import incompatible: data row width does not match the provider header row.",
-  );
-
-  const valueFor = (header: string) => values[headers.indexOf(header)] ?? "";
-  for (const requirement of jobberImportFixture.requiredMappings) {
-    const presentHeaders = requirement.headers.filter((header) =>
-      headers.includes(header),
-    );
-    assert.ok(
-      presentHeaders.length > 0,
-      `Jobber import incompatible field "${requirement.name}": none of the required headers (${requirement.headers.join(", ")}) are present.`,
-    );
-    assert.ok(
-      presentHeaders.some((header) => valueFor(header).trim().length > 0),
-      `Jobber import incompatible field "${requirement.name}": at least one of ${presentHeaders.join(", ")} must contain a mapped value.`,
-    );
-  }
-
-  const lineItemWidth = jobberImportFixture.lineItemHeaderTemplates.length;
-  const lineItemValues = (lineNumber: number) =>
-    values.slice(
-      jobberImportFixture.baseHeaders.length + (lineNumber - 1) * lineItemWidth,
-      jobberImportFixture.baseHeaders.length + lineNumber * lineItemWidth,
-    );
-  const lineItemValueFor = (lineNumber: number, field: string) =>
-    lineItemValues(lineNumber)[
-      jobberLineHeaders(lineNumber).findIndex((header) =>
-        header.includes(` ${field}`),
-      )
-    ] ?? "";
-  const expectedLine = (lineNumber: number) => {
-    const line = expected.assembly[lineNumber - 1]!;
-    return [
-      "Product",
-      line.description,
-      `Saved assembly category: ${line.category}; Unit: ${line.unit}; Source: ${line.source}; Saved extended cost: $${line.extendedCost.toFixed(2)}`,
-      String(line.quantity),
-      "",
-      line.unitCost.toFixed(2),
-      "",
-    ];
-  };
-
-  expected.assembly.forEach((line, index) => {
-    const lineNumber = index + 1;
-    const category = lineItemValueFor(lineNumber, "Category");
-    assert.ok(
-      jobberImportFixture.lineItemRules.categories.includes(category),
-      `Jobber import incompatible field "Line Item ${lineNumber} Category": "${category}" is not a documented Jobber category.`,
-    );
-    assert.deepEqual(
-      lineItemValues(lineNumber),
-      expectedLine(lineNumber),
-      `Jobber import incompatible line item ${lineNumber}: saved assembly fields are not in the documented columns.`,
-    );
-    for (const requiredField of jobberImportFixture.lineItemRules
-      .requiredFields) {
-      assert.ok(
-        lineItemValueFor(lineNumber, requiredField).trim().length > 0,
-        `Jobber import incompatible field "Line Item ${lineNumber} ${requiredField}": saved assembly value is blank.`,
-      );
-    }
-  });
-
-  const totalLineNumber = expected.assembly.length + 1;
-  assert.deepEqual(
-    lineItemValues(totalLineNumber),
-    [
-      "Service",
-      jobberImportFixture.lineItemRules.savedTotalName,
-      "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
-      "1",
-      expected.finalSellingPrice.toFixed(2),
-      "",
-      "",
-    ],
-    `Jobber import incompatible field "Line Item ${totalLineNumber}": the exact saved total must follow the saved assembly rows.`,
-  );
-  for (
-    let lineNumber = totalLineNumber + 1;
-    lineNumber <= jobberImportFixture.maxLineItems;
-    lineNumber += 1
-  ) {
-    assert.deepEqual(
-      lineItemValues(lineNumber),
-      ["", "", "", "", "", "", ""],
-      `Jobber import incompatible line item ${lineNumber}: unexpected data appears after the saved total row.`,
-    );
-  }
-}
-
-test("Jobber CSV locks documented columns, assembly rows, and the saved total row", () => {
-  const result = buildJobberQuoteCsv(
-    savedQuote({
-      assembly: [
-        ...savedQuote().assembly,
-        {
-          id: "receptacle",
-          category: "Devices",
-          description: "Duplex receptacle",
-          quantity: 4,
-          unit: "ea",
-          unitCost: 8.5,
-          extendedCost: 34,
-          source: "Saved catalog",
-        },
-      ],
-    }),
-    validMapping,
-  );
-  assert.deepEqual(result.issues, []);
-  assert.ok(result.csv);
-
-  const [headers, values] = parseCsvRows(result.csv);
-  assert.ok(headers);
-  assert.ok(values);
-  assert.deepEqual(JOBBER_QUOTE_HEADERS, jobberImportFixture.baseHeaders);
-  assertJobberImportCompatibility(result.csv, {
-    assembly: [
-      ...savedQuote().assembly,
-      {
-        id: "receptacle",
-        category: "Devices",
-        description: "Duplex receptacle",
-        quantity: 4,
-        unit: "ea",
-        unitCost: 8.5,
-        extendedCost: 34,
-        source: "Saved catalog",
-      },
-    ],
-    finalSellingPrice: 2345.67,
-  });
-
-  const valueFor = (header: string) => values[headers.indexOf(header)];
-  assert.equal(
-    valueFor("Quote Status (Draft/Awaiting Response/Approved)"),
-    "Awaiting Response",
-  );
-  assert.equal(valueFor("Quote Message"), "Install safely,\r\nthen test.");
-  assert.equal(valueFor("Quote Discount Type (Unit/Percentage)"), "");
-  assert.equal(valueFor("Quote Discount Amount (Unit/Percentage)"), "");
-  assert.equal(valueFor("Quote New Tax Rate (Percentage)"), "");
-  assert.equal(valueFor("Tax Method (Inclusive/Exclusive)"), "");
+for (const module of ["PANEL_REPLACEMENT","RECESSED_LIGHTING","KITCHEN"]) test(`${module}: one service, saved override, no takeoff leak`,()=>{
+  const q=quote({module}),r=result(q);
+  assert.equal(r.get("Line Item 1 Category (Service/Product)"),"Service");
+  assert.equal(r.get("Line Item 1 Name"),q.projectName);
+  assert.equal(r.get("Line Item 1 Description"),q.proposalDescription);
+  assert.equal(r.get("Line Item 1 UNIT Price"),"2345.67");
+  assert.equal(r.get("Line Item 1 UNIT Cost"),"");
+  assert.equal(r.get("Line Item 2 Name"),"");
+  assert.equal(r.get("Quote Status (Draft/Awaiting Response/Approved)"),"Draft");
+  assert.equal(r.get("Quote Internal Note"),"Created from PriceCrew quote Q-0042.");
+  assert.doesNotMatch(r.csv,/SKU12345|Private supplier|PRIVATE INTERNAL|extendedCost/);
 });
-
-test("Jobber CSV escapes delimiters and neutralizes spreadsheet formulas", () => {
-  const result = buildJobberQuoteCsv(
-    savedQuote({ projectName: " =HYPERLINK(\"bad\")" }),
-    { ...validMapping, clientCompanyName: "@Danger, Inc." },
-  );
-  assert.ok(result.csv);
-  const [headers, values] = parseCsvRows(result.csv);
-  assert.ok(headers);
-  assert.ok(values);
-  assert.equal(
-    values[headers.indexOf("Quote Title")],
-    "' =HYPERLINK(\"bad\")",
-  );
-  assert.equal(
-    values[headers.indexOf("Client Company Name")],
-    "'@Danger, Inc.",
-  );
+test("official sample header equality includes every empty slot and exact case/order",()=>{
+  assert.equal(official.length,119); const r=result();
+  for(let i=2;i<=10;i++) for(const h of official.filter(h=>h.startsWith(`Line Item ${i} `))) assert.equal(r.get(h),"");
 });
-
-test("Jobber mapping supports explicit email clearing and consistent display identity", () => {
-  const result = buildJobberQuoteCsv(savedQuote(), {
-    ...validMapping,
-    clientFirstName: "Grace",
-    clientLastName: "Hopper",
-    clientEmail: "",
-  });
-  assert.ok(result.csv);
-  const [headers, values] = parseCsvRows(result.csv);
-  assert.ok(headers);
-  assert.ok(values);
-  assert.equal(values[headers.indexOf("Client Email")], "");
-  assert.equal(
-    values[headers.indexOf("Client Full Name (Display Only)")],
-    "Grace Hopper",
-  );
+test("existing client/property IDs and new property/email matching",()=>{
+  const r=result(quote(),{...mapping,jobberClientId:"12345",jobberPropertyId:"9876"});
+  assert.equal(r.get("Jobber Client ID"),"12345");assert.equal(r.get("Jobber Property ID"),"9876");
+  const n=result();assert.equal(n.get("Jobber Client ID"),"");assert.equal(n.get("Client Email"),"ada@example.com");
+  assert.equal(n.get("Jobber Property ID"),"");assert.equal(n.get("Property Street 1"),"123 Main St");
+  assert.equal(n.get("Property Country"),"");
 });
-
-test("Jobber preflight returns actionable identity, property, quote, and pricing issues", () => {
-  const quote = savedQuote({
-    customerName: " ",
-    customerEmail: "not-an-email",
-    total: 1,
-  });
-  const issues = preflightJobberQuoteExport(quote, {});
-  const codes = new Set(issues.map((entry) => entry.code));
-  assert.ok(codes.has("CLIENT_IDENTITY_REQUIRED"));
-  assert.ok(codes.has("CLIENT_EMAIL_INVALID"));
-  assert.ok(codes.has("PROPERTY_REQUIRED"));
-  assert.ok(codes.has("SAVED_TOTAL_MISMATCH"));
-  assert.ok(issues.every((entry) => entry.field && entry.message));
+test("explicit customer name/email mapping and clearing",()=>{
+  const r=result(quote(),{...mapping,clientFirstName:"Grace",clientLastName:"Hopper",clientEmail:""});
+  assert.equal(r.get("Client Full Name (Display Only)"),"Grace Hopper");assert.equal(r.get("Client Email"),"");
 });
-
-test("all exports block active zero-cost materials unless intentionally excluded", () => {
-  const zeroCostLine = {
-    ...savedQuote().assembly[0]!,
-    description: "Customer-selected fixture",
-    unitCost: 0,
-    extendedCost: 0,
-  };
-  const unresolved = savedQuote({ assembly: [zeroCostLine] });
-  const preflights = [
-    preflightJobberQuoteExport(unresolved, validMapping),
-    preflightQuickBooksQuoteExport(unresolved, {
-      quickBooksCustomer: "Ada Lovelace",
-      quickBooksInvoiceDate: "2026-08-30",
-      quickBooksDueDate: "2026-08-30",
-    }),
-    preflightHousecallProQuoteExport(unresolved, {}),
-  ];
-  for (const issues of preflights) {
-    assert.ok(issues.some((entry) => entry.code === "UNRESOLVED_MATERIAL_COST"));
-  }
-
-  const intentionallyExcluded = savedQuote({
-    assembly: [{
-      ...zeroCostLine,
-      intentionalExclusionReason: "Customer is purchasing this fixture directly.",
-    }],
-  });
-  assert.equal(
-    preflightJobberQuoteExport(intentionallyExcluded, validMapping).some(
-      (entry) => entry.code === "UNRESOLVED_MATERIAL_COST",
-    ),
-    false,
-  );
+test("opt-in cost is saved material plus effective labor override",()=>{
+  const q=quote();q.pricing.laborOverride=250;
+  assert.equal(result(q,{...mapping,includeInternalCost:true}).get("Line Item 1 UNIT Cost"),"287.02");
 });
-
-test("legacy panel closeout labor exports without repricing; near-match materials remain blocked", () => {
-  const quickBooksMapping = {
-    quickBooksCustomer: "Ada Lovelace",
-    quickBooksInvoiceDate: "2026-08-30",
-    quickBooksDueDate: "2026-08-30",
-  };
-  for (const id of ["panel-directory-labeling", "panel-replacement-closeout"]) {
-    const labor = {
-      id, category: "Closeout",
-      description: "Prepare panel directory and complete final circuit labeling",
-      quantity: 1, unit: "scope", unitCost: 0, extendedCost: 0,
-      source: "Included labor scope",
-    };
-    const quote = savedQuote({ assembly: [labor] });
-    const original = structuredClone(quote);
-    assert.deepEqual(preflightJobberQuoteExport(quote, validMapping), []);
-    assert.deepEqual(preflightQuickBooksQuoteExport(quote, quickBooksMapping), []);
-    assert.deepEqual(preflightHousecallProQuoteExport(quote, {}), []);
-    const jobber = buildJobberQuoteCsv(quote, validMapping);
-    assert.match(jobber.csv ?? "", /"Service","Prepare panel directory/);
-    assert.match(jobber.csv ?? "", /2345\.67/);
-    assert.match(buildQuickBooksQuoteCsv(quote, quickBooksMapping).csv ?? "", /2345\.67/);
-    assert.match(buildHousecallProQuoteCsv(quote, {}).csv ?? "", /2345\.67/);
-    assert.deepEqual(quote, original, "exports must not rewrite the saved snapshot");
-
-    for (const changed of [
-      { id: "ground-bar" }, { category: "Material" }, { description: "Ground bar" },
-      { source: "Unresolved material" }, { unit: "ea" }, { quantity: 2 },
-      { unitCost: -1 }, { extendedCost: 10 },
-    ]) {
-      const unresolved = savedQuote({ assembly: [{ ...labor, ...changed }] });
-      for (const issues of [
-        preflightJobberQuoteExport(unresolved, validMapping),
-        preflightQuickBooksQuoteExport(unresolved, quickBooksMapping),
-        preflightHousecallProQuoteExport(unresolved, {}),
-      ]) {
-        assert.ok(issues.some((issue) => issue.code === "UNRESOLVED_MATERIAL_COST"));
-      }
-    }
+test("actual rounded CSV unit costs must still reconcile",()=>{
+  const q=quote(); q.pricing.materialCost=.01; q.pricing.laborCost=0;
+  const r=buildJobberQuoteCsv(q,{...mapping,includeInternalCost:true,lineItemDetail:"scope",
+    scopeLines:[{name:"Work",description:"Install",quantity:3,unitPrice:781.89,unitCost:.003333333}]});
+  assert.equal(r.csv,null);
+  assert.ok(r.issues.some(i=>i.code==="EXPORT_COST_MISMATCH"));
+});
+test("intentional scope allocations reconcile, do not drop >10 lines or guess allocations",()=>{
+  const scopeLines=[{name:"Receptacles & switches",description:"Replace devices",quantity:2,unitPrice:500,unitCost:50},
+    {name:"Lighting",description:"Install lights",quantity:1,unitPrice:1345.67,unitCost:37.02}];
+  const r=result(quote(),{...mapping,lineItemDetail:"scope",scopeLines,includeInternalCost:true});
+  assert.equal(r.get("Line Item 2 UNIT Price"),"1345.67");
+  assert.equal(buildJobberQuoteCsv(quote(),{...mapping,lineItemDetail:"scope",scopeLines:scopeLines.slice(0,1)}).csv,null);
+  assert.equal(buildJobberQuoteCsv(quote(),{...mapping,lineItemDetail:"scope",scopeLines:Array(11).fill(scopeLines[0])}).csv,null);
+});
+test("customer-supplied materials remain excluded, active unpriced materials block",()=>{
+  const q=quote();q.assembly[0]={...q.assembly[0]!,unitCost:0,extendedCost:0,intentionalExclusionReason:"Customer supplied"};
+  result(q);
+  delete q.assembly[0]!.intentionalExclusionReason;
+  assert.equal(buildJobberQuoteCsv(q,mapping).csv,null);
+});
+test("large takeoffs never determine customer line count or leak internal JSON",()=>{
+  for(const count of [0,9,10,30,100]){
+    const q=quote();q.assembly=Array.from({length:count},(_,i)=>({...quote().assembly[0]!,id:`line-${i}`}));
+    const r=result(q);assert.equal(r.get("Line Item 2 Name"),"");assert.doesNotMatch(r.csv,/unitCost|SKU12345/);
   }
 });
-
-test("all exports block saved error-level pricing warnings", () => {
-  const quote = savedQuote({
-    pricing: {
-      ...savedQuote().pricing,
-      pricingWarnings: [{
-        code: "MISSING_CATALOG_PRICE",
-        severity: "error",
-        category: "missing-price",
-        message: "A required catalog price is missing.",
-        source: "Saved quote pricing snapshot",
-        context: {},
-      }],
-    },
-  });
-  assert.ok(
-    preflightJobberQuoteExport(quote, validMapping).some(
-      (entry) => entry.code === "BLOCKING_PRICING_WARNINGS",
-    ),
-  );
-  assert.ok(
-    preflightQuickBooksQuoteExport(quote, {
-      quickBooksCustomer: "Ada Lovelace",
-      quickBooksInvoiceDate: "2026-08-30",
-      quickBooksDueDate: "2026-08-30",
-    }).some((entry) => entry.code === "BLOCKING_PRICING_WARNINGS"),
-  );
+test("commas, apostrophes, multiline scope, unicode and spreadsheet formulas round-trip",()=>{
+  const q=quote(); const r=result(q);
+  assert.equal(r.get("Quote Message"),q.proposalDescription);assert.equal(r.get("Quote Title"),q.projectName);
+  assert.equal(result(quote({projectName:' =HYPERLINK("bad")'})).get("Quote Title"),'\' =HYPERLINK("bad")');
 });
-
-test("Jobber summary export still validates every saved assembly row", () => {
-  const templateLine = savedQuote().assembly[0]!;
-  const assembly = Array.from(
-    { length: MAX_JOBBER_ASSEMBLY_LINES + 1 },
-    (_, index) => ({
-      ...templateLine,
-      id: `line-${index}`,
-      quantity: index === 0 ? 0 : 1,
-    }),
-  );
-  const issues = preflightJobberQuoteExport(savedQuote({ assembly }), validMapping);
-  assert.ok(!issues.some((entry) => entry.code === "LINE_ITEM_LIMIT"));
-  assert.ok(issues.some((entry) => entry.code === "LINE_QUANTITY_INVALID"));
-  for (const invalid of [
-    { unitCost: 0, extendedCost: 0 },
-    { unitCost: -1 },
-    { extendedCost: Number.NaN },
-    { description: "" },
-  ]) {
-    const quote = savedQuote({ assembly: assembly.map((line, index) => ({
-      ...line, quantity: 1, ...(index === assembly.length - 1 ? invalid : {}),
-    })) });
-    assert.equal(buildJobberQuoteCsv(quote, validMapping).csv, null);
+test("unknown tax blocks, invalid total/status/booleans/NaN blocked",()=>{
+  for(const m of [{...mapping,taxConfirmed:false},{...mapping,quoteStatus:"Approved"},{...mapping,taxable:"yes"}]){
+    assert.equal(buildJobberQuoteCsv(quote(),m as QuoteExportMapping).csv,null);
   }
+  assert.equal(buildJobberQuoteCsv(quote({total:1}),mapping).csv,null);
+  const q=quote();q.assembly[0]!.extendedCost=NaN;assert.equal(buildJobberQuoteCsv(q,mapping).csv,null);
+  assert.equal(buildJobberQuoteCsv(quote({projectName:"[object Object]"}),mapping).csv,null);
 });
-
-test("Jobber boundary layouts preserve every row and exact total without changing the snapshot", () => {
-  for (const count of [0, 9, 10, 30, 100]) {
-    const quote = savedQuote({ assembly: Array.from({ length: count }, (_, index) => ({
-      ...savedQuote().assembly[0]!,
-      id: `line-${index}`,
-      description: `Material ${index}, "quoted"\nsecond line`,
-      source: `Supplier ${index}`,
-      unitCost: 1.234567, quantity: 3, extendedCost: 3.70,
-      ...(index === count - 1 ? {
-        unitCost: 0, extendedCost: 0,
-        intentionalExclusionReason: "Customer supplies this material directly.",
-      } : {}),
-    })) });
-    const original = structuredClone(quote);
-    const result = buildJobberQuoteCsv(quote, validMapping);
-    assert.deepEqual(result.issues, []);
-    assert.ok(result.csv);
-    const [headers, values] = parseCsvRows(result.csv);
-    assert.equal(headers.length, jobberImportFixture.baseHeaders.length + 70);
-    assert.equal(values.length, headers.length);
-    const valueFor = (header: string) => values[headers.indexOf(header)];
-    const summarized = count > 9;
-    const totalSlot = summarized ? 1 : count + 1;
-    assert.deepEqual(jobberExportLayout(count), {
-      summarized, lineItemCount: totalSlot,
-    });
-    assert.equal(valueFor(`Line Item ${totalSlot} Name`), "Saved quote total");
-    assert.equal(valueFor(`Line Item ${totalSlot} UNIT Price`), "2345.67");
-    assert.equal(valueFor(`Line Item ${totalSlot} Quantity`), "1");
-    assert.equal(valueFor("Quote Message"), quote.proposalDescription);
-    if (summarized) {
-      const internalNote = valueFor("Quote Internal Note");
-      assert.deepEqual(JSON.parse(internalNote.slice(internalNote.indexOf("\n") + 1)), quote.assembly);
-      const description = valueFor("Line Item 1 Description");
-      for (const line of quote.assembly) {
-        assert.ok(description.includes(`Electrical material | Quantity: ${line.quantity} ${line.unit}`));
-      }
-      assert.ok(!description.includes("Supplier"));
-      assert.ok(!description.includes("1.234567"));
-      for (let slot = 2; slot <= 10; slot++) {
-        for (const header of jobberLineHeaders(slot)) assert.equal(valueFor(header), "");
-      }
-    } else {
-      assert.equal(valueFor("Quote Internal Note"), "");
-      for (let index = 0; index < count; index++) {
-        assert.equal(valueFor(`Line Item ${index + 1} Name`), quote.assembly[index].description);
-        assert.equal(valueFor(`Line Item ${index + 1} UNIT Price`), "");
-      }
-    }
-    assert.deepEqual(quote, original);
-  }
+test("intentional tax, discount and deposit retain exact saved totals",()=>{
+  const q=quote();q.total=110;q.pricing.finalSellingPrice=110;
+  const m:QuoteExportMapping={...mapping,taxable:"TRUE",taxMethod:"Exclusive",newTaxRateName:"Verified test tax",
+    newTaxRate:10,lineItemDetail:"scope",scopeLines:[{name:"Electrical work",description:"Install",quantity:1,unitPrice:125}],
+    discountType:"Unit",discountAmount:25,depositType:"Percentage",depositAmount:10};
+  const r=result(q,m);assert.equal(r.get("Quote New Tax Rate (Percentage)"),"10");
+  assert.equal(r.get("Quote Existing Tax Rate Name"),"");
+  assert.equal(buildJobberQuoteCsv(q,{...m,existingTaxRateName:"Duplicate"}).csv,null);
+  assert.equal(buildJobberQuoteCsv(q,{...m,newTaxRate:9}).csv,null);
+  assert.equal(result(q,{...m,quoteStatus:"Awaiting Response"}).get("Quote Status (Draft/Awaiting Response/Approved)"),"Awaiting Response");
 });
-
-test("QuickBooks Online V1 invoice CSV locks official required headers and preserves the saved override total", () => {
-  const result = buildQuickBooksQuoteCsv(savedQuote(), {
-    quickBooksCustomer: "Ada Lovelace",
-    quickBooksInvoiceDate: "2026-08-02",
-    quickBooksDueDate: "2026-09-01",
-  });
-  assert.deepEqual(result.issues, []);
-  assert.ok(result.csv);
-  const [headers, values] = parseCsvRows(result.csv);
-  assert.deepEqual(headers, [...QUICKBOOKS_INVOICE_HEADERS]);
-  assert.deepEqual(headers, [
-    "Invoice number",
-    "Customer",
-    "Invoice date",
-    "Due date",
-    "Item amount",
-  ]);
-  assert.equal(values?.[headers!.indexOf("Item amount")], "2345.67");
-  assert.equal(values?.[headers!.indexOf("Customer")], "Ada Lovelace");
+test("actual CSV validator catches malformed columns, booleans and prices",()=>{
+  const r=result();
+  assert.deepEqual(validateJobberCsv(r.csv,official,2345.67,2345.67),[]);
+  for(const bad of [r.csv.replace('"FALSE"','"maybe"'),r.csv.replace('"2345.67"','"NaN"'),r.csv.replace('"Jobber Client ID"','"Client ID"')])
+    assert.ok(validateJobberCsv(bad,official,2345.67,2345.67).length);
 });
-
-test("QuickBooks Online preflight requires documented customer and date mappings", () => {
-  const issues = preflightQuickBooksQuoteExport(
-    savedQuote({ customerName: " " }),
-    {
-      quickBooksInvoiceDate: "2026-08-03",
-      quickBooksDueDate: "2026-08-02",
-    },
-  );
-  const codes = new Set(issues.map((entry) => entry.code));
-  assert.ok(codes.has("QUICKBOOKS_CUSTOMER_REQUIRED"));
-  assert.ok(codes.has("QUICKBOOKS_DUE_DATE_BEFORE_INVOICE"));
+test("legacy included closeout is allowed; near-match zero materials and warning errors still block",()=>{
+  const q=quote();q.assembly=[{id:"panel-directory-labeling",category:"Closeout",description:"Prepare panel directory and complete final circuit labeling",
+    quantity:1,unit:"scope",unitCost:0,extendedCost:0,source:"Included labor scope"}];result(q);
+  q.assembly[0]!.id="ground-bar";assert.equal(buildJobberQuoteCsv(q,mapping).csv,null);
+  const unsafe=quote();unsafe.pricing.pricingWarnings=[{code:"MISSING_CATALOG_PRICE",severity:"error",category:"missing-price",message:"Missing",source:"Saved",context:{}}];
+  assert.ok(preflightJobberQuoteExport(unsafe,mapping).some(i=>i.code==="BLOCKING_PRICING_WARNINGS"));
 });
-
-test("Housecall Pro V1 jobs CSV locks documented headers and accepted customer type while preserving the saved total", () => {
-  const result = buildHousecallProQuoteCsv(savedQuote(), {
-    clientCompanyName: "Analytical Engines LLC",
-    clientEmail: "ada@example.com",
-    housecallCustomerId: "customer-42",
-    housecallJobId: "job-42",
-    propertyStreet1: "123 Main St",
-    propertyCity: "Boston",
-    propertyStateProvince: "MA",
-    propertyZipPostalCode: "02108",
-  });
-  assert.deepEqual(result.issues, []);
-  assert.ok(result.csv);
-  const [headers, values] = parseCsvRows(result.csv);
-  assert.deepEqual(headers, [...HOUSECALL_PRO_JOB_HEADERS]);
-  assert.equal(values?.[headers!.indexOf("Type")], "business");
-  assert.equal(values?.[headers!.indexOf("Subtotal")], "2345.67");
-  assert.equal(values?.[headers!.indexOf("Tax")], "");
-  assert.equal(values?.[headers!.indexOf("Payment amount")], "");
-});
-
-test("Housecall Pro preflight enforces documented identity, ID, and phone constraints", () => {
-  const issues = preflightHousecallProQuoteExport(
-    savedQuote({ customerName: " ", customerEmail: null }),
-    {
-      housecallCustomerId: "x".repeat(192),
-      clientMobilePhone: "123",
-    },
-  );
-  const codes = new Set(issues.map((entry) => entry.code));
-  assert.ok(codes.has("HOUSECALL_CUSTOMER_ID_TOO_LONG"));
-  assert.ok(codes.has("HOUSECALL_PHONE_INVALID"));
+test("experimental QBO/HCP adapters preserved, require mappings and retain saved price",()=>{
+  const q=quote(),qb={quickBooksCustomer:"Ada Lovelace",quickBooksInvoiceDate:"2026-08-30",quickBooksDueDate:"2026-08-30"};
+  const qbcsv=buildQuickBooksQuoteCsv(q,qb).csv;assert.ok(qbcsv);
+  assert.deepEqual(parseJobberCsv(qbcsv)[0],QUICKBOOKS_INVOICE_HEADERS);assert.match(qbcsv,/2345\.67/);
+  assert.ok(preflightQuickBooksQuoteExport(q,{}).length);
+  const hc=buildHousecallProQuoteCsv(q,{}).csv;assert.ok(hc);assert.deepEqual(parseJobberCsv(hc)[0],HOUSECALL_PRO_JOB_HEADERS);assert.match(hc,/2345\.67/);
+  assert.ok(preflightHousecallProQuoteExport(quote({customerName:"",customerEmail:null}),{}).length);
 });

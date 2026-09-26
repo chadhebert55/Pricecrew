@@ -1,446 +1,196 @@
-import {
-  exportHousecallProQuoteCsv,
-  exportJobberQuoteCsv,
-  exportQuickBooksQuoteCsv,
-  type QuoteExportMapping,
-  type QuoteExportRequestDestination,
-  type QuoteExportPreflightIssue,
-  usePreflightQuoteExport,
-} from "@workspace/api-client-react"
+import { exportJobberQuoteCsv, preflightQuoteExport, useGetCustomer, getGetCustomerQueryKey, useGetSettings, useUpdateCustomer,
+  type Quote, type QuoteExportMapping, type QuoteExportPreflight } from "@workspace/api-client-react"
 import { useEffect, useRef, useState } from "react"
-import { CheckCircle2, Download, FileText, PlugZap, TriangleAlert } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { jobberExportLayout, MAX_JOBBER_LINE_ITEMS } from "@workspace/api-zod/jobber-export-layout"
 
-type QuoteExportCardProps = {
-  quoteId: number
-  customerName: string
-  customerEmail: string | null | undefined
-  isDirty: boolean
-  assemblyLineCount: number
-  pricingBlockers?: string[]
-  onOpenCustomerProposal: () => void
-  customerProposalDisabled: boolean
-  customerProposalHelp: string
+const customerFields = [
+  ["jobberClientId", "Jobber Client ID"], ["clientFirstName", "First name"],
+  ["clientLastName", "Last name"], ["clientCompanyName", "Company name"],
+  ["clientEmail", "Email"], ["clientMainPhone", "Phone"],
+  ["jobberPropertyId", "Jobber Property ID"], ["propertyStreet1", "Property Street 1"],
+  ["propertyStreet2", "Property Street 2"], ["propertyCity", "Property city"],
+  ["propertyStateProvince", "Property state/province"], ["propertyZipPostalCode", "Property ZIP/postal code"],
+  ["propertyCountry", "Property country"],
+] as const
+
+export function CustomerIntegrationFields({ mapping, onChange }: {
+  mapping: QuoteExportMapping; onChange: (mapping: QuoteExportMapping) => void
+}) {
+  return <div className="grid gap-3 sm:grid-cols-2">{customerFields.map(([key, label]) =>
+    <div key={key} className="min-w-0 space-y-1">
+      <Label htmlFor={`export-${key}`}>{label}</Label>
+      <Input id={`export-${key}`} value={mapping[key] ?? ""} onChange={e => onChange({
+        ...mapping, [key]: e.target.value,
+        // An ID belongs to one address. Never retain it after changing that address.
+        ...(key.startsWith("property") ? { jobberPropertyId: "" } : {}),
+      })}/>
+    </div>)}</div>
 }
 
-export function QuoteExportCard({
-  quoteId,
-  customerName,
-  customerEmail,
-  isDirty,
-  assemblyLineCount,
-  pricingBlockers = [],
-  onOpenCustomerProposal,
-  customerProposalDisabled,
-  customerProposalHelp,
-}: QuoteExportCardProps) {
+function download(csv: string, filename: string) {
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+const cell = (value: unknown) => {
+  let v = value == null ? "" : String(value)
+  if (/^\s*[=+\-@]/.test(v)) v = `'${v}`
+  return `"${v.replaceAll('"', '""')}"`
+}
+
+export function QuoteExportCard({quote, isDirty, pricingBlockers}: {
+  quote: Quote; isDirty: boolean; pricingBlockers: string[]
+}) {
   const { toast } = useToast()
-  const preflightExport = usePreflightQuoteExport()
-  const initializedForId = useRef<number | null>(null)
+  const { data: customer, isLoading: customerLoading } = useGetCustomer(quote.customerId ?? 0, {
+    query: { enabled: Boolean(quote.customerId), queryKey: getGetCustomerQueryKey(quote.customerId ?? 0) },
+  })
+  const { data: settings, isLoading: settingsLoading } = useGetSettings()
+  const updateCustomer = useUpdateCustomer()
   const [mapping, setMapping] = useState<QuoteExportMapping>({})
-  const [destination, setDestination] = useState<QuoteExportRequestDestination>("jobber")
-  const [issues, setIssues] = useState<QuoteExportPreflightIssue[]>([])
+  const initialized = useRef<number | null>(null)
+  const [check, setCheck] = useState<{key: string; result: QuoteExportPreflight} | null>(null)
+  const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
-
+  const key = JSON.stringify([quote.id, quote.updatedAt, mapping])
   useEffect(() => {
-    if (initializedForId.current === quoteId) return
-    initializedForId.current = quoteId
-    const nameParts = customerName.trim().split(/\s+/).filter(Boolean)
-    setMapping({
-      clientFirstName: nameParts[0] || "",
-      clientLastName: nameParts.slice(1).join(" "),
-      clientEmail: customerEmail || "",
-      propertyCountry: "United States",
-      quickBooksInvoiceDate: new Date().toISOString().slice(0, 10),
-      quickBooksDueDate: new Date().toISOString().slice(0, 10),
-    })
-    setIssues([])
-  }, [customerEmail, customerName, quoteId])
-
-  const updateMapping = (field: keyof QuoteExportMapping, value: string) => {
-    setMapping((current) => ({ ...current, [field]: value }))
-    setIssues([])
-  }
-
-  const hasJobberProperty = Boolean(
-    mapping.jobberPropertyId?.trim() || mapping.propertyStreet1?.trim(),
-  )
-  const jobberLayout = jobberExportLayout(assemblyLineCount)
-  const pricingBlocked = pricingBlockers.length > 0
-
-  const handleExport = async () => {
-    if (pricingBlocked) {
-      toast({
-        variant: "destructive",
-        title: "Resolve pricing before exporting",
-        description: "Add verified costs or classify intentional material exclusions, then save the quote.",
-      })
-      return
-    }
-    if (isDirty) {
-      toast({
-        variant: "destructive",
-        title: "Save changes before exporting",
-        description: "Exports always use the saved quote snapshot, so unsaved quote-detail edits are not included.",
-      })
-      return
-    }
-
-    const data = {
-      destination,
-      format: "csv" as const,
-      mapping,
-    }
+    if (initialized.current === quote.id || settingsLoading || (quote.customerId && customerLoading)) return
+    initialized.current = quote.id
+    const [first = "", ...last] = quote.customerName.trim().split(/\s+/)
+    setMapping({ clientFirstName: first, clientLastName: last.join(" "), clientEmail: quote.customerEmail ?? "",
+      ...customer?.integrationMapping, quoteStatus: "Draft", lineItemDetail: "summary", includeInternalCost: false,
+      contractDisclaimer: settings?.proposalTerms ?? "" })
+  }, [quote, customer, customerLoading, settings, settingsLoading])
+  useEffect(() => {
+    let live = true
+    setError("")
+    const timer = setTimeout(() => {
+      preflightQuoteExport(quote.id, { destination: "jobber", format: "csv", mapping }).then(result => {
+        if (live) setCheck({ key, result })
+      }).catch(() => { if (live) setError("Could not validate export. Check your connection and try again.") })
+    }, 300)
+    return () => { live = false; clearTimeout(timer) }
+  }, [key])
+  const set = (field: keyof QuoteExportMapping, value: unknown) => setMapping(current => ({
+    ...current, [field]: value,
+    ...(["taxMethod", "existingTaxRateName", "existingTaxRatePercentage", "newTaxRateName", "newTaxRate"].includes(field) ? { taxConfirmed: false } : {}),
+    ...(field === "taxable" ? { taxConfirmed: false, ...(value === "FALSE" ? {
+      taxMethod: undefined, existingTaxRateName: undefined, existingTaxRatePercentage: undefined,
+      newTaxRateName: undefined, newTaxRate: undefined,
+    } : {}) } : {}),
+  }))
+  const ready = check?.key === key && check.result.ready && !isDirty && !pricingBlockers.length
+  const select = (field: keyof QuoteExportMapping, label: string, options: string[], blank = false) =>
+    <div className="space-y-1"><Label htmlFor={`export-${field}`}>{label}</Label>
+      <select id={`export-${field}`} className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+        value={String(mapping[field] ?? "")} onChange={e => set(field, e.target.value || undefined)}>
+        {blank && <option value="">Not configured</option>}{options.map(v => <option key={v} value={v}>{v === "summary" ? "Single summarized service" : v === "scope" ? "Customer-facing scope items" : v}</option>)}
+      </select></div>
+  const textField = (field: keyof QuoteExportMapping, label: string, numeric = false) =>
+    <div className="space-y-1"><Label htmlFor={`export-${field}`}>{label}</Label><Input id={`export-${field}`}
+      type={numeric ? "number" : "text"} min={numeric ? 0 : undefined} step={numeric ? "any" : undefined}
+      value={String(mapping[field] ?? "")} onChange={e => set(field, numeric ? (e.target.value === "" ? undefined : Number(e.target.value)) : e.target.value)}/></div>
+  const exportCsv = async () => {
+    if (!ready) return
     setBusy(true)
     try {
-      const preflight = await preflightExport.mutateAsync({ id: quoteId, data })
-      setIssues(preflight.issues)
-      if (!preflight.ready) {
-        document.getElementById("quote-integrations-exports")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        })
-        return
-      }
-
-      const csv =
-        destination === "quickbooks"
-          ? await exportQuickBooksQuoteCsv(
-              quoteId,
-              { destination: "quickbooks", format: "csv", mapping },
-              { responseType: "text" },
-            )
-          : destination === "housecall_pro"
-            ? await exportHousecallProQuoteCsv(
-                quoteId,
-                { destination: "housecall_pro", format: "csv", mapping },
-                { responseType: "text" },
-              )
-            : await exportJobberQuoteCsv(
-                quoteId,
-                { destination: "jobber", format: "csv", mapping },
-                { responseType: "text" },
-              )
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
-      const link = document.createElement("a")
-      link.href = url
-      link.download = preflight.filename
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(url)
-      toast({
-        title: `${destinationLabel(destination)} CSV downloaded`,
-        description: `The export preserves the saved quote total of $${preflight.quoteTotal?.toFixed(2) ?? "0.00"}.`,
-      })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Could not export quote",
-        description: error instanceof Error ? error.message : "Please review the export details and try again.",
-      })
-    } finally {
-      setBusy(false)
-    }
+      const csv = await exportJobberQuoteCsv(quote.id, { destination: "jobber", format: "csv", mapping }, { responseType: "text" })
+      download(csv, `${quote.quoteNumber}-jobber.csv`)
+      toast({title: "Jobber draft CSV downloaded", description: "Review the imported draft in Jobber before sending it."})
+    } catch (e) { setError(e instanceof Error ? e.message : "Export failed.") }
+    finally { setBusy(false) }
   }
-
-  return (
-    <Card id="quote-integrations-exports" className="scroll-mt-6 border-primary/30">
-      <CardHeader className="border-b border-border">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <PlugZap className="text-primary" size={20} />
-              <CardTitle>App &amp; Accounting Exports</CardTitle>
-            </div>
-            <CardDescription className="mt-2 max-w-3xl">
-              Download a CSV spreadsheet to import into another app. This is not a customer quote or PDF, and it does not sync or send anything.
-            </CardDescription>
-          </div>
-           <Button className="w-full sm:w-auto" data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy || pricingBlocked}>
-            <Download size={16} className="mr-2" />
-            {busy ? "Checking export..." : "Download CSV for Import"}
-          </Button>
+  const generic = () => {
+    const rows = [
+      ["Quote", "Customer", "Email", "Project", "Status", "Customer-facing scope", "Material cost", "Internal labor cost", "Final selling price"],
+      [quote.quoteNumber, quote.customerName, quote.customerEmail, quote.projectName, quote.status, quote.proposalDescription,
+        quote.pricing.materialCost, quote.pricing.laborOverride ?? quote.pricing.laborCost, quote.pricing.finalSellingPrice],
+      [], ["Category", "Description", "Qty", "Unit", "Unit cost", "Extended cost", "Cost classification"],
+      ...quote.assembly.map(l => [l.category, l.description, l.quantity, l.unit, l.unitCost, l.extendedCost, l.intentionalExclusionReason ?? ""]),
+    ]
+    download(rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n", `${quote.quoteNumber}-generic.csv`)
+  }
+  return <Card id="quote-integrations-exports" data-testid="quote-export-card">
+    <CardHeader><CardTitle>Export Quote</CardTitle></CardHeader>
+    <CardContent className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 text-sm"><h3 className="font-semibold">Jobber · Quote Import CSV</h3>
+          <p className="break-words">{quote.customerName} · {quote.projectName}</p>
+          <p className="text-muted-foreground">{mapping.jobberPropertyId ? `Property ID: ${mapping.jobberPropertyId}` :
+            [mapping.propertyStreet1, mapping.propertyCity, mapping.propertyStateProvince].filter(Boolean).join(", ") || "Add the property in Advanced Jobber Mapping."}</p>
+          <p className="mt-1">${quote.pricing.finalSellingPrice.toFixed(2)} · Jobber Status: {mapping.quoteStatus ?? "Draft"}</p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-6">
-        <div className="rounded-md border border-primary/30 bg-primary/5 p-4" data-testid="customer-quote-help">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="font-semibold">Need a quote for your customer?</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Use the customer proposal for your company details, scope of work, and quoted total, without internal material costs or profit.
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">{customerProposalHelp}</p>
-            </div>
-            <Button className="w-full shrink-0 sm:w-auto" data-testid="button-open-customer-quote"
-              onClick={onOpenCustomerProposal} disabled={customerProposalDisabled}>
-              <FileText size={16} className="mr-2" /> View Customer Quote
-            </Button>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Destination</Label>
-            <Select
-              value={destination}
-              onValueChange={(value) => {
-                setDestination(value as QuoteExportRequestDestination)
-                setIssues([])
-              }}
-            >
-              <SelectTrigger data-testid="select-export-destination"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="jobber">Jobber quote import</SelectItem>
-                <SelectItem value="quickbooks">QuickBooks Online invoice import</SelectItem>
-                <SelectItem value="housecall_pro">Housecall Pro jobs import</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Choose the documented import layout used by your contractor platform.
-            </p>
-          </div>
-          <ExportSelect label="Format" value="csv" option="CSV import file" testId="select-export-format" />
-        </div>
-        {destination === "quickbooks" && (
-          <Alert data-testid="quickbooks-import-notice">
-            <FileText size={16} />
-            <AlertTitle>QuickBooks invoice-import spreadsheet</AlertTitle>
-            <AlertDescription>
-              This CSV may open in Excel. It is for importing an invoice into QuickBooks Online, not a customer-facing quote or estimate.
-              Use View Customer Quote above, then Download PDF for your customer.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Alert className={isDirty ? "border-amber-300 bg-amber-50 text-amber-950" : undefined}>
-          <FileText size={16} />
-          <AlertTitle>{isDirty ? "Save quote changes before export" : "Saved snapshot export"}</AlertTitle>
-          <AlertDescription>
-            {isDirty
-              ? "Your unsaved quote-detail edits will not be exported. Save Changes, then export again."
-              : "The CSV uses this saved assembly and exact final selling price. It does not rerun estimating or read live catalog pricing."}
-          </AlertDescription>
-        </Alert>
-
-        {pricingBlocked && (
-          <Alert variant="destructive" data-testid="alert-export-pricing-blocked">
-            <TriangleAlert size={16} />
-            <AlertTitle>Pricing must be resolved before export</AlertTitle>
-            <AlertDescription>
-              Add a positive saved cost for each active material, or classify a true customer-supplied/excluded item with an intentional reason. Draft saving remains available.
-              <ul className="mt-2 list-disc space-y-1 pl-5">
-                {pricingBlockers.map((blocker, index) => <li key={`${index}-${blocker}`}>{blocker}</li>)}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {destination === "jobber" && (
-          <div
-            className="rounded-md border border-border bg-muted/20 p-4"
-            data-testid="export-readiness"
-          >
-            <div className="flex items-start gap-3">
-              {hasJobberProperty && !pricingBlocked ? (
-                <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
-              ) : (
-                <TriangleAlert className="mt-0.5 shrink-0 text-amber-600" size={18} />
-              )}
-              <div className="min-w-0 space-y-3">
-                <div>
-                  <p className="font-semibold">Jobber export readiness</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {hasJobberProperty
-                      ? "A mapped Jobber Property ID or property street is supplied."
-                      : "Jobber needs a mapped Property ID or Property Street 1 before it can link this quote to a property."}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                  <span className="text-muted-foreground">
-                    {jobberLayout.lineItemCount} of {MAX_JOBBER_LINE_ITEMS} line items
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Includes one line for the exact saved quote total.
-                  </span>
-                </div>
-                {jobberLayout.summarized && (
-                  <div className="rounded-md border bg-background p-3 text-sm" data-testid="jobber-summary-notice">
-                    <p className="font-medium">Large-quote summary export</p>
-                    <p className="mt-1 text-muted-foreground">
-                      All {assemblyLineCount} saved assembly rows are retained. One service line carries the exact saved total and lists the full scope with quantities and units.
-                      The complete breakdown, including saved costs and sources, is included in Quote Internal Note, not as separate Jobber product rows.
-                      Your PriceCrew quote is unchanged.
-                    </p>
-                  </div>
-                )}
-                {!hasJobberProperty && (
-                  <div className="flex flex-wrap gap-2">
-                    {!hasJobberProperty && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        data-testid="button-complete-property-mapping"
-                        onClick={() => document.getElementById("export-property-mapping")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                      >
-                        Add property details
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {destination === "quickbooks" ? (
-          <MappingSection
-            title="QuickBooks invoice mapping"
-            description="The customer must already exist in QuickBooks Online. Dates are required by its invoice importer."
-            fields={[
-              ["QuickBooks customer name", "quickBooksCustomer", "text"],
-              ["Invoice date (YYYY-MM-DD)", "quickBooksInvoiceDate", "date"],
-              ["Due date (YYYY-MM-DD)", "quickBooksDueDate", "date"],
-            ]}
-            mapping={mapping}
-            onChange={updateMapping}
-          />
-        ) : (
-          <>
-            <MappingSection
-              title={destination === "jobber" ? "Jobber client mapping" : "Housecall Pro customer mapping"}
-              description={destination === "jobber"
-                ? "Optional Jobber IDs take priority. Otherwise Jobber can match or create a client from the contact values below."
-                : "An optional Housecall Pro Customer ID takes priority. Otherwise provide a name, company, or email."}
-              fields={[
-                ...(destination === "jobber"
-                  ? [["Jobber Client ID", "jobberClientId", "text"] as FieldDefinition]
-                  : [
-                      ["Housecall Pro Customer ID", "housecallCustomerId", "text"] as FieldDefinition,
-                      ["Housecall Pro Job ID", "housecallJobId", "text"] as FieldDefinition,
-                    ]),
-                ["Client first name", "clientFirstName", "text"],
-                ["Client last name", "clientLastName", "text"],
-                ["Client company name", "clientCompanyName", "text"],
-                ["Client email", "clientEmail", "email"],
-                [destination === "jobber" ? "Client main phone" : "Mobile number", destination === "jobber" ? "clientMainPhone" : "clientMobilePhone", "tel"],
-              ]}
-              mapping={mapping}
-              onChange={updateMapping}
-            />
-            <MappingSection
-              id="export-property-mapping"
-              title={destination === "jobber" ? "Jobber property mapping" : "Housecall Pro service address"}
-              description={destination === "jobber"
-                ? "Select a mapped Jobber Property ID, or enter Property Street 1 below so Jobber can link or create the property."
-                : "Address fields are optional and are combined into Housecall Pro's documented Service address field."}
-              fields={[
-                ...(destination === "jobber"
-                  ? [["Jobber Property ID", "jobberPropertyId", "text"] as FieldDefinition]
-                  : []),
-                ["Property street 1", "propertyStreet1", "text"],
-                ["Property street 2", "propertyStreet2", "text"],
-                ["Property city", "propertyCity", "text"],
-                ["State / province", "propertyStateProvince", "text"],
-                ["ZIP / postal code", "propertyZipPostalCode", "text"],
-                ["Property country", "propertyCountry", "text"],
-              ]}
-              mapping={mapping}
-              onChange={updateMapping}
-            />
-          </>
-        )}
-
-        {issues.length > 0 && (
-          <Alert variant="destructive" data-testid="alert-export-issues">
-            <TriangleAlert size={16} />
-            <AlertTitle>Resolve these items before download</AlertTitle>
-            <AlertDescription>
-              <ul className="mt-2 list-disc space-y-1 pl-5">
-                {issues.map((issue) => <li key={`${issue.code}-${issue.field}`}>{issue.message}</li>)}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-          {destination === "jobber"
-            ? jobberLayout.summarized
-              ? "Summary export: the single service line carries the exact saved selling price. Full saved assembly details are preserved in Quote Internal Note; they are not imported as separate products. Review the imported quote in Jobber before sending it."
-              : "Assembly rows keep saved quantities, units, sources, and costs with blank selling prices. A separate line carries the exact saved final selling price."
-            : "This format uses one row carrying the exact saved final selling price; it does not distribute that amount across assembly rows."}{" "}
-          Tax, discount, deposit, and taxable fields stay blank because they are not captured in the quote snapshot.
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function ExportSelect({ label, value, option, testId }: { label: string; value: string; option: string; testId: string }) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <Select value={value}>
-        <SelectTrigger data-testid={testId}><SelectValue /></SelectTrigger>
-        <SelectContent><SelectItem value={value}>{option}</SelectItem></SelectContent>
-      </Select>
-      <p className="text-xs text-muted-foreground">
-        Uses the destination's documented import headers and accepted values.
-      </p>
-    </div>
-  )
-}
-
-type FieldDefinition = [string, keyof QuoteExportMapping, "text" | "email" | "tel" | "date"]
-
-
-function destinationLabel(destination: QuoteExportRequestDestination) {
-  if (destination === "quickbooks") return "QuickBooks Online"
-  if (destination === "housecall_pro") return "Housecall Pro"
-  return "Jobber"
-}
-
-function MappingSection({
-  id,
-  title,
-  description,
-  fields,
-  mapping,
-  onChange,
-}: {
-  id?: string
-  title: string
-  description: string
-  fields: FieldDefinition[]
-  mapping: QuoteExportMapping
-  onChange: (field: keyof QuoteExportMapping, value: string) => void
-}) {
-  return (
-    <div id={id}>
-      <h3 className="font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {fields.map(([label, field, type]) => (
-          <div key={field} className="space-y-2">
-            <Label htmlFor={`export-${field}`}>{label}</Label>
-            <Input
-              id={`export-${field}`}
-              data-testid={`input-export-${field}`}
-              type={type}
-              value={mapping[field] ?? ""}
-              onChange={(event) => onChange(field, event.target.value)}
-            />
-          </div>
-        ))}
+        <div className="flex flex-wrap gap-2"><Button data-testid="button-download-jobber-csv" disabled={!ready || busy} onClick={exportCsv}>Download Jobber Quote CSV</Button>
+          <Button variant="outline" onClick={generic} disabled={isDirty}>Generic Quote CSV</Button></div>
       </div>
-    </div>
-  )
+      <div className="rounded-md border p-3 text-sm" data-testid="jobber-export-readiness">
+        <p className="font-semibold">{ready ? "Ready for Jobber Export" : "Jobber Export Needs Review"}</p>
+        {isDirty && <p>Save quote changes before exporting.</p>}
+        {pricingBlockers.length > 0 && <p>Resolve required material pricing before exporting.</p>}
+        {check?.key !== key && !error && <p>Checking saved quote and mapping…</p>}
+        {check?.key === key && check.result.issues.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5">
+          {check.result.issues.map((i, n) => <li key={n}>{i.message}</li>)}</ul>}
+        {error && <p role="alert" className="text-destructive">{error}</p>}
+      </div>
+      <details><summary className="cursor-pointer text-sm font-semibold">Advanced Jobber Mapping</summary>
+        <div className="mt-4 space-y-5">
+          <CustomerIntegrationFields mapping={mapping} onChange={setMapping}/>
+          {quote.customerId && <div><Button variant="outline" disabled={updateCustomer.isPending} onClick={async () => {
+            try {
+              const integrationMapping = Object.fromEntries(customerFields.map(([k]) => [k, mapping[k] ?? ""]))
+              await updateCustomer.mutateAsync({ id: quote.customerId!, data: { integrationMapping } })
+              toast({title: "Customer / primary property mapping saved", description: "These fields will be reused for this customer's future exports."})
+            } catch { setError("Could not save customer mapping.") }
+          }}>Save mapping to customer / primary property</Button><p className="mt-1 text-xs text-muted-foreground">Only identity and primary-property fields are saved. Confirm the property for each job.</p></div>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {select("quoteStatus", "Jobber quote status", ["Draft", "Awaiting Response"])}
+            {select("lineItemDetail", "Jobber Line Item Detail", ["summary", "scope"])}
+          </div>
+          <p className="text-xs text-muted-foreground">Summary = one summarized service (default). Scope = up to 10 intentional customer-facing items, never a material dump.</p>
+          {mapping.lineItemDetail === "scope" && <div className="space-y-3">
+            {(mapping.scopeLines ?? []).map((line, i) => <div key={i} className="rounded-md border p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(["name", "description", "quantity", "unitPrice", ...(mapping.includeInternalCost ? ["unitCost"] : [])] as const).map(field =>
+                  <div key={field}><Label htmlFor={`scope-${i}-${field}`}>{field.replace(/([A-Z])/g, " $1")}</Label><Input id={`scope-${i}-${field}`}
+                    type={["quantity", "unitPrice", "unitCost"].includes(field) ? "number" : "text"}
+                    min="0" step="any" value={String(line[field as keyof typeof line] ?? "")} onChange={e => set("scopeLines", mapping.scopeLines!.map((l, n) =>
+                      i === n ? {...l, [field]: ["quantity", "unitPrice", "unitCost"].includes(field) ? Number(e.target.value) : e.target.value} : l))}/></div>)}
+              </div><Button variant="ghost" onClick={() => set("scopeLines", mapping.scopeLines!.filter((_, n) => n !== i))}>Remove line</Button>
+            </div>)}
+            <Button variant="outline" disabled={(mapping.scopeLines?.length ?? 0) >= 10} onClick={() => set("scopeLines", [...mapping.scopeLines ?? [], {name: "", description: "", quantity: 1, unitPrice: 0}])}>Add customer-facing scope line</Button>
+            <p className="text-xs text-muted-foreground">Allocate the saved selling price deliberately. Export is blocked unless all lines, discounts and taxes reconcile to the saved total.</p>
+          </div>}
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={mapping.includeInternalCost ?? false} onChange={e => set("includeInternalCost", e.target.checked)}/>Include internal unit cost in Jobber (contractor-only cost field)</label>
+          <div className="rounded-md border p-3 space-y-3"><h4 className="text-sm font-semibold">Tax review</h4>
+            {select("taxable", "Taxable service?", ["TRUE", "FALSE"], true)}
+            {mapping.taxable === "TRUE" && <div className="grid gap-3 sm:grid-cols-2">
+              {select("taxMethod", "Tax method", ["Inclusive", "Exclusive"], true)}
+              {textField("existingTaxRateName", "Existing Jobber tax rate name")}
+              {textField("existingTaxRatePercentage", "Verified existing rate (%)", true)}
+              {textField("newTaxRateName", "Or: new tax rate name")}
+              {textField("newTaxRate", "New rate (%)", true)}
+            </div>}
+            <label className="flex gap-2 text-sm"><input type="checkbox" checked={mapping.taxConfirmed ?? false} onChange={e => set("taxConfirmed", e.target.checked)}/>I verified the tax treatment for this job.</label>
+          </div>
+          <details><summary className="cursor-pointer text-sm">Billing, message, terms & adjustments</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {(["billingStreet1","billingStreet2","billingCity","billingStateProvince","billingZipPostalCode","billingCountry"] as const).map(k =>
+              <div key={k}>{textField(k, k.replace(/([A-Z])/g, " $1"))}</div>)}
+            {select("discountType", "Discount type", ["Unit", "Percentage"], true)}{textField("discountAmount", "Intentional discount amount", true)}
+            {select("depositType", "Deposit type", ["Unit", "Percentage"], true)}{textField("depositAmount", "Intentional deposit amount", true)}
+            {textField("introductionTitle", "Introduction title")}
+            {(["quoteMessage", "introductionBody", "contractDisclaimer"] as const).map(k =>
+              <div key={k} className="sm:col-span-2"><Label htmlFor={`export-${k}`}>{k.replace(/([A-Z])/g, " $1")}</Label><Textarea id={`export-${k}`} value={mapping[k] ?? ""} onChange={e => set(k, e.target.value)}/></div>)}
+            {(["autoVisitReminders", "autoJobFollowups", "autoQuoteFollowups", "autoInvoiceFollowups", "autoReviewRequests"] as const).map(k =>
+              <div key={k}>{select(k, k.replace(/([A-Z])/g, " $1"), ["TRUE", "FALSE"], true)}</div>)}
+          </div></details>
+        </div>
+      </details>
+      <p className="text-xs text-muted-foreground">Jobber: structurally checked against its official 119-column sample; a live import still needs verification. QuickBooks Online and Housecall Pro exports are hidden for beta because direct import compatibility is unverified. Generic CSV contains internal estimating data and is not a customer proposal.</p>
+    </CardContent>
+  </Card>
 }

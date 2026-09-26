@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AssemblyLine } from './assemblyLine';
+import type { CustomerProposalLine } from './customerProposalLine';
 import type { PricingSummary } from './pricingSummary';
 import type { ProposalDecision } from './proposalDecision';
 import type { QuoteJobInputsSnapshot } from './quoteJobInputsSnapshot';
@@ -13,6 +14,7 @@ import type { QuoteSummary } from './quoteSummary';
 import type { TakeoffQuoteSnapshot } from './takeoffQuoteSnapshot';
 
 export type Quote = QuoteSummary & ({
+  customerScope?: CustomerProposalLine[];
   /**
      * Authenticated contractor-only customer identity used when revising a quote.
      * @nullable

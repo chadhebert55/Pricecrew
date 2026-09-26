@@ -2,16 +2,11 @@ import type {
   QuoteExportMapping,
   QuoteExportPreflightIssue,
 } from "@workspace/api-zod";
-import { customerMaterialDescription } from "./customer-scope";
-import { quotesTable, type AssemblyLineRecord } from "@workspace/db";
-import {
-  hasUnresolvedMaterialCost,
-  isIncludedPanelCloseoutLabor,
-} from "@workspace/api-zod/pricing-readiness";
-import {
-  jobberExportLayout,
-  MAX_JOBBER_LINE_ITEMS,
-} from "@workspace/api-zod/jobber-export-layout";
+import { customerProposalScope } from "./customer-scope";
+import { validateJobberCsv, parseJobberCsv } from "./jobber-csv-validation";
+import { quotesTable } from "@workspace/db";
+import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness";
+import { MAX_JOBBER_LINE_ITEMS } from "@workspace/api-zod/jobber-export-layout";
 export { MAX_JOBBER_LINE_ITEMS, MAX_JOBBER_ASSEMBLY_LINES } from "@workspace/api-zod/jobber-export-layout";
 
 export const JOBBER_DESTINATION = "jobber" as const;
@@ -255,19 +250,20 @@ export function preflightJobberQuoteExport(
 
   if (
     !resolved.jobberClientId &&
-    !resolved.clientFirstName &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resolved.clientEmail) &&
+    !(resolved.clientFirstName && resolved.clientLastName) &&
     !resolved.clientCompanyName
   ) {
     issues.push(
       issue(
         "CLIENT_IDENTITY_REQUIRED",
         "mapping.clientFirstName",
-        "Provide a Jobber Client ID, a client first name, or a client company name.",
+        "Provide a Jobber Client ID, email, first and last name, or company name.",
       ),
     );
   }
   if (
-    resolved.clientEmail &&
+    !resolved.jobberClientId && resolved.clientEmail &&
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resolved.clientEmail)
   ) {
     issues.push(
@@ -379,56 +375,73 @@ export function preflightJobberQuoteExport(
     }
   });
 
+  issues.push(...jobberOptionIssues(quote, mapping));
   return issues;
 }
 
-function jobberCategory(line: AssemblyLineRecord) {
-  return isIncludedPanelCloseoutLabor(line) ||
-    /labor|service|install/i.test(`${line.category} ${line.description}`)
-    ? "Service"
-    : "Product";
+function jobberLines(quote: QuoteRecord, mapping: QuoteExportMapping) {
+  return mapping.lineItemDetail === "scope" ? mapping.scopeLines ?? [] : [{
+    name: quote.projectName,
+    description: quote.proposalDescription.trim() ||
+      customerProposalScope(quote.module, quote.assembly).scope.map(line => line.description).join("\n"),
+    quantity: 1, unitPrice: quote.pricing.finalSellingPrice,
+    unitCost: quote.pricing.materialCost + (quote.pricing.laborOverride ?? quote.pricing.laborCost),
+  }];
 }
 
-function savedAssemblyLine(line: AssemblyLineRecord) {
-  return [
-    jobberCategory(line),
-    line.description,
-    [
-      `Saved assembly category: ${line.category || "Uncategorized"}`,
-      `Unit: ${line.unit || "each"}`,
-      `Source: ${line.source || "Saved quote snapshot"}`,
-      `Saved extended cost: $${line.extendedCost.toFixed(2)}`,
-    ].join("; "),
-    line.quantity.toString(),
-    "",
-    line.unitCost.toFixed(2),
-    "",
-  ];
+// Import reconciliation only. Never reprices or modifies a PriceCrew quote.
+function representedJobberTotal(subtotal: number, mapping: QuoteExportMapping) {
+  const discount = mapping.discountType === "Percentage"
+    ? Math.round(subtotal * (mapping.discountAmount ?? 0)) / 100
+    : mapping.discountType === "Unit" ? mapping.discountAmount ?? 0 : 0;
+  const afterDiscount = Math.round((subtotal - discount) * 100) / 100;
+  const rate = mapping.newTaxRate ?? mapping.existingTaxRatePercentage ?? 0;
+  const tax = mapping.taxable === "TRUE" && mapping.taxMethod === "Exclusive"
+    ? Math.round(afterDiscount * rate) / 100 : 0;
+  return Math.round((afterDiscount + tax) * 100) / 100;
 }
 
-function savedTotalLine(quote: QuoteRecord) {
-  return [
-    "Service",
-    "Saved quote total",
-    "Exact saved final selling price; assembly rows preserve saved costs without per-line selling prices.",
-    "1",
-    quote.pricing.finalSellingPrice.toFixed(2),
-    "",
-    "",
-  ];
-}
-
-function savedSummaryLine(quote: QuoteRecord) {
-  const line = savedTotalLine(quote);
-  // Customer-visible scope contains no internal costs, sources, or exclusions.
-  // Complete saved assembly data is retained separately in Quote Internal Note.
-  line[2] = [
-    "Complete saved scope; the price is the exact saved quote total.",
-    ...quote.assembly.map((item, index) =>
-      `${index + 1}. ${customerMaterialDescription(item.description, item)} | Quantity: ${item.quantity} ${item.unit}`,
-    ),
-  ].join("\n");
-  return line;
+function jobberOptionIssues(quote: QuoteRecord, mapping: QuoteExportMapping) {
+  const issues: QuoteExportPreflightIssue[] = [];
+  const add = (code: string, message: string) => issues.push(issue(code, "mapping", message));
+  if (!mapping.taxConfirmed || !["TRUE", "FALSE"].includes(mapping.taxable ?? ""))
+    add("TAX_REVIEW_REQUIRED", "Confirm whether this job is taxable. PriceCrew does not infer tax treatment.");
+  if (mapping.taxable === "TRUE") {
+    if (!mapping.taxMethod) add("TAX_METHOD_REQUIRED", "Select Inclusive or Exclusive tax.");
+    if (Boolean(mapping.existingTaxRateName?.trim()) === Boolean(mapping.newTaxRateName?.trim()))
+      add("TAX_RATE_REQUIRED", "Select one existing Jobber tax rate or one new tax rate, not both.");
+    const rate = mapping.existingTaxRateName ? mapping.existingTaxRatePercentage : mapping.newTaxRate;
+    if (rate === undefined || !Number.isFinite(rate) || rate < 0 || rate > 100)
+      add("TAX_RATE_INVALID", "Enter the verified percentage for total reconciliation.");
+  } else if (mapping.existingTaxRateName || mapping.newTaxRateName || mapping.newTaxRate !== undefined || mapping.taxMethod)
+    add("TAX_CONFLICT", "Clear rate/method fields for a non-taxable export.");
+  if (mapping.quoteStatus && !["Draft", "Awaiting Response"].includes(mapping.quoteStatus))
+    add("STATUS_INVALID", "Export status must be Draft or deliberately selected Awaiting Response.");
+  for (const kind of ["discount", "deposit"] as const) {
+    const type = mapping[`${kind}Type`], amount = mapping[`${kind}Amount`];
+    if ((type && (amount === undefined || amount <= 0 || !Number.isFinite(amount))) ||
+        (!type && amount !== undefined && amount !== 0) ||
+        (type === "Percentage" && (amount ?? 0) > 100))
+      add("ADJUSTMENT_INVALID", `Provide a valid ${kind} type and positive amount, or leave both blank.`);
+  }
+  const lines = jobberLines(quote, mapping);
+  if (!lines.length || lines.length > 10) add("LINE_LIMIT", "Provide 1–10 intentional customer-facing scope lines. No scope will be discarded.");
+  let subtotal = 0, internalCost = 0;
+  for (const [i, line] of lines.entries()) {
+    if (!line.name?.trim() || !line.description?.trim() || !Number.isFinite(line.quantity) ||
+        line.quantity <= 0 || !isFiniteAmount(line.unitPrice))
+      add("SCOPE_LINE_INVALID", `Scope line ${i + 1} needs a name, description, positive quantity and valid unit price.`);
+    if (mapping.includeInternalCost && !isFiniteAmount(line.unitCost))
+      add("SCOPE_COST_INVALID", `Scope line ${i + 1} needs a valid unit cost when exporting costs.`);
+    subtotal += Math.round(line.quantity * line.unitPrice * 100) / 100;
+    internalCost += Math.round(line.quantity * (line.unitCost ?? 0) * 100) / 100;
+  }
+  const represented = representedJobberTotal(subtotal, mapping);
+  if (cents(represented) !== cents(quote.pricing.finalSellingPrice))
+    add("EXPORT_TOTAL_MISMATCH", `Export total $${represented.toFixed(2)} differs from saved $${quote.pricing.finalSellingPrice.toFixed(2)} by $${(represented - quote.pricing.finalSellingPrice).toFixed(2)}. Adjust intentional scope allocations or tax/discount settings; the saved quote is unchanged.`);
+  if (mapping.includeInternalCost && cents(internalCost) !== cents(quote.pricing.materialCost + (quote.pricing.laborOverride ?? quote.pricing.laborCost)))
+    add("EXPORT_COST_MISMATCH", "Exported costs must reconcile to saved material plus effective internal labor cost.");
+  return issues;
 }
 
 function csvCell(value: string | number | null | undefined) {
@@ -453,14 +466,11 @@ export function buildJobberQuoteCsv(
   }
 
   const resolved = resolveMapping(quote, mapping);
-  const layout = jobberExportLayout(quote.assembly.length);
-  const exportedLines = layout.summarized
-    ? [savedSummaryLine(quote)]
-    : [...quote.assembly.map(savedAssemblyLine), savedTotalLine(quote)];
-  const internalNote = layout.summarized
-    ? "PriceCrew saved assembly snapshot (summary export; no repricing or omitted rows):\n" +
-      JSON.stringify(quote.assembly, null, 2)
-    : "";
+  const exportedLines = jobberLines(quote, mapping).map(line => [
+    "Service", line.name, line.description, String(line.quantity),
+    line.unitPrice.toFixed(2), mapping.includeInternalCost ? line.unitCost!.toFixed(2) : "",
+    mapping.taxable!,
+  ]);
   const values: Array<string | number | null | undefined> = [
     resolved.jobberClientId,
     resolved.clientTitle,
@@ -490,28 +500,27 @@ export function buildJobberQuoteCsv(
     resolved.billingStateProvince,
     resolved.billingZipPostalCode,
     resolved.billingCountry,
-    "",
-    "",
-    "",
-    "",
-    "",
+    mapping.autoVisitReminders,
+    mapping.autoJobFollowups,
+    mapping.autoQuoteFollowups,
+    mapping.autoInvoiceFollowups,
+    mapping.autoReviewRequests,
     quote.quoteNumber,
     quote.projectName,
-    quote.status.toLowerCase() === "ready" ? "Awaiting Response" : "Draft",
-    quote.proposalDescription,
-    internalNote,
-    "",
-    "",
-    "",
-    // Tax, discount, and deposit data are not captured in the saved snapshot.
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    mapping.quoteStatus ?? "Draft",
+    mapping.quoteMessage ?? quote.proposalDescription,
+    `Created from PriceCrew quote ${quote.quoteNumber}.`,
+    mapping.introductionTitle,
+    mapping.introductionBody,
+    mapping.contractDisclaimer,
+    mapping.discountType,
+    mapping.discountType ? mapping.discountAmount : "",
+    mapping.depositType,
+    mapping.depositType ? mapping.depositAmount : "",
+    mapping.newTaxRateName,
+    mapping.newTaxRateName ? mapping.newTaxRate : "",
+    mapping.existingTaxRateName,
+    mapping.taxMethod,
   ];
   const headers: string[] = [...JOBBER_QUOTE_HEADERS];
   for (let lineNumber = 1; lineNumber <= MAX_JOBBER_LINE_ITEMS; lineNumber += 1) {
@@ -520,13 +529,22 @@ export function buildJobberQuoteCsv(
     values.push(...line);
   }
 
-  return {
-    issues: [] as QuoteExportPreflightIssue[],
-    csv:
-      [headers, values]
+  const csv = [headers, values]
         .map((row) => row.map(csvCell).join(","))
-        .join("\r\n") + "\r\n",
-  };
+        .join("\r\n") + "\r\n";
+  // Re-read the actual generated cells, including rounded prices.
+  const actual = parseJobberCsv(csv)[1]!;
+  let subtotal = 0, actualCost = 0;
+  for (let i = 0; i < 10; i++) {
+    const offset = JOBBER_QUOTE_HEADERS.length + i * 7;
+    subtotal += Math.round(Number(actual[offset + 3]) * Number(actual[offset + 4]) * 100) / 100;
+    actualCost += Math.round(Number(actual[offset + 3]) * Number(actual[offset + 5]) * 100) / 100;
+  }
+  const csvIssues = validateJobberCsv(csv, headers, quote.pricing.finalSellingPrice,
+    representedJobberTotal(subtotal, mapping)).map(message => issue("CSV_INVALID", "csv", message));
+  if (mapping.includeInternalCost && cents(actualCost) !== cents(quote.pricing.materialCost + (quote.pricing.laborOverride ?? quote.pricing.laborCost)))
+    csvIssues.push(issue("EXPORT_COST_MISMATCH", "csv", "Rounded CSV unit costs do not reconcile to the saved internal cost. Adjust the intentional cost allocation."));
+  return { issues: csvIssues, csv: csvIssues.length ? null : csv };
 }
 
 function savedQuoteIssues(quote: QuoteRecord) {

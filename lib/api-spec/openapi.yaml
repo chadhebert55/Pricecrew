@@ -1119,6 +1119,8 @@ components:
         - latestQuoteAt
         - createdAt
       properties:
+        integrationMapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
         id:
           type: number
         name:
@@ -1150,6 +1152,8 @@ components:
       required:
         - name
       properties:
+        integrationMapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
         name:
           type: string
           minLength: 1
@@ -1158,6 +1162,8 @@ components:
     CustomerUpdate:
       type: object
       properties:
+        integrationMapping:
+          $ref: "#/components/schemas/QuoteExportMapping"
         name:
           type: string
           minLength: 1
@@ -1400,6 +1406,10 @@ components:
             - proposalDecisions
             - takeoffReview
           properties:
+            customerScope:
+              type: array
+              items:
+                $ref: "#/components/schemas/CustomerProposalLine"
             customerId:
               type: ["number", "null"]
               description: Authenticated contractor-only customer identity used when revising a quote.
@@ -1925,6 +1935,41 @@ components:
       type: object
       additionalProperties: false
       properties:
+        quoteStatus: { type: string, enum: [Draft, Awaiting Response] }
+        lineItemDetail: { type: string, enum: [summary, scope] }
+        includeInternalCost: { type: boolean }
+        taxConfirmed: { type: boolean }
+        taxable: { type: string, enum: ["TRUE", "FALSE"] }
+        taxMethod: { type: string, enum: [Inclusive, Exclusive] }
+        existingTaxRateName: { type: string }
+        newTaxRateName: { type: string }
+        newTaxRate: { type: number, minimum: 0, maximum: 100 }
+        existingTaxRatePercentage: { type: number, minimum: 0, maximum: 100 }
+        discountType: { type: string, enum: [Unit, Percentage] }
+        discountAmount: { type: number, minimum: 0 }
+        depositType: { type: string, enum: [Unit, Percentage] }
+        depositAmount: { type: number, minimum: 0 }
+        quoteMessage: { type: string }
+        introductionTitle: { type: string }
+        introductionBody: { type: string }
+        contractDisclaimer: { type: string }
+        autoVisitReminders: { type: string, enum: ["TRUE", "FALSE"] }
+        autoJobFollowups: { type: string, enum: ["TRUE", "FALSE"] }
+        autoQuoteFollowups: { type: string, enum: ["TRUE", "FALSE"] }
+        autoInvoiceFollowups: { type: string, enum: ["TRUE", "FALSE"] }
+        autoReviewRequests: { type: string, enum: ["TRUE", "FALSE"] }
+        scopeLines:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            required: [name, description, quantity, unitPrice]
+            properties:
+              name: { type: string }
+              description: { type: string }
+              quantity: { type: number, exclusiveMinimum: 0 }
+              unitPrice: { type: number, minimum: 0 }
+              unitCost: { type: number, minimum: 0 }
         jobberClientId: { type: ["string", "null"] }
         quickBooksCustomer: { type: ["string", "null"] }
         quickBooksInvoiceDate: { type: ["string", "null"] }
