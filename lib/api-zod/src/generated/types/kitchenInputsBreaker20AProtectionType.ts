@@ -13,6 +13,7 @@ export type KitchenInputsBreaker20AProtectionType = typeof KitchenInputsBreaker2
 
 
 export const KitchenInputsBreaker20AProtectionType = {
+  Standard: 'Standard',
   AFCI: 'AFCI',
   GFCI: 'GFCI',
   Dual_Function: 'Dual Function',

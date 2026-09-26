@@ -179,7 +179,17 @@ export type BathroomInputRecord = {
     | "Dual Function";
 };
 
+export type RemodelCircuitRecord = {
+  key: string; label?: string; quantity: number; amperage: number;
+  poleCount: number; protectionType: string; cableType: string; routeLength?: number;
+};
 export type KitchenInputRecord = {
+  circuitConfigurationVersion?: number;
+  circuitConfigurations?: RemodelCircuitRecord[];
+  additionalBreakers?: RemodelCircuitRecord[];
+  wallOvenCircuits?: number;
+  smartSwitches?: number;
+  customerSuppliedRecessedLights?: boolean;
   refrigeratorCircuits: number;
   dishwasherCircuits: number;
   disposalCircuits: number;
@@ -641,6 +651,9 @@ export type PricingWarningRecord = {
 };
 
 export type PricingRecord = {
+  calculatedLaborHours?: number;
+  manualLaborAdjustmentHours?: number;
+  finalLaborHours?: number;
   materialCost: number;
   laborCost: number;
   materialMarkup: number;

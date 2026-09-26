@@ -9,6 +9,9 @@ import type { DeliberateLossApproval } from './deliberateLossApproval';
 import type { LaborRateType } from './laborRateType';
 
 export interface PricingInput {
+  calculatedLaborHours?: number;
+  manualLaborAdjustmentHours?: number;
+  finalLaborHours?: number;
   materialCost: number;
   laborCost: number;
   materialMarkup: number;

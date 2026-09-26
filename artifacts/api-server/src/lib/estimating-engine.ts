@@ -1,4 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
+import { kitchenCircuitPlan, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
   AdditionCircuitEntry,
   AdditionInputRecord,
@@ -104,6 +105,10 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Remodel circuit:")) {
+    return { code: "REMODEL_CIRCUIT_REVIEW", severity: "error", category: "compatibility",
+      source: "remodel-circuit", context: { rule: "Resolve circuit configuration and route lengths before sending." } };
+  }
   if (message.startsWith("EV permit fee")) {
     return {
       code: "EV_PERMIT_FEE_REQUIRED",
@@ -1445,6 +1450,9 @@ function finalizeEstimate(
   return {
     assembly,
     pricing: {
+      calculatedLaborHours: laborHours,
+      manualLaborAdjustmentHours: 0,
+      finalLaborHours: laborHours,
       materialCost,
       laborCost,
       materialMarkup: settings.materialMarkup,
@@ -2101,6 +2109,95 @@ export function calculateKitchenEstimate(
   settings: EstimatingSettings,
   priceBook: PriceBookItem[],
 ): EstimateResult {
+  if (inputs.circuitConfigurationVersion !== 2) return calculateLegacyKitchenEstimate(inputs, settings, priceBook);
+  // Reuse the established incremental device/fixture labor and takeoff. Legacy circuit
+  // packages are explicitly disabled, then replaced by the authoritative circuit plan.
+  const base = calculateLegacyKitchenEstimate({
+    ...inputs, refrigeratorCircuits: 0, dishwasherCircuits: 0, disposalCircuits: 0,
+    gasRangeCircuits: 0, electricRangeCircuits: 0, additionalDedicatedCircuits: 0,
+    smallApplianceCircuits: 0, microwaveCircuits: 0, includeLightingCircuit: false,
+    breaker15AQuantity: 0, breaker20AQuantity: 0, laborAdjustmentHours: 0,
+  }, settings, priceBook);
+  const assembly = base.assembly;
+  const warnings = base.pricing.pricingWarnings.filter(w => {
+    const message = typeof w === "string" ? w : w.message;
+    return !message.startsWith("Customer-supplied material") && !message.startsWith("Kitchen route length is unresolved");
+  }).map(w => typeof w === "string" ? w : w.message);
+  const circuits = kitchenCircuitPlan(inputs);
+  addRemodelCircuits("kitchen", circuits, inputs.additionalBreakers ?? [], inputs.panelManufacturer ?? "", assembly, warnings, priceBook);
+  const priced = (id: string, key: string, quantity: number, category = "Devices") => {
+    if (quantity <= 0) return;
+    const cost = unitCost(key, priceBook, warnings);
+    addLine(assembly, { id, category, description: key, quantity, unit: "ea", unitCost: cost.value, source: cost.source });
+  };
+  const smart = Math.max(0, inputs.smartSwitches ?? 0);
+  priced("kitchen-smart-switches", "smart switch", smart, "Controls");
+  priced("kitchen-smart-boxes", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", smart, "Rough-in");
+  priced("kitchen-smart-plates", "Legrand radiant RWP26WCC10 1-gang screwless wall plate", smart, "Trim");
+  // Appliance connections are separate from the countertop receptacle quantities.
+  const applianceDevices = circuits.filter(c => !["smallApplianceCircuits", "lighting", "electricRangeCircuits", "wallOvenCircuits"].includes(c.key))
+    .reduce((sum, c) => sum + c.quantity, 0);
+  priced("kitchen-appliance-devices", "Pass & Seymour 3232-TRW 15A TR duplex receptacle", applianceDevices);
+  priced("kitchen-appliance-boxes", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", applianceDevices, "Rough-in");
+  priced("kitchen-appliance-plates", "duplex receptacle wall plate", applianceDevices, "Trim");
+  priced("kitchen-heavy-connections", "appliance connection box", (inputs.electricRangeCircuits ?? 0) + (inputs.wallOvenCircuits ?? 0), "Rough-in");
+  const applianceLabor: Record<string, number> = { refrigeratorCircuits: 1.5, dishwasherCircuits: 1.5,
+    disposalCircuits: 1.25, gasRangeCircuits: 1.25, electricRangeCircuits: 2, wallOvenCircuits: 2,
+    additionalDedicatedCircuits: 1.5, smallApplianceCircuits: 3, microwaveCircuits: 3,
+    lighting: inputs.lightingCircuitLaborHours ?? 3 };
+  const calculated = (base.pricing.finalLaborHours ?? 0) + smart * 0.75 +
+    circuits.reduce((sum, c) => sum + c.quantity * ((applianceLabor[c.key] ?? 0) + (c.routeLength ?? 0) / 30), 0) +
+    (inputs.additionalBreakers ?? []).reduce((sum, c) => sum + c.quantity * 0.25, 0);
+  warnings.push("Kitchen circuit sizes, appliance connection methods, protection, and field conditions are configurable estimating assumptions, not code approval. Appliance receptacles assume cord-connected equipment; verify final connections.");
+  if (inputs.electricRangeCircuits > 0 && inputs.gasRangeCircuits > 0)
+    warnings.push("Both gas and electric range circuits are selected. Confirm the appliance scope.");
+  return finalizeRemodelEstimate(assembly, calculated, inputs.laborAdjustmentHours ?? 0, settings, warnings, inputs.laborRateType);
+}
+
+function finalizeRemodelEstimate(assembly: AssemblyLineRecord[], calculated: number, adjustment: number,
+  settings: EstimatingSettings, warnings: string[], laborRateType?: string): EstimateResult {
+  if (calculated + adjustment < 0) warnings.push("Remodel circuit: labor adjustment exceeds calculated labor; final hours are clamped to zero.");
+  const result = finalizeEstimate(assembly, Math.max(0, calculated + adjustment), settings, warnings, laborRateType);
+  result.pricing.calculatedLaborHours = calculated;
+  result.pricing.manualLaborAdjustmentHours = adjustment;
+  return result;
+}
+
+function addRemodelCircuits(prefix: string, circuits: RemodelCircuit[], additionalBreakers: RemodelCircuit[],
+  manufacturer: string, assembly: AssemblyLineRecord[], warnings: string[], priceBook: PriceBookItem[]) {
+  for (const c of circuits) {
+    if (c.quantity <= 0) continue;
+    if (!Number.isInteger(c.quantity)) warnings.push(`Remodel circuit: ${c.label || c.key} quantity must be a whole number.`);
+    const issue = circuitCompatibilityIssue(c);
+    if (issue) warnings.push(`Remodel circuit: ${c.label || c.key}: ${issue}`);
+    const length = c.routeLength ?? 0;
+    if (length <= 0) warnings.push(`Remodel circuit: ${c.label || c.key} has no home-run length. Enter its actual route or remove the new circuit.`);
+    const cost = unitCost(`${c.cableType} cable`, priceBook, warnings);
+    addLine(assembly, { id: `${prefix}-home-run-${c.key}`, category: "Conductor",
+      description: `${c.label || c.key}: ${c.cableType} (${length} FT × ${c.quantity} circuits = ${length * c.quantity} FT)`,
+      quantity: length * c.quantity, unit: "ft", unitCost: cost.value, source: cost.source });
+  }
+  for (const b of breakerRequirements([...circuits, ...additionalBreakers])) {
+    if (!Number.isInteger(b.quantity)) warnings.push("Remodel circuit: breaker quantities must be whole numbers.");
+    if (b.poleCount === 2 && !["Standard", "GFCI"].includes(b.protectionType))
+      warnings.push(`Remodel circuit: unsupported two-pole ${b.protectionType} breaker configuration.`);
+    const cost = resolveBreaker({ manufacturer, amperage: b.amperage, poleCount: b.poleCount, protectionType: b.protectionType }, priceBook, warnings);
+    addLine(assembly, { id: `${prefix}-breaker-${b.key}`, category: "Protection", description: cost.description,
+      quantity: b.quantity, unit: "ea", unitCost: cost.value, source: cost.source });
+  }
+  const circuitCount = circuits.reduce((sum, c) => sum + c.quantity, 0);
+  if (circuitCount > 0) {
+    const cost = unitCost("NM cable connector", priceBook, warnings);
+    addLine(assembly, { id: `${prefix}-circuit-connectors`, category: "Rough-in",
+      description: "NM cable connectors, two per new home run", quantity: circuitCount * 2, unit: "ea", unitCost: cost.value, source: cost.source });
+  }
+}
+
+function calculateLegacyKitchenEstimate(
+  inputs: KitchenInputRecord,
+  settings: EstimatingSettings,
+  priceBook: PriceBookItem[],
+): EstimateResult {
   const assembly: AssemblyLineRecord[] = [];
   const pricingWarnings: string[] = [];
   const safeNumber = (value: number | undefined) =>
@@ -2124,7 +2221,7 @@ export function calculateKitchenEstimate(
           );
           return { value: 0, source: "Customer supplied fixture" };
         })()
-      : unitCost(key, priceBook, pricingWarnings);
+      : unitCost(inputs.circuitConfigurationVersion === 2 ? key.replace(/^Unverified allowance — /, "") : key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,
       category,
@@ -2365,7 +2462,7 @@ export function calculateKitchenEstimate(
       : JUNO_WF4_VERIFIED,
     `${inputs.recessedLightSize === "6-inch" ? "6-inch" : "4-inch"} Juno regressed wafer light`,
     inputs.recessedLights,
-    inputs.customerSuppliedFixtures,
+    inputs.circuitConfigurationVersion === 2 ? inputs.customerSuppliedRecessedLights === true : inputs.customerSuppliedFixtures,
   );
   addPricedItem(
     "three-way-options",

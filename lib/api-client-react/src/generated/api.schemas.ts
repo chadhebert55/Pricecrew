@@ -353,6 +353,71 @@ export interface BathroomInputs {
   cableType?: BathroomInputsCableType;
 }
 
+export type KitchenInputsCircuitConfigurationVersion = typeof KitchenInputsCircuitConfigurationVersion[keyof typeof KitchenInputsCircuitConfigurationVersion];
+
+
+export const KitchenInputsCircuitConfigurationVersion = {
+  NUMBER_2: 2,
+} as const;
+
+export type RemodelCircuitAmperage = typeof RemodelCircuitAmperage[keyof typeof RemodelCircuitAmperage];
+
+
+export const RemodelCircuitAmperage = {
+  NUMBER_15: 15,
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_40: 40,
+  NUMBER_50: 50,
+  NUMBER_60: 60,
+} as const;
+
+export type RemodelCircuitPoleCount = typeof RemodelCircuitPoleCount[keyof typeof RemodelCircuitPoleCount];
+
+
+export const RemodelCircuitPoleCount = {
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+} as const;
+
+export type RemodelCircuitProtectionType = typeof RemodelCircuitProtectionType[keyof typeof RemodelCircuitProtectionType];
+
+
+export const RemodelCircuitProtectionType = {
+  Standard: 'Standard',
+  AFCI: 'AFCI',
+  GFCI: 'GFCI',
+  Dual_Function: 'Dual Function',
+} as const;
+
+export type RemodelCircuitCableType = typeof RemodelCircuitCableType[keyof typeof RemodelCircuitCableType];
+
+
+export const RemodelCircuitCableType = {
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+  '12/2_NM-B': '12/2 NM-B',
+  '12/3_NM-B': '12/3 NM-B',
+  '10/2_NM-B': '10/2 NM-B',
+  '10/3_NM-B': '10/3 NM-B',
+  '8/3_NM-B': '8/3 NM-B',
+  '6/3_NM-B': '6/3 NM-B',
+  '4/3_NM-B': '4/3 NM-B',
+} as const;
+
+export interface RemodelCircuit {
+  key: string;
+  label?: string;
+  /** @minimum 0 */
+  quantity: number;
+  amperage: RemodelCircuitAmperage;
+  poleCount: RemodelCircuitPoleCount;
+  protectionType: RemodelCircuitProtectionType;
+  cableType: RemodelCircuitCableType;
+  /** @minimum 0 */
+  routeLength?: number;
+}
+
 export type KitchenInputsLightingCircuitAmperage = typeof KitchenInputsLightingCircuitAmperage[keyof typeof KitchenInputsLightingCircuitAmperage];
 
 
@@ -375,6 +440,7 @@ export type KitchenInputsBreaker15AProtectionType = typeof KitchenInputsBreaker1
 
 
 export const KitchenInputsBreaker15AProtectionType = {
+  Standard: 'Standard',
   AFCI: 'AFCI',
   GFCI: 'GFCI',
   Dual_Function: 'Dual Function',
@@ -387,6 +453,7 @@ export type KitchenInputsBreaker20AProtectionType = typeof KitchenInputsBreaker2
 
 
 export const KitchenInputsBreaker20AProtectionType = {
+  Standard: 'Standard',
   AFCI: 'AFCI',
   GFCI: 'GFCI',
   Dual_Function: 'Dual Function',
@@ -410,6 +477,14 @@ export const KitchenInputsCableType = {
 } as const;
 
 export interface KitchenInputs {
+  circuitConfigurationVersion?: KitchenInputsCircuitConfigurationVersion;
+  circuitConfigurations?: RemodelCircuit[];
+  additionalBreakers?: RemodelCircuit[];
+  /** @minimum 0 */
+  wallOvenCircuits?: number;
+  /** @minimum 0 */
+  smartSwitches?: number;
+  customerSuppliedRecessedLights?: boolean;
   /** @minimum 0 */
   refrigeratorCircuits: number;
   /** @minimum 0 */
@@ -1569,6 +1644,9 @@ export interface DeliberateLossApproval {
 }
 
 export interface PricingInput {
+  calculatedLaborHours?: number;
+  manualLaborAdjustmentHours?: number;
+  finalLaborHours?: number;
   materialCost: number;
   laborCost: number;
   materialMarkup: number;

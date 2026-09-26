@@ -205,6 +205,22 @@ export const createQuoteBodyJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin =
 
 export const createQuoteBodyJobInputsTwoNewCircuitLaborHoursMin = 0;
 
+export const createQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMin = 0;
+export const createQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf = 1;
+
+export const createQuoteBodyJobInputsThreeCircuitConfigurationsItemRouteLengthMin = 0;
+
+export const createQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMin = 0;
+export const createQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMultipleOf = 1;
+
+export const createQuoteBodyJobInputsThreeAdditionalBreakersItemRouteLengthMin = 0;
+
+export const createQuoteBodyJobInputsThreeWallOvenCircuitsMin = 0;
+export const createQuoteBodyJobInputsThreeWallOvenCircuitsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsThreeSmartSwitchesMin = 0;
+export const createQuoteBodyJobInputsThreeSmartSwitchesMultipleOf = 1;
+
 export const createQuoteBodyJobInputsThreeRefrigeratorCircuitsMin = 0;
 
 export const createQuoteBodyJobInputsThreeDishwasherCircuitsMin = 0;
@@ -667,6 +683,30 @@ export const CreateQuoteBody = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "circuitConfigurations": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(createQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
+})).optional(),
+  "additionalBreakers": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(createQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteBodyJobInputsThreeAdditionalBreakersItemRouteLengthMin).optional()
+})).optional(),
+  "wallOvenCircuits": zod.number().min(createQuoteBodyJobInputsThreeWallOvenCircuitsMin).multipleOf(createQuoteBodyJobInputsThreeWallOvenCircuitsMultipleOf).optional(),
+  "smartSwitches": zod.number().min(createQuoteBodyJobInputsThreeSmartSwitchesMin).multipleOf(createQuoteBodyJobInputsThreeSmartSwitchesMultipleOf).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "refrigeratorCircuits": zod.number().min(createQuoteBodyJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(createQuoteBodyJobInputsThreeDishwasherCircuitsMin),
   "disposalCircuits": zod.number().min(createQuoteBodyJobInputsThreeDisposalCircuitsMin),
@@ -705,9 +745,9 @@ export const CreateQuoteBody = zod.object({
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
   "breaker15AQuantity": zod.number().min(createQuoteBodyJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
-  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker15AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
   "breaker20AQuantity": zod.number().min(createQuoteBodyJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
-  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "breaker20AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -1115,6 +1155,22 @@ export const createQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin = 
 export const createQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
 
 export const createQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin = 0;
+export const createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsThreeWallOvenCircuitsMin = 0;
+export const createQuoteResponseTwoJobInputsThreeWallOvenCircuitsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsThreeSmartSwitchesMin = 0;
+export const createQuoteResponseTwoJobInputsThreeSmartSwitchesMultipleOf = 1;
 
 export const createQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
@@ -1610,6 +1666,30 @@ export const CreateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "circuitConfigurations": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
+})).optional(),
+  "additionalBreakers": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(createQuoteResponseTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin).optional()
+})).optional(),
+  "wallOvenCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeWallOvenCircuitsMin).multipleOf(createQuoteResponseTwoJobInputsThreeWallOvenCircuitsMultipleOf).optional(),
+  "smartSwitches": zod.number().min(createQuoteResponseTwoJobInputsThreeSmartSwitchesMin).multipleOf(createQuoteResponseTwoJobInputsThreeSmartSwitchesMultipleOf).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "refrigeratorCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
   "disposalCircuits": zod.number().min(createQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
@@ -1648,9 +1728,9 @@ export const CreateQuoteResponse = zod.object({
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
   "breaker15AQuantity": zod.number().min(createQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
-  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker15AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
   "breaker20AQuantity": zod.number().min(createQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
-  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "breaker20AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -2028,6 +2108,9 @@ export const CreateQuoteResponse = zod.object({
   "intentionalExclusionReason": zod.string().min(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(createQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
+  "calculatedLaborHours": zod.number().optional(),
+  "manualLaborAdjustmentHours": zod.number().optional(),
+  "finalLaborHours": zod.number().optional(),
   "materialCost": zod.number(),
   "laborCost": zod.number(),
   "materialMarkup": zod.number(),
@@ -2155,6 +2238,22 @@ export const previewQuoteBodyJobInputsTwoNewCircuitMaterialsQuantityMin = 0;
 export const previewQuoteBodyJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
 
 export const previewQuoteBodyJobInputsTwoNewCircuitLaborHoursMin = 0;
+
+export const previewQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMin = 0;
+export const previewQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsThreeCircuitConfigurationsItemRouteLengthMin = 0;
+
+export const previewQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMin = 0;
+export const previewQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsThreeAdditionalBreakersItemRouteLengthMin = 0;
+
+export const previewQuoteBodyJobInputsThreeWallOvenCircuitsMin = 0;
+export const previewQuoteBodyJobInputsThreeWallOvenCircuitsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsThreeSmartSwitchesMin = 0;
+export const previewQuoteBodyJobInputsThreeSmartSwitchesMultipleOf = 1;
 
 export const previewQuoteBodyJobInputsThreeRefrigeratorCircuitsMin = 0;
 
@@ -2610,6 +2709,30 @@ export const PreviewQuoteBody = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "circuitConfigurations": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(previewQuoteBodyJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
+})).optional(),
+  "additionalBreakers": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(previewQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(previewQuoteBodyJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(previewQuoteBodyJobInputsThreeAdditionalBreakersItemRouteLengthMin).optional()
+})).optional(),
+  "wallOvenCircuits": zod.number().min(previewQuoteBodyJobInputsThreeWallOvenCircuitsMin).multipleOf(previewQuoteBodyJobInputsThreeWallOvenCircuitsMultipleOf).optional(),
+  "smartSwitches": zod.number().min(previewQuoteBodyJobInputsThreeSmartSwitchesMin).multipleOf(previewQuoteBodyJobInputsThreeSmartSwitchesMultipleOf).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "refrigeratorCircuits": zod.number().min(previewQuoteBodyJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(previewQuoteBodyJobInputsThreeDishwasherCircuitsMin),
   "disposalCircuits": zod.number().min(previewQuoteBodyJobInputsThreeDisposalCircuitsMin),
@@ -2648,9 +2771,9 @@ export const PreviewQuoteBody = zod.object({
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
   "breaker15AQuantity": zod.number().min(previewQuoteBodyJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
-  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker15AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
   "breaker20AQuantity": zod.number().min(previewQuoteBodyJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
-  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "breaker20AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -3048,6 +3171,9 @@ export const PreviewQuoteResponse = zod.object({
   "intentionalExclusionReason": zod.string().min(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMin).max(previewQuoteResponseAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
+  "calculatedLaborHours": zod.number().optional(),
+  "manualLaborAdjustmentHours": zod.number().optional(),
+  "finalLaborHours": zod.number().optional(),
   "materialCost": zod.number(),
   "laborCost": zod.number(),
   "materialMarkup": zod.number(),
@@ -3692,6 +3818,22 @@ export const getQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideM
 
 export const getQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
 
+export const getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin = 0;
+export const getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsThreeWallOvenCircuitsMin = 0;
+export const getQuoteResponseTwoJobInputsThreeWallOvenCircuitsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsThreeSmartSwitchesMin = 0;
+export const getQuoteResponseTwoJobInputsThreeSmartSwitchesMultipleOf = 1;
+
 export const getQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin = 0;
@@ -4186,6 +4328,30 @@ export const GetQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "circuitConfigurations": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
+})).optional(),
+  "additionalBreakers": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(getQuoteResponseTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin).optional()
+})).optional(),
+  "wallOvenCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeWallOvenCircuitsMin).multipleOf(getQuoteResponseTwoJobInputsThreeWallOvenCircuitsMultipleOf).optional(),
+  "smartSwitches": zod.number().min(getQuoteResponseTwoJobInputsThreeSmartSwitchesMin).multipleOf(getQuoteResponseTwoJobInputsThreeSmartSwitchesMultipleOf).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "refrigeratorCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
   "disposalCircuits": zod.number().min(getQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
@@ -4224,9 +4390,9 @@ export const GetQuoteResponse = zod.object({
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
   "breaker15AQuantity": zod.number().min(getQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
-  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker15AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
   "breaker20AQuantity": zod.number().min(getQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
-  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "breaker20AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -4604,6 +4770,9 @@ export const GetQuoteResponse = zod.object({
   "intentionalExclusionReason": zod.string().min(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(getQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
+  "calculatedLaborHours": zod.number().optional(),
+  "manualLaborAdjustmentHours": zod.number().optional(),
+  "finalLaborHours": zod.number().optional(),
   "materialCost": zod.number(),
   "laborCost": zod.number(),
   "materialMarkup": zod.number(),
@@ -4757,6 +4926,22 @@ export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitMaterialsQuantityMin
 export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemQuantityMin = 0;
+export const updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemQuantityMin = 0;
+export const updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsThreeWallOvenCircuitsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsThreeWallOvenCircuitsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsThreeSmartSwitchesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsThreeSmartSwitchesMultipleOf = 1;
 
 export const updateQuoteResponseOneTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
@@ -5252,6 +5437,30 @@ export const UpdateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "circuitConfigurations": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
+})).optional(),
+  "additionalBreakers": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin).optional()
+})).optional(),
+  "wallOvenCircuits": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeWallOvenCircuitsMin).multipleOf(updateQuoteResponseOneTwoJobInputsThreeWallOvenCircuitsMultipleOf).optional(),
+  "smartSwitches": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeSmartSwitchesMin).multipleOf(updateQuoteResponseOneTwoJobInputsThreeSmartSwitchesMultipleOf).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "refrigeratorCircuits": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeDishwasherCircuitsMin),
   "disposalCircuits": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeDisposalCircuitsMin),
@@ -5290,9 +5499,9 @@ export const UpdateQuoteResponse = zod.object({
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
   "breaker15AQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
-  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker15AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
   "breaker20AQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
-  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "breaker20AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -5670,6 +5879,9 @@ export const UpdateQuoteResponse = zod.object({
   "intentionalExclusionReason": zod.string().min(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMin).max(updateQuoteResponseOneTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
+  "calculatedLaborHours": zod.number().optional(),
+  "manualLaborAdjustmentHours": zod.number().optional(),
+  "finalLaborHours": zod.number().optional(),
   "materialCost": zod.number(),
   "laborCost": zod.number(),
   "materialMarkup": zod.number(),
@@ -6048,6 +6260,22 @@ export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitMaterialsQuantityMin
 export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitMaterialsUnitCostOverrideMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsTwoNewCircuitLaborHoursMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin = 0;
+export const duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsThreeWallOvenCircuitsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsThreeWallOvenCircuitsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsThreeSmartSwitchesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsThreeSmartSwitchesMultipleOf = 1;
 
 export const duplicateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin = 0;
 
@@ -6543,6 +6771,30 @@ export const DuplicateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "circuitConfigurationVersion": zod.literal(2).optional(),
+  "circuitConfigurations": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeCircuitConfigurationsItemRouteLengthMin).optional()
+})).optional(),
+  "additionalBreakers": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().optional(),
+  "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemQuantityMultipleOf),
+  "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
+  "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
+  "protectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']),
+  "cableType": zod.enum(['14/2 NM-B', '14/3 NM-B', '12/2 NM-B', '12/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/3 NM-B', '6/3 NM-B', '4/3 NM-B']),
+  "routeLength": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeAdditionalBreakersItemRouteLengthMin).optional()
+})).optional(),
+  "wallOvenCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeWallOvenCircuitsMin).multipleOf(duplicateQuoteResponseTwoJobInputsThreeWallOvenCircuitsMultipleOf).optional(),
+  "smartSwitches": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeSmartSwitchesMin).multipleOf(duplicateQuoteResponseTwoJobInputsThreeSmartSwitchesMultipleOf).optional(),
+  "customerSuppliedRecessedLights": zod.boolean().optional(),
   "refrigeratorCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeRefrigeratorCircuitsMin),
   "dishwasherCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeDishwasherCircuitsMin),
   "disposalCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeDisposalCircuitsMin),
@@ -6581,9 +6833,9 @@ export const DuplicateQuoteResponse = zod.object({
   "applianceCircuitCableType": zod.enum(['12/2 NM-B', '14/2 NM-B']).optional(),
   "applianceCircuitProtectionType": zod.string().optional(),
   "breaker15AQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin).optional().describe('Optional estimator override for the 15A breaker quantity; when omitted, the Kitchen calculator derives it from included 15A circuits.'),
-  "breaker15AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
+  "breaker15AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 15A Kitchen breaker protection estimate.'),
   "breaker20AQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin).optional().describe('Optional estimator override for the 20A breaker quantity; when omitted, the Kitchen calculator derives it from included 20A circuits.'),
-  "breaker20AProtectionType": zod.enum(['AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
+  "breaker20AProtectionType": zod.enum(['Standard', 'AFCI', 'GFCI', 'Dual Function']).optional().describe('Configurable 20A Kitchen breaker protection estimate.'),
   "customerSuppliedFixtures": zod.boolean(),
   "notes": zod.string(),
   "laborRateType": zod.enum(['residential', 'commercial']).optional(),
@@ -6961,6 +7213,9 @@ export const DuplicateQuoteResponse = zod.object({
   "intentionalExclusionReason": zod.string().min(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMin).max(duplicateQuoteResponseTwoAssemblyItemIntentionalExclusionReasonMax).optional()
 })),
   "pricing": zod.object({
+  "calculatedLaborHours": zod.number().optional(),
+  "manualLaborAdjustmentHours": zod.number().optional(),
+  "finalLaborHours": zod.number().optional(),
   "materialCost": zod.number(),
   "laborCost": zod.number(),
   "materialMarkup": zod.number(),
