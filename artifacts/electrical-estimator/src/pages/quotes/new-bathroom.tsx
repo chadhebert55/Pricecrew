@@ -82,7 +82,7 @@ export function NewBathroomQuote() {
           </CardContent>
         </Card>
         <Card className="border-t-4 border-t-primary"><CardHeader className="bg-primary/5"><CardTitle>Parametric Builder: Bathroom</CardTitle><CardDescription>Configure circuits once. Breakers, home runs and pricing follow automatically.</CardDescription></CardHeader>
-          <CardContent className="space-y-4 pt-6"><BathroomBuilderFields inputs={inputs} onChange={setInputs} pricing={previewIsCurrent?pricing:undefined}/></CardContent>
+          <CardContent className="space-y-4 pt-6"><BathroomBuilderFields inputs={inputs} onChange={setInputs} pricing={previewIsCurrent?pricing:undefined} needsReview={blocked}/></CardContent>
         </Card>
       </div>
       <div className="min-w-0"><Card className="border-primary bg-secondary text-secondary-foreground xl:sticky xl:top-6">

@@ -16,12 +16,11 @@ export const initialBathroomInputs: BathroomInputs = {
   notes: "", laborRateType: "residential", panelManufacturer: "Siemens", gfciAmperage: 20,
   recessedLightSize: "4-inch", cableType: "12/2 NM-B", laborAdjustmentHours: 0, fanControl: "Standard switch",
   bathroomCircuits: [
-    defaultCircuit("receptacles", "Bathroom receptacles", 1),
-    {...defaultCircuit("lighting", "Lighting / fan", 1), amperage: 15, cableType: "14/2 NM-B", protectionType: "AFCI"},
-    defaultCircuit("additional", "Additional equipment", 0),
+    defaultCircuit("receptacles", "Bathroom Receptacle Circuit", 1),
+    {...defaultCircuit("lighting", "Lighting / Fan Circuit", 1), amperage: 15, cableType: "14/2 NM-B", protectionType: "AFCI"},
   ],
 }
-export function BathroomBuilderFields({inputs:i,onChange,pricing}: {inputs:BathroomInputs;onChange:(i:BathroomInputs)=>void;pricing?:PricingSummary}) {
+export function BathroomBuilderFields({inputs:i,onChange,pricing,needsReview}: {inputs:BathroomInputs;onChange:(i:BathroomInputs)=>void;pricing?:PricingSummary;needsReview?:boolean}) {
   const set = <K extends keyof BathroomInputs>(key:K,value:BathroomInputs[K]) => onChange({...i,[key]:value})
   const rows=i.bathroomCircuits ?? []
   const circuits=bathroomCircuitPlan(i), breakers=breakerRequirements(circuits)
@@ -40,22 +39,31 @@ export function BathroomBuilderFields({inputs:i,onChange,pricing}: {inputs:Bathr
   return <>
     <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4" aria-label="Bathroom Summary">
       <p className="text-sm font-semibold">Bathroom Summary</p>
-      <p className="text-sm">{circuits.reduce((s,c)=>s+c.quantity,0)} circuits · {i.gfciReceptacles} GFCI · {i.additionalReceptacles} additional receptacles · {controls} controls · {fans} fans · {i.vanityLights+i.recessedLights+(i.showerLights??0)} lights</p>
+      <p className="text-sm">{circuits.reduce((s,c)=>s+c.quantity,0)} circuits · {i.gfciReceptacles+i.additionalReceptacles} receptacles · {controls} controls · {fans} fans · {i.vanityLights+i.recessedLights+(i.showerLights??0)} lights</p>
       <p className="text-xs">Home-run wiring: {circuits.reduce((s,c)=>s+c.quantity*(c.routeLength??0),0)} FT, priced separately by cable type</p>
-      {pricing ? <><p className="text-xs">Materials: ${pricing.materialCost.toFixed(2)} · Selling Price: ${pricing.finalSellingPrice.toFixed(2)} · Status: {pricing.pricingWarnings.some(w=>typeof w==="string"||w.severity==="error")?"Needs Review":"Ready for quote review"}</p><LaborSummary pricing={pricing}/></>:<p className="text-xs">Updating estimate...</p>}
+      {pricing ? <><p className="text-xs">Materials: ${pricing.materialCost.toFixed(2)} · Selling Price: ${pricing.finalSellingPrice.toFixed(2)} · Status: {(needsReview ?? pricing.pricingWarnings.some(w=>typeof w==="string"||w.severity==="error"))?"Needs Review":"Ready for quote review"}</p><LaborSummary pricing={pricing}/></>:<p className="text-xs">Updating estimate...</p>}
     </div>
     <BuilderSection title="Bathroom Circuits" summary={`${circuits.reduce((s,c)=>s+c.quantity,0)} new home runs · ${breakers.reduce((s,c)=>s+c.quantity,0)} automatic breakers`} open>
-      <p className="text-xs text-muted-foreground">Set quantity to zero for reused circuits. Each active row adds its own home run, breaker and connectors. Default route applies only where a row's length is blank.</p>
+      <p className="text-xs text-muted-foreground">Circuits = breakers and home runs. Enter physical receptacles, switches, lights and fans in the sections below; their quantities never add circuits. These editable defaults are estimating assumptions, not a code design. Remove a row or set Circuit Quantity to zero when reusing an existing circuit.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <SelectField id="bath-manufacturer" label="Panel manufacturer" value={i.panelManufacturer??""} options={["","Siemens","Square D","Eaton","GE","Murray"]} onChange={v=>set("panelManufacturer",v)}/>
         <NumberField id="bath-route" label="Default Bathroom Wiring Route (FT)" value={i.routeLength??0} onChange={v=>set("routeLength",v)}/>
       </div>
-      {rows.map((c,index)=><div key={c.key} className="space-y-2">
+      {rows.map((c,index)=>c.quantity>0&&<div key={c.key} className="space-y-2" data-testid="bathroom-active-circuit">
         <Label htmlFor={`bath-circuit-${index}-name`}>Circuit {index+1} description (optional)</Label>
         <Input id={`bath-circuit-${index}-name`} value={c.label??""} onChange={e=>set("bathroomCircuits",rows.map((r,j)=>j===index?{...r,label:e.target.value}:r))}/>
-        <CircuitFields id={`bath-circuit-${index}`} circuit={c} defaultLength={i.routeLength} onChange={v=>set("bathroomCircuits",rows.map((r,j)=>j===index?v as RemodelCircuit:r))}/>
+        <CircuitFields id={`bath-circuit-${index}`} compactCircuit circuit={c} defaultLength={i.routeLength} onChange={v=>set("bathroomCircuits",rows.map((r,j)=>j===index?v as RemodelCircuit:r))}/>
+        <Button type="button" variant="ghost" size="sm" aria-label={`Remove circuit ${index+1}`} onClick={()=>set("bathroomCircuits",rows.filter((_,j)=>j!==index))}>Remove circuit</Button>
       </div>)}
-      <Button type="button" variant="outline" onClick={()=>set("bathroomCircuits",[...rows,defaultCircuit(`circuit-${crypto.randomUUID()}`,"Additional circuit",0)])}>+ Add Circuit</Button>
+      {rows.some(c=>c.quantity===0)&&<details className="rounded border p-3">
+        <summary className="cursor-pointer text-xs">Inactive circuits ({rows.filter(c=>c.quantity===0).length})</summary>
+        {rows.map((c,index)=>c.quantity===0&&<div key={c.key} className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <span>{c.label||`Circuit ${index+1}`} · not priced</span>
+          <Button type="button" variant="outline" size="sm" onClick={()=>set("bathroomCircuits",rows.map((r,j)=>j===index?{...r,quantity:1}:r))}>Restore circuit {index+1}</Button>
+          <Button type="button" variant="ghost" size="sm" aria-label={`Remove circuit ${index+1}`} onClick={()=>set("bathroomCircuits",rows.filter((_,j)=>j!==index))}>Remove</Button>
+        </div>)}
+      </details>}
+      <Button type="button" variant="outline" onClick={()=>set("bathroomCircuits",[...rows,defaultCircuit(`circuit-${crypto.randomUUID()}`,"Additional circuit",1)])}>+ Add Circuit</Button>
       <div className="space-y-1 text-xs"><p className="font-semibold">Automatic breaker requirements</p>{breakers.map(c=><p key={c.key}>{c.quantity} × {i.panelManufacturer} {c.amperage}A {c.poleCount}-pole {c.protectionType}</p>)}
         {!breakers.length&&<p>No new breakers or home runs. Existing circuit suitability requires field verification.</p>}</div>
       {check("heatedFloorCircuit","Include heated-floor circuit")}
@@ -65,7 +73,7 @@ export function BathroomBuilderFields({inputs:i,onChange,pricing}: {inputs:Bathr
           <option value="">Add a separate heated-floor circuit</option>
           {rows.filter(c=>c.quantity>0).map(c=><option key={c.key} value={c.key}>{c.label||c.key}: use this existing configured row</option>)}
         </select>
-        {!i.heatedFloorCircuitKey&&<CircuitFields id="bath-floor" circuit={{...defaultCircuit("heated-floor","Heated floor",1),protectionType:"GFCI",...i.heatedFloorConfiguration,quantity:1}} defaultLength={i.routeLength} onChange={c=>set("heatedFloorConfiguration",{...c,quantity:1} as RemodelCircuit)}/>}
+        {!i.heatedFloorCircuitKey&&<CircuitFields id="bath-floor" compactCircuit circuit={{...defaultCircuit("heated-floor","Heated floor",1),protectionType:"GFCI",...i.heatedFloorConfiguration,quantity:1}} defaultLength={i.routeLength} onChange={c=>set("heatedFloorConfiguration",{...c,quantity:1} as RemodelCircuit)}/>}
         {check("heatedFloorThermostat","Include thermostat / control")}
         <p className="text-xs text-muted-foreground">Circuit and optional thermostat only; heating mat and floor installation are not included.</p>
       </div>}
@@ -76,11 +84,11 @@ export function BathroomBuilderFields({inputs:i,onChange,pricing}: {inputs:Bathr
         <SelectField id="bath-gfci-rating" label="GFCI device rating" value={i.gfciAmperage??20} options={[15,20]} onChange={v=>set("gfciAmperage",Number(v))}/>
         {qty("additionalSwitches","Single-pole switches")}{qty("threeWaySwitches","3-way switches (physical devices)")}{qty("dimmers","Dimmers")}{qty("smartSwitches","Smart switches")}
       </div>
-      <p className="text-xs text-muted-foreground">Incremental remodel labor. Fan controls and floor thermostats are added separately below; do not repeat those quantities here. A typical 3-way setup uses two physical switches.</p>
+      <p className="text-xs text-muted-foreground">Physical devices only; these counts do not change circuit quantity. Incremental remodel labor. Fan controls and floor thermostats are added separately below; do not repeat those quantities here. A typical 3-way setup uses two physical switches.</p>
     </BuilderSection>
     <BuilderSection title="Lighting" summary={`${i.vanityLights+i.recessedLights+(i.showerLights??0)} fixtures`}>
       <div className="grid grid-cols-2 gap-4">{qty("vanityLights","Vanity lights")}{qty("recessedLights","Recessed lights")}{qty("showerLights","Shower / wet-location lights")}
-        <SelectField id="bath-recessed-size" label="Recessed light size" value={i.recessedLightSize??"4-inch"} options={["4-inch","6-inch"]} onChange={v=>set("recessedLightSize",v as "4-inch"|"6-inch")}/>
+        {i.recessedLights>0&&<SelectField id="bath-recessed-size" label="Recessed light size" value={i.recessedLightSize??"4-inch"} options={["4-inch","6-inch"]} onChange={v=>set("recessedLightSize",v as "4-inch"|"6-inch")}/>}
       </div>
     </BuilderSection>
     <BuilderSection title="Exhaust Equipment" summary={`${fans} equipment units · ${i.fanControl??"Standard switch"}`}>
@@ -93,15 +101,15 @@ export function BathroomBuilderFields({inputs:i,onChange,pricing}: {inputs:Bathr
         </details>)}
       </>}
     </BuilderSection>
-    <BuilderSection title="Customer-Supplied Items" summary={i.customerSuppliedFixtures?"Vanity fixtures supplied by customer":"Contractor-supplied vanity fixtures"}>
-      {check("customerSuppliedFixtures","Customer supplies vanity / decorative fixtures")}
-      {check("customerSuppliedRecessedLights","Customer supplies recessed fixtures")}
+    <BuilderSection title="Customer-Supplied Items" summary={i.vanityLights>0?(i.customerSuppliedFixtures?"Vanity fixtures supplied by customer":"Contractor-supplied vanity fixtures"):"Only selected fixture types appear here"}>
+      {i.vanityLights>0&&check("customerSuppliedFixtures","Customer supplies vanity / decorative fixtures")}
+      {i.recessedLights>0&&check("customerSuppliedRecessedLights","Customer supplies recessed fixtures")}
       <p className="text-xs text-muted-foreground">Fixture purchase cost is excluded, not installation labor or normal incidental materials. Wet-location shower fixtures remain contractor-supplied.</p>
     </BuilderSection>
     <BuilderSection title="Wiring & Pricing" summary="In-room wiring is separate from home runs">
       <div className="grid grid-cols-2 gap-4">
-        <NumberField id="bath-branch-length" label="In-room branch wiring (FT total)" value={i.branchWiringLength??0} onChange={v=>set("branchWiringLength",v)} help="Only wiring between devices/fixtures; excludes all circuit home runs above. Zero for existing wiring."/>
-        <SelectField id="bath-branch-cable" label="In-room cable" value={i.cableType??"12/2 NM-B"} options={["12/2 NM-B","14/2 NM-B","14/3 NM-B"]} onChange={v=>set("cableType",v as BathroomInputs["cableType"])}/>
+        <NumberField id="bath-branch-length" label="Additional In-Room Wiring Allowance (FT)" value={i.branchWiringLength??0} onChange={v=>set("branchWiringLength",v)} help="Additional wiring between bathroom devices, controls and fixtures. Circuit home runs are calculated separately above. Zero for existing wiring."/>
+        <SelectField id="bath-branch-cable" label="Allowance Cable" value={i.cableType??"12/2 NM-B"} options={["12/2 NM-B","14/2 NM-B","14/3 NM-B"]} onChange={v=>set("cableType",v as BathroomInputs["cableType"])}/>
         <SelectField id="bath-labor-rate" label="Labor rate" value={i.laborRateType??"residential"} options={["residential","commercial"]} onChange={v=>set("laborRateType",v as "residential"|"commercial")}/>
         <NumberField id="bath-labor-adj" label="Labor Adjustment (Hours)" value={i.laborAdjustmentHours??0} signed onChange={v=>set("laborAdjustmentHours",v)}/>
       </div><LaborSummary pricing={pricing}/>

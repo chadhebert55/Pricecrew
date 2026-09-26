@@ -38,7 +38,7 @@ RD-42 is available at its normalized cost but deliberately not universally prefe
 
 ## Verification
 
-The 289-test API suite passed, including four-builder engine regressions, import safeguards, draft recalculation, immutable issued quotes, pricing overrides, customer proposal privacy and export checks. The full browser run passed 27 existing tests, then the three affected builder suites passed after their isolated QA fixture units were corrected. Those suites exercise preview → saved assembly/pricing → Ready guards, responsive layout and draft restoration. A further explicit wrong-dimension regression was added after this baseline.
+The final resolver CI passed API tests, all 30 browser tests and Typecheck & Build before PR28 was merged. The subsequent Bathroom regression run passed 293 API tests and all 30 browser tests, including four-builder engine regressions, import safeguards, draft recalculation, immutable issued quotes, pricing overrides, customer proposal privacy and export checks. Those suites exercise preview → saved assembly/pricing → Ready guards, responsive layout and draft restoration. An explicit wrong-dimension regression verifies that a preferred feet-priced catalog row cannot satisfy an each-priced connector assembly.
 
 The real-identity Kitchen test verifies six Siemens Q120DF breakers at 69.239 each = 415.434, displayed 415.43; P&S 3232-TRW at 1.00; QF120A at 71.027; NM94 normalized precision and snapshot; and zero-cost customer fixtures without unresolved status. Intentional unresolved USB/plate/specialty families still block readiness.
 

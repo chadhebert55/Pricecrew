@@ -1857,6 +1857,49 @@ export function calculateEvChargerEstimate(
   );
 }
 
+/** Internal diagnostics and the calculator share these components; never customer scope. */
+function bathroomBaseLaborComponents(inputs: BathroomInputRecord) {
+  return {
+    sharedSetup: 1.5,
+    gfciReceptacles: inputs.gfciReceptacles * .75,
+    downstreamReceptacles: inputs.additionalReceptacles * .55,
+    vanityLights: inputs.vanityLights * .8,
+    recessedLights: inputs.recessedLights * .9,
+    exhaustFans: inputs.exhaustFans * 2.25,
+    fanLights: inputs.fanLights * 2.5,
+    fanLightHeat: inputs.fanLightHeatUnits * 3.5,
+    legacyHeatedFloor: inputs.heatedFloorCircuit ? 3 : 0,
+    singlePoleControls: inputs.additionalSwitches * .5,
+    inRoomWiring: Math.max(0, Number(inputs.routeLength) || 0) / 30,
+    legacyCircuit: /new/i.test(inputs.circuitOption)
+      ? Number.isFinite(Number(inputs.newCircuitLaborHours)) ? Math.max(0, Number(inputs.newCircuitLaborHours)) : 3
+      : 0,
+  };
+}
+
+export function bathroomLaborBreakdown(inputs: BathroomInputRecord) {
+  const modern = inputs.circuitConfigurationVersion === 2;
+  const components = {
+    ...bathroomBaseLaborComponents(modern ? {...inputs, circuitOption: "Reuse existing circuit",
+      heatedFloorCircuit: false, additionalSwitches: 0, routeLength: inputs.branchWiringLength ?? 0} : inputs),
+    ...(modern ? {
+      singlePoleControls: inputs.additionalSwitches * .5,
+      threeWayControls: (inputs.threeWaySwitches ?? 0) * .5,
+      dimmers: (inputs.dimmers ?? 0) * .5,
+      smartControls: (inputs.smartSwitches ?? 0) * .75,
+      fanControls: (inputs.exhaustFans + inputs.fanLights + inputs.fanLightHeatUnits)
+        * ((inputs.fanControl ?? "Standard switch") === "Standard switch" ? .5 : .75),
+      showerLights: (inputs.showerLights ?? 0) * .9,
+      floorThermostat: inputs.heatedFloorCircuit && inputs.heatedFloorThermostat ? .75 : 0,
+      circuitHomeRuns: bathroomCircuitPlan(inputs).reduce((s,c)=>s+c.quantity*(3+(c.routeLength??0)/30),0),
+    } : {}),
+  };
+  const calculatedLaborHours = Object.values(components).reduce((s,h)=>s+h,0);
+  const manualAdjustmentHours = Number.isFinite(Number(inputs.laborAdjustmentHours)) ? Number(inputs.laborAdjustmentHours) : 0;
+  return {components, calculatedLaborHours, manualAdjustmentHours,
+    finalLaborHours: Math.max(0, calculatedLaborHours + manualAdjustmentHours)};
+}
+
 export function calculateBathroomEstimate(
   inputs: BathroomInputRecord,
   settings: EstimatingSettings,
@@ -1903,9 +1946,7 @@ export function calculateBathroomEstimate(
   priced("bathroom-decora-plates", "Legrand radiant RWP26WCC10 1-gang screwless wall plate", devices - inputs.additionalReceptacles, "Trim");
   priced("bathroom-duplex-plates", "duplex receptacle wall plate", inputs.additionalReceptacles, "Trim");
   priced("bathroom-fixture-boxes", "fixture outlet box", inputs.vanityLights, "Rough-in");
-  const calculated = (base.pricing.finalLaborHours ?? 0) + single * .5 + three * .5 + dimmers * .5 + smart * .75
-    + fans * (fanControl === "Standard switch" ? .5 : .75) + (inputs.showerLights ?? 0) * .9 + thermostat * .75
-    + circuits.reduce((s, c) => s + c.quantity * (3 + (c.routeLength ?? 0) / 30), 0);
+  const calculated = bathroomLaborBreakdown(inputs).calculatedLaborHours;
   warnings.push("Bathroom quantities use shared remodel setup and incremental installation labor, not repeated service calls. Verify circuit assignment, wet-location fixture suitability, equipment instructions, control count and field conditions.");
   if (inputs.heatedFloorCircuit)
     warnings.push("Heated-floor scope includes the configured power circuit and optional thermostat only, not a heating mat or floor installation. Verify equipment load and protection.");
@@ -2147,7 +2188,7 @@ function calculateLegacyBathroomEstimate(
       "bathroom-wiring",
       "Conductor",
       `${inputs.cableType ?? "12/2 NM-B"} cable`,
-      `Bathroom common-route cable — ${inputs.cableType ?? "12/2 NM-B"}`,
+      `${inputs.circuitConfigurationVersion === 2 ? "Additional in-room wiring allowance" : "Bathroom common-route cable"} — ${inputs.cableType ?? "12/2 NM-B"}`,
       routeLength,
       false,
       "ft",
@@ -2161,26 +2202,8 @@ function calculateLegacyBathroomEstimate(
     "Bathroom box, plate, and wiring quantities are planning allowances and must be verified against the final layout and field conditions.",
   );
 
-  const laborHours =
-    1.5 +
-    inputs.gfciReceptacles * 0.75 +
-    inputs.additionalReceptacles * 0.55 +
-    inputs.vanityLights * 0.8 +
-    inputs.recessedLights * 0.9 +
-    inputs.exhaustFans * 2.25 +
-    inputs.fanLights * 2.5 +
-    inputs.fanLightHeatUnits * 3.5 +
-    (inputs.heatedFloorCircuit ? 3 : 0) +
-    inputs.additionalSwitches * 0.5 +
-    routeLength / 30 +
-    (/new/i.test(inputs.circuitOption)
-      ? Number.isFinite(Number(inputs.newCircuitLaborHours))
-        ? Math.max(0, Number(inputs.newCircuitLaborHours))
-        : 3
-      : 0) +
-    (Number.isFinite(Number(inputs.laborAdjustmentHours))
-      ? Number(inputs.laborAdjustmentHours)
-      : 0);
+  const laborHours = Object.values(bathroomBaseLaborComponents(inputs)).reduce((s,h)=>s+h,0)
+    + (Number.isFinite(Number(inputs.laborAdjustmentHours)) ? Number(inputs.laborAdjustmentHours) : 0);
 
   return finalizeEstimate(
     assembly,
