@@ -1,4 +1,4 @@
-import { customerMaterialDescription } from "../lib/customer-scope";
+import { customerProposalScope } from "../lib/customer-scope";
 export { customerMaterialDescription } from "../lib/customer-scope";
 import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
@@ -749,6 +749,7 @@ type NormalizedProposalDecision = {
 
 function normalizeProposalDecisionInput(input: {
   decision: ProposalDecisionType;
+  scopeAcknowledged?: boolean;
   customerName?: string;
   signature?: string;
   explanation?: string;
@@ -761,6 +762,9 @@ function normalizeProposalDecisionInput(input: {
   }
   if (input.decision === "accepted" && !signature) {
     return { error: "Customer signature is required to accept a proposal." };
+  }
+  if (input.decision === "accepted" && input.scopeAcknowledged !== true) {
+    return { error: "Please confirm agreement to the proposed scope, total investment, and terms." };
   }
   return {
     value: {
@@ -1885,12 +1889,7 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
       proposalDescription: quote.proposalDescription,
       createdAt: quote.createdAt.toISOString(),
       finalSellingPrice: quote.pricing.finalSellingPrice,
-      scope: quote.assembly.map((line) => ({
-        id: line.id,
-        description: customerMaterialDescription(line.description, line),
-        quantity: line.quantity,
-        unit: line.unit,
-      })),
+      ...customerProposalScope(quote.module, quote.assembly),
       company: {
         displayName: company?.name ?? "Electrical Contractor",
         contactPhone: settings?.contactPhone ?? null,

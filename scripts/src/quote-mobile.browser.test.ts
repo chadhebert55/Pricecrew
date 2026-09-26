@@ -211,7 +211,7 @@ test("quote building and export surfaces work at phone and tablet widths", async
 
     await page.goto(`/proposals/${quote.proposalShareToken}`);
     await expect(page.getByText("Customer Proposal", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Print / Save PDF" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Download PDF" })).toBeVisible();
     expect(
       await page.evaluate(
         "document.documentElement.scrollWidth <= window.innerWidth",

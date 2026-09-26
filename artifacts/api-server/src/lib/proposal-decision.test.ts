@@ -191,6 +191,8 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
     for (const incomplete of [
       { decision: "accepted", signature: "Alex Customer" },
       { decision: "accepted", customerName: "Alex Customer" },
+      { decision: "accepted", customerName: "Alex Customer", signature: "Alex Customer" },
+      { decision: "accepted", customerName: "Alex Customer", signature: "Alex Customer", scopeAcknowledged: false },
     ]) {
       const response = await fetch(
         `${baseUrl}/api/proposals/${acceptedToken}`,
@@ -205,6 +207,7 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
 
     const acceptance = {
       decision: "accepted",
+      scopeAcknowledged: true,
       customerName: "Alex Customer",
       signature: "Alex Customer",
       explanation: "Approved as presented.",

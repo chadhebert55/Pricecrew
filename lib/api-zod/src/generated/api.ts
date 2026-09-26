@@ -3512,8 +3512,10 @@ export const GetCustomerProposalResponse = zod.object({
   "id": zod.string(),
   "description": zod.string(),
   "quantity": zod.number(),
-  "unit": zod.string()
+  "unit": zod.string(),
+  "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
 })),
+  "assumptions": zod.array(zod.string()).optional(),
   "company": zod.object({
   "displayName": zod.string(),
   "contactPhone": zod.string().nullish(),
@@ -3551,6 +3553,7 @@ export const submitProposalDecisionBodyExplanationMax = 2000;
 
 
 export const SubmitProposalDecisionBody = zod.object({
+  "scopeAcknowledged": zod.boolean().optional().describe('Must be true to accept the proposed scope, total investment, and terms.'),
   "decision": zod.enum(['accepted', 'declined']),
   "customerName": zod.string().min(1).max(submitProposalDecisionBodyCustomerNameMax).optional(),
   "signature": zod.string().min(1).max(submitProposalDecisionBodySignatureMax).optional(),
@@ -5774,6 +5777,7 @@ export const submitQuoteDecisionBodyExplanationMax = 2000;
 
 
 export const SubmitQuoteDecisionBody = zod.object({
+  "scopeAcknowledged": zod.boolean().optional().describe('Must be true to accept the proposed scope, total investment, and terms.'),
   "decision": zod.enum(['accepted', 'declined']),
   "customerName": zod.string().min(1).max(submitQuoteDecisionBodyCustomerNameMax).optional(),
   "signature": zod.string().min(1).max(submitQuoteDecisionBodySignatureMax).optional(),

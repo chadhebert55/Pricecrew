@@ -11,4 +11,6 @@ export interface CustomerProposalLine {
   description: string;
   quantity: number;
   unit: string;
+  /** Customer-facing inclusion or quantity label, independent of internal material quantities. */
+  displayValue?: string;
 }

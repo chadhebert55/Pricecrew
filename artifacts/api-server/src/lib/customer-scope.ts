@@ -1,3 +1,78 @@
+import type { AssemblyLineRecord } from "@workspace/db";
+
+type PublicScopeLine = {
+  id: string; description: string; quantity: number; unit: string; displayValue?: string;
+};
+
+/**
+ * A view of the saved snapshot, never a recalculation or a catalog lookup.
+ * Zero-cost included labor/reused materials are real scope; only explicitly
+ * not-required or zero allowances are omitted.
+ */
+export function customerProposalScope(module: string, assembly: AssemblyLineRecord[]): { scope: PublicScopeLine[]; assumptions: string[] } {
+  const lines = assembly.filter(line => {
+    if (line.quantity <= 0) return false;
+    const allowance = line.unit === "allowance" || /-allowance$/.test(line.id);
+    return !(allowance && line.unitCost === 0);
+  });
+  if (module !== "PANEL_REPLACEMENT") {
+    return { scope: lines.map(line => ({
+      id: line.id, description: customerMaterialDescription(line.description, line),
+      quantity: line.quantity, unit: line.unit,
+    })), assumptions: [] };
+  }
+  const scope: PublicScopeLine[] = [];
+  const assumptions: string[] = [];
+  const used = new Set<string>();
+  const add = (id: string, description: string, members: AssemblyLineRecord[], displayValue = "Included") => {
+    if (!members.length) return;
+    members.forEach(line => used.add(line.id));
+    scope.push({ id, description, quantity: 1, unit: "scope", displayValue });
+  };
+  const byIds = (...ids: string[]) => lines.filter(line => ids.includes(line.id));
+  const panel = lines.find(line => line.id === "panel-replacement-panel");
+  if (panel) {
+    add("panel", customerMaterialDescription(panel.description, panel), [panel],
+      panel.quantity === 1 ? "Included" : `${panel.quantity} included`);
+    const main = lines.find(line => line.id === "panel-replacement-breaker");
+    if (main?.unitCost === 0 && /\bmain breaker is included\b/i.test(main.intentionalExclusionReason ?? ""))
+      used.add(main.id); // Included with the panel, never a second supplied item.
+  }
+  const feeder = lines.find(line => line.id === "panel-replacement-feeder");
+  if (feeder) {
+    const reuse = /^Reuse existing feeder cable$/i.test(feeder.description.trim());
+    add("feeder", reuse ? "Existing feeder" : "New feeder installation", [feeder],
+      reuse ? "Reconnect/reuse" : "Included");
+    if (reuse) assumptions.push("Existing feeder cable will be reused only after field verification of its condition, size, ampacity, length, terminations, grounding, and suitability for the new panel.");
+  }
+  add("grounding", "Grounding & bonding", byIds(
+    "panel-ground-bars", "panel-ground-rods", "panel-grounding-conductor", "panel-bonding-conductor"));
+  add("breakers", "Required circuit breakers", lines.filter(line =>
+    !used.has(line.id) && (line.id === "panel-replacement-breaker" || line.id.startsWith("panel-existing-breaker-"))));
+  add("backboard", "Panel mounting/backboard", byIds("panel-plywood", "panel-studs"));
+  add("raceway", "Feeder conduit and fittings", byIds("feeder-raceway", "feeder-raceway-fittings"));
+  // Ancillary installation materials are included in the panel work, not shown
+  // as a shopping list. If there is no panel row, keep an explicit work item.
+  const supplies = byIds("panel-space-fillers", "panel-knockout-seals", "panel-anti-oxidant", "panel-electrical-tape");
+  if (panel) supplies.forEach(line => used.add(line.id));
+  else add("supplies", "Panel installation materials", supplies);
+  for (const line of lines.filter(line => /-allowance$/.test(line.id))) {
+    add(line.id, customerMaterialDescription(line.description, line), [line]);
+  }
+  const closeout = byIds("panel-replacement-closeout");
+  // Preserve any custom or legacy scope without exposing supplier descriptions.
+  const other = lines.filter(line => !used.has(line.id) && !closeout.includes(line));
+  for (const line of other) {
+    const label = customerMaterialDescription(line.description, line);
+    if (label !== "Electrical material") add(line.id, label, [line], `${line.quantity} ${line.unit}`);
+  }
+  add("additional-work", "Additional electrical installation work",
+    other.filter(line => !used.has(line.id)));
+  add("directory", "Circuit identification & panel directory", closeout);
+  add("closeout", "Testing & cleanup", closeout);
+  return { scope, assumptions };
+}
+
 /**
  * Produces proposal-safe scope wording.  Catalog rows are deliberately
  * fail-closed: a future supplier naming convention must not become public
