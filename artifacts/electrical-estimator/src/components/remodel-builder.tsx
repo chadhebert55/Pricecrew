@@ -26,16 +26,16 @@ export function SelectField({id,label,value,options,onChange}: {id:string;label:
     {options.map(o=><option key={o} value={o}>{o === "Dual Function" ? "Dual Function AFCI + GFCI" : o}</option>)}
   </select></div>
 }
-export function CircuitFields({circuit, onChange, id, breakerOnly = false, defaultLength}: {circuit:RemodelCircuit;onChange:(c:RemodelCircuit)=>void;id:string;breakerOnly?:boolean;defaultLength?:number}) {
+export function CircuitFields({circuit, onChange, id, breakerOnly = false, defaultLength, compactCircuit = false}: {circuit:RemodelCircuit;onChange:(c:RemodelCircuit)=>void;id:string;breakerOnly?:boolean;defaultLength?:number;compactCircuit?:boolean}) {
   const c = circuit
   const issue = !breakerOnly && c.quantity > 0 ? circuitCompatibilityIssue(c) : undefined
   return <div className="space-y-3 rounded-lg border p-3">
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <NumberField id={`${id}-quantity`} label={c.label ? `${c.label} quantity` : "Quantity"} value={c.quantity} quantity onChange={quantity=>onChange({...c,quantity})}/>
+    <div className={compactCircuit ? "grid grid-cols-1 gap-3 sm:grid-cols-2" : "grid grid-cols-2 gap-3 sm:grid-cols-3"}>
+      <NumberField id={`${id}-quantity`} label={compactCircuit ? "Circuit Quantity" : c.label ? `${c.label} quantity` : "Quantity"} help={compactCircuit ? "Actual circuits / home runs, not device count." : undefined} value={c.quantity} quantity onChange={quantity=>onChange({...c,quantity})}/>
       {c.quantity > 0 && <>
       <SelectField id={`${id}-amperage`} label="Breaker amperage" value={c.amperage} options={circuitAmperages} onChange={v=>onChange({...c,amperage:Number(v)})}/>
-      <SelectField id={`${id}-poles`} label="Poles" value={c.poleCount} options={[1,2]} onChange={v=>onChange({...c,poleCount:Number(v)})}/>
-      <SelectField id={`${id}-protection`} label="Protection" value={c.protectionType} options={circuitProtections} onChange={protectionType=>onChange({...c,protectionType})}/>
+      {!compactCircuit && <SelectField id={`${id}-poles`} label="Poles" value={c.poleCount} options={[1,2]} onChange={v=>onChange({...c,poleCount:Number(v)})}/>}
+      <div className={compactCircuit ? "min-w-0 sm:col-span-2" : "min-w-0"}><SelectField id={`${id}-protection`} label="Protection" value={c.protectionType} options={circuitProtections} onChange={protectionType=>onChange({...c,protectionType})}/></div>
       {!breakerOnly && <>
         {["electricRangeCircuits", "wallOvenCircuits", "dishwasherCircuits", "disposalCircuits"].includes(c.key) &&
           <SelectField id={`${id}-connection`} label="Appliance connection" value={c.connectionMethod ?? (["dishwasherCircuits", "disposalCircuits"].includes(c.key) ? "Receptacle-connected" : "Unspecified")} options={["Unspecified", "Receptacle-connected", "Hardwired"]} onChange={v=>onChange({...c,connectionMethod:v as RemodelCircuit["connectionMethod"]})}/>}
@@ -44,6 +44,11 @@ export function CircuitFields({circuit, onChange, id, breakerOnly = false, defau
       </>}
       </>}
     </div>
+    {compactCircuit && c.quantity > 0 && <details open={c.poleCount!==1} className="rounded border p-3">
+      <summary className="cursor-pointer text-xs">Advanced Circuit Settings{c.poleCount!==1 ? ` · ${c.poleCount}-pole` : ""}</summary>
+      <div className="mt-3 max-w-xs"><SelectField id={`${id}-poles`} label="Poles" value={c.poleCount} options={[1,2]} onChange={v=>onChange({...c,poleCount:Number(v)})}/></div>
+      <p className="mt-2 text-xs text-muted-foreground">Normal bathroom branch circuits default to 1-pole. Confirm voltage, protection and cable for a 2-pole load.</p>
+    </details>}
     {!breakerOnly && c.quantity > 0 && <p className="text-xs text-muted-foreground">{c.cableType}: {c.routeLength ?? defaultLength ?? 0} FT × {c.quantity} circuits = {(c.routeLength ?? defaultLength ?? 0)*c.quantity} FT. {c.routeLength === undefined ? "Uses default home run." : "Uses this circuit's route."}</p>}
     {issue && <p role="alert" className="text-sm text-amber-500">{issue}</p>}
   </div>

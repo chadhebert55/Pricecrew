@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateBathroomEstimate, type PriceBookItem } from "./estimating-engine";
+import { calculateBathroomEstimate, bathroomLaborBreakdown, type PriceBookItem } from "./estimating-engine";
 import { defaultCircuit } from "@workspace/api-zod/remodel-circuits";
 import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness";
 import { CreateQuoteBody } from "@workspace/api-zod";
@@ -75,4 +75,72 @@ test("Bathroom v2 rejects missing, duplicate, wrong manufacturer, incompatible c
     const r=calculateBathroomEstimate(i,settings,book);
     assert.ok(r.pricing.pricingWarnings.some(w=>typeof w!=="string"&&w.severity==="error"));
   }
+});
+
+test("Bathroom A–C: physical devices never multiply circuits, home runs or connectors",()=>{
+  const a:BathroomInputRecord={...typical,recessedLights:0,additionalReceptacles:1,additionalSwitches:1};
+  const catalog=catalogFor(a);
+  const metrics=(i:BathroomInputRecord)=>{
+    const result=calculateBathroomEstimate(i,settings,catalog);
+    const qty=(prefix:string)=>result.assembly.filter(l=>l.id.startsWith(prefix)).reduce((s,l)=>s+l.quantity,0);
+    return {result,breakers:result.assembly.filter(l=>l.category==="Protection").reduce((s,l)=>s+l.quantity,0),
+      homeRuns:qty("bathroom-home-run"),connectors:qty("bathroom-circuit-connectors")};
+  };
+  const typicalResult=metrics(a);
+  assert.deepEqual([typicalResult.breakers,typicalResult.homeRuns,typicalResult.connectors],[2,60,4]);
+  assert.equal(typicalResult.result.assembly.find(l=>l.id==="bathroom-wiring")?.quantity,20);
+  assert.equal(typicalResult.result.assembly.find(l=>l.id==="bathroom-home-run-receptacles")?.quantity,30);
+  assert.equal(typicalResult.result.assembly.find(l=>l.id==="bathroom-home-run-lighting")?.quantity,30);
+  const one={...a,bathroomCircuits:[a.bathroomCircuits![0]!]};
+  for(const devices of [{gfciReceptacles:2,additionalReceptacles:0},{gfciReceptacles:1,additionalReceptacles:1},
+    {gfciReceptacles:4,additionalReceptacles:5,recessedLights:8,exhaustFans:2,additionalSwitches:6}]) {
+    const b=metrics({...one,...devices});
+    assert.deepEqual([b.breakers,b.homeRuns,b.connectors],[1,30,2]);
+    assert.equal(b.result.assembly.find(l=>l.id==="gfci-receptacles")?.quantity,devices.gfciReceptacles);
+  }
+  const c=metrics({...one,bathroomCircuits:[{...one.bathroomCircuits[0]!,quantity:2}]});
+  assert.deepEqual([c.breakers,c.homeRuns,c.connectors],[2,60,4]);
+  const override=metrics({...a,bathroomCircuits:[{...a.bathroomCircuits![0]!,routeLength:45},a.bathroomCircuits![1]!]});
+  assert.equal(override.homeRuns,75);
+  assert.equal(override.result.assembly.find(l=>l.id==="bathroom-wiring")?.quantity,20);
+});
+
+test("Bathroom labor diagnostics reconcile to real pricing without tuning rates or snapshot quantities",()=>{
+  const corrected:BathroomInputRecord={...typical,recessedLights:0,additionalReceptacles:1,additionalSwitches:1};
+  const previous={...corrected,bathroomCircuits:corrected.bathroomCircuits!.map((c,n)=>n===0?{...c,quantity:2}:c)};
+  const catalog=catalogFor(corrected);
+  const before=calculateBathroomEstimate(previous,settings,catalog);
+  const after=calculateBathroomEstimate(corrected,settings,catalog);
+  assert.ok(Math.abs(before.pricing.finalLaborHours!-after.pricing.finalLaborHours!-4)<1e-10);
+  const diagnostic=bathroomLaborBreakdown(corrected);
+  assert.equal(diagnostic.finalLaborHours,after.pricing.finalLaborHours);
+  assert.equal(diagnostic.components.circuitHomeRuns,8);
+  assert.ok(Math.abs(diagnostic.calculatedLaborHours-15.5166666667)<1e-8);
+  for(const adjustment of [-2,0,2]) {
+    const i={...corrected,laborAdjustmentHours:adjustment};
+    const result=calculateBathroomEstimate(i,settings,catalog),d=bathroomLaborBreakdown(i);
+    assert.equal(result.pricing.finalLaborHours,d.finalLaborHours);
+    assert.equal(result.pricing.calculatedLaborHours,d.calculatedLaborHours);
+    assert.equal(result.pricing.laborCost,Number((d.finalLaborHours*65).toFixed(2)));
+    assert.equal(result.pricing.laborSellAmount,Number((d.finalLaborHours*150).toFixed(2)));
+  }
+  const restored=CreateQuoteBody.parse({module:"BATHROOM",jobInputs:JSON.parse(JSON.stringify(previous)),
+    customerName:"QA",projectName:"Quantity recovery",proposalDescription:"Bathroom scope"});
+  assert.equal((restored.jobInputs as BathroomInputRecord).bathroomCircuits![0]!.quantity,2);
+  const reconstructed19=calculateBathroomEstimate({...previous,additionalReceptacles:0},settings,catalog);
+  assert.equal(reconstructed19.pricing.finalLaborHours!.toFixed(1),"19.0");
+});
+
+test("Bathroom E–F: fixtures add labor; customer supply only removes equipment purchase",()=>{
+  const i={...base,recessedLights:2};
+  const catalog=catalogFor(i);
+  const contractor=calculateBathroomEstimate({...i,customerSuppliedRecessedLights:false},settings,catalog);
+  const supplied=calculateBathroomEstimate({...i,customerSuppliedRecessedLights:true},settings,catalog);
+  assert.equal(contractor.pricing.finalLaborHours,supplied.pricing.finalLaborHours);
+  assert.equal(supplied.assembly.find(l=>l.id==="vanity-lights")?.resolutionStatus,"CUSTOMER_SUPPLIED");
+  assert.equal(supplied.assembly.find(l=>l.id==="recessed-lights")?.resolutionStatus,"CUSTOMER_SUPPLIED");
+  assert.ok(supplied.assembly.filter(l=>l.resolutionStatus==="CUSTOMER_SUPPLIED").every(l=>!hasUnresolvedMaterialCost(l)&&l.extendedCost===0));
+  for(const id of ["bathroom-wiring","bathroom-fixture-boxes","bathroom-device-boxes","bathroom-fan-controls"])
+    assert.deepEqual(supplied.assembly.find(l=>l.id===id),contractor.assembly.find(l=>l.id===id));
+  assert.ok(Math.abs(bathroomLaborBreakdown(i).finalLaborHours-bathroomLaborBreakdown(base).finalLaborHours-1.8)<1e-10);
 });
