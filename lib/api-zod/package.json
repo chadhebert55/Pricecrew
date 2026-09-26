@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./pricing-readiness": "./src/pricing-readiness.ts"
+    "./pricing-readiness": "./src/pricing-readiness.ts",
+    "./jobber-export-layout": "./src/jobber-export-layout.ts"
   },
   "dependencies": {
     "zod": "catalog:"

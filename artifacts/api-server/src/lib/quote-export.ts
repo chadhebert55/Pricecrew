@@ -2,11 +2,17 @@ import type {
   QuoteExportMapping,
   QuoteExportPreflightIssue,
 } from "@workspace/api-zod";
+import { customerMaterialDescription } from "./customer-scope";
 import { quotesTable, type AssemblyLineRecord } from "@workspace/db";
 import {
   hasUnresolvedMaterialCost,
   isIncludedPanelCloseoutLabor,
 } from "@workspace/api-zod/pricing-readiness";
+import {
+  jobberExportLayout,
+  MAX_JOBBER_LINE_ITEMS,
+} from "@workspace/api-zod/jobber-export-layout";
+export { MAX_JOBBER_LINE_ITEMS, MAX_JOBBER_ASSEMBLY_LINES } from "@workspace/api-zod/jobber-export-layout";
 
 export const JOBBER_DESTINATION = "jobber" as const;
 export const JOBBER_CSV_FORMAT = "csv" as const;
@@ -17,8 +23,6 @@ export const QUICKBOOKS_INVOICE_CSV_VERSION = 1 as const;
 export const HOUSECALL_PRO_DESTINATION = "housecall_pro" as const;
 export const HOUSECALL_PRO_CSV_FORMAT = "csv" as const;
 export const HOUSECALL_PRO_JOBS_CSV_VERSION = 1 as const;
-export const MAX_JOBBER_LINE_ITEMS = 10;
-export const MAX_JOBBER_ASSEMBLY_LINES = MAX_JOBBER_LINE_ITEMS - 1;
 
 export const QUICKBOOKS_INVOICE_HEADERS = [
   "Invoice number",
@@ -341,15 +345,6 @@ export function preflightJobberQuoteExport(
     );
     return issues;
   }
-  if (quote.assembly.length > MAX_JOBBER_ASSEMBLY_LINES) {
-    issues.push(
-      issue(
-        "LINE_ITEM_LIMIT",
-        "assembly",
-        `Jobber accepts at most ${MAX_JOBBER_LINE_ITEMS} line items. This export reserves one line for the exact saved quote total, so reduce the saved assembly to ${MAX_JOBBER_ASSEMBLY_LINES} lines.`,
-      ),
-    );
-  }
   quote.assembly.forEach((line, index) => {
     if (!text(line.description)) {
       issues.push(
@@ -423,6 +418,19 @@ function savedTotalLine(quote: QuoteRecord) {
   ];
 }
 
+function savedSummaryLine(quote: QuoteRecord) {
+  const line = savedTotalLine(quote);
+  // Customer-visible scope contains no internal costs, sources, or exclusions.
+  // Complete saved assembly data is retained separately in Quote Internal Note.
+  line[2] = [
+    "Complete saved scope; the price is the exact saved quote total.",
+    ...quote.assembly.map((item, index) =>
+      `${index + 1}. ${customerMaterialDescription(item.description, item)} | Quantity: ${item.quantity} ${item.unit}`,
+    ),
+  ].join("\n");
+  return line;
+}
+
 function csvCell(value: string | number | null | undefined) {
   let normalized = value == null ? "" : String(value);
   // Quoting protects delimiters, while the apostrophe prevents spreadsheet
@@ -445,6 +453,14 @@ export function buildJobberQuoteCsv(
   }
 
   const resolved = resolveMapping(quote, mapping);
+  const layout = jobberExportLayout(quote.assembly.length);
+  const exportedLines = layout.summarized
+    ? [savedSummaryLine(quote)]
+    : [...quote.assembly.map(savedAssemblyLine), savedTotalLine(quote)];
+  const internalNote = layout.summarized
+    ? "PriceCrew saved assembly snapshot (summary export; no repricing or omitted rows):\n" +
+      JSON.stringify(quote.assembly, null, 2)
+    : "";
   const values: Array<string | number | null | undefined> = [
     resolved.jobberClientId,
     resolved.clientTitle,
@@ -483,7 +499,7 @@ export function buildJobberQuoteCsv(
     quote.projectName,
     quote.status.toLowerCase() === "ready" ? "Awaiting Response" : "Draft",
     quote.proposalDescription,
-    "",
+    internalNote,
     "",
     "",
     "",
@@ -500,12 +516,7 @@ export function buildJobberQuoteCsv(
   const headers: string[] = [...JOBBER_QUOTE_HEADERS];
   for (let lineNumber = 1; lineNumber <= MAX_JOBBER_LINE_ITEMS; lineNumber += 1) {
     headers.push(...JOBBER_LINE_HEADERS(lineNumber));
-    const line =
-      lineNumber <= quote.assembly.length
-        ? savedAssemblyLine(quote.assembly[lineNumber - 1]!)
-        : lineNumber === quote.assembly.length + 1
-          ? savedTotalLine(quote)
-          : ["", "", "", "", "", "", ""];
+    const line = exportedLines[lineNumber - 1] ?? ["", "", "", "", "", "", ""];
     values.push(...line);
   }
 

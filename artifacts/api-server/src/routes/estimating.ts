@@ -1,7 +1,10 @@
+import { customerMaterialDescription } from "../lib/customer-scope";
+export { customerMaterialDescription } from "../lib/customer-scope";
 import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness";
+import { jobberExportLayout } from "@workspace/api-zod/jobber-export-layout";
 import {
   CreateQuoteBody,
   CreateQuoteResponse,
@@ -933,86 +936,6 @@ async function recordProposalDecision(input: {
     }
     throw error;
   }
-}
-
-/**
- * Produces proposal-safe scope wording.  Catalog rows are deliberately
- * fail-closed: a future supplier naming convention must not become public
- * merely because it does not resemble a SKU.  User-entered allowances remain
- * useful unless they look like a branded catalog description.
- */
-export function customerMaterialDescription(
-  description: string,
-  line?: { id?: string; category?: string; source?: string },
-) {
-  const rules: Array<[RegExp, string]> = [
-    [
-      /^Milbank .*200A meter-main.*$/i,
-      "200A meter-main with built-in disconnect",
-    ],
-    [/^Siemens .*200A .*panel.*$/i, "200A Siemens panel"],
-    [/^Square D .*100A .*load center.*$/i, "100A Square D panel"],
-    [
-      /^.*intersystem bonding (?:terminal|connector).*$/i,
-      "Intersystem bonding connector",
-    ],
-    [/^#8 solid grounding conductor$/i, "#8 bare copper"],
-    [/^#4 green bonding conductor$/i, "#4 green copper"],
-    [/^.*Pass & Seymour.*traditional 3-way switches.*$/i, "3-way switches"],
-    [/^.*Pass & Seymour.*single-pole switches?.*$/i, "Single-pole switch"],
-    [/^.*Pass & Seymour.*GFCI.*$/i, "GFCI receptacle"],
-    [/^.*Pass & Seymour.*duplex receptacle.*$/i, "Tamper-resistant receptacle"],
-    [/^.*Legrand radiant.*single-pole switch.*$/i, "Single-pole switch"],
-    [/^.*Lutron.*dimmer.*$/i, "Dimmer"],
-    [/^.*Juno.*4-inch.*(?:wafer|light).*$/i, "4-inch recessed light"],
-    [/^.*Juno.*6-inch.*(?:wafer|light).*$/i, "6-inch recessed light"],
-  ];
-  for (const [pattern, replacement] of rules) {
-    if (pattern.test(description)) return replacement;
-  }
-  if (/\bbreaker\b/i.test(description)) {
-    const breaker = description.match(
-      /(\d+A).*?(\d)-pole.*?(standard|GFCI|AFCI|dual-function).*?breaker/i,
-    );
-    return breaker
-      ? `${breaker[1]} ${breaker[2]}-pole ${breaker[3]} breaker`
-      : "Circuit breaker";
-  }
-  const genericForCategory = line?.category
-    ?.toLocaleLowerCase()
-    .includes("labor")
-    ? "Electrical labor"
-    : line?.category?.toLocaleLowerCase().includes("permit")
-      ? "Permit and inspection allowance"
-      : "Electrical material";
-  const catalogOrigin =
-    Boolean(line?.source) &&
-    !/customer supplied|allowance|custom|manual|labor/i.test(
-      line?.source ?? "",
-    );
-  // Catalog names, SKUs, URLs, supplier product codes, and unknown
-  // supplier-origin descriptions are contractor-only.
-  if (
-    catalogOrigin ||
-    /https?:\/\/|www\.|\b(?:sku|upc|model|part(?:\s*(?:no|number))?)\b/i.test(
-      description,
-    ) ||
-    /[A-Z]{2,}[-\s]?\d{3,}|\b[A-Z0-9]{6,}\b/.test(description)
-  ) {
-    return genericForCategory;
-  }
-  // An initial capitalized vendor/brand token followed by a material is a
-  // catalog-style name even when it has no URL or part number (for example,
-  // “Acme Electrical conduit”). Keep ordinary human-entered scope useful.
-  if (
-    /^[A-Z][A-Za-z&.'-]+(?:\s+[A-Z][A-Za-z&.'-]+){0,2}\s+(?:conduit|wire|cable|panel|breaker|receptacle|switch|fixture|fitting|material)s?$/.test(
-      description,
-    ) &&
-    /^[A-Z]/.test(description)
-  ) {
-    return genericForCategory;
-  }
-  return description.trim() || genericForCategory;
 }
 
 /** API percentage points -> fractional DB value, retaining legacy fraction clients. */
@@ -2335,7 +2258,7 @@ router.post(
                 parsed.data.mapping,
               ),
               lineItemCount: Array.isArray(quote.assembly)
-                ? quote.assembly.length + 1
+                ? jobberExportLayout(quote.assembly.length).lineItemCount
                 : 0,
             };
     res.json(

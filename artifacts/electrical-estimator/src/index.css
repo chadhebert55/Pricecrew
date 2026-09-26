@@ -8,6 +8,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@media print {
+  @page { margin: 16mm; }
+  body:has(.customer-proposal) { background: white; color: #111; }
+  .customer-proposal {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 30%;
+    --border: 0 0% 80%;
+    color: #111;
+    background: white;
+  }
+  .customer-proposal tr { break-inside: avoid; }
+  .customer-proposal * { transition: none !important; animation: none !important; }
+  .customer-proposal td { color: #111; }
+  .customer-proposal thead { display: table-header-group; }
+  .customer-proposal .table-scroll { overflow: visible; }
+}
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
