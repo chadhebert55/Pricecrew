@@ -806,6 +806,83 @@ const panelReplacementInputs: PanelReplacementInputRecord = {
   notes: "",
 };
 
+test("Panel Replacement SER prices a complete cable once per foot and preserves legacy conductors", () => {
+  for (const conductor of ["4/0 aluminum SER", "2/0 copper SER"] as const) {
+    const result = calculatePanelReplacementEstimate({
+      ...panelReplacementInputs, feederConductor: conductor, feederLength: 12,
+      // Retained old quantity must not triple cable costs.
+      feederConductorQuantity: 3,
+    }, settings, [catalogRow(`${conductor} cable`, 4.419839, { category: "Conductor", unit: "ft" })]);
+    const line = result.assembly.find(r => r.id === "panel-replacement-feeder")!;
+    assert.equal(line.quantity, 12);
+    assert.equal(line.unitCost, 4.419839);
+    assert.equal(line.extendedCost, 53.038);
+    assert.equal(result.assembly.some(r => r.id.startsWith("feeder-raceway")), false);
+    assert.doesNotMatch(JSON.stringify(result.pricing.pricingWarnings), /panel replacement feeder raceway/);
+    assert.match(JSON.stringify(result.pricing.pricingWarnings), /ground bar/);
+  }
+  const old = calculatePanelReplacementEstimate(panelReplacementInputs, settings, [
+    catalogRow("4/0 aluminum XHHW conductor", 2),
+  ]);
+  assert.equal(old.assembly.find(r => r.id === "panel-replacement-feeder")?.quantity, 45);
+  assert.ok(old.assembly.some(r => r.id === "feeder-raceway"));
+});
+
+test("Panel Replacement reuse excludes new cable only, keeps labor, and optional raceway remains explicit", () => {
+  const baseline = calculatePanelReplacementEstimate(panelReplacementInputs, settings, []);
+  const reused = calculatePanelReplacementEstimate({
+    ...panelReplacementInputs, feederConductor: "Reuse existing cable",
+    exactCatalogParts: { feederConductor: "Unavailable stale choice" },
+  }, settings, []);
+  const line = reused.assembly.find(r => r.id === "panel-replacement-feeder")!;
+  assert.equal(line.extendedCost, 0);
+  assert.match(line.intentionalExclusionReason!, /no new feeder cable/);
+  assert.equal(reused.pricing.laborCost, baseline.pricing.laborCost);
+  assert.match(JSON.stringify(reused.pricing.pricingWarnings), /reuse requires field verification/);
+  assert.doesNotMatch(JSON.stringify(reused.pricing.pricingWarnings), /Unavailable stale choice|panel replacement feeder raceway/);
+  for (const feederConductor of ["Reuse existing cable", "4/0 aluminum SER", "2/0 copper SER"] as const) {
+    const result = calculatePanelReplacementEstimate({
+      ...panelReplacementInputs, feederConductor, includeFeederRaceway: true,
+    }, settings, []);
+    assert.ok(result.assembly.some(r => r.id === "feeder-raceway"));
+    assert.match(JSON.stringify(result.pricing.pricingWarnings), /panel replacement feeder raceway/);
+  }
+});
+
+test("Panel Replacement SER fails closed for missing, duplicate, wrong unit/material/source and incompatible ratings", () => {
+  const aluminum = catalogRow("Wia 4/0 aluminum SER — SKU 28551", 4.419839, {
+    category: "Conductor", unit: "ft", supplierSku: "28551",
+  });
+  const copper = catalogRow("2/0 copper SER cable", 12, { category: "Conductor", unit: "ft" });
+  const input = { ...panelReplacementInputs, feederConductor: "4/0 aluminum SER" as const,
+    exactCatalogParts: { feederConductor: aluminum.item } };
+  const result = calculatePanelReplacementEstimate(input, settings, [aluminum]);
+  assert.equal(result.assembly.find(r => r.id === "panel-replacement-feeder")?.extendedCost, 66.298);
+  for (const rows of [
+    [], [aluminum, { ...aluminum }], [{ ...aluminum, unit: "m" }],
+    [{ ...aluminum, supplier: null }], [{ ...aluminum, sourceDate: null }],
+    [{ ...aluminum, unitCost: 0 }], [{ ...aluminum, isDefault: true }],
+    [{ ...aluminum, item: "4/0 copper SER cable" }],
+    [{ ...aluminum, item: "4/0 aluminum XHHW conductor" }],
+  ]) {
+    const invalid = calculatePanelReplacementEstimate(input, settings, rows);
+    assert.equal(invalid.assembly.find(r => r.id === "panel-replacement-feeder")?.unitCost, 0);
+  }
+  for (const partial of [
+    { panelAmperage: 100 as const, breakerAmperage: 100 },
+    { breakerAmperage: 150 }, { breakerPoleCount: 1 },
+    { feederConductor: "2/0 copper SER" as const },
+  ]) {
+    const invalid = calculatePanelReplacementEstimate({ ...input, ...partial }, settings, [aluminum, copper]);
+    assert.equal(invalid.assembly.find(r => r.id === "panel-replacement-feeder")?.unitCost, 0);
+  }
+  const noCopper = calculatePanelReplacementEstimate({
+    ...input, feederConductor: "2/0 copper SER", exactCatalogParts: {},
+  }, settings, [aluminum, catalogRow("2/0 copper service conductor alternative", 9)]);
+  assert.equal(noCopper.assembly.find(r => r.id === "panel-replacement-feeder")?.unitCost, 0);
+  assert.match(JSON.stringify(noCopper.pricing.pricingWarnings), /2\/0 copper SER cable/);
+});
+
 const panelReplacementPriceBook: PriceBookItem[] = [
   ...servicePriceBook,
   catalogRow("Siemens 200A panel replacement enclosure", 480, {
@@ -3553,11 +3630,11 @@ test("every service and panel builder material is assigned only to its consuming
     { kind: "exact", key: "25807", builders: ["Service Upgrade"] },
     { kind: "exact", key: "18745", builders: ["Service Upgrade"] },
     { kind: "exact", key: "26466", builders: ["Service Upgrade", "Panel Replacement"] },
-    { kind: "exact", key: "28551", builders: ["Service Upgrade"] },
-    { kind: "exact", key: "79651", builders: ["Service Upgrade"] },
-    { kind: "exact", key: "1266468", builders: ["Service Upgrade"] },
-    { kind: "exact", key: "239663", builders: ["Service Upgrade"] },
-    { kind: "exact", key: "300640", builders: ["Service Upgrade"] },
+    { kind: "exact", key: "28551", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "79651", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "1266468", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "239663", builders: ["Service Upgrade", "Panel Replacement"] },
+    { kind: "exact", key: "300640", builders: ["Service Upgrade", "Panel Replacement"] },
     { kind: "exact", key: "17742", builders: ["Service Upgrade", "Panel Replacement"] },
     { kind: "exact", key: "35113", builders: ["Service Upgrade", "Panel Replacement"] },
     { kind: "exact", key: "86163", builders: ["Service Upgrade", "Panel Replacement"] },

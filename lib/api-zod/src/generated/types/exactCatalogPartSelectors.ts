@@ -21,6 +21,7 @@ export interface ExactCatalogPartSelectors {
   mastNinety?: string;
   mastCoupling?: string;
   serviceToPanelConductor?: string;
+  feederConductor?: string;
   serviceToPanelRaceway?: string;
   groundBar?: string;
   groundRod?: string;

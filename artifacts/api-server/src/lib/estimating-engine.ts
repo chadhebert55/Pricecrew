@@ -26,6 +26,7 @@ export type PriceBookItem = {
   id?: number;
   category: string;
   item: string;
+  unit?: string;
   unitCost: number;
   supplier: string | null;
   manufacturer: string | null;
@@ -291,7 +292,8 @@ function warningMetadata(message: string): WarningMetadata {
       },
     };
   }
-  if (message.includes("Panel Replacement assumptions")) {
+  if (message.includes("Panel Replacement assumptions") ||
+      message.startsWith("Existing feeder cable reuse requires field verification")) {
     return {
       code: "PANEL_REPLACEMENT_FIELD_REVIEW",
       severity: "warning",
@@ -657,11 +659,11 @@ const EXACT_SELECTOR_SKU_BUILDERS: Record<
   "25807": ["Service Upgrade"],
   "18745": ["Service Upgrade"],
   "26466": ["Service Upgrade", "Panel Replacement"],
-  "28551": ["Service Upgrade"],
-  "79651": ["Service Upgrade"],
-  "1266468": ["Service Upgrade"],
-  "239663": ["Service Upgrade"],
-  "300640": ["Service Upgrade"],
+  "28551": ["Service Upgrade", "Panel Replacement"],
+  "79651": ["Service Upgrade", "Panel Replacement"],
+  "1266468": ["Service Upgrade", "Panel Replacement"],
+  "239663": ["Service Upgrade", "Panel Replacement"],
+  "300640": ["Service Upgrade", "Panel Replacement"],
   "17742": ["Service Upgrade", "Panel Replacement"],
   "35113": ["Service Upgrade", "Panel Replacement"],
   "86163": ["Service Upgrade", "Panel Replacement"],
@@ -817,6 +819,8 @@ export function auditPriceBookItem(
     builders,
     "Panel Replacement",
     name.includes("panel") ||
+      name === "4 0 aluminum ser cable" ||
+      name === "2 0 copper ser cable" ||
       name.includes("feeder") ||
       name.includes("ground bar") ||
       name.includes("ground rod") ||
@@ -4021,6 +4025,9 @@ export function calculatePanelReplacementEstimate(
   );
 
   const feederKey = {
+    "4/0 aluminum SER": "4/0 aluminum SER cable",
+    "2/0 copper SER": "2/0 copper SER cable",
+    "Reuse existing cable": "",
     "1/0 aluminum XHHW conductor": "1/0 aluminum XHHW conductor",
     "3/0 aluminum XHHW conductor": "3/0 aluminum XHHW conductor",
     "4/0 aluminum XHHW conductor": "4/0 aluminum XHHW conductor",
@@ -4041,17 +4048,29 @@ export function calculatePanelReplacementEstimate(
     ],
     200: ["4/0 aluminum XHHW conductor"],
   };
+  const reusingFeeder = inputs.feederConductor === "Reuse existing cable";
+  const serFeeder = inputs.feederConductor === "4/0 aluminum SER" ||
+    inputs.feederConductor === "2/0 copper SER";
   const feederIsCompatible =
     breakerMatchesPanel &&
+    (serFeeder ? panelAmperage === 200 : (
     inputs.feederConductorQuantity === 3 &&
     (compatibleFeederConductors[breakerAmperage]?.includes(
       inputs.feederConductor,
     ) ??
-      false);
+      false)));
   const feederQuantity =
     safeNumber(inputs.feederLength) *
-    safeNumber(inputs.feederConductorQuantity);
-  if (!feederIsCompatible) {
+    (serFeeder ? 1 : safeNumber(inputs.feederConductorQuantity));
+  if (reusingFeeder) {
+    addLine(assembly, {
+      id: "panel-replacement-feeder", category: "Feeder",
+      description: "Reuse existing feeder cable", quantity: 1, unit: "ea",
+      unitCost: 0, source: "Contractor selected existing cable reuse",
+      intentionalExclusionReason: "Existing cable reused; no new feeder cable purchased. Labor remains separate.",
+    });
+    pricingWarnings.push("Existing feeder cable reuse requires field verification of condition, conductor size/material, ampacity, length, terminations, grounding and suitability for the selected panel. Reuse is an estimating assumption, not a code approval.");
+  } else if (!feederIsCompatible) {
     pricingWarnings.push(
       `The selected panel/breaker/feeder tuple (${panelAmperage}A panel, ${breakerAmperage}A ${breakerPoleCount}-pole breaker, ${inputs.feederConductorQuantity} × ${inputs.feederConductor}) does not meet the selected breaker amperage and supported configuration. No feeder conductor cost was substituted; confirm an exact compatible tuple before quoting.`,
     );
@@ -4065,7 +4084,20 @@ export function calculatePanelReplacementEstimate(
       source: "Unresolved feeder compatibility — select a supported conductor",
     });
   } else {
-    const feeder = unitCost(feederKey, priceBook, pricingWarnings);
+    const selection = inputs.exactCatalogParts?.feederConductor;
+    const compatibleSer = (item: PriceBookItem) =>
+      itemInCategory(item, "Conductor") &&
+      itemHasTerms(item, ...(inputs.feederConductor === "4/0 aluminum SER"
+        ? ["4/0", "aluminum", "ser"] : ["2/0", "copper", "ser"])) &&
+      normalized(item.unit ?? "") === "ft" &&
+      hasSourceBackedCatalogPricing(item);
+    const feeder = serFeeder
+      ? exactCatalogCost(
+          selection || feederKey, "feederConductor", priceBook, pricingWarnings, compatibleSer,
+        )!
+      : selection
+        ? exactCatalogCost(selection, "feederConductor", priceBook, pricingWarnings, () => false)!
+        : unitCost(feederKey, priceBook, pricingWarnings);
     addLine(assembly, {
       id: "panel-replacement-feeder",
       category: "Feeder",
@@ -4076,6 +4108,10 @@ export function calculatePanelReplacementEstimate(
       source: feeder.source,
     });
   }
+  // Absent flags preserve historical individual-conductor quotes. New SER/reuse
+  // choices ignore retained raceway quantities unless explicitly enabled.
+  const includeFeederRaceway = inputs.includeFeederRaceway ?? (!serFeeder && !reusingFeeder);
+  if (includeFeederRaceway) {
   addExactOrLegacy(
     "feeder-raceway",
     "Raceway",
@@ -4100,6 +4136,7 @@ export function calculatePanelReplacementEstimate(
       itemInCategory(item, "Raceway") &&
       itemHasTerms(item, "2 inch", "coupling"),
   );
+  }
 
   addExactOrLegacy(
     "panel-ground-bars",

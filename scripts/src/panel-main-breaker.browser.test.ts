@@ -123,3 +123,116 @@ test("Panel Replacement exact Siemens panel includes one main and persists safel
     }
   }
 })
+
+// QA: all three cable choices, exact aluminum identity, per-foot math, optional
+// raceway round-trip, missing copper price, draft/revision persistence, legacy
+// individual-conductor mode, small-screen fit and light/dark screenshots.
+test("Panel Replacement SER and existing-cable reuse persist without automatic raceway", async ({
+  browser, request,
+}, testInfo) => {
+  const marker = randomUUID()
+  const userId = `panel_ser_${marker}`
+  const headers = { "x-test-clerk-user-id": userId }
+  let companyId: number | undefined
+  const context = await browser.newContext({ extraHTTPHeaders: headers, viewport: { width: 1280, height: 900 } })
+  try {
+    await request.get(`${apiUrl}/api/settings`, { headers })
+    const [membership] = await db.select().from(companyMembersTable).where(eq(companyMembersTable.userId, userId))
+    companyId = membership!.companyId
+    const cable = "Wia 4/0 aluminum SER — SKU 28551"
+    await db.insert(priceBookItemsTable).values({
+      companyId, category: "Conductor", item: cable, unit: "ft", unitCost: 4.419839,
+      supplier: "Test verified supplier", supplierSku: "28551", sourceDate: "2026-08-25",
+      isDefault: false, isContractorOwned: false,
+    })
+    const page = await context.newPage()
+    const nextPreview = () => page.waitForResponse(r => r.url().endsWith("/api/quotes/preview"))
+    let response = nextPreview()
+    await page.goto(`/quotes/new/panel-replacement?draftScope=ser-${marker}`)
+    await response
+    const mode = page.getByTestId("select-feeder-cond")
+    const raceway = page.getByTestId("checkbox-feeder-raceway")
+    await expect(mode).toHaveValue("4/0 aluminum SER")
+    await expect(raceway).not.toBeChecked()
+    await expect(page.getByTestId("input-feeder-qty")).toHaveCount(0)
+    response = nextPreview()
+    await page.getByTestId("select-feeder-cable-product").selectOption(cable)
+    await response
+    response = nextPreview()
+    await page.getByTestId("input-feeder-len").fill("12")
+    const aluminum = await (await response).json()
+    const line = aluminum.assembly.find((r: { id: string }) => r.id === "panel-replacement-feeder")
+    expect(line.quantity).toBe(12)
+    expect(line.extendedCost).toBe(53.038)
+    expect(aluminum.assembly.some((r: { id: string }) => r.id.startsWith("feeder-raceway"))).toBe(false)
+    response = nextPreview()
+    await raceway.check()
+    const withRaceway = await (await response).json()
+    expect(withRaceway.assembly.some((r: { id: string }) => r.id === "feeder-raceway")).toBe(true)
+    response = nextPreview()
+    await raceway.uncheck()
+    await response
+    await mode.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath("ser-desktop.png") })
+    response = nextPreview()
+    await mode.selectOption("2/0 copper SER")
+    const copper = await (await response).json()
+    expect(copper.assembly.find((r: { id: string }) => r.id === "panel-replacement-feeder").unitCost).toBe(0)
+    expect(JSON.stringify(copper.pricing.pricingWarnings)).toContain("2/0 copper SER cable")
+    response = nextPreview()
+    await mode.selectOption("Reuse existing cable")
+    const reused = await (await response).json()
+    expect(reused.assembly.find((r: { id: string }) => r.id === "panel-replacement-feeder").intentionalExclusionReason).toContain("no new feeder cable")
+    expect(reused.pricing.laborCost).toBe(aluminum.pricing.laborCost)
+    await expect(page.getByTestId("input-feeder-len")).toHaveCount(0)
+    await expect(raceway).not.toBeChecked()
+    // Reload draft and verify the explicit choice is not replaced by defaults.
+    await expect.poll(() => page.evaluate("JSON.stringify(localStorage).includes('Reuse existing cable')")).toBe(true)
+    await page.reload()
+    await page.getByTestId("button-restore-quote-draft").click()
+    await expect(mode).toHaveValue("Reuse existing cable")
+    await page.setViewportSize({ width: 375, height: 812 })
+    await mode.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath("ser-reuse-mobile.png") })
+    expect(await page.evaluate("document.documentElement.scrollWidth")).toBeLessThanOrEqual(375)
+    await page.evaluate("document.documentElement.classList.add('dark')")
+    await page.screenshot({ path: testInfo.outputPath("ser-reuse-dark.png") })
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.locator("#pr-customer").fill(`SER test ${marker}`)
+    await page.locator("#pr-project").fill("Reuse regression")
+    await page.getByRole("button", { name: "Generate Quote" }).click()
+    await expect(page).toHaveURL(/\/quotes\/\d+$/)
+    const id = Number(page.url().split("/").at(-1))
+    const original = await (await request.get(`${apiUrl}/api/quotes/${id}`, { headers })).json()
+    await page.reload()
+    await page.getByTestId("button-duplicate-quote").click()
+    await expect(mode).toHaveValue("Reuse existing cable")
+    await expect(raceway).not.toBeChecked()
+    response = nextPreview()
+    await mode.selectOption("4/0 aluminum XHHW conductor")
+    await response
+    await expect(raceway).toBeChecked()
+    await expect(page.getByTestId("input-feeder-qty")).toHaveValue("3")
+    response = nextPreview()
+    await mode.selectOption("4/0 aluminum SER")
+    await response
+    await expect(raceway).not.toBeChecked()
+    await expect(page.getByTestId("select-feeder-cable-product")).toHaveValue("")
+    await page.getByRole("button", { name: "Generate Quote" }).click()
+    await expect(page).toHaveURL(/\/quotes\/\d+$/)
+    expect(Number(page.url().split("/").at(-1))).not.toBe(id)
+    const unchanged = await (await request.get(`${apiUrl}/api/quotes/${id}`, { headers })).json()
+    expect(unchanged.jobInputs).toEqual(original.jobInputs)
+    expect(unchanged.pricing).toEqual(original.pricing)
+  } finally {
+    await context.close()
+    if (companyId !== undefined) {
+      await db.delete(quotesTable).where(eq(quotesTable.companyId, companyId))
+      await db.delete(customersTable).where(eq(customersTable.companyId, companyId))
+      await db.delete(priceBookItemsTable).where(eq(priceBookItemsTable.companyId, companyId))
+      await db.delete(companySettingsTable).where(eq(companySettingsTable.companyId, companyId))
+      await db.delete(companyMembersTable).where(eq(companyMembersTable.userId, userId))
+      await db.delete(companiesTable).where(eq(companiesTable.id, companyId))
+    }
+  }
+})

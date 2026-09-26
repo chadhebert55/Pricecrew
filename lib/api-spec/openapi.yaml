@@ -2899,12 +2899,18 @@ components:
         feederConductor:
           type: string
           enum:
+            - 4/0 aluminum SER
+            - 2/0 copper SER
+            - Reuse existing cable
             - 1/0 aluminum XHHW conductor
             - 3/0 aluminum XHHW conductor
             - 4/0 aluminum XHHW conductor
             - 1/0 copper service conductor alternative
             - 2/0 copper service conductor alternative
             - Other configured feeder conductor
+        includeFeederRaceway:
+          type: boolean
+          description: Optional job-specific raceway. When omitted, legacy individual-conductor quotes retain raceway; SER and reuse do not add it automatically.
         feederLength:
           type: number
           minimum: 0
@@ -3312,6 +3318,7 @@ components:
         mastNinety: { type: string }
         mastCoupling: { type: string }
         serviceToPanelConductor: { type: string }
+        feederConductor: { type: string }
         serviceToPanelRaceway: { type: string }
         groundBar: { type: string }
         groundRod: { type: string }

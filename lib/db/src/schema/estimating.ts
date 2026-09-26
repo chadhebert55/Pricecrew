@@ -40,6 +40,9 @@ export type PanelReplacementType =
   | "Subpanel addition";
 export type PanelReplacementPanelManufacturer = "Siemens" | "Eaton" | "Square D";
 export type PanelReplacementFeederConductor =
+  | "4/0 aluminum SER"
+  | "2/0 copper SER"
+  | "Reuse existing cable"
   | "1/0 aluminum XHHW conductor"
   | "3/0 aluminum XHHW conductor"
   | "4/0 aluminum XHHW conductor"
@@ -412,6 +415,7 @@ export type PanelReplacementInputRecord = {
   breakerPoleCount: number;
   breakerProtectionType: string;
   feederConductor: PanelReplacementFeederConductor;
+  includeFeederRaceway?: boolean;
   feederLength: number;
   feederConductorQuantity: number;
   feederRacewayFootage: number;
@@ -563,6 +567,7 @@ export type ExactCatalogPartSelectors = {
   mastNinety?: string;
   mastCoupling?: string;
   serviceToPanelConductor?: string;
+  feederConductor?: string;
   serviceToPanelRaceway?: string;
   groundBar?: string;
   groundRod?: string;
