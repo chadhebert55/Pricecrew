@@ -13,6 +13,8 @@ const row=(item:string,unitCost=10,extra:Partial<PriceBookItem>={}):PriceBookIte
 });
 export const kitchenTestCatalog:PriceBookItem[] = [
   ...["12/2 NM-B","14/2 NM-B","14/3 NM-B","10/3 NM-B","8/3 NM-B","6/3 NM-B","4/3 NM-B"].map(c=>row(`${c} cable`,2)),
+  ...["12/2 NM-B","14/2 NM-B","14/3 NM-B","10/3 NM-B","8/3 NM-B","6/3 NM-B","4/3 NM-B"].map(c=>row(`NM cable connector for ${c}`)),
+  ...["toggle switch wall plate","Electric range hardwired connection box","Wall oven hardwired connection box"].map(k=>row(k)),
   ...["Pass & Seymour 3232-TRW 15A TR duplex receptacle","USB receptacle","sink light","island pendant",
     "undercabinet lighting","Juno WF4DREGSMAL 4-inch regressed wafer light","Pass & Seymour TM873-W 15A 3-way switch — SKU 32128",
     "Pass & Seymour S1-18-W 1-gang box — SKU 18134","Legrand radiant TM874WCC10 15A 4-way switch",
@@ -29,6 +31,7 @@ export const modernKitchenInputs:KitchenInputRecord = {
   additionalDedicatedCircuits:0,routeLength:30,includeLightingCircuit:true,lightingCircuitFootage:40,
   smallApplianceCircuits:2,microwaveCircuits:1,applianceHomeRun12_2Length:60,customerSuppliedFixtures:true,
   customerSuppliedRecessedLights:false,notes:"",panelManufacturer:"Siemens",cableType:"12/2 NM-B",laborAdjustmentHours:0,
+  circuitConfigurations: ["electricRangeCircuits","wallOvenCircuits"].map(key=>({...defaultCircuit(key),connectionMethod:"Hardwired" as const})),
 };
 const scenarios:Array<[string,Partial<KitchenInputRecord>,number,number]> = [
   ["typical kitchen",{},7,400],

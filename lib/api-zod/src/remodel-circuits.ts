@@ -8,6 +8,7 @@ export type RemodelCircuit = {
   protectionType: string;
   cableType: string;
   routeLength?: number;
+  connectionMethod?: "Unspecified" | "Receptacle-connected" | "Hardwired";
 };
 export const circuitCables = ["14/2 NM-B", "14/3 NM-B", "12/2 NM-B", "12/3 NM-B", "10/2 NM-B", "10/3 NM-B", "8/3 NM-B", "6/3 NM-B", "4/3 NM-B"];
 export const circuitProtections = ["Standard", "AFCI", "GFCI", "Dual Function"];

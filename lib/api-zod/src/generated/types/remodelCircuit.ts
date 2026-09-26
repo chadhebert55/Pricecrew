@@ -7,10 +7,12 @@
  */
 import type { RemodelCircuitAmperage } from './remodelCircuitAmperage';
 import type { RemodelCircuitCableType } from './remodelCircuitCableType';
+import type { RemodelCircuitConnectionMethod } from './remodelCircuitConnectionMethod';
 import type { RemodelCircuitPoleCount } from './remodelCircuitPoleCount';
 import type { RemodelCircuitProtectionType } from './remodelCircuitProtectionType';
 
 export interface RemodelCircuit {
+  connectionMethod?: RemodelCircuitConnectionMethod;
   key: string;
   label?: string;
   /** @minimum 0 */

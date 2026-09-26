@@ -5,8 +5,20 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MaterialPreference } from './materialPreference';
+import type { PriceBookItemUpdateNormalizedUnit } from './priceBookItemUpdateNormalizedUnit';
 
 export interface PriceBookItemUpdate {
   /** @minimum 0 */
-  unitCost: number;
+  unitCost?: number;
+  /** @maxItems 50 */
+  materialPreferences?: MaterialPreference[];
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  panelFamily?: string | null;
+  normalizedUnit?: PriceBookItemUpdateNormalizedUnit;
+  /** @minimum 0.000001 */
+  supplierUnitQuantity?: number;
 }

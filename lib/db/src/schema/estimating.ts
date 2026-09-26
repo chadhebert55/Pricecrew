@@ -73,6 +73,11 @@ export type PriceBookImportRowStatus =
   | "unresolved";
 
 export type PriceBookImportValueRecord = {
+  supplierCost?: number | null;
+  supplierUom?: string | null;
+  normalizedUnit?: string | null;
+  normalizedUnitCost?: number | null;
+  supplierUnitQuantity?: number | null;
   category: string;
   item: string;
   unit: string;
@@ -192,6 +197,7 @@ export type BathroomInputRecord = {
 };
 
 export type RemodelCircuitRecord = {
+  connectionMethod?: "Unspecified" | "Receptacle-connected" | "Hardwired";
   key: string; label?: string; quantity: number; amperage: number;
   poleCount: number; protectionType: string; cableType: string; routeLength?: number;
 };
@@ -639,6 +645,31 @@ export type AssemblyLineRecord = {
   extendedCost: number;
   source: string;
   intentionalExclusionReason?: string;
+  resolutionStatus?: string;
+  materialSnapshot?: MaterialSnapshot;
+  materialRequestKey?: string;
+};
+
+export type MaterialPreference = {
+  requestKey: string;
+  kind: "exact" | "manufacturer" | "family" | "alternate";
+  manufacturer?: string;
+};
+
+export type MaterialSnapshot = {
+  catalogId: number | null;
+  requestKey: string;
+  supplier: string | null;
+  supplierSku: string | null;
+  manufacturer: string | null;
+  manufacturerPartNumber: string | null;
+  description: string;
+  supplierCost: number | null;
+  supplierUom: string | null;
+  normalizedUnit: string | null;
+  normalizedUnitCost: number | null;
+  sourceDate: string | null;
+  resolutionStatus: string;
 };
 
 export type DeliberateLossApproval = {
@@ -960,6 +991,13 @@ export const priceBookItemsTable = pgTable("price_book_items", {
   protectionType: text("protection_type"),
   isDefault: boolean("is_default").notNull().default(true),
   isContractorOwned: boolean("is_contractor_owned").notNull().default(false),
+  supplierCost: numeric("supplier_cost", { precision: 15, scale: 6, mode: "number" }),
+  supplierUom: text("supplier_uom"),
+  normalizedUnit: text("normalized_unit"),
+  normalizedUnitCost: numeric("normalized_unit_cost", { precision: 15, scale: 6, mode: "number" }),
+  supplierUnitQuantity: numeric("supplier_unit_quantity", { precision: 15, scale: 6, mode: "number" }),
+  materialPreferences: jsonb("material_preferences").$type<MaterialPreference[]>().notNull().default([]),
+  panelFamily: text("panel_family"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()

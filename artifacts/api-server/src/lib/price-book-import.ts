@@ -3,6 +3,7 @@ import type {
   PriceBookImportRowRecord,
   PriceBookImportValueRecord,
 } from "@workspace/db";
+import { normalizeSupplierCost } from "./material-resolution";
 
 type ExistingPriceBookItem = PriceBookImportValueRecord & {
   id: number;
@@ -152,6 +153,7 @@ function parseIncomingRow(
   const packageQuantity = parseNumber(
     cell(row, column(headers, ["packagequantity", "packqty", "quantityperpackage"])),
   );
+  const baseUnit = nullable(cell(row, column(headers, ["normalizedunit", "baseunit", "internalunit"])));
   const normalizedUnit = unitValue?.toLowerCase() ?? "";
   const isWireFamily =
     category?.toLowerCase().includes("conductor") ||
@@ -177,12 +179,20 @@ function parseIncomingRow(
       unitCost = rawCost / 1000;
     }
   } else if (!deferUnits && (normalizedUnit === "c" || normalizedUnit.includes("package"))) {
-    if (!packageQuantity || packageQuantity <= 0) {
+    if (!packageQuantity || packageQuantity <= 0 || (normalizedUnit === "c" && packageQuantity !== 100)) {
       reason =
         "Ambiguous package unit; include a positive package quantity before importing.";
     } else {
+      unit = baseUnit ?? "ea";
       unitCost = rawCost / packageQuantity;
     }
+  } else if (!deferUnits && !["ea", "each", "ft", "feet", "foot", "sheet", "set", "kit", "lot", "scope", "hour", "hr", "pair"].includes(normalizedUnit)) {
+    reason = "Unknown supplier unit; verify the base unit and conversion before importing.";
+  }
+  if (!reason && !deferUnits && rawCost != null) {
+    const converted = normalizeSupplierCost(rawCost, unitValue ?? "", unit, packageQuantity);
+    if (!converted) reason = "Supplier unit cannot be safely normalized; confirm its base unit and package quantity.";
+    else { unit = converted.normalizedUnit; unitCost = converted.normalizedUnitCost; }
   }
   if (!reason && rawSourceDate && !sourceDateValue) {
     reason =
@@ -194,6 +204,11 @@ function parseIncomingRow(
     item: item ?? "",
     unit,
     unitCost: Number(unitCost.toFixed(6)),
+    supplierCost: rawCost,
+    supplierUom: unitValue,
+    normalizedUnit: reason || deferUnits ? null : unit,
+    normalizedUnitCost: reason || deferUnits ? null : Number(unitCost.toFixed(6)),
+    supplierUnitQuantity: reason || deferUnits ? null : rawCost && unitCost ? rawCost / unitCost : 1,
     supplier: nullable(cell(row, column(headers, ["supplier", "vendor"]))),
     manufacturer: nullable(
       cell(row, column(headers, ["manufacturer", "brand"])),
@@ -263,6 +278,11 @@ function sameValue(
     left.item === right.item &&
     left.unit === right.unit &&
     left.unitCost === right.unitCost &&
+    // Older previews did not retain raw pricing. Enrich metadata on the next
+    // actual price update without turning every unchanged legacy row into an update.
+    (left.supplierCost == null || (left.supplierCost === right.supplierCost &&
+      left.supplierUom === right.supplierUom && left.normalizedUnit === right.normalizedUnit &&
+      left.normalizedUnitCost === right.normalizedUnitCost)) &&
     left.supplier === right.supplier &&
     left.manufacturer === right.manufacturer &&
     left.manufacturerPartNumber === right.manufacturerPartNumber &&
@@ -281,6 +301,11 @@ function importValue(value: PriceBookImportValueRecord): PriceBookImportValueRec
     item: value.item,
     unit: value.unit,
     unitCost: value.unitCost,
+    supplierCost: value.supplierCost,
+    supplierUom: value.supplierUom,
+    normalizedUnit: value.normalizedUnit,
+    normalizedUnitCost: value.normalizedUnitCost,
+    supplierUnitQuantity: value.supplierUnitQuantity,
     supplier: value.supplier,
     manufacturer: value.manufacturer,
     manufacturerPartNumber: value.manufacturerPartNumber,
@@ -449,13 +474,21 @@ export function parsePriceBookImport(
         && /conductor|wire|cable|thhn|xhhw|ser|nm-b/i.test(`${match.category} ${match.item}`)) {
         incoming.unit = match.unit;
         incoming.unitCost = Number((incoming.unitCost / 1000).toFixed(6));
-      } else if (rawUnit === "c" && match && /\b100(?:[\s-]+)(?:unit|foot|feet|ft|count|pack)/i.test(match.item)) {
+      } else if (rawUnit === "c" && match && (
+        (match.supplierUom?.toLowerCase() === "c" && match.normalizedUnit && match.supplierUnitQuantity === 100) ||
+        /\b100(?:[\s-]+)(?:unit|foot|feet|ft|count|pack)/i.test(match.item))) {
         incoming.unit = match.unit;
         incoming.unitCost = Number((incoming.unitCost / 100).toFixed(6));
       } else {
         unsafeUnit = true;
       }
       incoming.category = match?.category ?? "Supplier catalog";
+      if (!unsafeUnit) {
+        const conversion = normalizeSupplierCost(incoming.supplierCost ?? incoming.unitCost, rawUnit,
+          incoming.unit, match?.supplierUnitQuantity);
+        if (!conversion) unsafeUnit = true;
+        else Object.assign(incoming, conversion, { unit: conversion.normalizedUnit, unitCost: conversion.normalizedUnitCost });
+      }
       if (unsafeUnit) {
         rows.push({
           rowNumber, action: "unresolved", status: "unresolved", stale: false,

@@ -7,6 +7,16 @@
  */
 
 export interface PriceBookImportValue {
+  /** @nullable */
+  supplierCost?: number | null;
+  /** @nullable */
+  supplierUom?: string | null;
+  /** @nullable */
+  normalizedUnit?: string | null;
+  /** @nullable */
+  normalizedUnitCost?: number | null;
+  /** @nullable */
+  supplierUnitQuantity?: number | null;
   category: string;
   item: string;
   unit: string;

@@ -4,17 +4,20 @@ import {
   useListPriceBookImports,
   useListPriceBookItems,
   useUpdatePriceBookItem,
+  getListPriceBookItemsQueryKey,
 } from "@workspace/api-client-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { AlertTriangle, CheckCircle2, FileClock, Search, Save, BookOpen } from "lucide-react"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PriceBookImportPanel } from "@/components/price-book-import-panel"
 
 export function PriceBook() {
+  const requestedMaterial = new URLSearchParams(window.location.search).get("material") ?? ""
   const { data: items, isLoading } = useListPriceBookItems()
   const [historyPage, setHistoryPage] = useState(1)
   const [activeImport, setActiveImport] = useState<PriceBookImport | null>(null)
@@ -22,11 +25,12 @@ export function PriceBook() {
     page: historyPage,
     pageSize: 10,
   })
-  const updateItem = useUpdatePriceBookItem()
+  const queryClient = useQueryClient()
+  const updateItem = useUpdatePriceBookItem({mutation:{onSuccess:()=>queryClient.invalidateQueries({queryKey:getListPriceBookItemsQueryKey()})}})
   const [search, setSearch] = useState("")
   const [builder, setBuilder] = useState("all")
   const [category, setCategory] = useState("all")
-  const [status, setStatus] = useState("unresolved")
+  const [status, setStatus] = useState(requestedMaterial ? "verified" : "unresolved")
 
   const allItems = items ?? []
   const normalizedSearch = search.trim().toLowerCase()
@@ -40,6 +44,7 @@ export function PriceBook() {
     const matchesSearch =
       !normalizedSearch ||
       item.item.toLowerCase().includes(normalizedSearch) ||
+      [item.supplier, item.supplierSku, item.manufacturer, item.manufacturerPartNumber].some(v=>v?.toLowerCase().includes(normalizedSearch)) ||
       item.category.toLowerCase().includes(normalizedSearch) ||
       item.builders.some((name) => name.toLowerCase().includes(normalizedSearch))
     const matchesBuilder = builder === "all" || item.builders.includes(builder)
@@ -69,6 +74,10 @@ export function PriceBook() {
         review={activeImport}
         onReviewChange={setActiveImport}
       />
+      {requestedMaterial && <div className="rounded-md border border-primary/40 p-4 text-sm">
+        <strong>Select a company material for: {requestedMaterial}</strong>
+        <p className="mt-1 text-muted-foreground">Search by SKU, part or description. Approve only an electrically compatible item with the correct unit. This saves a company preference for future calculations, not a change to existing quote snapshots.</p>
+      </div>}
 
       <PriceBookImportHistory
         history={importHistory.data}
@@ -163,7 +172,7 @@ export function PriceBook() {
                     </TableHeader>
                     <TableBody>
                       {filteredItems.filter(i => i.category === category).map(item => (
-                        <PriceBookRow key={item.id} item={item} updateItem={updateItem} />
+                        <PriceBookRow key={item.id} item={item} updateItem={updateItem} requestedMaterial={requestedMaterial} />
                       ))}
                     </TableBody>
                   </Table>
@@ -370,12 +379,16 @@ function PriceBookImportHistory({
 function PriceBookRow({
   item,
   updateItem,
+  requestedMaterial,
 }: {
   item: PriceBookItem
   updateItem: ReturnType<typeof useUpdatePriceBookItem>
+  requestedMaterial: string
 }) {
   const [cost, setCost] = useState(item.unitCost.toString())
   const [isDirty, setIsDirty] = useState(false)
+  const [family, setFamily] = useState(requestedMaterial)
+  const [savedMessage, setSavedMessage] = useState("")
   const isPending = updateItem.isPending
   const isCompanyAllowance =
     item.item.toLowerCase().startsWith("unverified allowance") ||
@@ -419,6 +432,28 @@ function PriceBookRow({
                 : item.auditMessage}
             </p>
           )}
+          <details className="text-xs font-normal">
+            <summary className="cursor-pointer">Company material preference</summary>
+            <div className="mt-2 space-y-2">
+              {(item.materialPreferences ?? []).map((p,i)=><div key={`${p.requestKey}-${i}`} className="flex items-center gap-2">
+                <span>{p.requestKey} · {p.kind}{p.manufacturer ? ` · ${p.manufacturer}` : ""}</span>
+                <Button type="button" size="sm" variant="ghost" disabled={isPending}
+                  onClick={()=>updateItem.mutate({id:item.id,data:{materialPreferences:(item.materialPreferences ?? []).filter((_,n)=>n!==i)}},
+                    {onSuccess:()=>setSavedMessage("Preference removed. Refresh the Price Book to review.")})}>Remove</Button>
+              </div>)}
+              <Input aria-label={`Material request for ${item.item}`} value={family} placeholder="Exact builder material request / family" onChange={e=>setFamily(e.target.value)}/>
+              <Button type="button" size="sm" variant="outline" disabled={!family.trim() || item.isUnresolved || isPending}
+                onClick={()=>updateItem.mutate({id:item.id,data:{materialPreferences:[
+                  ...(item.materialPreferences ?? []).filter(p=>p.requestKey.trim().toLowerCase()!==family.trim().toLowerCase()),
+                  {requestKey:family.trim(),kind:"exact"}]}},
+                  {onSuccess:()=>setSavedMessage("Company preference saved. Recalculate a new or revised estimate to use it.")})}>
+                Use as company preferred
+              </Button>
+              <p className="text-muted-foreground">Approve compatibility first. If two items have the same preference, pricing stays blocked until the duplicate preference is removed.</p>
+              {savedMessage && <p role="status">{savedMessage}</p>}
+              {updateItem.isError && <p role="alert">Could not save the catalog change. Please retry.</p>}
+            </div>
+          </details>
         </div>
       </TableCell>
       <TableCell>
@@ -431,6 +466,7 @@ function PriceBookRow({
         </div>
       </TableCell>
       <TableCell className="text-xs text-muted-foreground">
+        {item.supplierCost != null && <p>Supplier: ${item.supplierCost} / {item.supplierUom}<br/>Normalized: ${item.normalizedUnitCost ?? "needs review"} / {item.normalizedUnit ?? "unconfirmed"}</p>}
         {item.manufacturer || item.supplier || item.upc ? (
           <div>
             {(item.manufacturer || item.manufacturerPartNumber) && <div className="font-medium text-foreground">{[item.manufacturer, item.manufacturerPartNumber].filter(Boolean).join(" ")}</div>}

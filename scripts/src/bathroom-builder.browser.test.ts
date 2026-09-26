@@ -29,7 +29,7 @@ test("Bathroom circuit scenarios, saved financials, safety and responsive draft 
       const result=await (await request.post(`${api}/quotes/preview`,{headers,data:{...initial,jobInputs}})).json()
       for(const w of result.pricing.pricingWarnings) if(w.context?.itemKey&&!/breaker/i.test(w.context.itemKey))keys.add(w.context.itemKey)
     }
-    for(const item of keys)await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.includes("cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
+    for(const item of keys)await db.insert(priceBookItemsTable).values({companyId,item,category:"Other",unit:item.endsWith(" cable")?"ft":"ea",unitCost:2,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})
     for(const [amperage,protectionType] of [[15,"AFCI"],[20,"Dual Function"],[20,"GFCI"]] as const)
       await db.insert(priceBookItemsTable).values({companyId,item:`Siemens ${amperage}A 1-pole ${protectionType} breaker`,category:"Protection",unit:"ea",unitCost:40,
         manufacturer:"Siemens",amperage,poleCount:1,protectionType,supplier:"QA only",sourceDate:"2026-09-26",isDefault:false})

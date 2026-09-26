@@ -2271,8 +2271,8 @@ test("editable drafts reprice from the current tenant catalog while issued quote
       category: firstFixture.category,
       item: fixtureName,
       unit: firstFixture.unit,
-      unitCost: 0,
-      supplier: "Unresolved duplicate fixture",
+      unitCost: 89,
+      supplier: "Equally valid duplicate fixture",
       sourceDate: "2026-08-31",
       isDefault: false,
     });

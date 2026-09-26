@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { pricingWarningMessage } from "@/lib/pricing-warnings"
 import type { ReactNode } from "react"
+import { MaterialResolution, MaterialSummary } from "./material-resolution"
 
 export const remodelSelectClass = "flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
 export function BuilderSection({ title, summary, children, open = false }: {title: string; summary?: string; children: ReactNode; open?: boolean}) {
@@ -36,6 +37,8 @@ export function CircuitFields({circuit, onChange, id, breakerOnly = false, defau
       <SelectField id={`${id}-poles`} label="Poles" value={c.poleCount} options={[1,2]} onChange={v=>onChange({...c,poleCount:Number(v)})}/>
       <SelectField id={`${id}-protection`} label="Protection" value={c.protectionType} options={circuitProtections} onChange={protectionType=>onChange({...c,protectionType})}/>
       {!breakerOnly && <>
+        {["electricRangeCircuits", "wallOvenCircuits", "dishwasherCircuits", "disposalCircuits"].includes(c.key) &&
+          <SelectField id={`${id}-connection`} label="Appliance connection" value={c.connectionMethod ?? (["dishwasherCircuits", "disposalCircuits"].includes(c.key) ? "Receptacle-connected" : "Unspecified")} options={["Unspecified", "Receptacle-connected", "Hardwired"]} onChange={v=>onChange({...c,connectionMethod:v as RemodelCircuit["connectionMethod"]})}/>}
         <SelectField id={`${id}-cable`} label="Circuit cable" value={c.cableType} options={circuitCables} onChange={cableType=>onChange({...c,cableType})}/>
         <div className="space-y-1.5"><Label htmlFor={`${id}-length`}>Home run (FT)</Label><Input id={`${id}-length`} type="number" min="0" step="any" value={c.routeLength ?? ""} placeholder={`Default: ${defaultLength ?? 0}`} onChange={e=>onChange({...c,routeLength:e.target.value === "" ? undefined : Math.max(0,Number(e.target.value)||0)})}/></div>
       </>}
@@ -81,8 +84,9 @@ export function PricingReview({pricing, assembly = []}: {pricing:PricingSummary;
       <p className="text-xs">Gross Margin: {(pricing.grossMargin*100).toFixed(1)}%</p>
       <LaborSummary pricing={pricing}/>
     </div>
-    <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm">Material takeoff ({assembly.length} lines)</summary><div className="mt-3 max-h-80 space-y-3 overflow-auto text-xs">
-      {assembly.map((line,i)=><div key={`${line.id}-${i}`} className="flex justify-between gap-3"><span>{line.description} × {line.quantity} {line.unit}</span><strong className="shrink-0">${line.extendedCost.toFixed(2)}</strong></div>)}
+    <MaterialSummary assembly={assembly}/>
+    <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm">Material takeoff ({assembly.length} lines)</summary><div className="mt-3 max-h-96 space-y-3 overflow-auto text-xs">
+      {assembly.map((line,i)=><div key={`${line.id}-${i}`} className="flex justify-between gap-3"><div><p>{line.description} × {line.quantity} {line.unit}</p><MaterialResolution line={line}/></div><strong className="shrink-0">{line.resolutionStatus === "CUSTOMER_SUPPLIED" ? "Supplied" : `$${line.extendedCost.toFixed(2)}`}</strong></div>)}
     </div></details>
   </>
 }
