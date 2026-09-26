@@ -29,6 +29,8 @@ export interface PanelReplacementInputs {
   breakerPoleCount: number;
   breakerProtectionType: PanelReplacementInputsBreakerProtectionType;
   feederConductor: PanelReplacementInputsFeederConductor;
+  /** Optional job-specific raceway. When omitted, legacy individual-conductor quotes retain raceway; SER and reuse do not add it automatically. */
+  includeFeederRaceway?: boolean;
   /** @minimum 0 */
   feederLength: number;
   /** @minimum 1 */

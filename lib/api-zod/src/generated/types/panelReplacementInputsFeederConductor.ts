@@ -10,6 +10,9 @@ export type PanelReplacementInputsFeederConductor = typeof PanelReplacementInput
 
 
 export const PanelReplacementInputsFeederConductor = {
+  '4/0_aluminum_SER': '4/0 aluminum SER',
+  '2/0_copper_SER': '2/0 copper SER',
+  Reuse_existing_cable: 'Reuse existing cable',
   '1/0_aluminum_XHHW_conductor': '1/0 aluminum XHHW conductor',
   '3/0_aluminum_XHHW_conductor': '3/0 aluminum XHHW conductor',
   '4/0_aluminum_XHHW_conductor': '4/0 aluminum XHHW conductor',

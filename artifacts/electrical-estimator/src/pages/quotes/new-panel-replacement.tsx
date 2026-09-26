@@ -25,6 +25,14 @@ import { QuoteBuilderRecovery, QuotePreviewRecovery } from "@/components/quote-b
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
 
+const serCatalogItems = [
+  "Wia 4/0 aluminum SER — SKU 28551",
+  "Wia 4/0 aluminum SER — SKU 79651",
+  "Wia 4/0 aluminum SER — SKU 1266468",
+  "Wia 4/0 aluminum SER — SKU 239663",
+  "Wia 4/0 aluminum SER — SKU 300640",
+]
+
 const exactCatalogItems = {
   panelProduct: "Square D HOM612L100R 100A 6-space MLO load center — SKU 79511",
   siemensMainBreakerPanel: "Siemens PN4040B1200C 200A 40-space panel — SKU 1552599",
@@ -39,6 +47,10 @@ const exactCatalogItems = {
 } as const
 
 type ExactCatalogPartKey = keyof NonNullable<PanelReplacementInputs["exactCatalogParts"]>
+
+function isSerFeeder(conductor: PanelReplacementInputs["feederConductor"]) {
+  return conductor === "4/0 aluminum SER" || conductor === "2/0 copper SER"
+}
 
 function isCompatiblePanelProduct(inputs: Pick<PanelReplacementInputs, "panelManufacturer" | "panelAmperage" | "panelSpaceCount">, item: string) {
   return (
@@ -63,9 +75,10 @@ const initialInputs: PanelReplacementInputs = {
   breakerPoleCount: 2,
   breakerProtectionType: "Standard",
   exactCatalogParts: { panelProduct: exactCatalogItems.siemensMainBreakerPanel },
-  feederConductor: "4/0 aluminum XHHW conductor",
+  feederConductor: "4/0 aluminum SER",
+  includeFeederRaceway: false,
   feederLength: 10,
-  feederConductorQuantity: 3,
+  feederConductorQuantity: 1,
   feederRacewayFootage: 10,
   feederRacewayFittingsQuantity: 4,
   groundBarQuantity: 1,
@@ -288,7 +301,11 @@ export function NewPanelReplacementQuote() {
       },
     }[panelAmperage]
     setInputs((current) => {
-      const next = { ...current, panelAmperage, ...defaults }
+      const keepCableChoice = isSerFeeder(current.feederConductor) || current.feederConductor === "Reuse existing cable"
+      const next = {
+        ...current, panelAmperage, ...defaults,
+        ...(keepCableChoice ? { feederConductor: current.feederConductor } : {}),
+      }
       const exactCatalogParts = { ...(next.exactCatalogParts ?? {}) }
       if (
         exactCatalogParts.panelProduct &&
@@ -297,6 +314,21 @@ export function NewPanelReplacementQuote() {
         delete exactCatalogParts.panelProduct
       }
       return { ...next, exactCatalogParts }
+    })
+  }
+
+  const reusingFeeder = inputs.feederConductor === "Reuse existing cable"
+  const serFeeder = isSerFeeder(inputs.feederConductor)
+  const includeFeederRaceway = inputs.includeFeederRaceway ?? (!serFeeder && !reusingFeeder)
+  const setFeeder = (feederConductor: PanelReplacementInputs["feederConductor"]) => {
+    setInputs(current => {
+      const exactCatalogParts = { ...(current.exactCatalogParts ?? {}) }
+      delete exactCatalogParts.feederConductor
+      return {
+        ...current, feederConductor, exactCatalogParts,
+        feederConductorQuantity: isSerFeeder(feederConductor) ? 1 : 3,
+        includeFeederRaceway: !isSerFeeder(feederConductor) && feederConductor !== "Reuse existing cable",
+      }
     })
   }
 
@@ -463,8 +495,11 @@ export function NewPanelReplacementQuote() {
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Feeder & Raceway</h3>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="pr-f-cond">Feeder Conductor</Label>
-                       <select id="pr-f-cond" data-testid="select-feeder-cond" className={selectClassName} value={inputs.feederConductor} onChange={(e) => setInputs(c => ({ ...c, feederConductor: e.target.value as PanelReplacementInputs["feederConductor"] }))}>
+                      <Label htmlFor="pr-f-cond">Feeder cable / conductor</Label>
+                       <select id="pr-f-cond" data-testid="select-feeder-cond" className={selectClassName} value={inputs.feederConductor} onChange={(e) => setFeeder(e.target.value as PanelReplacementInputs["feederConductor"])}>
+                        <option value="4/0 aluminum SER">New 4/0 aluminum SER</option>
+                        <option value="2/0 copper SER">New 2/0 copper SER</option>
+                        <option value="Reuse existing cable">Reuse existing cable</option>
                         <option value="1/0 aluminum XHHW conductor">1/0 aluminum XHHW conductor</option>
                         <option value="3/0 aluminum XHHW conductor">3/0 aluminum XHHW conductor</option>
                         <option value="4/0 aluminum XHHW conductor">4/0 aluminum XHHW conductor</option>
@@ -473,14 +508,46 @@ export function NewPanelReplacementQuote() {
                         <option value="Other configured feeder conductor">Other configured feeder conductor</option>
                       </select>
                     </div>
+                    <p className="text-sm text-muted-foreground md:col-span-2" data-testid="text-feeder-assumption">
+                      {reusingFeeder
+                        ? "No new cable cost. Verify existing cable condition, size, ampacity, length, terminations and suitability in the field. Labor remains separate."
+                        : serFeeder
+                          ? "Price by feet of complete SER cable, not individual conductors. These are configurable 200A estimating choices; verify the cable construction, installation conditions and suitability in the field."
+                          : "Individual conductors are priced by footage multiplied by conductor quantity."}
+                    </p>
+                    {inputs.feederConductor === "4/0 aluminum SER" && (
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="pr-ser-product">SER cable catalog item</Label>
+                        <select id="pr-ser-product" data-testid="select-feeder-cable-product" className={selectClassName} value={inputs.exactCatalogParts?.feederConductor ?? ""} onChange={e => setExactCatalogPart("feederConductor", e.target.value)}>
+                          <option value="">Company 4/0 aluminum SER cable price</option>
+                          {serCatalogItems.map(item => (
+                            <option key={item} value={item}>{item}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {inputs.feederConductor === "2/0 copper SER" && (
+                      <p className="text-sm text-muted-foreground md:col-span-2">
+                        Requires a sourced per-foot Price Book item named “2/0 copper SER cable”. Aluminum SER and individual copper conductor prices are not substitutes.
+                      </p>
+                    )}
+                    {!reusingFeeder && (
                     <div className="space-y-2">
-                      <Label htmlFor="pr-f-len">Feeder Length (FT)</Label>
+                      <Label htmlFor="pr-f-len">{serFeeder ? "SER Cable Length (FT)" : "Feeder Length (FT)"}</Label>
                       <Input id="pr-f-len" data-testid="input-feeder-len" type="number" min="0" step="1" value={inputs.feederLength} onChange={(e) => setNumber("feederLength", e.target.value)} />
                     </div>
+                    )}
+                    {!reusingFeeder && !serFeeder && (
                     <div className="space-y-2">
                       <Label htmlFor="pr-f-qty">Feeder Conductor Qty</Label>
                       <Input id="pr-f-qty" data-testid="input-feeder-qty" type="number" min="1" step="1" value={inputs.feederConductorQuantity} onChange={(e) => setNumber("feederConductorQuantity", e.target.value, 1)} />
                     </div>
+                    )}
+                    <label className="flex items-center gap-2 text-sm md:col-span-2">
+                      <input type="checkbox" data-testid="checkbox-feeder-raceway" checked={includeFeederRaceway} onChange={e => setInputs(c => ({ ...c, includeFeederRaceway: e.target.checked }))} />
+                      Include job-specific feeder raceway / fittings
+                    </label>
+                    {includeFeederRaceway && <>
                     <div className="space-y-2">
                       <Label htmlFor="pr-rw-ft">Raceway Footage (FT)</Label>
                       <Input id="pr-rw-ft" data-testid="input-rw-ft" type="number" min="0" step="1" value={inputs.feederRacewayFootage} onChange={(e) => setNumber("feederRacewayFootage", e.target.value)} />
@@ -503,6 +570,7 @@ export function NewPanelReplacementQuote() {
                         <option value={exactCatalogItems.feederRacewayFitting}>2-inch coupling</option>
                       </select>
                     </div>
+                    </>}
                   </div>
                 </section>
 

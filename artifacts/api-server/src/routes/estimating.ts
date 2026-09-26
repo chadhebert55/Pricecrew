@@ -1261,6 +1261,7 @@ export async function calculateEstimate(
       category: priceBookItemsTable.category,
       item: priceBookItemsTable.item,
       unitCost: priceBookItemsTable.unitCost,
+      unit: priceBookItemsTable.unit,
       supplier: priceBookItemsTable.supplier,
       manufacturer: priceBookItemsTable.manufacturer,
       manufacturerPartNumber: priceBookItemsTable.manufacturerPartNumber,
