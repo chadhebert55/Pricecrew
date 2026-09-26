@@ -1034,6 +1034,12 @@ export interface ServiceUpgradeInputs {
   plywoodQuantity: number;
   /** @minimum 0 */
   studsQuantity: number;
+  /**
+     * Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.
+     * @minimum 0
+     * @maximum 999999999.99
+     */
+  lumberCost?: number | null;
   /** @minimum 0 */
   ductSealQuantity?: number;
   /** @minimum 0 */

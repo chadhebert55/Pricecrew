@@ -373,6 +373,9 @@ export const createQuoteBodyJobInputsSixPlywoodQuantityMin = 0;
 
 export const createQuoteBodyJobInputsSixStudsQuantityMin = 0;
 
+export const createQuoteBodyJobInputsSixLumberCostMin = 0;
+export const createQuoteBodyJobInputsSixLumberCostMax = 999999999.99;
+
 export const createQuoteBodyJobInputsSixDuctSealQuantityMin = 0;
 
 export const createQuoteBodyJobInputsSixPvcPrimerQuantityMin = 0;
@@ -843,6 +846,7 @@ export const CreateQuoteBody = zod.object({
   "receptaclePlateQuantity": zod.number().min(createQuoteBodyJobInputsSixReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(createQuoteBodyJobInputsSixPlywoodQuantityMin),
   "studsQuantity": zod.number().min(createQuoteBodyJobInputsSixStudsQuantityMin),
+  "lumberCost": zod.number().min(createQuoteBodyJobInputsSixLumberCostMin).max(createQuoteBodyJobInputsSixLumberCostMax).nullish().describe('Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.'),
   "ductSealQuantity": zod.number().min(createQuoteBodyJobInputsSixDuctSealQuantityMin).optional(),
   "pvcPrimerQuantity": zod.number().min(createQuoteBodyJobInputsSixPvcPrimerQuantityMin).optional(),
   "pvcGlueQuantity": zod.number().min(createQuoteBodyJobInputsSixPvcGlueQuantityMin).optional(),
@@ -1276,6 +1280,9 @@ export const createQuoteResponseTwoJobInputsSixReceptaclePlateQuantityMin = 0;
 export const createQuoteResponseTwoJobInputsSixPlywoodQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsSixStudsQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsSixLumberCostMin = 0;
+export const createQuoteResponseTwoJobInputsSixLumberCostMax = 999999999.99;
 
 export const createQuoteResponseTwoJobInputsSixDuctSealQuantityMin = 0;
 
@@ -1779,6 +1786,7 @@ export const CreateQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(createQuoteResponseTwoJobInputsSixReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(createQuoteResponseTwoJobInputsSixPlywoodQuantityMin),
   "studsQuantity": zod.number().min(createQuoteResponseTwoJobInputsSixStudsQuantityMin),
+  "lumberCost": zod.number().min(createQuoteResponseTwoJobInputsSixLumberCostMin).max(createQuoteResponseTwoJobInputsSixLumberCostMax).nullish().describe('Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.'),
   "ductSealQuantity": zod.number().min(createQuoteResponseTwoJobInputsSixDuctSealQuantityMin).optional(),
   "pvcPrimerQuantity": zod.number().min(createQuoteResponseTwoJobInputsSixPvcPrimerQuantityMin).optional(),
   "pvcGlueQuantity": zod.number().min(createQuoteResponseTwoJobInputsSixPvcGlueQuantityMin).optional(),
@@ -2310,6 +2318,9 @@ export const previewQuoteBodyJobInputsSixPlywoodQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsSixStudsQuantityMin = 0;
 
+export const previewQuoteBodyJobInputsSixLumberCostMin = 0;
+export const previewQuoteBodyJobInputsSixLumberCostMax = 999999999.99;
+
 export const previewQuoteBodyJobInputsSixDuctSealQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsSixPvcPrimerQuantityMin = 0;
@@ -2772,6 +2783,7 @@ export const PreviewQuoteBody = zod.object({
   "receptaclePlateQuantity": zod.number().min(previewQuoteBodyJobInputsSixReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(previewQuoteBodyJobInputsSixPlywoodQuantityMin),
   "studsQuantity": zod.number().min(previewQuoteBodyJobInputsSixStudsQuantityMin),
+  "lumberCost": zod.number().min(previewQuoteBodyJobInputsSixLumberCostMin).max(previewQuoteBodyJobInputsSixLumberCostMax).nullish().describe('Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.'),
   "ductSealQuantity": zod.number().min(previewQuoteBodyJobInputsSixDuctSealQuantityMin).optional(),
   "pvcPrimerQuantity": zod.number().min(previewQuoteBodyJobInputsSixPvcPrimerQuantityMin).optional(),
   "pvcGlueQuantity": zod.number().min(previewQuoteBodyJobInputsSixPvcGlueQuantityMin).optional(),
@@ -3836,6 +3848,9 @@ export const getQuoteResponseTwoJobInputsSixPlywoodQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsSixStudsQuantityMin = 0;
 
+export const getQuoteResponseTwoJobInputsSixLumberCostMin = 0;
+export const getQuoteResponseTwoJobInputsSixLumberCostMax = 999999999.99;
+
 export const getQuoteResponseTwoJobInputsSixDuctSealQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsSixPvcPrimerQuantityMin = 0;
@@ -4338,6 +4353,7 @@ export const GetQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(getQuoteResponseTwoJobInputsSixReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(getQuoteResponseTwoJobInputsSixPlywoodQuantityMin),
   "studsQuantity": zod.number().min(getQuoteResponseTwoJobInputsSixStudsQuantityMin),
+  "lumberCost": zod.number().min(getQuoteResponseTwoJobInputsSixLumberCostMin).max(getQuoteResponseTwoJobInputsSixLumberCostMax).nullish().describe('Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.'),
   "ductSealQuantity": zod.number().min(getQuoteResponseTwoJobInputsSixDuctSealQuantityMin).optional(),
   "pvcPrimerQuantity": zod.number().min(getQuoteResponseTwoJobInputsSixPvcPrimerQuantityMin).optional(),
   "pvcGlueQuantity": zod.number().min(getQuoteResponseTwoJobInputsSixPvcGlueQuantityMin).optional(),
@@ -4895,6 +4911,9 @@ export const updateQuoteResponseOneTwoJobInputsSixPlywoodQuantityMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsSixStudsQuantityMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsSixLumberCostMin = 0;
+export const updateQuoteResponseOneTwoJobInputsSixLumberCostMax = 999999999.99;
+
 export const updateQuoteResponseOneTwoJobInputsSixDuctSealQuantityMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsSixPvcPrimerQuantityMin = 0;
@@ -5397,6 +5416,7 @@ export const UpdateQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsSixReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsSixPlywoodQuantityMin),
   "studsQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsSixStudsQuantityMin),
+  "lumberCost": zod.number().min(updateQuoteResponseOneTwoJobInputsSixLumberCostMin).max(updateQuoteResponseOneTwoJobInputsSixLumberCostMax).nullish().describe('Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.'),
   "ductSealQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsSixDuctSealQuantityMin).optional(),
   "pvcPrimerQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsSixPvcPrimerQuantityMin).optional(),
   "pvcGlueQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsSixPvcGlueQuantityMin).optional(),
@@ -6178,6 +6198,9 @@ export const duplicateQuoteResponseTwoJobInputsSixPlywoodQuantityMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsSixStudsQuantityMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsSixLumberCostMin = 0;
+export const duplicateQuoteResponseTwoJobInputsSixLumberCostMax = 999999999.99;
+
 export const duplicateQuoteResponseTwoJobInputsSixDuctSealQuantityMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsSixPvcPrimerQuantityMin = 0;
@@ -6680,6 +6703,7 @@ export const DuplicateQuoteResponse = zod.object({
   "receptaclePlateQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixReceptaclePlateQuantityMin),
   "plywoodQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPlywoodQuantityMin),
   "studsQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixStudsQuantityMin),
+  "lumberCost": zod.number().min(duplicateQuoteResponseTwoJobInputsSixLumberCostMin).max(duplicateQuoteResponseTwoJobInputsSixLumberCostMax).nullish().describe('Combined plywood and stud cost for this job before markup, charged once rather than per piece. New quotes start null (unknown). Zero explicitly confirms no lumber cost. Omitted preserves legacy separate catalog pricing.'),
   "ductSealQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixDuctSealQuantityMin).optional(),
   "pvcPrimerQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPvcPrimerQuantityMin).optional(),
   "pvcGlueQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsSixPvcGlueQuantityMin).optional(),
