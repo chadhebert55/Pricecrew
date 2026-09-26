@@ -1051,7 +1051,7 @@ export function negativeLaborAdjustmentFields(
       ([key, value]) =>
         LABOR_ADJUSTMENT_KEYS.has(key) &&
         !(key === "laborAdjustmentHours" && "circuitConfigurationVersion" in jobInputs && jobInputs.circuitConfigurationVersion === 2 &&
-          ("refrigeratorCircuits" in jobInputs || "gfciReceptacles" in jobInputs)) &&
+          ("refrigeratorCircuits" in jobInputs || "gfciReceptacles" in jobInputs || "fixtureQuantity" in jobInputs)) &&
         typeof value === "number" &&
         Number.isFinite(value) &&
         value < 0,

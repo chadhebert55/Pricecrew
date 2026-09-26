@@ -6,18 +6,39 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { LaborRateType } from './laborRateType';
+import type { LightingGroup } from './lightingGroup';
 import type { RecessedLightingInputsAccessDifficulty } from './recessedLightingInputsAccessDifficulty';
+import type { RecessedLightingInputsAdvancedCableType } from './recessedLightingInputsAdvancedCableType';
 import type { RecessedLightingInputsBreakerAmperage } from './recessedLightingInputsBreakerAmperage';
 import type { RecessedLightingInputsCableType } from './recessedLightingInputsCableType';
 import type { RecessedLightingInputsCeilingHeight } from './recessedLightingInputsCeilingHeight';
+import type { RecessedLightingInputsCircuitConfigurationVersion } from './recessedLightingInputsCircuitConfigurationVersion';
 import type { RecessedLightingInputsCircuitOption } from './recessedLightingInputsCircuitOption';
 import type { RecessedLightingInputsDimmerSelection } from './recessedLightingInputsDimmerSelection';
 import type { RecessedLightingInputsFixtureSize } from './recessedLightingInputsFixtureSize';
+import type { RecessedLightingInputsLocationType } from './recessedLightingInputsLocationType';
+import type { RecessedLightingInputsQuantitySource } from './recessedLightingInputsQuantitySource';
 import type { RecessedLightingInputsSwitchingMethod } from './recessedLightingInputsSwitchingMethod';
 import type { RecessedLightingInputsSwitchType } from './recessedLightingInputsSwitchType';
 import type { RecessedLightingInputsWiringOption } from './recessedLightingInputsWiringOption';
+import type { RecessedLightingInputsWiringScope } from './recessedLightingInputsWiringScope';
 
 export interface RecessedLightingInputs {
+  circuitConfigurationVersion?: RecessedLightingInputsCircuitConfigurationVersion;
+  wiringScope?: RecessedLightingInputsWiringScope;
+  locationType?: RecessedLightingInputsLocationType;
+  lightingGroups?: LightingGroup[];
+  protectionUpgrade?: boolean;
+  advancedCableType?: RecessedLightingInputsAdvancedCableType;
+  /** @minimum 0 */
+  fixtureSpacingFeet?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  wireWastePercent?: number;
+  insulationPresent?: boolean;
+  quantitySource?: RecessedLightingInputsQuantitySource;
   /** @minimum 0 */
   roomLength: number;
   /** @minimum 0 */

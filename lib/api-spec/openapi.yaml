@@ -2583,6 +2583,26 @@ components:
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+    LightingGroup:
+      type: object
+      required: [key, quantity, controlType]
+      properties:
+        key:
+          type: string
+        quantity:
+          type: number
+          minimum: 0
+          multipleOf: 1
+        controlType:
+          type: string
+          enum: [Existing switch, Single-pole switch, Dimmer, Smart switch, 3-way switching, 3-way dimmer]
+        fourWayLocations:
+          type: number
+          minimum: 0
+          multipleOf: 1
+        travelerLength:
+          type: number
+          minimum: 0
     RecessedLightingInputs:
       type: object
       required:
@@ -2609,6 +2629,36 @@ components:
         - breakerProtectionType
         - cableType
       properties:
+        circuitConfigurationVersion:
+          type: number
+          enum: [2]
+        wiringScope:
+          type: string
+          enum: [Existing wiring / fixture replacement, Extend existing lighting circuit, New wiring from nearby source, New home run to panel]
+        locationType:
+          type: string
+          enum: [Replace existing fixtures, Create new light locations]
+        lightingGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightingGroup"
+        protectionUpgrade:
+          type: boolean
+        advancedCableType:
+          type: string
+          enum: [12/2 NM-B, 12/3 NM-B, 14/2 NM-B, 14/3 NM-B]
+        fixtureSpacingFeet:
+          type: number
+          minimum: 0
+        wireWastePercent:
+          type: number
+          minimum: 0
+          maximum: 100
+        insulationPresent:
+          type: boolean
+        quantitySource:
+          type: string
+          enum: [Manual, Planning suggestion]
         roomLength:
           type: number
           minimum: 0
