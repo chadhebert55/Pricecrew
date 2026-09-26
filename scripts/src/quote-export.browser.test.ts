@@ -351,6 +351,7 @@ test(`saved quote export preserves the exact saved total: ${exportCase}`, async 
       await expect(page.getByTestId("button-print-customer-quote")).toBeHidden();
       await expect(page.getByTestId("toast-title")).toBeHidden();
       expect(await page.evaluate('getComputedStyle(document.querySelector(".customer-proposal")).backgroundColor')).toBe("rgb(255, 255, 255)");
+      expect(await page.evaluate('getComputedStyle(document.querySelector(".customer-proposal td")).color')).toBe("rgb(17, 17, 17)");
       await page.screenshot({ path: test.info().outputPath("customer-proposal-print.png"), fullPage: true });
       await page.emulateMedia({ media: "screen" });
       await page.evaluate('document.documentElement.classList.remove("dark")');

@@ -23,6 +23,8 @@
     background: white;
   }
   .customer-proposal tr { break-inside: avoid; }
+  .customer-proposal * { transition: none !important; animation: none !important; }
+  .customer-proposal td { color: #111; }
   .customer-proposal thead { display: table-header-group; }
   .customer-proposal .table-scroll { overflow: visible; }
 }
