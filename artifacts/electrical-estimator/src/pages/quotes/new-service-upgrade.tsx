@@ -110,6 +110,7 @@ const initialInputs: ServiceUpgradeInputs = {
   receptaclePlateQuantity: 1,
   plywoodQuantity: 1,
   studsQuantity: 2,
+  lumberCost: null,
   ductSealQuantity: 1,
   pvcPrimerQuantity: 1,
   pvcGlueQuantity: 1,
@@ -723,6 +724,31 @@ export function NewServiceUpgradeQuote() {
                     <div className="space-y-2">
                       <Label htmlFor="su-studs">Studs Qty</Label>
                       <Input id="su-studs" type="number" min="0" step="1" value={inputs.studsQuantity} onChange={(e) => setNumber("studsQuantity", e.target.value)} />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="su-lumber-cost">Lumber Cost for This Job ($)</Label>
+                      <Input
+                        id="su-lumber-cost"
+                        type="number"
+                        min="0"
+                        max="999999999.99"
+                        step="0.01"
+                        placeholder="Enter combined plywood and stud cost"
+                        value={inputs.lumberCost ?? ""}
+                        aria-describedby="su-lumber-cost-help"
+                        onChange={(event) => {
+                          const value = event.target.valueAsNumber
+                          setInputs(current => ({
+                            ...current,
+                            lumberCost: Number.isFinite(value) ? value : null,
+                          }))
+                        }}
+                      />
+                      <p id="su-lumber-cost-help" className="text-xs text-muted-foreground">
+                        {inputs.lumberCost === undefined
+                          ? "This older quote uses separate catalog lumber prices. Enter a combined job cost to replace them."
+                          : "Total for all plywood and studs above, before markup. Blank stays unresolved when lumber is included; enter 0 only if no lumber cost applies."}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="su-duct-seal">Service / Duct Seal Qty</Label>

@@ -2515,6 +2515,78 @@ test("default integrated 200A service upgrade exposes the complete assembly and 
   );
 });
 
+test("service upgrade job lumber starts unresolved without using catalog lumber prices", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, lumberCost: null }, settings, servicePriceBook,
+  );
+  assert.equal(result.assembly.find(line => line.id === "job-lumber")?.unitCost, 0);
+  assert.equal(result.assembly.some(line => ["plywood-backing", "studs"].includes(line.id)), false);
+  assert.match(JSON.stringify(result.pricing.pricingWarnings), /lumber cost is unresolved/);
+});
+
+test("service upgrade charges combined lumber once, without duplicate catalog costs", () => {
+  const before = structuredClone(servicePriceBook);
+  const unknown = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, lumberCost: null }, settings, servicePriceBook,
+  );
+  const priced = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, plywoodQuantity: 3, studsQuantity: 6, lumberCost: 75 },
+    settings, servicePriceBook,
+  );
+  const lumber = priced.assembly.find(line => line.id === "job-lumber")!;
+  assert.equal(lumber.quantity, 1);
+  assert.equal(lumber.unitCost, 75);
+  assert.equal(lumber.extendedCost, 75);
+  assert.equal(priced.assembly.some(line => ["plywood-backing", "studs"].includes(line.id)), false);
+  assert.equal(priced.pricing.materialCost, Number((unknown.pricing.materialCost + 75).toFixed(2)));
+  assert.doesNotMatch(JSON.stringify(priced.pricing.pricingWarnings), /lumber cost is unresolved/);
+  assert.deepEqual(servicePriceBook, before);
+});
+
+test("service upgrade explicit zero lumber is distinct from blank and invalid values", () => {
+  const free = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, lumberCost: 0 }, settings, servicePriceBook,
+  );
+  assert.match(free.assembly.find(line => line.id === "job-lumber")!.intentionalExclusionReason!, /no lumber cost/);
+  assert.doesNotMatch(JSON.stringify(free.pricing.pricingWarnings), /lumber cost is unresolved/);
+  for (const lumberCost of [null, -1, NaN, Infinity, 1e9]) {
+    const result = calculateServiceUpgradeEstimate(
+      { ...serviceUpgradeInputs, lumberCost }, settings, servicePriceBook,
+    );
+    assert.equal(result.assembly.find(line => line.id === "job-lumber")?.intentionalExclusionReason, undefined);
+    assert.match(JSON.stringify(result.pricing.pricingWarnings), /lumber cost is unresolved/);
+  }
+});
+
+test("service upgrade needs no lumber amount when no lumber is included", () => {
+  const result = calculateServiceUpgradeEstimate(
+    { ...serviceUpgradeInputs, plywoodQuantity: 0, studsQuantity: 0, lumberCost: null },
+    settings, servicePriceBook,
+  );
+  assert.equal(result.assembly.some(line => line.id === "job-lumber"), false);
+  assert.doesNotMatch(JSON.stringify(result.pricing.pricingWarnings), /lumber cost is unresolved/);
+});
+
+test("service upgrade lumber API inputs retain blank, zero and amount, rejecting invalid costs", () => {
+  const payload = {
+    module: "SERVICE_UPGRADE", customerName: "Lumber test", projectName: "Lumber test",
+    proposalDescription: "Job-specific lumber",
+  };
+  for (const lumberCost of [undefined, null, 0, 75, 12.34]) {
+    for (const schema of [CreateQuoteBody, PreviewQuoteBody]) {
+      const parsed = schema.parse({ ...payload, jobInputs: { ...serviceUpgradeInputs, lumberCost } });
+      assert.equal((parsed.jobInputs as ServiceUpgradeInputRecord).lumberCost, lumberCost);
+    }
+  }
+  for (const lumberCost of [-1, NaN, Infinity, 1e9, "75"]) {
+    for (const schema of [CreateQuoteBody, PreviewQuoteBody]) {
+      assert.equal(schema.safeParse({
+        ...payload, jobInputs: { ...serviceUpgradeInputs, lumberCost },
+      }).success, false);
+    }
+  }
+});
+
 test("verified Milbank meter-main includes the 200A main breaker without a duplicate line or warning", () => {
   const milbankMeterMain =
     "Milbank U3990-XL-200 200A meter-main — SKU 304898";

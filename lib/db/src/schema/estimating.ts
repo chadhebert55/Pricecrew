@@ -369,6 +369,8 @@ export type ServiceUpgradeInputRecord = {
   receptaclePlateQuantity: number;
   plywoodQuantity: number;
   studsQuantity: number;
+  /** Combined job cost. Null is unknown; absent preserves legacy catalog pricing. */
+  lumberCost?: number | null;
   ductSealQuantity?: number;
   pvcPrimerQuantity?: number;
   pvcGlueQuantity?: number;

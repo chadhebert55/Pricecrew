@@ -3635,20 +3635,41 @@ export function calculateServiceUpgradeEstimate(
     "20A receptacle plate",
     inputs.receptaclePlateQuantity,
   );
-  addPricedItem(
-    "plywood-backing",
-    "Backing",
-    "4x4x3/4 plywood",
-    "4x4x3/4 plywood backing",
-    inputs.plywoodQuantity,
-  );
-  addPricedItem(
-    "studs",
-    "Framing",
-    "2x4x8 stud",
-    "2x4x8 studs",
-    inputs.studsQuantity,
-  );
+  if (inputs.lumberCost === undefined) {
+    // Additive input: do not reinterpret older drafts as free or unknown lumber.
+    addPricedItem(
+      "plywood-backing", "Backing", "4x4x3/4 plywood",
+      "4x4x3/4 plywood backing", inputs.plywoodQuantity,
+    );
+    addPricedItem(
+      "studs", "Framing", "2x4x8 stud", "2x4x8 studs", inputs.studsQuantity,
+    );
+  } else if (
+    inputs.lumberCost !== null ||
+    safeNumber(inputs.plywoodQuantity) > 0 ||
+    safeNumber(inputs.studsQuantity) > 0
+  ) {
+    const cost = inputs.lumberCost;
+    const confirmed = typeof cost === "number" &&
+      Number.isFinite(cost) && cost >= 0 && cost <= 999999999.99;
+    if (!confirmed) {
+      pricingWarnings.push(
+        "Service Upgrade lumber cost is unresolved. Enter the combined plywood and stud cost for this job (0 only if confirmed no cost).",
+      );
+    }
+    addLine(assembly, {
+      id: "job-lumber",
+      category: "Backing / Framing",
+      description: `Job-specific lumber (${safeNumber(inputs.plywoodQuantity)} plywood, ${safeNumber(inputs.studsQuantity)} studs)`,
+      quantity: 1,
+      unit: "job",
+      unitCost: confirmed ? cost : 0,
+      source: confirmed ? "Contractor-entered lumber cost for this job" : "Unconfirmed job-specific lumber cost",
+      ...(confirmed && cost === 0
+        ? { intentionalExclusionReason: "Contractor confirmed no lumber cost for this job." }
+        : {}),
+    });
+  }
   addExactOrLegacy(
     "duct-seal",
     "Normal Stock",
