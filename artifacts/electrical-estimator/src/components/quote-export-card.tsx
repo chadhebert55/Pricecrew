@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { jobberExportLayout, MAX_JOBBER_LINE_ITEMS } from "@workspace/api-zod/jobber-export-layout"
 
 type QuoteExportCardProps = {
   quoteId: number
@@ -24,7 +25,9 @@ type QuoteExportCardProps = {
   isDirty: boolean
   assemblyLineCount: number
   pricingBlockers?: string[]
-  onReviseQuote?: () => void
+  onOpenCustomerProposal: () => void
+  customerProposalDisabled: boolean
+  customerProposalHelp: string
 }
 
 export function QuoteExportCard({
@@ -34,7 +37,9 @@ export function QuoteExportCard({
   isDirty,
   assemblyLineCount,
   pricingBlockers = [],
-  onReviseQuote,
+  onOpenCustomerProposal,
+  customerProposalDisabled,
+  customerProposalHelp,
 }: QuoteExportCardProps) {
   const { toast } = useToast()
   const preflightExport = usePreflightQuoteExport()
@@ -67,7 +72,7 @@ export function QuoteExportCard({
   const hasJobberProperty = Boolean(
     mapping.jobberPropertyId?.trim() || mapping.propertyStreet1?.trim(),
   )
-  const exceedsJobberLineLimit = destination === "jobber" && assemblyLineCount > MAX_JOBBER_LINE_ITEMS
+  const jobberLayout = jobberExportLayout(assemblyLineCount)
   const pricingBlocked = pricingBlockers.length > 0
 
   const handleExport = async () => {
@@ -153,19 +158,34 @@ export function QuoteExportCard({
           <div>
             <div className="flex items-center gap-2">
               <PlugZap className="text-primary" size={20} />
-              <CardTitle>Integrations &amp; Exports</CardTitle>
+              <CardTitle>App &amp; Accounting Exports</CardTitle>
             </div>
             <CardDescription className="mt-2 max-w-3xl">
-              Prepare a provider-friendly file from this saved quote. This is a download for import—not a direct sync, connection, or send action.
+              Download a CSV spreadsheet to import into another app. This is not a customer quote or PDF, and it does not sync or send anything.
             </CardDescription>
           </div>
            <Button className="w-full sm:w-auto" data-testid="button-download-quote-csv" onClick={handleExport} disabled={busy || pricingBlocked}>
             <Download size={16} className="mr-2" />
-            {busy ? "Checking export..." : "Export Quote"}
+            {busy ? "Checking export..." : "Download CSV for Import"}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-4" data-testid="customer-quote-help">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-semibold">Need a quote for your customer?</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Use the customer proposal for your company details, scope of work, and quoted total, without internal material costs or profit.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{customerProposalHelp}</p>
+            </div>
+            <Button className="w-full shrink-0 sm:w-auto" data-testid="button-open-customer-quote"
+              onClick={onOpenCustomerProposal} disabled={customerProposalDisabled}>
+              <FileText size={16} className="mr-2" /> View Customer Quote
+            </Button>
+          </div>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Destination</Label>
@@ -189,6 +209,16 @@ export function QuoteExportCard({
           </div>
           <ExportSelect label="Format" value="csv" option="CSV import file" testId="select-export-format" />
         </div>
+        {destination === "quickbooks" && (
+          <Alert data-testid="quickbooks-import-notice">
+            <FileText size={16} />
+            <AlertTitle>QuickBooks invoice-import spreadsheet</AlertTitle>
+            <AlertDescription>
+              This CSV may open in Excel. It is for importing an invoice into QuickBooks Online, not a customer-facing quote or estimate.
+              Use View Customer Quote above to print or save a PDF for your customer.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Alert className={isDirty ? "border-amber-300 bg-amber-50 text-amber-950" : undefined}>
           <FileText size={16} />
@@ -219,7 +249,7 @@ export function QuoteExportCard({
             data-testid="export-readiness"
           >
             <div className="flex items-start gap-3">
-              {hasJobberProperty && !exceedsJobberLineLimit ? (
+              {hasJobberProperty && !pricingBlocked ? (
                 <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
               ) : (
                 <TriangleAlert className="mt-0.5 shrink-0 text-amber-600" size={18} />
@@ -234,14 +264,24 @@ export function QuoteExportCard({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                  <span className={exceedsJobberLineLimit ? "font-medium text-destructive" : "text-muted-foreground"}>
-                    {assemblyLineCount} of {MAX_JOBBER_LINE_ITEMS} line items
+                  <span className="text-muted-foreground">
+                    {jobberLayout.lineItemCount} of {MAX_JOBBER_LINE_ITEMS} line items
                   </span>
                   <span className="text-xs text-muted-foreground">
                     Includes one line for the exact saved quote total.
                   </span>
                 </div>
-                {(!hasJobberProperty || exceedsJobberLineLimit) && (
+                {jobberLayout.summarized && (
+                  <div className="rounded-md border bg-background p-3 text-sm" data-testid="jobber-summary-notice">
+                    <p className="font-medium">Large-quote summary export</p>
+                    <p className="mt-1 text-muted-foreground">
+                      All {assemblyLineCount} saved assembly rows are retained. One service line carries the exact saved total and lists the full scope with quantities and units.
+                      The complete breakdown, including saved costs and sources, is included in Quote Internal Note, not as separate Jobber product rows.
+                      Your PriceCrew quote is unchanged.
+                    </p>
+                  </div>
+                )}
+                {!hasJobberProperty && (
                   <div className="flex flex-wrap gap-2">
                     {!hasJobberProperty && (
                       <Button
@@ -252,17 +292,6 @@ export function QuoteExportCard({
                         onClick={() => document.getElementById("export-property-mapping")?.scrollIntoView({ behavior: "smooth", block: "center" })}
                       >
                         Add property details
-                      </Button>
-                    )}
-                    {exceedsJobberLineLimit && onReviseQuote && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        data-testid="button-revise-for-export"
-                        onClick={onReviseQuote}
-                      >
-                        Duplicate / Revise to reduce lines
                       </Button>
                     )}
                   </div>
@@ -344,7 +373,9 @@ export function QuoteExportCard({
 
         <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
           {destination === "jobber"
-            ? "Assembly rows keep saved quantities, units, sources, and costs with blank selling prices. A separate line carries the exact saved final selling price."
+            ? jobberLayout.summarized
+              ? "Summary export: the single service line carries the exact saved selling price. Full saved assembly details are preserved in Quote Internal Note; they are not imported as separate products. Review the imported quote in Jobber before sending it."
+              : "Assembly rows keep saved quantities, units, sources, and costs with blank selling prices. A separate line carries the exact saved final selling price."
             : "This format uses one row carrying the exact saved final selling price; it does not distribute that amount across assembly rows."}{" "}
           Tax, discount, deposit, and taxable fields stay blank because they are not captured in the quote snapshot.
         </div>
@@ -370,7 +401,6 @@ function ExportSelect({ label, value, option, testId }: { label: string; value: 
 
 type FieldDefinition = [string, keyof QuoteExportMapping, "text" | "email" | "tel" | "date"]
 
-const MAX_JOBBER_LINE_ITEMS = 10
 
 function destinationLabel(destination: QuoteExportRequestDestination) {
   if (destination === "quickbooks") return "QuickBooks Online"

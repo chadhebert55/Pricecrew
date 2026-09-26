@@ -263,17 +263,17 @@ export function QuoteDetail() {
             <Button
             className="w-full sm:w-auto"
             data-testid="button-export-quote-header"
-            variant={hasBlockingWarnings ? "secondary" : "default"}
+            variant="outline"
             onClick={() => document.getElementById("quote-integrations-exports")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             disabled={hasBlockingWarnings}
             title={hasBlockingWarnings ? "Resolve pricing errors before opening export" : undefined}
           >
-            <Download size={16} className="mr-2" /> Export Quote
+            <Download size={16} className="mr-2" /> App / Accounting Export
           </Button>
           <Button className="w-full sm:w-auto" data-testid="button-duplicate-quote" variant="outline" onClick={handleDuplicate}>
             <Copy size={16} className="mr-2" /> Duplicate / Revise
           </Button>
-          <Button className="w-full sm:w-auto" variant="outline" onClick={handleOpenProposal} disabled={status !== "ready" || hasBlockingWarnings || updateQuote.isPending} title={status !== "ready" ? "Mark this quote ready before opening the customer proposal" : undefined}>
+          <Button className="w-full sm:w-auto" onClick={handleOpenProposal} disabled={status !== "ready" || hasBlockingWarnings || updateQuote.isPending} title={status !== "ready" ? "Mark this quote ready before opening the customer proposal" : undefined}>
             <ExternalLink size={16} className="mr-2" /> Customer Proposal
           </Button>
           {status !== 'ready' && (
@@ -385,9 +385,11 @@ export function QuoteDetail() {
         customerName={quote.customerName}
         customerEmail={quote.customerEmail}
         isDirty={isDirty}
-        assemblyLineCount={quote.assembly.length + 1}
+        assemblyLineCount={quote.assembly.length}
         pricingBlockers={exportPricingBlockers}
-        onReviseQuote={handleDuplicate}
+        onOpenCustomerProposal={handleOpenProposal}
+        customerProposalDisabled={status !== "ready" || hasBlockingWarnings || isDirty || updateQuote.isPending}
+        customerProposalHelp={hasBlockingWarnings ? "Resolve pricing issues before preparing a customer quote." : status !== "ready" ? "Mark this quote ready to open the customer version." : isDirty ? "Save Changes before opening the customer version." : "Open the customer version, then use Print / Save PDF or share its link."}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

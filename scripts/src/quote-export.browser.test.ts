@@ -106,8 +106,10 @@ const jobInputs: AdditionInputRecord = {
   notes: "",
 };
 
-for (const withLegacyCloseout of [false, true]) {
-test(`saved quote export preserves the exact saved total${withLegacyCloseout ? " with legacy panel closeout labor" : ""}`, async ({
+for (const exportCase of ["standard", "legacy closeout labor", "large panel assembly"]) {
+const withLegacyCloseout = exportCase !== "standard";
+const withLargeAssembly = exportCase === "large panel assembly";
+test(`saved quote export preserves the exact saved total: ${exportCase}`, async ({
   browser,
 }) => {
   const marker = randomUUID();
@@ -186,23 +188,30 @@ test(`saved quote export preserves the exact saved total${withLegacyCloseout ? "
             quantity: 1, unit: "scope", unitCost: 0, extendedCost: 0,
             source: "Included labor scope",
           }] : []),
+          ...(withLargeAssembly ? Array.from({ length: 27 }, (_, index) => ({
+            id: ["panel-ground-bars", "panel-space-fillers", "panel-knockout-seals",
+              "panel-electrical-tape", "panel-anti-oxidant", "panel-plywood"][index] ?? `large-material-${index}`, category: "Material",
+            description: `Saved panel material ${index + 1}`,
+            quantity: 1, unit: "ea", unitCost: 1, extendedCost: 1,
+            source: "Saved supplier fixture",
+          })) : []),
         ],
         pricing: {
-          materialCost: 184,
+          materialCost: withLargeAssembly ? 211 : 184,
           laborCost: 480,
           materialMarkup: 0.25,
           calculatedSellingPrice: 2210,
           finalSellingPrice,
           laborOverride: null,
           sellingPriceOverride: finalSellingPrice,
-          grossProfit: 1680.67,
-          grossMargin: 0.7165,
+          grossProfit: withLargeAssembly ? 1654.67 : 1680.67,
+          grossMargin: withLargeAssembly ? 1654.67 / finalSellingPrice : 0.7165,
           pricingWarnings: [],
         },
         proposalDescription:
           "Install the listed electrical scope and complete final testing.",
         total: finalSellingPrice,
-        margin: 0.7165,
+        margin: withLargeAssembly ? 1654.67 / finalSellingPrice : 0.7165,
       })
       .returning({ id: quotesTable.id });
     expect(quote).toBeTruthy();
@@ -236,7 +245,16 @@ test(`saved quote export preserves the exact saved total${withLegacyCloseout ? "
     await expect(readiness).toContainText(
       "Jobber needs a mapped Property ID or Property Street 1",
     );
-    await expect(readiness).toContainText(`${withLegacyCloseout ? 4 : 3} of 10 line items`);
+    await expect(readiness).toContainText(`${withLargeAssembly ? 1 : withLegacyCloseout ? 4 : 3} of 10 line items`);
+    if (withLargeAssembly) {
+      await expect(page.getByTestId("jobber-summary-notice")).toContainText("All 30 saved assembly rows are retained");
+      await expect(page.getByTestId("button-revise-for-export")).toHaveCount(0);
+      const preflight = await context.request.post(`${apiUrl}/api/quotes/${quoteId}/exports/preflight`, {
+        data: { destination: "jobber", format: "csv", mapping: { propertyStreet1: "123 Main St" } },
+      });
+      expect(preflight.ok()).toBe(true);
+      expect(await preflight.json()).toMatchObject({ ready: true, lineItemCount: 1, quoteTotal: finalSellingPrice });
+    }
     await expect(readiness).toContainText(
       "Includes one line for the exact saved quote total.",
     );
@@ -292,6 +310,53 @@ test(`saved quote export preserves the exact saved total${withLegacyCloseout ? "
           (lineNumber - 1) * lineItemWidth,
         jobberImportFixture.baseHeaders.length + lineNumber * lineItemWidth,
       );
+    if (withLargeAssembly) {
+      const [saved] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+      const note = valueFor("Quote Internal Note");
+      expect(JSON.parse(note.slice(note.indexOf("\n") + 1))).toEqual(saved.assembly);
+      expect(lineItemValues(1)[0]).toBe("Service");
+      expect(lineItemValues(1)[1]).toBe("Saved quote total");
+      expect(lineItemValues(1)[3]).toBe("1");
+      expect(lineItemValues(1)[4]).toBe("2345.67");
+      expect(lineItemValues(1)[5]).toBe("");
+      expect(lineItemValues(1)[2]).toContain("Panel grounding bars | Quantity: 1 ea");
+      expect(lineItemValues(1)[2]).toContain("Electrical insulating tape | Quantity: 1 ea");
+      expect(lineItemValues(1)[2]).not.toContain("Saved supplier fixture");
+      expect(lineItemValues(1)[2].split("| Quantity:")).toHaveLength(31);
+      for (let slot = 2; slot <= 10; slot++) expect(lineItemValues(slot)).toEqual(["", "", "", "", "", "", ""]);
+      expect(saved.assembly).toHaveLength(30);
+      expect(saved.total).toBe(finalSellingPrice);
+      await page.getByTestId("select-export-destination").click();
+      await page.getByRole("option", { name: "QuickBooks Online" }).click();
+      await expect(page.getByTestId("quickbooks-import-notice")).toContainText("not a customer-facing quote");
+      await expect(page.getByTestId("button-download-quote-csv")).toHaveText("Download CSV for Import");
+      await page.getByTestId("button-open-customer-quote").click();
+      await expect(page).toHaveURL(/\/proposals\//);
+      await expect(page.getByRole("heading", { name: "Included Scope" })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "Panel grounding bars", exact: true })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "Electrical insulating tape", exact: true })).toBeVisible();
+      await expect(page.locator(".customer-proposal")).not.toContainText("Saved supplier fixture");
+      await expect(page.locator(".customer-proposal")).not.toContainText("Gross Profit");
+      await expect(page.locator(".customer-proposal")).toContainText("$2,345.67");
+      await page.evaluate('window.print = () => { document.body.dataset.printCalled = "true"; }');
+      await page.getByTestId("button-print-customer-quote").click();
+      await expect(page.locator("body")).toHaveAttribute("data-print-called", "true");
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.screenshot({ path: test.info().outputPath("customer-proposal-desktop.png"), fullPage: true });
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.screenshot({ path: test.info().outputPath("customer-proposal-mobile.png"), fullPage: true });
+      expect(await page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")).toBe(true);
+      await page.evaluate('document.documentElement.classList.add("dark")');
+      await page.emulateMedia({ media: "print" });
+      await expect(page.getByTestId("button-print-customer-quote")).toBeHidden();
+      await expect(page.getByTestId("toast-title")).toBeHidden();
+      expect(await page.evaluate('getComputedStyle(document.querySelector(".customer-proposal")).backgroundColor')).toBe("rgb(255, 255, 255)");
+      await page.screenshot({ path: test.info().outputPath("customer-proposal-print.png"), fullPage: true });
+      await page.emulateMedia({ media: "screen" });
+      await page.evaluate('document.documentElement.classList.remove("dark")');
+      await page.goto(`/quotes/${quoteId}`);
+      await expect(readiness).toBeVisible();
+    } else {
     expect(lineItemValues(1)).toEqual([
       "Product",
       "12/2 NM-B cable",
@@ -335,6 +400,7 @@ test(`saved quote export preserves the exact saved total${withLegacyCloseout ? "
         lineItemValues(lineNumber),
         `Jobber line item ${lineNumber} after saved total`,
       ).toEqual(["", "", "", "", "", "", ""]);
+    }
     }
     if (withLegacyCloseout) {
       await page.setViewportSize({ width: 1280, height: 900 });

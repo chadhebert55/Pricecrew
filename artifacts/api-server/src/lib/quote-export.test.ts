@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { QuoteExportMapping } from "@workspace/api-zod";
+import { jobberExportLayout } from "@workspace/api-zod/jobber-export-layout";
 import {
   buildHousecallProQuoteCsv,
   buildJobberQuoteCsv,
@@ -476,7 +477,7 @@ test("all exports block saved error-level pricing warnings", () => {
   );
 });
 
-test("Jobber preflight enforces the available assembly-line limit and line constraints", () => {
+test("Jobber summary export still validates every saved assembly row", () => {
   const templateLine = savedQuote().assembly[0]!;
   const assembly = Array.from(
     { length: MAX_JOBBER_ASSEMBLY_LINES + 1 },
@@ -487,8 +488,72 @@ test("Jobber preflight enforces the available assembly-line limit and line const
     }),
   );
   const issues = preflightJobberQuoteExport(savedQuote({ assembly }), validMapping);
-  assert.ok(issues.some((entry) => entry.code === "LINE_ITEM_LIMIT"));
+  assert.ok(!issues.some((entry) => entry.code === "LINE_ITEM_LIMIT"));
   assert.ok(issues.some((entry) => entry.code === "LINE_QUANTITY_INVALID"));
+  for (const invalid of [
+    { unitCost: 0, extendedCost: 0 },
+    { unitCost: -1 },
+    { extendedCost: Number.NaN },
+    { description: "" },
+  ]) {
+    const quote = savedQuote({ assembly: assembly.map((line, index) => ({
+      ...line, quantity: 1, ...(index === assembly.length - 1 ? invalid : {}),
+    })) });
+    assert.equal(buildJobberQuoteCsv(quote, validMapping).csv, null);
+  }
+});
+
+test("Jobber boundary layouts preserve every row and exact total without changing the snapshot", () => {
+  for (const count of [0, 9, 10, 30, 100]) {
+    const quote = savedQuote({ assembly: Array.from({ length: count }, (_, index) => ({
+      ...savedQuote().assembly[0]!,
+      id: `line-${index}`,
+      description: `Material ${index}, "quoted"\nsecond line`,
+      source: `Supplier ${index}`,
+      unitCost: 1.234567, quantity: 3, extendedCost: 3.70,
+      ...(index === count - 1 ? {
+        unitCost: 0, extendedCost: 0,
+        intentionalExclusionReason: "Customer supplies this material directly.",
+      } : {}),
+    })) });
+    const original = structuredClone(quote);
+    const result = buildJobberQuoteCsv(quote, validMapping);
+    assert.deepEqual(result.issues, []);
+    assert.ok(result.csv);
+    const [headers, values] = parseCsvRows(result.csv);
+    assert.equal(headers.length, jobberImportFixture.baseHeaders.length + 70);
+    assert.equal(values.length, headers.length);
+    const valueFor = (header: string) => values[headers.indexOf(header)];
+    const summarized = count > 9;
+    const totalSlot = summarized ? 1 : count + 1;
+    assert.deepEqual(jobberExportLayout(count), {
+      summarized, lineItemCount: totalSlot,
+    });
+    assert.equal(valueFor(`Line Item ${totalSlot} Name`), "Saved quote total");
+    assert.equal(valueFor(`Line Item ${totalSlot} UNIT Price`), "2345.67");
+    assert.equal(valueFor(`Line Item ${totalSlot} Quantity`), "1");
+    assert.equal(valueFor("Quote Message"), quote.proposalDescription);
+    if (summarized) {
+      const internalNote = valueFor("Quote Internal Note");
+      assert.deepEqual(JSON.parse(internalNote.slice(internalNote.indexOf("\n") + 1)), quote.assembly);
+      const description = valueFor("Line Item 1 Description");
+      for (const line of quote.assembly) {
+        assert.ok(description.includes(`Electrical material | Quantity: ${line.quantity} ${line.unit}`));
+      }
+      assert.ok(!description.includes("Supplier"));
+      assert.ok(!description.includes("1.234567"));
+      for (let slot = 2; slot <= 10; slot++) {
+        for (const header of jobberLineHeaders(slot)) assert.equal(valueFor(header), "");
+      }
+    } else {
+      assert.equal(valueFor("Quote Internal Note"), "");
+      for (let index = 0; index < count; index++) {
+        assert.equal(valueFor(`Line Item ${index + 1} Name`), quote.assembly[index].description);
+        assert.equal(valueFor(`Line Item ${index + 1} UNIT Price`), "");
+      }
+    }
+    assert.deepEqual(quote, original);
+  }
 });
 
 test("QuickBooks Online V1 invoice CSV locks official required headers and preserves the saved override total", () => {

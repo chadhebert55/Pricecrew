@@ -295,7 +295,7 @@ test("saved quote links work directly and stale proposal links stay unavailable"
       }),
     ).toBeVisible();
     await expect(
-      publicPage.getByRole("button", { name: "Print proposal" }),
+      publicPage.getByRole("button", { name: "Print / Save PDF" }),
     ).toBeVisible();
     await expect(
       publicPage.getByText("Electrical material", { exact: true }),
