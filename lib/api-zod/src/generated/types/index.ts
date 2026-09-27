@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './additionBathroomExhaust';
+export * from './additionBathroomExhaustCableType';
+export * from './additionBathroomExhaustControl';
 export * from './additionCircuitEntry';
 export * from './additionCircuitEntryAmperage';
 export * from './additionCircuitEntryCableType';

@@ -2326,6 +2326,8 @@ components:
         - crewHours
         - notes
       properties:
+        bathroomExhaust:
+          $ref: "#/components/schemas/AdditionBathroomExhaust"
         length:
           type: number
           minimum: 0
@@ -2411,6 +2413,31 @@ components:
           $ref: "#/components/schemas/LaborRateType"
         notes:
           type: string
+    AdditionBathroomExhaust:
+      type: object
+      description: Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
+      required: [quantity, customerSupplied, control, cableType]
+      properties:
+        quantity:
+          type: number
+          multipleOf: 1
+          minimum: 0
+        customerSupplied:
+          type: boolean
+        control:
+          type: string
+          enum: [Standard switch, Timer switch, Humidity-sensing control]
+        cableType:
+          type: string
+          enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
+        wiringLength:
+          type: number
+          minimum: 0
+          description: Total additional fan switch-leg/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.
+        materialCostOverride:
+          type: number
+          minimum: 0
+          description: Quote-local fan equipment cost only. Ignored when customerSupplied is true.
     RemodelCircuit:
       type: object
       required: [key, quantity, amperage, poleCount, protectionType, cableType]

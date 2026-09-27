@@ -16,6 +16,7 @@ import { Calculator, HousePlus, Info, TriangleAlert } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "wouter"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
+import { AdditionExhaustFanFields } from "@/components/addition-exhaust-fan-fields"
 
 const initialInputs: AdditionInputs = {
   length: 20,
@@ -316,6 +317,9 @@ export function NewAdditionQuote() {
                     {!inputs.customerSuppliedFans && <div className="mt-4 max-w-sm space-y-2"><Label htmlFor="addition-fan-cost">Contractor-supplied fan unit-cost override ($)</Label><Input id="addition-fan-cost" type="number" min="0" step="0.01" value={inputs.ceilingFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("ceilingFanMaterialCostOverride", event.target.value)} placeholder="Use verified Price Book value" /></div>}
                   </div>
                 </section>
+
+                <AdditionExhaustFanFields value={inputs.bathroomExhaust}
+                  onChange={bathroomExhaust => setInputs(current => ({ ...current, bathroomExhaust }))} />
 
                 <section>
                   <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Circuits, route, and labor</h3>
