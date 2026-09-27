@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
 import {
@@ -12,6 +12,24 @@ import {
 } from "@workspace/db"
 
 const apiUrl = "http://127.0.0.1:5080"
+
+// An earlier edit can create the key before the final edit is persisted.
+// Assert the stored values before navigating, not just key existence.
+async function storedDraft(page: Page, scope: string) {
+  return page.evaluate((draftScope) => {
+    const storage = (globalThis as unknown as {
+      localStorage: {
+        length: number
+        key: (index: number) => string | null
+        getItem: (key: string) => string | null
+      }
+    }).localStorage
+    const key = Array.from({ length: storage.length }, (_, index) => storage.key(index))
+      .find((key) => key?.startsWith("electrical-estimator:quote-builder-draft:v1:")
+        && key.includes(`:${encodeURIComponent(draftScope)}:`))
+    return key ? JSON.parse(storage.getItem(key) ?? "null")?.values : null
+  }, scope)
+}
 
 test("unfinished quote drafts restore, clear, and stay isolated by user", async ({
   browser,
@@ -49,15 +67,8 @@ test("unfinished quote drafts restore, clear, and stay isolated by user", async 
     await expect(page.getByRole("heading", { name: "New Quote" })).toBeVisible()
     await page.locator("#customerName").fill(customerName)
     await page.locator("#projectName").fill(projectName)
-    await expect.poll(() =>
-      page.evaluate((scope) => {
-        const storage = (globalThis as unknown as {
-          localStorage: { length: number; key: (index: number) => string | null }
-        }).localStorage
-        return Array.from({ length: storage.length }, (_, index) => storage.key(index))
-          .some((key) => key?.includes(encodeURIComponent(scope)))
-      }, firstScope),
-    ).toBe(true)
+    await expect.poll(() => storedDraft(page, firstScope))
+      .toMatchObject({ customerName, projectName })
 
     await page.reload()
     await expect(page.getByTestId("alert-quote-draft-available")).toBeVisible()
@@ -79,15 +90,8 @@ test("unfinished quote drafts restore, clear, and stay isolated by user", async 
 
     await page.locator("#customerName").fill(customerName)
     await page.locator("#projectName").fill(projectName)
-    await expect.poll(() =>
-      page.evaluate((scope) => {
-        const storage = (globalThis as unknown as {
-          localStorage: { length: number; key: (index: number) => string | null }
-        }).localStorage
-        return Array.from({ length: storage.length }, (_, index) => storage.key(index))
-          .some((key) => key?.includes(encodeURIComponent(scope)))
-      }, firstScope),
-    ).toBe(true)
+    await expect.poll(() => storedDraft(page, firstScope))
+      .toMatchObject({ customerName, projectName })
 
     const generateButton = page.getByRole("button", { name: "Generate Quote" })
     await expect(generateButton).toBeEnabled({ timeout: 20_000 })
@@ -117,15 +121,12 @@ test("unfinished quote drafts restore, clear, and stay isolated by user", async 
       await expect(page.getByRole("heading", { name: builder.heading })).toBeVisible()
       await page.getByTestId(builder.firstBreaker).fill("2")
       await page.getByTestId(builder.secondBreaker).fill("3")
-      await expect.poll(() =>
-        page.evaluate((draftScope) => {
-          const storage = (globalThis as unknown as {
-            localStorage: { length: number; key: (index: number) => string | null }
-          }).localStorage
-          return Array.from({ length: storage.length }, (_, index) => storage.key(index))
-            .some((key) => key?.includes(encodeURIComponent(draftScope)))
-        }, scope),
-      ).toBe(true)
+      await expect.poll(() => storedDraft(page, scope)).toMatchObject({
+        inputs: { existingBreakers: expect.arrayContaining([
+          expect.objectContaining({ amperage: 15, poleCount: 1, protectionType: "Standard", quantity: 2 }),
+          expect.objectContaining({ amperage: 20, poleCount: 1, protectionType: "AFCI", quantity: 3 }),
+        ]) },
+      })
 
       await page.reload()
       await expect(page.getByTestId("alert-quote-draft-available")).toBeVisible()
@@ -135,6 +136,12 @@ test("unfinished quote drafts restore, clear, and stay isolated by user", async 
 
       await page.getByTestId(builder.firstBreaker).fill("4")
       await expect(page.getByTestId(builder.secondBreaker)).toHaveValue("3")
+      await expect.poll(() => storedDraft(page, scope)).toMatchObject({
+        inputs: { existingBreakers: expect.arrayContaining([
+          expect.objectContaining({ amperage: 15, poleCount: 1, protectionType: "Standard", quantity: 4 }),
+          expect.objectContaining({ amperage: 20, poleCount: 1, protectionType: "AFCI", quantity: 3 }),
+        ]) },
+      })
       await page.reload()
       await expect(page.getByTestId("alert-quote-draft-available")).toBeVisible()
       await page.getByTestId("button-restore-quote-draft").click()
