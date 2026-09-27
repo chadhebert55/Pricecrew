@@ -8640,6 +8640,14 @@ export const listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax = 30
 
 export const listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax = 100;
 
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleManufacturerMax = 100;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleManufacturerPartNumberMax = 200;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleSourceMax = 1000;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleAmperageMax = 100;
+
 
 
 export const ListPriceBookItemsResponseItem = zod.object({
@@ -8662,7 +8670,17 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "materialPreferences": zod.array(zod.object({
   "requestKey": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
-  "manufacturer": zod.string().max(listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax).optional()
+  "manufacturer": zod.string().max(listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax).optional(),
+  "verifiedReceptacle": zod.object({
+  "manufacturer": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleSourceMax),
+  "amperage": zod.number().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedReceptacleAmperageMax),
+  "deviceType": zod.enum(['duplex']),
+  "protection": zod.enum(['Standard', 'GFCI']),
+  "tamperResistant": zod.boolean(),
+  "weatherResistant": zod.boolean()
+}).optional().describe('Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating.')
 })).optional(),
   "panelFamily": zod.string().nullish(),
   "supplierCost": zod.number().nullish(),
@@ -9015,6 +9033,14 @@ export const updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax = 300;
 
 export const updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax = 100;
 
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleManufacturerMax = 100;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleManufacturerPartNumberMax = 200;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleSourceMax = 1000;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleAmperageMax = 100;
+
 export const updatePriceBookItemBodyMaterialPreferencesMax = 50;
 
 export const updatePriceBookItemBodyPanelFamilyMax = 100;
@@ -9028,7 +9054,17 @@ export const UpdatePriceBookItemBody = zod.object({
   "materialPreferences": zod.array(zod.object({
   "requestKey": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
-  "manufacturer": zod.string().max(updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax).optional()
+  "manufacturer": zod.string().max(updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax).optional(),
+  "verifiedReceptacle": zod.object({
+  "manufacturer": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleSourceMax),
+  "amperage": zod.number().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedReceptacleAmperageMax),
+  "deviceType": zod.enum(['duplex']),
+  "protection": zod.enum(['Standard', 'GFCI']),
+  "tamperResistant": zod.boolean(),
+  "weatherResistant": zod.boolean()
+}).optional().describe('Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating.')
 })).max(updatePriceBookItemBodyMaterialPreferencesMax).optional(),
   "panelFamily": zod.string().max(updatePriceBookItemBodyPanelFamilyMax).nullish(),
   "normalizedUnit": zod.enum(['ea', 'ft']).optional(),
@@ -9038,6 +9074,14 @@ export const UpdatePriceBookItemBody = zod.object({
 export const updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax = 300;
 
 export const updatePriceBookItemResponseMaterialPreferencesItemManufacturerMax = 100;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleManufacturerMax = 100;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleManufacturerPartNumberMax = 200;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleSourceMax = 1000;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleAmperageMax = 100;
 
 
 
@@ -9061,7 +9105,17 @@ export const UpdatePriceBookItemResponse = zod.object({
   "materialPreferences": zod.array(zod.object({
   "requestKey": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
-  "manufacturer": zod.string().max(updatePriceBookItemResponseMaterialPreferencesItemManufacturerMax).optional()
+  "manufacturer": zod.string().max(updatePriceBookItemResponseMaterialPreferencesItemManufacturerMax).optional(),
+  "verifiedReceptacle": zod.object({
+  "manufacturer": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleSourceMax),
+  "amperage": zod.number().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedReceptacleAmperageMax),
+  "deviceType": zod.enum(['duplex']),
+  "protection": zod.enum(['Standard', 'GFCI']),
+  "tamperResistant": zod.boolean(),
+  "weatherResistant": zod.boolean()
+}).optional().describe('Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating.')
 })).optional(),
   "panelFamily": zod.string().nullish(),
   "supplierCost": zod.number().nullish(),
