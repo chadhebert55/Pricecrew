@@ -252,7 +252,7 @@ export function NewAdditionQuote() {
     { key: "switches", label: "Switches", description: "Single-location lighting controls" },
     { key: "dimmers", label: "Dimmers", description: "Dimmable lighting controls" },
     { key: "recessedLights", label: "Recessed lights", description: "Ceiling lighting locations" },
-    { key: "ceilingFans", label: "Ceiling fans", description: "Fan-rated outlet, support, and connection" },
+    { key: "ceilingFans", label: "Ceiling fans", description: "Ceiling-fan installation; confirm support and wiring scope" },
   ]
 
   return (
@@ -312,7 +312,7 @@ export function NewAdditionQuote() {
                     {quantities.map((field) => <div key={field.key} className="rounded-lg border bg-muted/15 p-4"><div className="flex items-start justify-between gap-4"><div><Label htmlFor={`addition-${field.key}`}>{field.label}</Label><p className="mt-1 text-xs text-muted-foreground">{field.description}</p></div><Input id={`addition-${field.key}`} className="w-24 text-right font-mono" type="number" min="0" value={inputs[field.key] as number} onChange={(event) => setNumber(field.key, event.target.value)} /></div></div>)}
                   </div>
                   <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <label className="flex items-start gap-3 text-sm font-medium"><Checkbox checked={inputs.customerSuppliedFans} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFans: checked === true }))} /><span>Customer supplies ceiling fans <span className="block pt-1 text-xs font-normal text-muted-foreground">Fan installation labor and fan-rated support remain included.</span></span></label>
+                    <label className="flex items-start gap-3 text-sm font-medium"><Checkbox checked={inputs.customerSuppliedFans} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFans: checked === true }))} /><span>Customer supplies ceiling fans <span className="block pt-1 text-xs font-normal text-muted-foreground">Fan purchase cost is excluded; installation labor remains. Confirm fan-rated support and wiring/control materials separately. This is not an exhaust-fan scope.</span></span></label>
                     {!inputs.customerSuppliedFans && <div className="mt-4 max-w-sm space-y-2"><Label htmlFor="addition-fan-cost">Contractor-supplied fan unit-cost override ($)</Label><Input id="addition-fan-cost" type="number" min="0" step="0.01" value={inputs.ceilingFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("ceilingFanMaterialCostOverride", event.target.value)} placeholder="Use verified Price Book value" /></div>}
                   </div>
                 </section>
