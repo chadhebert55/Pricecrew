@@ -284,6 +284,15 @@ export type AdditionSubpanelOption =
   | "100A Subpanel";
 
 export type AdditionInputRecord = {
+  /** Optional new scope; absence preserves legacy Addition estimates. */
+  bathroomExhaust?: {
+    quantity: number;
+    customerSupplied: boolean;
+    control: "Standard switch" | "Timer switch" | "Humidity-sensing control";
+    cableType: "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
+    wiringLength?: number;
+    materialCostOverride?: number;
+  };
   length: number;
   width: number;
   squareFootageOverride?: number;

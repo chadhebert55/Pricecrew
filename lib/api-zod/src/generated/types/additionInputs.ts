@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdditionBathroomExhaust } from './additionBathroomExhaust';
 import type { AdditionCircuitEntry } from './additionCircuitEntry';
 import type { AdditionInputsBreakerAmperage } from './additionInputsBreakerAmperage';
 import type { AdditionInputsBreakerPoleCount } from './additionInputsBreakerPoleCount';
@@ -16,6 +17,7 @@ import type { AdditionInputsSubpanelOption } from './additionInputsSubpanelOptio
 import type { LaborRateType } from './laborRateType';
 
 export interface AdditionInputs {
+  bathroomExhaust?: AdditionBathroomExhaust;
   /** @minimum 0 */
   length: number;
   /** @minimum 0 */

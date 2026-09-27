@@ -833,6 +833,45 @@ export interface KitchenInputs {
   cableType?: KitchenInputsCableType;
 }
 
+export type AdditionBathroomExhaustControl = typeof AdditionBathroomExhaustControl[keyof typeof AdditionBathroomExhaustControl];
+
+
+export const AdditionBathroomExhaustControl = {
+  Standard_switch: 'Standard switch',
+  Timer_switch: 'Timer switch',
+  'Humidity-sensing_control': 'Humidity-sensing control',
+} as const;
+
+export type AdditionBathroomExhaustCableType = typeof AdditionBathroomExhaustCableType[keyof typeof AdditionBathroomExhaustCableType];
+
+
+export const AdditionBathroomExhaustCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
+
+/**
+ * Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
+ */
+export interface AdditionBathroomExhaust {
+  /** @minimum 0 */
+  quantity: number;
+  customerSupplied: boolean;
+  control: AdditionBathroomExhaustControl;
+  cableType: AdditionBathroomExhaustCableType;
+  /**
+     * Total additional fan switch-leg/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.
+     * @minimum 0
+     */
+  wiringLength?: number;
+  /**
+     * Quote-local fan equipment cost only. Ignored when customerSupplied is true.
+     * @minimum 0
+     */
+  materialCostOverride?: number;
+}
+
 export type AdditionInputsRecessedLightSize = typeof AdditionInputsRecessedLightSize[keyof typeof AdditionInputsRecessedLightSize];
 
 
@@ -968,6 +1007,7 @@ export const AdditionInputsSubpanelOption = {
 } as const;
 
 export interface AdditionInputs {
+  bathroomExhaust?: AdditionBathroomExhaust;
   /** @minimum 0 */
   length: number;
   /** @minimum 0 */

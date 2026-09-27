@@ -108,6 +108,10 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Addition exhaust-fan wiring is unresolved:")) {
+    return { code: "ADDITION_EXHAUST_WIRING_REQUIRED", severity: "error", category: "field-verification",
+      source: "addition-exhaust-fan", context: { rule: "Enter separately measured fan wiring, excluding circuit schedule footage." } };
+  }
   if (message.startsWith("Addition customer-supplied ceiling fans:")) {
     return {
       code: "ADDITION_SUPPLIED_FAN_SCOPE_REVIEW",
@@ -1867,6 +1871,58 @@ export function calculateEvChargerEstimate(
   );
 }
 
+// The established Bathroom exhaust-only scope is also used by Addition.
+// No new setup, labor coefficients, catalog aliases or equipment prices.
+const bathroomExhaustEquipment = {
+  key: "Panasonic FV-0511VF1 exhaust fan",
+  description: "Panasonic FV-0511VF1 exhaust fan with new switch leg",
+  laborHours: 2.25,
+};
+const bathroomControlBox = "Pass & Seymour S1-18-W 1-gang box — SKU 18134";
+const bathroomControlPlate = "Legrand radiant RWP26WCC10 1-gang screwless wall plate";
+function bathroomFanControl(control = "Standard switch") {
+  return {
+    key: control === "Standard switch" ? "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211"
+      : control === "Timer switch" ? "fan timer switch" : "fan humidity-sensing control",
+    laborHours: control === "Standard switch" ? .5 : .75,
+  };
+}
+const bathroomWiringLabor = (length: number) => length / 30;
+
+/** Bathroom pricing semantics, including supplied precedence over stale overrides. */
+function bathroomPricedItems(assembly: AssemblyLineRecord[], pricingWarnings: string[], priceBook: PriceBookItem[]) {
+  return (id: string, category: string, key: string, description: string, quantity: number,
+    customerSupplied = false, unit = "ea", unitCostOverride?: number, warnSupplied = true) => {
+    const safeQuantity = Math.max(0, Number(quantity) || 0);
+    if (safeQuantity === 0) return;
+    const price = customerSupplied
+      ? (() => {
+          if (warnSupplied) pricingWarnings.push(
+            `Customer-supplied material "${description}" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.`,
+          );
+          return { value: 0, source: "Customer supplied fixture" };
+        })()
+      : unitCostOverride !== undefined
+        ? (() => {
+            const override = Number(unitCostOverride);
+            if (Number.isFinite(override) && override > 0) {
+              return { value: override, source: "Quote-local material cost override" };
+            }
+            pricingWarnings.push(
+              `Active material selection "${description}" has zero cost and is unresolved. Enter a positive quote material cost or clear the override to use the company price book.`,
+            );
+            return { value: 0, source: "Unresolved quote-local material cost override" };
+          })()
+        : unitCost(key, priceBook, pricingWarnings);
+    addLine(assembly, {
+      id, category, description, quantity: safeQuantity, unit, unitCost: price.value,
+      ...resolvedMaterial(price), source: price.source,
+      ...(customerSupplied ? { intentionalExclusionReason:
+        "Customer is supplying this fixture; contractor material cost is intentionally excluded." } : {}),
+    });
+  };
+}
+
 /** Internal diagnostics and the calculator share these components; never customer scope. */
 function bathroomBaseLaborComponents(inputs: BathroomInputRecord) {
   return {
@@ -1875,12 +1931,12 @@ function bathroomBaseLaborComponents(inputs: BathroomInputRecord) {
     downstreamReceptacles: inputs.additionalReceptacles * .55,
     vanityLights: inputs.vanityLights * .8,
     recessedLights: inputs.recessedLights * .9,
-    exhaustFans: inputs.exhaustFans * 2.25,
+    exhaustFans: inputs.exhaustFans * bathroomExhaustEquipment.laborHours,
     fanLights: inputs.fanLights * 2.5,
     fanLightHeat: inputs.fanLightHeatUnits * 3.5,
     legacyHeatedFloor: inputs.heatedFloorCircuit ? 3 : 0,
     singlePoleControls: inputs.additionalSwitches * .5,
-    inRoomWiring: Math.max(0, Number(inputs.routeLength) || 0) / 30,
+    inRoomWiring: bathroomWiringLabor(Math.max(0, Number(inputs.routeLength) || 0)),
     legacyCircuit: /new/i.test(inputs.circuitOption)
       ? Number.isFinite(Number(inputs.newCircuitLaborHours)) ? Math.max(0, Number(inputs.newCircuitLaborHours)) : 3
       : 0,
@@ -1898,7 +1954,7 @@ export function bathroomLaborBreakdown(inputs: BathroomInputRecord) {
       dimmers: (inputs.dimmers ?? 0) * .5,
       smartControls: (inputs.smartSwitches ?? 0) * .75,
       fanControls: (inputs.exhaustFans + inputs.fanLights + inputs.fanLightHeatUnits)
-        * ((inputs.fanControl ?? "Standard switch") === "Standard switch" ? .5 : .75),
+        * bathroomFanControl(inputs.fanControl).laborHours,
       showerLights: (inputs.showerLights ?? 0) * .9,
       floorThermostat: inputs.heatedFloorCircuit && inputs.heatedFloorThermostat ? .75 : 0,
       circuitHomeRuns: bathroomCircuitPlan(inputs).reduce((s,c)=>s+c.quantity*(3+(c.routeLength??0)/30),0),
@@ -1945,15 +2001,14 @@ export function calculateBathroomEstimate(
   priced("bathroom-three-way", "Pass & Seymour TM873-W 15A 3-way switch — SKU 32128", three);
   priced("bathroom-dimmers", "Lutron DVCL-153P-WH Diva dimmer — SKU 160288", dimmers);
   priced("bathroom-smart", "smart switch", smart);
-  priced("bathroom-fan-controls", fanControl === "Standard switch" ? "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211"
-    : fanControl === "Timer switch" ? "fan timer switch" : "fan humidity-sensing control", fans);
+  priced("bathroom-fan-controls", bathroomFanControl(fanControl).key, fans);
   const thermostat = inputs.heatedFloorCircuit && inputs.heatedFloorThermostat ? 1 : 0;
   priced("bathroom-floor-thermostat", "heated-floor thermostat", thermostat);
   priced("bathroom-shower-lights", "wet-location recessed light", inputs.showerLights ?? 0, "Lighting");
   const controls = single + three + dimmers + smart + fans + thermostat;
   const devices = inputs.gfciReceptacles + inputs.additionalReceptacles + controls;
-  priced("bathroom-device-boxes", "Pass & Seymour S1-18-W 1-gang box — SKU 18134", devices, "Rough-in");
-  priced("bathroom-decora-plates", "Legrand radiant RWP26WCC10 1-gang screwless wall plate", devices - inputs.additionalReceptacles, "Trim");
+  priced("bathroom-device-boxes", bathroomControlBox, devices, "Rough-in");
+  priced("bathroom-decora-plates", bathroomControlPlate, devices - inputs.additionalReceptacles, "Trim");
   priced("bathroom-duplex-plates", "duplex receptacle wall plate", inputs.additionalReceptacles, "Trim");
   priced("bathroom-fixture-boxes", "fixture outlet box", inputs.vanityLights, "Rough-in");
   const calculated = bathroomLaborBreakdown(inputs).calculatedLaborHours;
@@ -1971,59 +2026,7 @@ function calculateLegacyBathroomEstimate(
   const assembly: AssemblyLineRecord[] = [];
   const pricingWarnings: string[] = [];
 
-  const addPricedItem = (
-    id: string,
-    category: string,
-    key: string,
-    description: string,
-    quantity: number,
-    customerSupplied = false,
-    unit = "ea",
-    unitCostOverride?: number,
-  ) => {
-    const safeQuantity = Math.max(0, Number(quantity) || 0);
-    if (safeQuantity === 0) return;
-    const price = customerSupplied
-      ? (() => {
-          pricingWarnings.push(
-            `Customer-supplied material "${description}" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.`,
-          );
-          return { value: 0, source: "Customer supplied fixture" };
-        })()
-      : unitCostOverride !== undefined
-        ? (() => {
-            const override = Number(unitCostOverride);
-            if (Number.isFinite(override) && override > 0) {
-              return {
-                value: override,
-                source: "Quote-local material cost override",
-              };
-            }
-            pricingWarnings.push(
-              `Active material selection "${description}" has zero cost and is unresolved. Enter a positive quote material cost or clear the override to use the company price book.`,
-            );
-            return {
-              value: 0,
-              source: "Unresolved quote-local material cost override",
-            };
-          })()
-        : unitCost(key, priceBook, pricingWarnings);
-    addLine(assembly, {
-      id,
-      category,
-      description,
-      quantity: safeQuantity,
-      unit,
-      unitCost: price.value,
-      ...resolvedMaterial(price), source: price.source,
-      ...(customerSupplied
-        ? {
-            intentionalExclusionReason:
-              "Customer is supplying this fixture; contractor material cost is intentionally excluded.",
-          }
-        : {}),
-    });
-  };
+  const addPricedItem = bathroomPricedItems(assembly, pricingWarnings, priceBook);
 
   const gfciAmperage = inputs.gfciAmperage === 15 ? 15 : 20;
   addPricedItem(
@@ -2063,8 +2066,8 @@ function calculateLegacyBathroomEstimate(
   addPricedItem(
     "exhaust-fans",
     "Ventilation",
-    "Panasonic FV-0511VF1 exhaust fan",
-    "Panasonic FV-0511VF1 exhaust fan with new switch leg",
+    bathroomExhaustEquipment.key,
+    bathroomExhaustEquipment.description,
     inputs.exhaustFans,
     false,
     "ea",
@@ -3151,6 +3154,31 @@ export function calculateAdditionEstimate(
     });
   }
 
+  const exhaust = inputs.bathroomExhaust;
+  let exhaustLabor = 0;
+  if (exhaust && n(exhaust.quantity) > 0) {
+    const qty = n(exhaust.quantity);
+    const wire = n(exhaust.wiringLength);
+    const control = bathroomFanControl(exhaust.control);
+    const priced = bathroomPricedItems(assembly, pricingWarnings, priceBook);
+    priced("addition-exhaust-fans", "Ventilation", bathroomExhaustEquipment.key,
+      exhaust.customerSupplied ? "Customer-supplied bathroom exhaust fan" : bathroomExhaustEquipment.description,
+      qty, exhaust.customerSupplied, "ea", exhaust.materialCostOverride, false);
+    priced("addition-exhaust-controls", "Controls", control.key, control.key, qty);
+    priced("addition-exhaust-boxes", "Rough-in", bathroomControlBox, bathroomControlBox, qty);
+    priced("addition-exhaust-plates", "Trim", bathroomControlPlate, bathroomControlPlate, qty);
+    priced("addition-exhaust-wiring", "Conductor", `${exhaust.cableType} cable`,
+      `Additional bathroom fan in-room / switch-leg wiring: ${exhaust.cableType}`, wire, false, "ft");
+    if (!wire) pricingWarnings.push(
+      "Addition exhaust-fan wiring is unresolved: enter total additional in-room / switch-leg footage, excluding cable already counted in the circuit schedule.",
+    );
+    pricingWarnings.push(
+      "Bathroom exhaust-fan electrical scope uses the Bathroom equipment, one control/box/plate per fan, and separately measured wiring. Verify circuit assignment, cable suitability, equipment mounting/termination requirements and field conditions. Ductwork is not included.",
+    );
+    // Addition already has project/crew labor; do not add Bathroom's shared setup.
+    exhaustLabor = qty * (bathroomExhaustEquipment.laborHours + control.laborHours) + bathroomWiringLabor(wire);
+  }
+
   const circuitEntries = Array.isArray(inputs.circuitEntries)
     ? inputs.circuitEntries
     : null;
@@ -3364,7 +3392,8 @@ export function calculateAdditionEstimate(
     n(inputs.dimmers) * 0.5 +
     n(inputs.recessedLights) +
     fans * 1.75 +
-    circuits * 2.5;
+    circuits * 2.5 +
+    exhaustLabor;
   const adjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
     ? Number(inputs.laborAdjustmentHours)
     : 0;
