@@ -1,5 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
-import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, type CatalogMaterial } from "./material-resolution";
+import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, materialRequirementsSatisfied, EXTERIOR_WR_RECEPTACLE_REQUEST, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
   AdditionCircuitEntry,
@@ -1145,7 +1145,8 @@ function lookupUnitCost(
     `No verified price is available for "${key}". This material is unresolved and excluded from material cost until a sourced catalog item is added.`,
   );
   const invalidUnit = priceBook.find(item => (normalized(item.item) === normalized(key) ||
-    matchingPreferences(item, key).length > 0) && item.supplierUom && usableCatalogCost(item) === null);
+    matchingPreferences(item, key).length > 0) && materialRequirementsSatisfied(item, key) &&
+    item.supplierUom && usableCatalogCost(item) === null);
   if (invalidUnit) {
     pricingWarnings.push(`Supplier UOM needs review for "${key}": ${invalidUnit.supplierCost ?? "unknown"} / ${invalidUnit.supplierUom}. Confirm its base unit and conversion in the Price Book.`);
     return { value: 0, source: "Unresolved supplier UOM — verify base unit", item: { ...invalidUnit, requestKey: key } };
@@ -5217,7 +5218,7 @@ export function calculateNewHouseEstimate(
     "new-house-exterior-receptacles",
     "Devices",
     "Exterior weather-resistant receptacles",
-    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    EXTERIOR_WR_RECEPTACLE_REQUEST,
     inputs.exteriorReceptacleQuantity,
   );
   addCatalogLine(

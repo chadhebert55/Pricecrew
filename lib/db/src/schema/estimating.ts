@@ -654,6 +654,18 @@ export type MaterialPreference = {
   requestKey: string;
   kind: "exact" | "manufacturer" | "family" | "alternate";
   manufacturer?: string;
+  /** Explicit company verification, bound to this catalog product identity.
+   * A preference or a part-number suffix alone is not evidence of WR rating. */
+  verifiedReceptacle?: {
+    manufacturer: string;
+    manufacturerPartNumber: string;
+    source: string;
+    amperage: number;
+    deviceType: "duplex";
+    protection: "Standard" | "GFCI";
+    tamperResistant: boolean;
+    weatherResistant: boolean;
+  };
 };
 
 export type MaterialSnapshot = {

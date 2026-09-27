@@ -19,9 +19,30 @@ export type CatalogMaterial = {
   supplierUnitQuantity?: number | null;
   materialPreferences?: MaterialPreference[] | null;
   panelFamily?: string | null;
+  amperage?: number | null;
+  protectionType?: string | null;
 };
 
 export const materialKey = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+export const EXTERIOR_WR_RECEPTACLE_REQUEST = "15A TR weather-resistant exterior duplex receptacle";
+
+/** Narrow qualified family: no fuzzy descriptions, suffix inference, or GFCI substitution.
+ * Other existing request families retain their current matching behavior. */
+export function materialRequirementsSatisfied(item: CatalogMaterial, requestKey: string): boolean {
+  if (materialKey(requestKey) !== materialKey(EXTERIOR_WR_RECEPTACLE_REQUEST)) return true;
+  return matchingPreferences(item, requestKey).some(preference => {
+    const proof = preference.verifiedReceptacle;
+    return !!proof && typeof proof.source === "string" && !!proof.source.trim() &&
+      !!item.manufacturer?.trim() && !!item.manufacturerPartNumber?.trim() &&
+      materialKey(proof.manufacturer) === materialKey(item.manufacturer) &&
+      materialKey(proof.manufacturerPartNumber) === materialKey(item.manufacturerPartNumber) &&
+      proof.amperage === 15 && proof.deviceType === "duplex" && proof.protection === "Standard" &&
+      (item.amperage == null || item.amperage === proof.amperage) &&
+      (!item.protectionType || materialKey(item.protectionType) === materialKey(proof.protection)) &&
+      proof.tamperResistant === true && proof.weatherResistant === true;
+  });
+}
 
 /** Only dimensional conversions explicitly established by the catalog/import are safe. */
 export function normalizeSupplierCost(raw: number, uom: string, baseUnit?: string | null, quantity?: number | null) {
@@ -95,7 +116,7 @@ export function matchingPreferences(item: CatalogMaterial, requestKey: string, m
 export function selectCatalogMaterial<T extends CatalogMaterial>(
   items: T[], compatible: (item: T) => boolean, requestKey = "", manufacturer?: string,
 ): { status: "none" | "ambiguous" | "unique"; candidates: T[]; match?: T; resolutionStatus?: string } {
-  const candidates = items.filter(compatible);
+  const candidates = items.filter(item => compatible(item) && materialRequirementsSatisfied(item, requestKey));
   const ranked = candidates.map(item => ({ item,
     preference: matchingPreferences(item, requestKey, manufacturer).sort((a,b) => rank[a.kind] - rank[b.kind])[0] }));
   const preferred = ranked.filter(row => row.preference);
