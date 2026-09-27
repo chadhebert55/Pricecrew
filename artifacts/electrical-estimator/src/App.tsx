@@ -29,6 +29,7 @@ import {
 
 import { E2eShell, Shell } from '@/components/layout/shell';
 import { BrandLogo, ThemeToggle } from '@/components/brand';
+import { BuilderRecentTracker } from '@/hooks/use-builder-preferences';
 
 const Dashboard = lazy(() =>
   import('@/pages/dashboard').then(({ Dashboard }) => ({ default: Dashboard })),
@@ -199,6 +200,7 @@ function PrivateRouteSwitch({ trade }: { trade: CompanyTrade }) {
   const isElectrical = trade === 'Electrical';
   return (
     <Suspense fallback={<RouteLoading />}>
+      <BuilderRecentTracker />
       <Switch>
             {/* `/` is the canonical dashboard URL; keep `/dashboard` for legacy links and bookmarks. */}
             <Route path="/dashboard" component={() => <Redirect to="/" />} />
