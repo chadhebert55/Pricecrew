@@ -2621,6 +2621,51 @@ export const MaterialPreferenceKind = {
   alternate: 'alternate',
 } as const;
 
+export type MaterialPreferenceVerifiedReceptacleDeviceType = typeof MaterialPreferenceVerifiedReceptacleDeviceType[keyof typeof MaterialPreferenceVerifiedReceptacleDeviceType];
+
+
+export const MaterialPreferenceVerifiedReceptacleDeviceType = {
+  duplex: 'duplex',
+} as const;
+
+export type MaterialPreferenceVerifiedReceptacleProtection = typeof MaterialPreferenceVerifiedReceptacleProtection[keyof typeof MaterialPreferenceVerifiedReceptacleProtection];
+
+
+export const MaterialPreferenceVerifiedReceptacleProtection = {
+  Standard: 'Standard',
+  GFCI: 'GFCI',
+} as const;
+
+/**
+ * Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating.
+ */
+export type MaterialPreferenceVerifiedReceptacle = {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  manufacturer: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  manufacturerPartNumber: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  source: string;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  amperage: number;
+  deviceType: MaterialPreferenceVerifiedReceptacleDeviceType;
+  protection: MaterialPreferenceVerifiedReceptacleProtection;
+  tamperResistant: boolean;
+  weatherResistant: boolean;
+};
+
 export interface MaterialPreference {
   /**
      * @minLength 1
@@ -2630,6 +2675,8 @@ export interface MaterialPreference {
   kind: MaterialPreferenceKind;
   /** @maxLength 100 */
   manufacturer?: string;
+  /** Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating. */
+  verifiedReceptacle?: MaterialPreferenceVerifiedReceptacle;
 }
 
 export interface PriceBookItem {

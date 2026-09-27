@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeSupplierCost, selectCatalogMaterial, usableCatalogCost, breakerManufacturerCompatible } from "./material-resolution";
+import { normalizeSupplierCost, selectCatalogMaterial, usableCatalogCost, breakerManufacturerCompatible, EXTERIOR_WR_RECEPTACLE_REQUEST } from "./material-resolution";
 import { calculateKitchenEstimate, type PriceBookItem } from "./estimating-engine";
 import { hasUnresolvedMaterialCost } from "@workspace/api-zod/pricing-readiness";
 import type { KitchenInputRecord } from "@workspace/db";
@@ -9,6 +9,41 @@ const row = (item: string, extra: Partial<PriceBookItem> = {}): PriceBookItem =>
   item, category: "Devices", unit: "ea", unitCost: 1, supplier: "Northeast Electrical",
   manufacturer: null, manufacturerPartNumber: null, supplierSku: null, upc: null, sourceDate: "2026-08-25",
   amperage: null, poleCount: null, protectionType: null, isDefault: false, ...extra,
+});
+test("P0 WR qualification precedes preference ranking; only verified product identities qualify", () => {
+  const requestKey = EXTERIOR_WR_RECEPTACLE_REQUEST;
+  // Synthetic proof fixtures, NOT approved real company products.
+  const verifiedReceptacle = {
+    manufacturer: "QA manufacturer", manufacturerPartNumber: "QA-WR-15", source: "QA fixture specification",
+    amperage: 15, deviceType: "duplex" as const, protection: "Standard" as const,
+    tamperResistant: true, weatherResistant: true,
+  };
+  const verified = row("QA verified WR duplex", {
+    id: 1, amperage: 15, manufacturer: verifiedReceptacle.manufacturer,
+    manufacturerPartNumber: verifiedReceptacle.manufacturerPartNumber,
+    materialPreferences: [{requestKey, kind: "exact", verifiedReceptacle}],
+  });
+  const select = (items: PriceBookItem[]) => selectCatalogMaterial(items, () => true, requestKey);
+  const indoor = row("Pass & Seymour 3232-TRW 15A TR duplex receptacle", {
+    id: 2, manufacturer: "Pass & Seymour", manufacturerPartNumber: "3232-TRW",
+    materialPreferences: [{requestKey, kind: "exact"}],
+  });
+  assert.equal(select([indoor]).status, "none");
+  assert.equal(select([indoor, verified]).match?.id, 1);
+  assert.equal(select([{...verified, materialPreferences: [{requestKey, kind: "alternate", verifiedReceptacle}]}]).resolutionStatus, "RESOLVED_APPROVED_ALTERNATE");
+  assert.equal(select([verified, {...verified, id: 3}]).status, "ambiguous");
+  for (const invalid of [
+    {...verified, manufacturerPartNumber: "DIFFERENT-PART"},
+    {...verified, manufacturer: "Different manufacturer"},
+    {...verified, amperage: 20},
+    {...verified, protectionType: "GFCI"},
+    ...[{weatherResistant:false}, {tamperResistant:false}, {amperage:20},
+      {source:" "}, {protection:"GFCI" as const}].map(fields => ({
+        ...verified, materialPreferences: [{requestKey, kind:"exact" as const,
+          verifiedReceptacle:{...verifiedReceptacle,...fields}}],
+      })),
+  ]) assert.equal(select([invalid]).status, "none", JSON.stringify(invalid));
+  assert.equal(selectCatalogMaterial([indoor], () => true, indoor.item).match?.id, 2);
 });
 test("supplier c preserves dimensional base and full normalized precision; unknown units fail closed", () => {
   for (const [raw, each] of [[25.399,.25399],[50.651,.50651],[763.579,7.63579]]) {

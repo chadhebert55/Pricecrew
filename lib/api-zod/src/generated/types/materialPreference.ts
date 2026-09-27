@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MaterialPreferenceKind } from './materialPreferenceKind';
+import type { MaterialPreferenceVerifiedReceptacle } from './materialPreferenceVerifiedReceptacle';
 
 export interface MaterialPreference {
   /**
@@ -16,4 +17,6 @@ export interface MaterialPreference {
   kind: MaterialPreferenceKind;
   /** @maxLength 100 */
   manufacturer?: string;
+  /** Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating. */
+  verifiedReceptacle?: MaterialPreferenceVerifiedReceptacle;
 }

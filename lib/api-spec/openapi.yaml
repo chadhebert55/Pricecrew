@@ -3598,6 +3598,37 @@ components:
         manufacturer:
           type: string
           maxLength: 100
+        verifiedReceptacle:
+          type: object
+          description: Company-verified product qualification, bound to manufacturer and exact part. Preference alone does not verify WR rating.
+          required: [manufacturer, manufacturerPartNumber, source, amperage, deviceType, protection, tamperResistant, weatherResistant]
+          properties:
+            manufacturer:
+              type: string
+              minLength: 1
+              maxLength: 100
+            manufacturerPartNumber:
+              type: string
+              minLength: 1
+              maxLength: 200
+            source:
+              type: string
+              minLength: 1
+              maxLength: 1000
+            amperage:
+              type: number
+              minimum: 1
+              maximum: 100
+            deviceType:
+              type: string
+              enum: [duplex]
+            protection:
+              type: string
+              enum: [Standard, GFCI]
+            tamperResistant:
+              type: boolean
+            weatherResistant:
+              type: boolean
     MaterialSnapshot:
       type: object
       required: [catalogId, requestKey, supplier, supplierSku, manufacturer, manufacturerPartNumber, description, supplierCost, supplierUom, normalizedUnit, normalizedUnitCost, sourceDate, resolutionStatus]

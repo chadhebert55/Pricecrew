@@ -39,6 +39,7 @@ import {
   calculateCustomEstimate,
   calculateEvChargerEstimate,
   calculateKitchenEstimate,
+  calculateNewHouseEstimate,
   calculateRecessedLightingEstimate,
   calculateServiceCallEstimate,
   calculateTimeMaterialsEstimate,
@@ -1031,6 +1032,143 @@ test("module aliases include canonical and seeded historical builder labels", ()
   assert.equal(normalizeEstimateModule("Time & Materials"), "TIME_MATERIALS");
   assert.equal(normalizeEstimateModule("New House Builder"), "NEW_HOUSE");
   assert.equal(normalizeEstimateModule("unknown legacy calculator"), null);
+});
+
+test("P0 T&M canonical identity and supported legacy aliases normalize consistently", () => {
+  for (const alias of ["TIME_MATERIALS", "Time & Materials", "Time and Materials Builder"]) {
+    assert.equal(normalizeEstimateModule(alias), "TIME_MATERIALS", alias);
+  }
+});
+
+test("P0 New House WR request cannot resolve a preferred standard indoor TR receptacle", () => {
+  const indoor = catalogRow("Pass & Seymour 3232-TRW 15A TR duplex receptacle", 1, {
+    unit: "ea", manufacturer: "Pass & Seymour", manufacturerPartNumber: "3232-TRW",
+    supplierSku: "243085", amperage: 15,
+    materialPreferences: [
+      { requestKey: "Pass & Seymour 3232-TRW 15A TR duplex receptacle", kind: "exact" },
+      { requestKey: "15A TR weather-resistant exterior duplex receptacle", kind: "exact" },
+    ],
+  });
+  const result = calculateNewHouseEstimate(newHouseInputs, settings, [indoor]);
+  const exterior = result.assembly.find(line => line.id === "new-house-exterior-receptacles")!;
+  assert.equal(exterior.unitCost, 0);
+  assert.equal(exterior.resolutionStatus, "UNRESOLVED_NEEDS_COMPANY_SELECTION");
+  assert.equal(exterior.materialSnapshot, undefined);
+  assert.match(exterior.source, /Needs company material selection/);
+  assert.equal(result.assembly.find(line => line.id === "new-house-outlets")?.unitCost, 1);
+});
+
+test("P0 verified WR preference survives API persistence and prices only the exterior family", async () => {
+  const { server, baseUrl, companyId } = await startTestServer();
+  try {
+    const [fixture] = await db.insert(priceBookItemsTable).values({
+      companyId, category: "Devices", item: "QA verified WR fixture", unit: "ea", unitCost: 7.5,
+      manufacturer: "QA manufacturer", manufacturerPartNumber: "QA-WR-15", amperage: 15, isDefault: false,
+    }).returning();
+    const materialPreferences = [{
+      requestKey: "15A TR weather-resistant exterior duplex receptacle", kind: "alternate",
+      verifiedReceptacle: {manufacturer:"QA manufacturer", manufacturerPartNumber:"QA-WR-15",
+        source:"QA fixture specification, not a company product approval", amperage:15,
+        deviceType:"duplex", protection:"Standard", tamperResistant:true, weatherResistant:true},
+    }];
+    const patch = await fetch(`${baseUrl}/api/price-book/${fixture.id}`, {
+      method: "PATCH", headers: authenticatedHeaders(baseUrl), body: JSON.stringify({materialPreferences}),
+    });
+    assert.equal(patch.status, 200, await patch.clone().text());
+    assert.deepEqual((await patch.json() as { materialPreferences: unknown }).materialPreferences, materialPreferences);
+    const result = await previewQuote(baseUrl, {module:"NEW_HOUSE",jobInputs:newHouseInputs});
+    const exterior = result.assembly.find(line => line.id === "new-house-exterior-receptacles")!;
+    assert.equal(exterior.unitCost, 7.5);
+    assert.equal(exterior.extendedCost, 22.5);
+    const quote = await postQuote(baseUrl, {customerName:"QA WR",projectName:"WR snapshot",
+      proposalDescription:"QA fixture",module:"NEW_HOUSE",jobInputs:newHouseInputs});
+    const before = await getQuote(baseUrl, quote.id);
+    await db.update(priceBookItemsTable).set({materialPreferences:[],unitCost:99}).where(eq(priceBookItemsTable.id,fixture.id));
+    const after = await getQuote(baseUrl, quote.id);
+    assert.deepEqual(after.assembly, before.assembly);
+    assert.deepEqual(after.pricing, before.pricing);
+    assert.equal(after.total, before.total);
+    const refreshed = await previewQuote(baseUrl, {module:"NEW_HOUSE",jobInputs:newHouseInputs});
+    assert.equal(refreshed.assembly.find(line => line.id === "new-house-exterior-receptacles")?.unitCost, 0);
+  } finally { await closeTestServer(server); }
+});
+
+test("P0 T&M preview-save-ready-proposal-duplicate-revise preserves pricing snapshots", async () => {
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const data = { customerName: `P0 QA ${randomUUID()}`, projectName: "T&M lifecycle",
+      proposalDescription: "Install and test electrical repairs.", module: "TIME_MATERIALS" as const,
+      jobInputs: timeMaterialsInputs };
+    const preview = await previewQuote(baseUrl, data);
+    const saved = await postQuote(baseUrl, data);
+    assert.deepEqual(saved.assembly, preview.assembly);
+    const response = await fetch(`${baseUrl}/api/quotes/${saved.id}`, {
+      method: "PATCH", headers: authenticatedHeaders(baseUrl), body: JSON.stringify({ status: "ready" }),
+    });
+    const ready = await response.json() as CreatedQuote & { module: string; proposalShareToken: string };
+    assert.equal(response.status, 200, JSON.stringify(ready));
+    assert.equal(ready.module, "TIME_MATERIALS");
+    assert.equal(ready.total, saved.total);
+    assert.deepEqual(ready.assembly, saved.assembly);
+    assert.equal(ready.pricing.finalSellingPrice, saved.pricing.finalSellingPrice);
+    const proposal = await fetch(`${baseUrl}/api/proposals/${ready.proposalShareToken}`);
+    assert.equal(proposal.status, 200);
+    assert.equal((await proposal.json() as { finalSellingPrice: number }).finalSellingPrice, saved.total);
+    const before = await getQuote(baseUrl, saved.id);
+    const duplicateResponse = await fetch(`${baseUrl}/api/quotes/${saved.id}/duplicate`, {
+      method: "POST", headers: authenticatedHeaders(baseUrl), body: "{}",
+    });
+    assert.equal(duplicateResponse.status, 201);
+    const duplicate = await duplicateResponse.json() as CreatedQuote & { module: string };
+    assert.equal(duplicate.module, "TIME_MATERIALS");
+    assert.deepEqual(duplicate.assembly, saved.assembly);
+    assert.equal(duplicate.total, saved.total);
+    const revisedResponse = await fetch(`${baseUrl}/api/quotes`, {
+      method: "POST", headers: authenticatedHeaders(baseUrl),
+      body: JSON.stringify({ ...data, sourceQuoteId: duplicate.id }),
+    });
+    assert.equal(revisedResponse.status, 201, await revisedResponse.text());
+    const after = await getQuote(baseUrl, saved.id);
+    assert.deepEqual(after.assembly, before.assembly);
+    assert.deepEqual(after.pricing, before.pricing);
+    assert.equal(after.total, before.total);
+  } finally {
+    await closeTestServer(server);
+  }
+});
+
+test("P0 supported historical T&M aliases retain stored identity and pricing during readiness and revise", async () => {
+  const {server,baseUrl} = await startTestServer();
+  try {
+    for (const alias of ["Time & Materials", "Time and Materials Builder"]) {
+      const data = {customerName:"P0 legacy QA", projectName:"Legacy alias", proposalDescription:"QA scope",
+        module:"TIME_MATERIALS" as const,jobInputs:timeMaterialsInputs};
+      const quote = await postQuote(baseUrl,data);
+      // Fixture only: simulate an already persisted historical label. No migration.
+      await db.update(quotesTable).set({module:alias}).where(eq(quotesTable.id,quote.id));
+      const response = await fetch(`${baseUrl}/api/quotes/${quote.id}`, {
+        method:"PATCH",headers:authenticatedHeaders(baseUrl),body:JSON.stringify({status:"ready"}),
+      });
+      const ready = await response.json() as CreatedQuote & { module: string };
+      assert.equal(response.status,200,JSON.stringify(ready));
+      assert.equal(ready.module,alias);
+      assert.deepEqual(ready.assembly,quote.assembly);
+      assert.equal(ready.total,quote.total);
+      const revision = await fetch(`${baseUrl}/api/quotes`, {
+        method:"POST",headers:authenticatedHeaders(baseUrl),
+        body:JSON.stringify({...data,sourceQuoteId:quote.id}),
+      });
+      const revised = await revision.json() as CreatedQuote & { module: string };
+      assert.equal(revision.status,201,JSON.stringify(revised));
+      assert.equal(revised.module,"TIME_MATERIALS");
+      assert.deepEqual(revised.assembly,quote.assembly);
+      assert.equal(revised.total,quote.total);
+      const historical = await getQuote(baseUrl,quote.id);
+      assert.deepEqual(historical.assembly,quote.assembly);
+      assert.equal(historical.total,quote.total);
+    }
+    assert.equal(normalizeEstimateModule("unknown legacy calculator"),null);
+  } finally { await closeTestServer(server); }
 });
 
 type CustomerSummary = {
