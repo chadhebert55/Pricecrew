@@ -6,7 +6,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query"
 import { Mail, Plus, Search } from "lucide-react"
 import { useState } from "react"
-import { useLocation } from "wouter"
+import { Link, useLocation } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -28,7 +28,7 @@ export function Customers() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const { data: customers, isLoading } = useListCustomers(
+  const { data: customers, isLoading, isError, refetch, isFetching } = useListCustomers(
     search.trim() ? { search: search.trim() } : undefined,
   )
   const createCustomer = useCreateCustomer()
@@ -63,12 +63,19 @@ export function Customers() {
         <div className="flex items-center border-b p-4">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" className="pl-9" placeholder="Search by name or email..." value={search} onChange={(event) => setSearch(event.target.value)} />
+            <Input type="search" aria-label="Search customers" className="pl-9" placeholder="Search by name or email..." value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
         </div>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Loading customers...</div>
+          ) : isError ? (
+            <div role="alert" className="space-y-3 p-10 text-center">
+              <p>Could not load customers. Please try again.</p>
+              <Button variant="outline" aria-label="Retry loading customers" disabled={isFetching} onClick={() => void refetch()}>
+                {isFetching ? "Retrying..." : "Retry"}
+              </Button>
+            </div>
           ) : !customers?.length ? (
             <div className="p-10 text-center text-muted-foreground">{search ? "No customers match this search." : "No customers yet. Add one or create a quote to get started."}</div>
           ) : (
@@ -77,7 +84,7 @@ export function Customers() {
               <TableBody>
                 {customers.map((customer) => (
                   <TableRow key={customer.id} className="cursor-pointer" onClick={() => setLocation(`/customers/${customer.id}`)}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell className="font-medium"><Link href={`/customers/${customer.id}`} onClick={(event) => event.stopPropagation()} className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{customer.name}</Link></TableCell>
                     <TableCell><span className="flex items-center gap-2 text-muted-foreground"><Mail size={14} />{customer.email ?? "No email"}</span></TableCell>
                     <TableCell className="text-right font-mono">{customer.quoteCount}</TableCell>
                     <TableCell className="text-right font-mono">${customer.totalQuoted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
