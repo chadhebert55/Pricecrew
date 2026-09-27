@@ -34,7 +34,7 @@ The E2E harness uses the existing test draft-scope mechanism to exercise user is
 
 Native links cover the cards and support Enter, opening in a new tab, pointer hover and visible keyboard focus. Favorite buttons have explicit add/remove labels and `aria-pressed`. Search has a proper label and announces result counts. `/` focuses search only outside editable controls and without modifier keys.
 
-Cards retain the existing dark surfaces, cyan accent and icon family. ACTIVE badges and large Use Builder buttons are removed. Cards use 16px padding, concise 14px descriptions, 16px titles and a 176px minimum height. Normal layout is one column on mobile, two on tablet, three on desktop and four on wide desktops. Favorites/search controls retain at least 44px targets.
+Cards retain the existing dark surfaces, cyan accent and icon family. ACTIVE badges and large Use Builder buttons are removed. Cards use 16px padding, concise 14px descriptions, 16px titles and a 176px minimum height. Normal layout is one column on mobile, two on tablet and three on desktop, including wide desktops. Favorites/search controls retain at least 44px targets.
 
 The existing `/quotes/new` chooser retains its New Quote heading and explanatory text. Non-electrical company fallback behavior remains unchanged; this is not a subscription restriction.
 

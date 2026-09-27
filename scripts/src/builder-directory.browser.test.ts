@@ -59,6 +59,8 @@ test("Builder directory: all routes, search, favorites, recent, scoped persisten
     await page.getByTestId("select-builder-bathroom").focus()
     await page.keyboard.press("Enter")
     await expect(page).toHaveURL(/\/quotes\/new\/bathroom$/)
+    // Wait for settings/draft initialization before entering a new unfinished quote.
+    await expect(page.getByRole("button", { name: "Generate Draft / Unfinished Quote", exact: true })).toBeEnabled()
     await page.locator("#bathroom-project").fill("Directory recovery test")
     await expect.poll(() => page.evaluate(() => JSON.stringify(localStorage).includes("Directory recovery test"))).toBe(true)
     await page.goto("/builders")
@@ -70,7 +72,8 @@ test("Builder directory: all routes, search, favorites, recent, scoped persisten
     await expect(page.getByRole("heading", { name: "New Kitchen Quote", exact: true })).toBeVisible()
     for (const [id, route, heading] of builders) {
       await page.goto("/builders")
-      await page.getByTestId(`select-builder-${id}`).click()
+      // Click blank card body padding, not its title or arrow.
+      await page.getByTestId(`select-builder-${id}`).click({ position: { x: 20, y: 150 } })
       await expect(page).toHaveURL(new RegExp(`/quotes/new/${route}$`))
       await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible()
     }
@@ -95,12 +98,17 @@ test("Builder directory: all routes, search, favorites, recent, scoped persisten
     await expect(page.getByLabel("Search builders", { exact: true })).toHaveValue("/")
     await page.getByRole("button", { name: "Clear builder search" }).click()
     await page.getByRole("button", { name: "Switch to dark mode" }).click()
-    for (const width of [1280, 768, 375]) {
+    for (const width of [1536, 1280, 768, 375]) {
       await page.setViewportSize({ width, height: 900 })
       expect(await page.locator("html").evaluate(el => el.scrollWidth)).toBeLessThanOrEqual(width)
       await expect(page.locator('[data-testid^="builder-card-"]')).toHaveCount(11)
       const cards = page.getByRole("region", { name: "Residential Projects" }).locator('[data-testid^="builder-card-"]')
       const first = await cards.nth(0).boundingBox(), second = await cards.nth(1).boundingBox()
+      const third = await cards.nth(2).boundingBox(), fourth = await cards.nth(3).boundingBox()
+      if (width >= 1280) {
+        expect(third!.y).toBe(first!.y)
+        expect(fourth!.y).toBeGreaterThan(first!.y)
+      } else if (width >= 768) expect(third!.y).toBeGreaterThan(first!.y)
       expect(first!.height).toBeLessThan(230)
       if (width === 375) expect(second!.y).toBeGreaterThan(first!.y)
       else expect(second!.y).toBe(first!.y)

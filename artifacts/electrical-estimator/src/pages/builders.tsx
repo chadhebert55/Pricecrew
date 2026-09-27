@@ -79,7 +79,7 @@ export function Builders({ trade, choosingQuote = false }: { trade: CompanyTrade
       if (!items.length) return null
       return <section key={category} aria-label={category} className="space-y-3">
         <h2 className="text-base font-semibold text-foreground">{category}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {items.map(item => <Card key={item.id} data-testid={`builder-card-${item.id}`} className="group relative flex shadow-sm transition-colors hover:border-primary">
             <Link href={item.route} data-testid={`select-builder-${item.id}`} aria-label={`Start ${item.displayName} quote`}
               className="flex min-h-44 w-full cursor-pointer flex-col rounded-lg p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
