@@ -66,6 +66,8 @@ Before production-code changes, three targeted regressions reproduced the failur
 | Full workspace build | Passed |
 | Final test-project type check and whitespace check | Passed |
 
+Independent [GitHub CI verification](https://github.com/chadhebert55/Pricecrew/actions/runs/36285812303) of code commit `7bb28a6` also passed: 299 API tests, the full 33-test browser suite, 13 deployment-configuration tests, and typecheck/build. The code is isolated in [P0-only PR #32](https://github.com/chadhebert55/Pricecrew/pull/32); its automatic Vercel preview deployment succeeded, but it has not been merged to production.
+
 The full API count includes the six new P0 tests; the browser count includes the three new browser tests. These are not additive unique counts of 305 API or 18 browser tests.
 
 ### T&M financial and snapshot trace
