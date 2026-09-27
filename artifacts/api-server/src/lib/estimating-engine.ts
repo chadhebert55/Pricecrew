@@ -108,6 +108,15 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Addition customer-supplied ceiling fans:")) {
+    return {
+      code: "ADDITION_SUPPLIED_FAN_SCOPE_REVIEW",
+      severity: "error",
+      category: "field-verification",
+      source: "addition-fan-scope",
+      context: { rule: "Confirm installation materials and support scope; fan purchase is intentionally excluded." },
+    };
+  }
   if (message.startsWith("Remodel circuit:")) {
     return { code: "REMODEL_CIRCUIT_REVIEW", severity: "error", category: "compatibility",
       source: "remodel-circuit", context: { rule: "Resolve circuit configuration and route lengths before sending." } };
@@ -3024,6 +3033,27 @@ export function calculateAdditionEstimate(
   pricingWarnings.push(
     `Addition allowances use ${Number(squareFeet.toFixed(2))} square feet for planning only. Selling price is calculated from the editable scope, materials, and labor rather than a fixed square-foot rate.`,
   );
+  // These two existing requests name exact products. Supplier display suffixes
+  // must not hide the same verified manufacturer/part. Preserve old request keys
+  // and company preferences; do not rename catalog rows or alter shared matching.
+  const controlCost = (key: string, manufacturer: string, part: string) => {
+    const match = resolvePriceBookMatch(priceBook, item =>
+      !item.isDefault && !normalized(item.item).startsWith("unverified ") &&
+      (normalized(item.item) === normalized(key) || matchingPreferences(item, key).length > 0 ||
+        (hasSourceBackedCatalogPricing(item) && itemInCategory(item, "Controls") &&
+          normalized(item.manufacturer ?? "") === normalized(manufacturer) &&
+          normalized(item.manufacturerPartNumber ?? "") === normalized(part))), key);
+    if (match.status === "ambiguous") {
+      pricingWarnings.push(duplicatePriceBookWarning(key, match.candidates.length));
+      return { value: 0, source: "Unresolved — duplicate catalog matches", requestKey: key };
+    }
+    if (match.status === "unique" && match.match.unitCost > 0) {
+      return { value: match.match.unitCost, source: catalogSource(match.match),
+        item: match.match, requestKey: key };
+    }
+    // Retain the shared unresolved/UOM handling and explicit unpriced preferences.
+    return unitCost(key, priceBook, pricingWarnings);
+  };
   const catalogLine = (
     id: string,
     category: string,
@@ -3032,7 +3062,9 @@ export function calculateAdditionEstimate(
     quantity: number,
   ) => {
     if (!n(quantity)) return;
-    const price = unitCost(key, priceBook, pricingWarnings);
+    const price = id === "addition-switches" ? controlCost(key, "Pass & Seymour", "TM870-W")
+      : id === "addition-dimmers" ? controlCost(key, "Lutron", "DVCL-153P-WH")
+      : unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,
       category,
@@ -3078,7 +3110,7 @@ export function calculateAdditionEstimate(
     let fanPrice = { value: 0, source: "Customer supplied fixture" };
     if (inputs.customerSuppliedFans) {
       pricingWarnings.push(
-        'Customer-supplied material "ceiling fan" has no contractor price. Confirm the customer-provided item is available and intentionally excluded before sending the quote.',
+        "Addition customer-supplied ceiling fans: fan purchase cost is intentionally excluded and installation labor is retained. Confirm fan-rated support and wiring/control materials in the selected scope; this builder does not generate a separate fan-support material assembly.",
       );
     } else if (
       inputs.ceilingFanMaterialCostOverride !== undefined &&
