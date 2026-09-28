@@ -1,4 +1,6 @@
 import { customerProposalScope } from "../lib/customer-scope";
+import { normalizeEstimateModule, type EstimateModule } from "../lib/estimate-module";
+export { normalizeEstimateModule, type EstimateModule } from "../lib/estimate-module";
 import { normalizeSupplierCost } from "../lib/material-resolution";
 export { customerMaterialDescription } from "../lib/customer-scope";
 import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
@@ -241,55 +243,6 @@ router.patch("/company/onboarding", async (req, res): Promise<void> => {
 });
 
 type QuoteStatus = "draft" | "ready";
-export type EstimateModule =
-  | "EV_CHARGER"
-  | "BATHROOM"
-  | "KITCHEN"
-  | "ADDITION"
-  | "RECESSED_LIGHTING"
-  | "SERVICE_UPGRADE"
-  | "PANEL_REPLACEMENT"
-  | "SERVICE_CALL"
-  | "TIME_MATERIALS"
-  | "CUSTOM"
-  | "NEW_HOUSE";
-
-export function normalizeEstimateModule(value: string): EstimateModule | null {
-  const key = value
-    .trim()
-    .toUpperCase()
-    .replace(/&/g, "AND")
-    .replace(/[^A-Z0-9]/g, "");
-  const aliases: Record<string, EstimateModule> = {
-    EVCHARGER: "EV_CHARGER",
-    EVCHARGERBUILDER: "EV_CHARGER",
-    BATHROOM: "BATHROOM",
-    BATHROOMBUILDER: "BATHROOM",
-    KITCHEN: "KITCHEN",
-    KITCHENBUILDER: "KITCHEN",
-    ADDITION: "ADDITION",
-    ADDITIONBUILDER: "ADDITION",
-    RECESSEDLIGHTING: "RECESSED_LIGHTING",
-    RECESSEDLIGHTINGBUILDER: "RECESSED_LIGHTING",
-    SERVICEUPGRADE: "SERVICE_UPGRADE",
-    SERVICEUPGRADEBUILDER: "SERVICE_UPGRADE",
-    PANELREPLACEMENT: "PANEL_REPLACEMENT",
-    PANELREPLACEMENTBUILDER: "PANEL_REPLACEMENT",
-    SERVICECALL: "SERVICE_CALL",
-    SERVICECALLBUILDER: "SERVICE_CALL",
-    TIMEMATERIALS: "TIME_MATERIALS",
-    TIMEANDMATERIALS: "TIME_MATERIALS",
-    TIMEANDMATERIALSBUILDER: "TIME_MATERIALS",
-    CUSTOM: "CUSTOM",
-    CUSTOMBUILDER: "CUSTOM",
-    CUSTOMITEMS: "CUSTOM",
-    NEWHOUSE: "NEW_HOUSE",
-    NEWHOUSEBUILDER: "NEW_HOUSE",
-    CUSTOMITEMSBUILDER: "CUSTOM",
-  };
-  return aliases[key] ?? null;
-}
-
 function normalizeQuoteStatus(status: string): QuoteStatus {
   return status.toLowerCase() === "ready" ? "ready" : "draft";
 }
@@ -374,6 +327,9 @@ function serializeQuote(
         decision.revisionNumber === quote.revisionNumber &&
         decision.tokenIssuedAt.getTime() === quote.updatedAt.getTime(),
     ) ?? null;
+  const customerPresentation = customerProposalScope(quote.module, quote.assembly, {
+    inputs: quote.jobInputs, pricing: quote.pricing,
+  });
   return {
     id: quote.id,
     quoteNumber: quote.quoteNumber,
@@ -391,7 +347,9 @@ function serializeQuote(
     assembly: quote.assembly,
     pricing: serializePricing(quote.pricing),
     proposalDescription: quote.proposalDescription,
-    customerScope: customerProposalScope(quote.module, quote.assembly).scope,
+    customerScope: customerPresentation.scope,
+    customerAssumptions: customerPresentation.assumptions,
+    customerScopeReview: customerPresentation.reviewIssues ?? [],
     sourceQuoteId: quote.sourceQuoteId,
     revisionNumber: quote.revisionNumber,
     proposalDecision: currentDecision
@@ -1878,6 +1836,13 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Proposal not found" });
     return;
   }
+  const presentation = customerProposalScope(quote.module, quote.assembly, {
+    inputs: quote.jobInputs, pricing: quote.pricing,
+  });
+  if (presentation.reviewIssues?.length) {
+    res.status(409).json({ error: "This proposal requires contractor review before it can be shared." });
+    return;
+  }
   const [settings, company, decision] = await Promise.all([
     db
       .select()
@@ -1905,7 +1870,8 @@ router.get("/proposals/:token", async (req, res): Promise<void> => {
       proposalDescription: quote.proposalDescription,
       createdAt: quote.createdAt.toISOString(),
       finalSellingPrice: quote.pricing.finalSellingPrice,
-      ...customerProposalScope(quote.module, quote.assembly),
+      scope: presentation.scope,
+      assumptions: presentation.assumptions,
       company: {
         displayName: company?.name ?? "Electrical Contractor",
         contactPhone: settings?.contactPhone ?? null,
@@ -1951,6 +1917,12 @@ router.post("/proposals/:token", async (req, res): Promise<void> => {
   }
 
   const normalized = normalizeProposalDecisionInput(parsed.data);
+  if (customerProposalScope(quote.module, quote.assembly, {
+    inputs: quote.jobInputs, pricing: quote.pricing,
+  }).reviewIssues?.length) {
+    res.status(409).json({ error: "This proposal requires contractor review before a decision can be recorded." });
+    return;
+  }
   if (!normalized.value) {
     res.status(422).json({ error: normalized.error });
     return;
@@ -2578,6 +2550,13 @@ router.patch("/quotes/:id", async (req, res): Promise<void> => {
     pricing = pricingForQuoteUpdate(existingQuote.pricing, parsed.data);
   }
   if (targetStatus === "ready") {
+    const scopeReview = customerProposalScope(existingQuote.module, assembly, {
+      inputs: existingQuote.jobInputs, pricing,
+    }).reviewIssues ?? [];
+    if (scopeReview.length) {
+      res.status(409).json({ error: `Customer scope needs review: ${scopeReview.join(" ")}` });
+      return;
+    }
     const readiness = evaluateCustomerReadyPricing({
       pricing,
       assembly,

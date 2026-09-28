@@ -396,13 +396,18 @@ export function QuoteDetail() {
         <Button variant={view === "internal" ? "default" : "outline"} onClick={() => setView("internal")}>Internal View</Button>
         <Button variant={view === "customer" ? "default" : "outline"} onClick={() => setView("customer")}>Customer View</Button>
       </div>
+      {!!quote.customerScopeReview?.length && <div role="alert" className="rounded-lg border border-amber-300 p-3 text-sm">
+        <p className="font-semibold">Customer scope needs review (internal)</p>
+        <ul>{quote.customerScopeReview.map((issue,index)=><li key={index}>{issue}</li>)}</ul>
+      </div>}
       {view === "customer" && <Card data-testid="customer-view-preview">
         <CardHeader><CardTitle>{settings?.companyName ?? "Customer proposal"}</CardTitle><CardDescription>Proposal #{quote.quoteNumber} · {new Date(quote.createdAt).toLocaleDateString()}</CardDescription></CardHeader>
         <CardContent className="space-y-5">
           <h2 className="text-xl font-semibold">{quote.projectName}</h2>
           <p className="whitespace-pre-wrap">{proposalDesc}</p>
           <div><h3 className="font-semibold">Included Scope</h3><ul className="mt-2 space-y-2">{quote.customerScope?.map(line =>
-            <li key={line.id} className="flex justify-between gap-3"><span>{line.description}</span><span>{line.displayValue ?? `${line.quantity} ${line.unit}`}</span></li>)}</ul></div>
+            <li key={line.id} className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-3"><span>{line.description}</span><span className="sm:max-w-[45%] sm:text-right">{line.displayValue ?? `${line.quantity} ${line.unit}`}</span></li>)}</ul></div>
+          {!!quote.customerAssumptions?.length && <div><h3 className="font-semibold">Assumptions / Exclusions</h3><ul className="mt-2 space-y-2">{quote.customerAssumptions.map((item,index)=><li key={index}>{item}</li>)}</ul></div>}
           <div><p>Total Investment</p><p className="text-3xl font-bold text-primary">${quote.pricing.finalSellingPrice.toFixed(2)}</p></div>
           <div><h3 className="font-semibold">Terms</h3><p className="whitespace-pre-wrap text-sm">{settings?.proposalTerms || DEFAULT_PROPOSAL_TERMS}</p></div>
           <p className="text-xs text-muted-foreground">Preview only. Use Customer Proposal for the version with acceptance controls. Save any edits first.</p>

@@ -2278,6 +2278,8 @@ export const CreateQuoteResponse = zod.object({
   "unit": zod.string(),
   "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
 })).optional(),
+  "customerAssumptions": zod.array(zod.string()).optional(),
+  "customerScopeReview": zod.array(zod.string()).optional().describe('Contractor-only customer scope review messages, never public proposal fields.'),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
@@ -5219,6 +5221,8 @@ export const GetQuoteResponse = zod.object({
   "unit": zod.string(),
   "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
 })).optional(),
+  "customerAssumptions": zod.array(zod.string()).optional(),
+  "customerScopeReview": zod.array(zod.string()).optional().describe('Contractor-only customer scope review messages, never public proposal fields.'),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
@@ -6471,6 +6475,8 @@ export const UpdateQuoteResponse = zod.object({
   "unit": zod.string(),
   "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
 })).optional(),
+  "customerAssumptions": zod.array(zod.string()).optional(),
+  "customerScopeReview": zod.array(zod.string()).optional().describe('Contractor-only customer scope review messages, never public proposal fields.'),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({
@@ -8148,6 +8154,8 @@ export const DuplicateQuoteResponse = zod.object({
   "unit": zod.string(),
   "displayValue": zod.string().optional().describe('Customer-facing inclusion or quantity label, independent of internal material quantities.')
 })).optional(),
+  "customerAssumptions": zod.array(zod.string()).optional(),
+  "customerScopeReview": zod.array(zod.string()).optional().describe('Contractor-only customer scope review messages, never public proposal fields.'),
   "customerId": zod.number().nullish().describe('Authenticated contractor-only customer identity used when revising a quote.'),
   "customerEmail": zod.string().nullable(),
   "jobInputs": zod.union([zod.object({

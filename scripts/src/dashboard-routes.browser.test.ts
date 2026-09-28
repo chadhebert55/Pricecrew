@@ -203,7 +203,7 @@ test("saved quote links work directly and stale proposal links stay unavailable"
         jobInputs,
         assembly: [
           {
-            id: "direct-link-receptacles",
+            id: "addition-receptacles",
             category: "Devices",
             description: "Duplex receptacle",
             quantity: 4,
@@ -298,8 +298,9 @@ test("saved quote links work directly and stale proposal links stay unavailable"
       publicPage.getByRole("button", { name: "Download PDF" }),
     ).toBeVisible();
     await expect(
-      publicPage.getByText("Electrical material", { exact: true }),
+      publicPage.getByText("Install general-use receptacles", { exact: true }),
     ).toBeVisible();
+    await expect(publicPage.getByText("Electrical material", { exact: true })).toHaveCount(0);
     await expect(publicPage.getByText("$600.00")).toBeVisible();
     await expect(
       publicPage.getByRole("navigation", { name: "Main navigation" }),

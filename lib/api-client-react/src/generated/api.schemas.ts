@@ -2223,6 +2223,9 @@ export interface TakeoffQuoteSnapshot {
 
 export type Quote = QuoteSummary & ({
   customerScope?: CustomerProposalLine[];
+  customerAssumptions?: string[];
+  /** Contractor-only customer scope review messages, never public proposal fields. */
+  customerScopeReview?: string[];
   /**
      * Authenticated contractor-only customer identity used when revising a quote.
      * @nullable

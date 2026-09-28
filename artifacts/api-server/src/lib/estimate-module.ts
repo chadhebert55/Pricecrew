@@ -1,0 +1,49 @@
+export type EstimateModule =
+  | "EV_CHARGER"
+  | "BATHROOM"
+  | "KITCHEN"
+  | "ADDITION"
+  | "RECESSED_LIGHTING"
+  | "SERVICE_UPGRADE"
+  | "PANEL_REPLACEMENT"
+  | "SERVICE_CALL"
+  | "TIME_MATERIALS"
+  | "CUSTOM"
+  | "NEW_HOUSE";
+
+// Shared historical aliases. This interprets identity without rewriting stored modules.
+export function normalizeEstimateModule(value: string): EstimateModule | null {
+  const key = value
+    .trim()
+    .toUpperCase()
+    .replace(/&/g, "AND")
+    .replace(/[^A-Z0-9]/g, "");
+  const aliases: Record<string, EstimateModule> = {
+    EVCHARGER: "EV_CHARGER",
+    EVCHARGERBUILDER: "EV_CHARGER",
+    BATHROOM: "BATHROOM",
+    BATHROOMBUILDER: "BATHROOM",
+    KITCHEN: "KITCHEN",
+    KITCHENBUILDER: "KITCHEN",
+    ADDITION: "ADDITION",
+    ADDITIONBUILDER: "ADDITION",
+    RECESSEDLIGHTING: "RECESSED_LIGHTING",
+    RECESSEDLIGHTINGBUILDER: "RECESSED_LIGHTING",
+    SERVICEUPGRADE: "SERVICE_UPGRADE",
+    SERVICEUPGRADEBUILDER: "SERVICE_UPGRADE",
+    PANELREPLACEMENT: "PANEL_REPLACEMENT",
+    PANELREPLACEMENTBUILDER: "PANEL_REPLACEMENT",
+    SERVICECALL: "SERVICE_CALL",
+    SERVICECALLBUILDER: "SERVICE_CALL",
+    TIMEMATERIALS: "TIME_MATERIALS",
+    TIMEANDMATERIALS: "TIME_MATERIALS",
+    TIMEANDMATERIALSBUILDER: "TIME_MATERIALS",
+    CUSTOM: "CUSTOM",
+    CUSTOMBUILDER: "CUSTOM",
+    CUSTOMITEMS: "CUSTOM",
+    CUSTOMITEMSBUILDER: "CUSTOM",
+    NEWHOUSE: "NEW_HOUSE",
+    NEWHOUSEBUILDER: "NEW_HOUSE",
+  };
+  return aliases[key] ?? null;
+}

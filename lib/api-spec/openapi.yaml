@@ -1410,6 +1410,15 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/CustomerProposalLine"
+            customerAssumptions:
+              type: array
+              items:
+                type: string
+            customerScopeReview:
+              type: array
+              description: Contractor-only customer scope review messages, never public proposal fields.
+              items:
+                type: string
             customerId:
               type: ["number", "null"]
               description: Authenticated contractor-only customer identity used when revising a quote.

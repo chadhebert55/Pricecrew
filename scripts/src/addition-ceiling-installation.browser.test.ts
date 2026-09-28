@@ -1,5 +1,6 @@
 import {expect,test} from "@playwright/test";
 import {randomUUID} from "node:crypto";
+import {mkdir,writeFile} from "node:fs/promises";
 import {eq} from "drizzle-orm";
 import {db,companyMembersTable,companySettingsTable,priceBookItemsTable,quotesTable,customersTable,companiesTable} from "@workspace/db";
 
@@ -64,8 +65,16 @@ for(const mode of ["new","reuse"] as const) test(`Addition ceiling fan ${mode}: 
     await expect(page.getByTestId("customer-view-preview")).toContainText("QA");
     await page.getByRole("button",{name:"Customer Proposal",exact:true}).click();
     await expect(page.getByTestId("button-download-customer-pdf")).toBeEnabled();
+    const evidenceDir=process.env.SCOPE_OUTPUT;
+    if(evidenceDir){
+      await mkdir(evidenceDir,{recursive:true});
+      await page.reload(); // Public proposal alone, without the prior save toast.
+      await expect(page.getByTestId("button-download-customer-pdf")).toBeEnabled();
+      await page.screenshot({path:`${evidenceDir}/addition-${mode}-ready.png`,fullPage:true});
+      await writeFile(`${evidenceDir}/addition-${mode}-ready.json`,JSON.stringify({saved,readySnapshot},null,2));
+    }
     const download=page.waitForEvent("download");await page.getByTestId("button-download-customer-pdf").click();
-    await(await download).saveAs(info.outputPath(`ceiling-${mode}.pdf`));
+    await(await download).saveAs(evidenceDir?`${evidenceDir}/addition-${mode}-ready.pdf`:info.outputPath(`ceiling-${mode}.pdf`));
     await page.goto(`/quotes/${saved.id}`);await page.getByTestId("button-duplicate-quote").click();
     await expect(page.locator("#addition-fan-location")).toHaveValue(mode);
     await expect(page.locator("#addition-fan-wiring-verified")).toBeChecked();

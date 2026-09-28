@@ -1,4 +1,6 @@
 import type { AssemblyLineRecord } from "@workspace/db";
+import {customerWorkScope, type ScopeContext} from "./customer-work-scope";
+import {normalizeEstimateModule} from "./estimate-module";
 
 type PublicScopeLine = {
   id: string; description: string; quantity: number; unit: string; displayValue?: string;
@@ -9,43 +11,19 @@ type PublicScopeLine = {
  * Zero-cost included labor/reused materials are real scope; only explicitly
  * not-required or zero allowances are omitted.
  */
-export function customerProposalScope(module: string, assembly: AssemblyLineRecord[]): { scope: PublicScopeLine[]; assumptions: string[] } {
+export function customerProposalScope(module: string, assembly: AssemblyLineRecord[], context:ScopeContext={}): { scope: PublicScopeLine[]; assumptions: string[]; reviewIssues?:string[] } {
+  module = normalizeEstimateModule(module) ?? module;
   const lines = assembly.filter(line => {
     if (line.quantity <= 0) return false;
-    const allowance = line.unit === "allowance" || /-allowance$/.test(line.id);
+    const allowance = /^(?:panel-)?(?:permit|inspection|utility-coordination|miscellaneous)-allowance$|^permit$/.test(line.id);
     return !(allowance && line.unitCost === 0);
   });
-  if (["KITCHEN", "BATHROOM", "RECESSED_LIGHTING"].includes(module)) {
-    // Group saved work, not catalog products. Never invent scope or recalculate.
-    const groups = new Map<string, { supplied: boolean; contractor: boolean }>();
-    for (const line of lines) {
-      const category = line.category.toLowerCase();
-      const label = /allowance|permit/.test(category) ? "Selected job allowances"
-        : /protection|circuit/.test(category) ? "Circuit connections & protection"
-        : /conductor|cable|wire|raceway|rough/.test(category) ? "Wiring & installation materials"
-        : /control|switch/.test(category) ? "Lighting & equipment controls"
-        : /device|receptacle/.test(category) ? "Receptacles & controls"
-        : /fixture|light/.test(category) ? "Lighting installation"
-        : /equipment|fan|heat/.test(category) ? "Electrical equipment installation"
-        : "Electrical installation work";
-      const group = groups.get(label) ?? { supplied: false, contractor: false };
-      if (/customer.supplied/i.test(line.intentionalExclusionReason ?? "")) group.supplied = true;
-      else group.contractor = true;
-      groups.set(label, group);
-    }
-    return { scope: [...groups].map(([description, group], i) => ({
-      id: `customer-work-${i}`, description, quantity: 1, unit: "scope",
-      displayValue: group.supplied ? (group.contractor ? "Included; some items customer supplied" : "Install customer-supplied items") : "Included",
-    })), assumptions: [] };
-  }
   if (module !== "PANEL_REPLACEMENT") {
-    return { scope: lines.map(line => ({
-      id: line.id, description: customerMaterialDescription(line.description, line),
-      quantity: line.quantity, unit: line.unit,
-    })), assumptions: [] };
+    return customerWorkScope(module,lines,context);
   }
   const scope: PublicScopeLine[] = [];
   const assumptions: string[] = [];
+  const reviewIssues: string[] = [];
   const used = new Set<string>();
   const add = (id: string, description: string, members: AssemblyLineRecord[], displayValue = "Included") => {
     if (!members.length) return;
@@ -79,7 +57,7 @@ export function customerProposalScope(module: string, assembly: AssemblyLineReco
   const supplies = byIds("panel-space-fillers", "panel-knockout-seals", "panel-anti-oxidant", "panel-electrical-tape");
   if (panel) supplies.forEach(line => used.add(line.id));
   else add("supplies", "Panel installation materials", supplies);
-  for (const line of lines.filter(line => /-allowance$/.test(line.id))) {
+  for (const line of lines.filter(line => /-allowance$/.test(line.id) && line.extendedCost > 0)) {
     add(line.id, customerMaterialDescription(line.description, line), [line]);
   }
   const closeout = byIds("panel-replacement-closeout");
@@ -87,13 +65,14 @@ export function customerProposalScope(module: string, assembly: AssemblyLineReco
   const other = lines.filter(line => !used.has(line.id) && !closeout.includes(line));
   for (const line of other) {
     const label = customerMaterialDescription(line.description, line);
-    if (label !== "Electrical material") add(line.id, label, [line], `${line.quantity} ${line.unit}`);
+    if (!["Electrical material","Circuit breaker"].includes(label)) add(line.id, label, [line]);
   }
-  add("additional-work", "Additional electrical installation work",
-    other.filter(line => !used.has(line.id)));
+  for (const line of other.filter(line => !used.has(line.id))) {
+    reviewIssues.push(`Saved item ${line.id} has no customer-scope mapping; review its installation scope before sharing.`);
+  }
   add("directory", "Circuit identification & panel directory", closeout);
   add("closeout", "Testing & cleanup", closeout);
-  return { scope, assumptions };
+  return { scope, assumptions, reviewIssues };
 }
 
 /**

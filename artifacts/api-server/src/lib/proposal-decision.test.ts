@@ -71,6 +71,12 @@ test("proposal decisions are revision-bound, tenant-safe, immutable, and idempot
   const marker = randomUUID();
   const [template] = await db.select().from(quotesTable).limit(1);
   assert.ok(template);
+  // The authorization fixture needs explicit customer work, not whichever
+  // legacy takeoff row happens to be returned first by the seed query.
+  template.module = "CUSTOM";
+  template.assembly = [{id:"manual-work",description:"Install selected electrical scope",
+    source:"Contractor-entered manual work",category:"Work",quantity:1,unit:"scope",
+    unitCost:template.pricing.materialCost,extendedCost:template.pricing.materialCost}];
   const [companyA, companyB] = await db
     .insert(companiesTable)
     .values([

@@ -383,7 +383,8 @@ function jobberLines(quote: QuoteRecord, mapping: QuoteExportMapping) {
   return mapping.lineItemDetail === "scope" ? mapping.scopeLines ?? [] : [{
     name: quote.projectName,
     description: quote.proposalDescription.trim() ||
-      customerProposalScope(quote.module, quote.assembly).scope.map(line => line.description).join("\n"),
+      customerProposalScope(quote.module, quote.assembly,{inputs:quote.jobInputs,pricing:quote.pricing}).scope
+        .map(line => `${line.description}: ${line.displayValue ?? `${line.quantity} ${line.unit}`}`).join("\n"),
     quantity: 1, unitPrice: quote.pricing.finalSellingPrice,
     unitCost: quote.pricing.materialCost + (quote.pricing.laborOverride ?? quote.pricing.laborCost),
   }];
