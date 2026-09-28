@@ -108,6 +108,10 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Addition ceiling-fan installation:")) {
+    return { code: "ADDITION_FAN_INSTALLATION_REQUIRED", severity: "error", category: "field-verification",
+      source: "addition-fan-scope", context: { rule: "Select complete new installation or verified reuse for every ceiling fan." } };
+  }
   if (message.startsWith("Addition exhaust-fan wiring is unresolved:")) {
     return { code: "ADDITION_EXHAUST_WIRING_REQUIRED", severity: "error", category: "field-verification",
       source: "addition-exhaust-fan", context: { rule: "Enter separately measured fan wiring, excluding circuit schedule footage." } };
@@ -3111,11 +3115,11 @@ export function calculateAdditionEstimate(
   const fans = n(inputs.ceilingFans);
   if (fans) {
     let fanPrice = { value: 0, source: "Customer supplied fixture" };
-    if (inputs.customerSuppliedFans) {
+    if (inputs.customerSuppliedFans && !inputs.ceilingFanInstallation) {
       pricingWarnings.push(
         "Addition customer-supplied ceiling fans: fan purchase cost is intentionally excluded and installation labor is retained. Confirm fan-rated support and wiring/control materials in the selected scope; this builder does not generate a separate fan-support material assembly.",
       );
-    } else if (
+    } else if (!inputs.customerSuppliedFans &&
       inputs.ceilingFanMaterialCostOverride !== undefined &&
       n(inputs.ceilingFanMaterialCostOverride) > 0
     ) {
@@ -3123,12 +3127,12 @@ export function calculateAdditionEstimate(
         value: n(inputs.ceilingFanMaterialCostOverride),
         source: "Quote-local material cost override",
       };
-    } else if (inputs.ceilingFanMaterialCostOverride !== undefined) {
+    } else if (!inputs.customerSuppliedFans && inputs.ceilingFanMaterialCostOverride !== undefined) {
       pricingWarnings.push(
         'Active material selection "contractor-supplied ceiling fan" has zero cost and is unresolved. Enter a positive quote material cost or clear the override to use the company price book.',
       );
       fanPrice.source = "Unresolved quote-local material cost override";
-    } else {
+    } else if (!inputs.customerSuppliedFans) {
       fanPrice = unitCost(
         "Contractor-supplied ceiling fan",
         priceBook,
@@ -3152,6 +3156,51 @@ export function calculateAdditionEstimate(
           }
         : {}),
     });
+  }
+
+  let ceilingControlLabor = 0;
+  if (fans) {
+    const installation = inputs.ceilingFanInstallation;
+    const issue = (detail: string) => pricingWarnings.push(`Addition ceiling-fan installation: ${detail}`);
+    if (installation && installation.verifiedFanQuantity !== fans)
+      issue("fan quantity changed or is unconfirmed; reconfirm support and wiring/control for every selected location.");
+    if (!installation || !["new", "reuse"].includes(installation.mode)) {
+      // Legacy supplied payloads retain their original scope warning above.
+      if (!inputs.customerSuppliedFans || installation) issue("choose new fan-rated support or verified reuse.");
+    } else if (installation.mode === "reuse") {
+      if (installation.supportVerified !== true) issue("verify every existing box/support is fan-rated and suitable.");
+      if (installation.wiringVerified !== true) issue("verify existing wiring and switching/control are suitable for reuse.");
+      // No new material, and stale selections from the new-location branch are ignored.
+    } else {
+      if (installation.supportVerified !== true) issue("verify the selected complete fan-rated support assembly includes mounting and termination hardware suitable for every fan.");
+      if (installation.wiringVerified !== true) issue("confirm measured wiring and the standard on/off control are suitable; add any job-specific extras before sending.");
+      const supportKey = "Addition selected fan-rated box/support assembly";
+      const selected = resolvePriceBookMatch(priceBook, item =>
+        item.id === installation.supportCatalogId && !!installation.supportManufacturer?.trim() &&
+        !!installation.supportPartNumber?.trim() && !item.isDefault && hasSourceBackedCatalogPricing(item) &&
+        normalized(item.manufacturer ?? "") === normalized(installation.supportManufacturer) &&
+        normalized(item.manufacturerPartNumber ?? "") === normalized(installation.supportPartNumber) &&
+        ["ea", "each", "kit", "set"].includes(normalized(item.unit ?? "")), supportKey);
+      const support = selected.status === "unique" && selected.match.unitCost > 0
+        ? {value:selected.match.unitCost, source:catalogSource(selected.match), item:selected.match, requestKey:supportKey}
+        : {value:0, source:"Needs company material selection — verified fan-rated support assembly required", requestKey:supportKey};
+      if (!support.value) issue("select a sourced, priced company fan-rated support assembly with matching manufacturer/part identity and each/kit/set units.");
+      addLine(assembly, {id:"addition-fan-support", category:"Rough-in", description:"Fan-rated box/support assembly",
+        quantity:fans, unit:"ea", unitCost:support.value, ...resolvedMaterial(support), source:support.source});
+      const priced = bathroomPricedItems(assembly, pricingWarnings, priceBook);
+      const control = controlCost("Pass & Seymour TM870-W 15A single-pole switch", "Pass & Seymour", "TM870-W");
+      addLine(assembly, {id:"addition-fan-controls",category:"Controls",description:"Ceiling-fan on/off controls",
+        quantity:fans,unit:"ea",unitCost:control.value,...resolvedMaterial(control),source:control.source});
+      priced("addition-fan-boxes","Rough-in",bathroomControlBox,"Ceiling-fan control boxes",fans);
+      priced("addition-fan-plates","Trim",bathroomControlPlate,"Ceiling-fan control plates",fans);
+      const wire = n(installation.wiringLength);
+      if (!wire || !installation.cableType) issue("enter total additional fan wiring footage and cable type; do not repeat circuit schedule footage.");
+      if (wire && installation.cableType)
+        priced("addition-fan-wiring","Conductor",`${installation.cableType} cable`,
+          "Additional ceiling-fan wiring",wire,false,"ft");
+      // Existing 1.75/fan covers fan installation; .4/control is Addition's unchanged switch coefficient.
+      ceilingControlLabor = fans * .4;
+    }
   }
 
   const exhaust = inputs.bathroomExhaust;
@@ -3393,7 +3442,7 @@ export function calculateAdditionEstimate(
     n(inputs.recessedLights) +
     fans * 1.75 +
     circuits * 2.5 +
-    exhaustLabor;
+    exhaustLabor + ceilingControlLabor;
   const adjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
     ? Number(inputs.laborAdjustmentHours)
     : 0;

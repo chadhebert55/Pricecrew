@@ -11,6 +11,7 @@ import type { AdditionInputsBreakerAmperage } from './additionInputsBreakerAmper
 import type { AdditionInputsBreakerPoleCount } from './additionInputsBreakerPoleCount';
 import type { AdditionInputsBreakerProtectionType } from './additionInputsBreakerProtectionType';
 import type { AdditionInputsCableType } from './additionInputsCableType';
+import type { AdditionInputsCeilingFanInstallation } from './additionInputsCeilingFanInstallation';
 import type { AdditionInputsPanelManufacturer } from './additionInputsPanelManufacturer';
 import type { AdditionInputsRecessedLightSize } from './additionInputsRecessedLightSize';
 import type { AdditionInputsSubpanelOption } from './additionInputsSubpanelOption';
@@ -18,6 +19,7 @@ import type { LaborRateType } from './laborRateType';
 
 export interface AdditionInputs {
   bathroomExhaust?: AdditionBathroomExhaust;
+  ceilingFanInstallation?: AdditionInputsCeilingFanInstallation;
   /** @minimum 0 */
   length: number;
   /** @minimum 0 */

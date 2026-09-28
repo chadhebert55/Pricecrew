@@ -284,6 +284,17 @@ export type AdditionSubpanelOption =
   | "100A Subpanel";
 
 export type AdditionInputRecord = {
+  ceilingFanInstallation?: {
+    mode: "new" | "reuse";
+    verifiedFanQuantity?: number;
+    supportVerified?: boolean;
+    wiringVerified?: boolean;
+    supportCatalogId?: number;
+    supportManufacturer?: string;
+    supportPartNumber?: string;
+    wiringLength?: number;
+    cableType?: "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
+  };
   /** Optional new scope; absence preserves legacy Addition estimates. */
   bathroomExhaust?: {
     quantity: number;

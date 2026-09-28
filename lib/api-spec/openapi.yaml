@@ -2328,6 +2328,34 @@ components:
       properties:
         bathroomExhaust:
           $ref: "#/components/schemas/AdditionBathroomExhaust"
+        ceilingFanInstallation:
+          type: object
+          required: [mode]
+          properties:
+            mode:
+              type: string
+              enum: [new, reuse]
+            supportVerified:
+              type: boolean
+            verifiedFanQuantity:
+              type: number
+              minimum: 0
+            wiringVerified:
+              type: boolean
+            supportCatalogId:
+              type: number
+              minimum: 1
+              multipleOf: 1
+            supportManufacturer:
+              type: string
+            supportPartNumber:
+              type: string
+            wiringLength:
+              type: number
+              minimum: 0
+            cableType:
+              type: string
+              enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
         length:
           type: number
           minimum: 0
