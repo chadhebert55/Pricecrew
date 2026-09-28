@@ -91,10 +91,18 @@ test.describe("Electrical beta audit", () => {
       if(builder==="recessed-lighting")await page.getByText("Room Planning Guidance",{exact:false}).click();
       for(const [selector,value] of Object.entries(changes[builder]??{}))await expect(page.locator(selector)).toHaveValue(value);
       await expect.poll(()=>uiPreviews.length).toBeGreaterThan(0);
+      // A pre-restore response can arrive after the inputs have restored.
+      // Match the edited lighting scope, rather than accepting any completed preview.
+      if(builder==="recessed-lighting")await expect.poll(()=>uiPreviews.some(p=>
+        p.request.jobInputs.fixtureQuantity===8&&p.request.jobInputs.roomLength===22&&
+        p.request.jobInputs.lightingGroups?.[0]?.quantity===8)).toBe(true);
       const unfinished=page.getByRole("button",{name:"Generate Draft / Unfinished Quote",exact:true});
       if(await unfinished.count()===0)await expect(generate).toBeEnabled();
-      evidence.editedUiRequest=uiPreviews.at(-1).request;
-      evidence.editedUiPreview=uiPreviews.at(-1).result;
+      const editedPreview=builder==="recessed-lighting"
+        ?uiPreviews.filter(p=>p.request.jobInputs.fixtureQuantity===8&&p.request.jobInputs.roomLength===22&&
+          p.request.jobInputs.lightingGroups?.[0]?.quantity===8).at(-1):uiPreviews.at(-1);
+      evidence.editedUiRequest=editedPreview.request;
+      evidence.editedUiPreview=editedPreview.result;
       evidence.draftRestored=true;
       // Use the actual browser-edited scope. Flexible samples are labor-only work.
       const payload=structuredClone(evidence.editedUiRequest);

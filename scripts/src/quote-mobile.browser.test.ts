@@ -94,7 +94,7 @@ test("quote building and export surfaces work at phone and tablet widths", async
         status: "ready",
         jobInputs,
         assembly: Array.from({ length: 5 }, (_, index) => ({
-          id: `mobile-line-${index}`,
+          id: ["addition-receptacles", "addition-switches", "addition-dimmers", "addition-circuit-1-cable", "addition-circuit-1-breaker"][index]!,
           category: index % 2 === 0 ? "Devices" : "Wiring",
           description: `Mobile test assembly item ${index + 1}`,
           quantity: index + 1,

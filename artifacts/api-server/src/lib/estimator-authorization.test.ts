@@ -100,6 +100,11 @@ test("API authorization hides cross-company quotes and rejects invalid or draft 
     .where(eq(quotesTable.companyId, DEFAULT_COMPANY_ID))
     .limit(1);
   assert.ok(template);
+  // Explicit customer-safe fixture; do not inherit arbitrary seed takeoff IDs.
+  template.module = "CUSTOM";
+  template.assembly = [{id:"manual-work",description:"Install selected electrical scope",
+    source:"Contractor-entered manual work",category:"Work",quantity:1,unit:"scope",
+    unitCost:template.pricing.materialCost,extendedCost:template.pricing.materialCost}];
 
   const companyAName = `Authorization A ${marker}`;
   const companyBName = `Authorization B ${marker}`;
