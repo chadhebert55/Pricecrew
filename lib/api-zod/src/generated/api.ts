@@ -809,6 +809,12 @@ export const createQuoteBodyJobInputsFourBathroomExhaustWiringLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourBathroomExhaustMaterialCostOverrideMin = 0;
 
+export const createQuoteBodyJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin = 0;
+
+export const createQuoteBodyJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourCeilingFanInstallationWiringLengthMin = 0;
+
 export const createQuoteBodyJobInputsFourLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourWidthMin = 0;
@@ -1339,6 +1345,17 @@ export const CreateQuoteBody = zod.object({
   "wiringLength": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
 }).optional().describe('Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.'),
+  "ceilingFanInstallation": zod.object({
+  "mode": zod.enum(['new', 'reuse']),
+  "supportVerified": zod.boolean().optional(),
+  "verifiedFanQuantity": zod.number().min(createQuoteBodyJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin).optional(),
+  "wiringVerified": zod.boolean().optional(),
+  "supportCatalogId": zod.number().min(1).multipleOf(createQuoteBodyJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf).optional(),
+  "supportManufacturer": zod.string().optional(),
+  "supportPartNumber": zod.string().optional(),
+  "wiringLength": zod.number().min(createQuoteBodyJobInputsFourCeilingFanInstallationWiringLengthMin).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}).optional(),
   "length": zod.number().min(createQuoteBodyJobInputsFourLengthMin),
   "width": zod.number().min(createQuoteBodyJobInputsFourWidthMin),
   "squareFootageOverride": zod.number().gt(createQuoteBodyJobInputsFourSquareFootageOverrideExclusiveMin).optional().describe('Optional direct square footage used only to establish editable starting allowances.'),
@@ -1861,6 +1878,12 @@ export const createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleO
 export const createQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin = 0;
+
+export const createQuoteResponseTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourCeilingFanInstallationWiringLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourLengthMin = 0;
 
@@ -2431,6 +2454,17 @@ export const CreateQuoteResponse = zod.object({
   "wiringLength": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
 }).optional().describe('Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.'),
+  "ceilingFanInstallation": zod.object({
+  "mode": zod.enum(['new', 'reuse']),
+  "supportVerified": zod.boolean().optional(),
+  "verifiedFanQuantity": zod.number().min(createQuoteResponseTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin).optional(),
+  "wiringVerified": zod.boolean().optional(),
+  "supportCatalogId": zod.number().min(1).multipleOf(createQuoteResponseTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf).optional(),
+  "supportManufacturer": zod.string().optional(),
+  "supportPartNumber": zod.string().optional(),
+  "wiringLength": zod.number().min(createQuoteResponseTwoJobInputsFourCeilingFanInstallationWiringLengthMin).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}).optional(),
   "length": zod.number().min(createQuoteResponseTwoJobInputsFourLengthMin),
   "width": zod.number().min(createQuoteResponseTwoJobInputsFourWidthMin),
   "squareFootageOverride": zod.number().gt(createQuoteResponseTwoJobInputsFourSquareFootageOverrideExclusiveMin).optional().describe('Optional direct square footage used only to establish editable starting allowances.'),
@@ -3071,6 +3105,12 @@ export const previewQuoteBodyJobInputsFourBathroomExhaustWiringLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourBathroomExhaustMaterialCostOverrideMin = 0;
 
+export const previewQuoteBodyJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin = 0;
+
+export const previewQuoteBodyJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourCeilingFanInstallationWiringLengthMin = 0;
+
 export const previewQuoteBodyJobInputsFourLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourWidthMin = 0;
@@ -3593,6 +3633,17 @@ export const PreviewQuoteBody = zod.object({
   "wiringLength": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
 }).optional().describe('Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.'),
+  "ceilingFanInstallation": zod.object({
+  "mode": zod.enum(['new', 'reuse']),
+  "supportVerified": zod.boolean().optional(),
+  "verifiedFanQuantity": zod.number().min(previewQuoteBodyJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin).optional(),
+  "wiringVerified": zod.boolean().optional(),
+  "supportCatalogId": zod.number().min(1).multipleOf(previewQuoteBodyJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf).optional(),
+  "supportManufacturer": zod.string().optional(),
+  "supportPartNumber": zod.string().optional(),
+  "wiringLength": zod.number().min(previewQuoteBodyJobInputsFourCeilingFanInstallationWiringLengthMin).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}).optional(),
   "length": zod.number().min(previewQuoteBodyJobInputsFourLengthMin),
   "width": zod.number().min(previewQuoteBodyJobInputsFourWidthMin),
   "squareFootageOverride": zod.number().gt(previewQuoteBodyJobInputsFourSquareFootageOverrideExclusiveMin).optional().describe('Optional direct square footage used only to establish editable starting allowances.'),
@@ -4769,6 +4820,12 @@ export const getQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin = 0;
 
+export const getQuoteResponseTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin = 0;
+
+export const getQuoteResponseTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourCeilingFanInstallationWiringLengthMin = 0;
+
 export const getQuoteResponseTwoJobInputsFourLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourWidthMin = 0;
@@ -5338,6 +5395,17 @@ export const GetQuoteResponse = zod.object({
   "wiringLength": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
 }).optional().describe('Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.'),
+  "ceilingFanInstallation": zod.object({
+  "mode": zod.enum(['new', 'reuse']),
+  "supportVerified": zod.boolean().optional(),
+  "verifiedFanQuantity": zod.number().min(getQuoteResponseTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin).optional(),
+  "wiringVerified": zod.boolean().optional(),
+  "supportCatalogId": zod.number().min(1).multipleOf(getQuoteResponseTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf).optional(),
+  "supportManufacturer": zod.string().optional(),
+  "supportPartNumber": zod.string().optional(),
+  "wiringLength": zod.number().min(getQuoteResponseTwoJobInputsFourCeilingFanInstallationWiringLengthMin).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}).optional(),
   "length": zod.number().min(getQuoteResponseTwoJobInputsFourLengthMin),
   "width": zod.number().min(getQuoteResponseTwoJobInputsFourWidthMin),
   "squareFootageOverride": zod.number().gt(getQuoteResponseTwoJobInputsFourSquareFootageOverrideExclusiveMin).optional().describe('Optional direct square footage used only to establish editable starting allowances.'),
@@ -6004,6 +6072,12 @@ export const updateQuoteResponseOneTwoJobInputsFourBathroomExhaustWiringLengthMi
 
 export const updateQuoteResponseOneTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourCeilingFanInstallationWiringLengthMin = 0;
+
 export const updateQuoteResponseOneTwoJobInputsFourLengthMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFourWidthMin = 0;
@@ -6573,6 +6647,17 @@ export const UpdateQuoteResponse = zod.object({
   "wiringLength": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
 }).optional().describe('Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.'),
+  "ceilingFanInstallation": zod.object({
+  "mode": zod.enum(['new', 'reuse']),
+  "supportVerified": zod.boolean().optional(),
+  "verifiedFanQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin).optional(),
+  "wiringVerified": zod.boolean().optional(),
+  "supportCatalogId": zod.number().min(1).multipleOf(updateQuoteResponseOneTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf).optional(),
+  "supportManufacturer": zod.string().optional(),
+  "supportPartNumber": zod.string().optional(),
+  "wiringLength": zod.number().min(updateQuoteResponseOneTwoJobInputsFourCeilingFanInstallationWiringLengthMin).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}).optional(),
   "length": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLengthMin),
   "width": zod.number().min(updateQuoteResponseOneTwoJobInputsFourWidthMin),
   "squareFootageOverride": zod.number().gt(updateQuoteResponseOneTwoJobInputsFourSquareFootageOverrideExclusiveMin).optional().describe('Optional direct square footage used only to establish editable starting allowances.'),
@@ -7664,6 +7749,12 @@ export const duplicateQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMi
 
 export const duplicateQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourCeilingFanInstallationWiringLengthMin = 0;
+
 export const duplicateQuoteResponseTwoJobInputsFourLengthMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFourWidthMin = 0;
@@ -8233,6 +8324,17 @@ export const DuplicateQuoteResponse = zod.object({
   "wiringLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
 }).optional().describe('Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.'),
+  "ceilingFanInstallation": zod.object({
+  "mode": zod.enum(['new', 'reuse']),
+  "supportVerified": zod.boolean().optional(),
+  "verifiedFanQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFourCeilingFanInstallationVerifiedFanQuantityMin).optional(),
+  "wiringVerified": zod.boolean().optional(),
+  "supportCatalogId": zod.number().min(1).multipleOf(duplicateQuoteResponseTwoJobInputsFourCeilingFanInstallationSupportCatalogIdMultipleOf).optional(),
+  "supportManufacturer": zod.string().optional(),
+  "supportPartNumber": zod.string().optional(),
+  "wiringLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFourCeilingFanInstallationWiringLengthMin).optional(),
+  "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
+}).optional(),
   "length": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLengthMin),
   "width": zod.number().min(duplicateQuoteResponseTwoJobInputsFourWidthMin),
   "squareFootageOverride": zod.number().gt(duplicateQuoteResponseTwoJobInputsFourSquareFootageOverrideExclusiveMin).optional().describe('Optional direct square footage used only to establish editable starting allowances.'),

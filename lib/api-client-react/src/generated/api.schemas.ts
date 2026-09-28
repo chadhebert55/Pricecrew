@@ -872,6 +872,23 @@ export interface AdditionBathroomExhaust {
   materialCostOverride?: number;
 }
 
+export type AdditionInputsCeilingFanInstallationMode = typeof AdditionInputsCeilingFanInstallationMode[keyof typeof AdditionInputsCeilingFanInstallationMode];
+
+
+export const AdditionInputsCeilingFanInstallationMode = {
+  new: 'new',
+  reuse: 'reuse',
+} as const;
+
+export type AdditionInputsCeilingFanInstallationCableType = typeof AdditionInputsCeilingFanInstallationCableType[keyof typeof AdditionInputsCeilingFanInstallationCableType];
+
+
+export const AdditionInputsCeilingFanInstallationCableType = {
+  '12/2_NM-B': '12/2 NM-B',
+  '14/2_NM-B': '14/2 NM-B',
+  '14/3_NM-B': '14/3 NM-B',
+} as const;
+
 export type AdditionInputsRecessedLightSize = typeof AdditionInputsRecessedLightSize[keyof typeof AdditionInputsRecessedLightSize];
 
 
@@ -1006,8 +1023,24 @@ export const AdditionInputsSubpanelOption = {
   '100A_Subpanel': '100A Subpanel',
 } as const;
 
+export type AdditionInputsCeilingFanInstallation = {
+  mode: AdditionInputsCeilingFanInstallationMode;
+  supportVerified?: boolean;
+  /** @minimum 0 */
+  verifiedFanQuantity?: number;
+  wiringVerified?: boolean;
+  /** @minimum 1 */
+  supportCatalogId?: number;
+  supportManufacturer?: string;
+  supportPartNumber?: string;
+  /** @minimum 0 */
+  wiringLength?: number;
+  cableType?: AdditionInputsCeilingFanInstallationCableType;
+};
+
 export interface AdditionInputs {
   bathroomExhaust?: AdditionBathroomExhaust;
+  ceilingFanInstallation?: AdditionInputsCeilingFanInstallation;
   /** @minimum 0 */
   length: number;
   /** @minimum 0 */

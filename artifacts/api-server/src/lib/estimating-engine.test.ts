@@ -1436,6 +1436,8 @@ test("addition prices a mixed circuit schedule with independent quantities and v
   ];
   const mixedInputs: AdditionInputRecord = {
     ...additionInputs,
+    ceilingFanInstallation: { mode:"reuse", supportVerified:true, wiringVerified:true,
+      verifiedFanQuantity:additionInputs.ceilingFans },
     circuitEntries: [
       {
         amperage: 15,

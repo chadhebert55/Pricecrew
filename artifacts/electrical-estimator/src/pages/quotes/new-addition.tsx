@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "wouter"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 import { AdditionExhaustFanFields } from "@/components/addition-exhaust-fan-fields"
+import { AdditionCeilingFanFields } from "@/components/addition-ceiling-fan-fields"
 
 const initialInputs: AdditionInputs = {
   length: 20,
@@ -316,6 +317,8 @@ export function NewAdditionQuote() {
                     <label className="flex items-start gap-3 text-sm font-medium"><Checkbox checked={inputs.customerSuppliedFans} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFans: checked === true }))} /><span>Customer supplies ceiling fans <span className="block pt-1 text-xs font-normal text-muted-foreground">Fan purchase cost is excluded; installation labor remains. Confirm fan-rated support and wiring/control materials separately. This is not an exhaust-fan scope.</span></span></label>
                     {!inputs.customerSuppliedFans && <div className="mt-4 max-w-sm space-y-2"><Label htmlFor="addition-fan-cost">Contractor-supplied fan unit-cost override ($)</Label><Input id="addition-fan-cost" type="number" min="0" step="0.01" value={inputs.ceilingFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("ceilingFanMaterialCostOverride", event.target.value)} placeholder="Use verified Price Book value" /></div>}
                   </div>
+                  {inputs.ceilingFans > 0 && <AdditionCeilingFanFields value={inputs.ceilingFanInstallation} quantity={inputs.ceilingFans}
+                    onChange={ceilingFanInstallation => setInputs(current => ({...current, ceilingFanInstallation}))}/>}
                 </section>
 
                 <AdditionExhaustFanFields value={inputs.bathroomExhaust}
