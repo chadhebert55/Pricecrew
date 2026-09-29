@@ -105,5 +105,7 @@ test("Addition supplied fan is a blocking scope confirmation, not a missing fan 
   assert.equal(warning.category,"field-verification");
   assert.equal(warning.severity,"error"); // Do not silently unlock Ready with incomplete installation scope.
   assert.match(warning.message,/support.*wiring/i);
+  assert.match(warning.message,/select new fan-rated support.*verified reuse/i);
+  assert.doesNotMatch(warning.message,/does not generate/i);
   assert.ok(!result.pricing.pricingWarnings.some(w=>typeof w!=="string"&&w.code==="CUSTOMER_SUPPLIED_MATERIAL_REVIEW"));
 });

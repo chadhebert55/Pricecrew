@@ -3117,7 +3117,7 @@ export function calculateAdditionEstimate(
     let fanPrice = { value: 0, source: "Customer supplied fixture" };
     if (inputs.customerSuppliedFans && !inputs.ceilingFanInstallation) {
       pricingWarnings.push(
-        "Addition customer-supplied ceiling fans: fan purchase cost is intentionally excluded and installation labor is retained. Confirm fan-rated support and wiring/control materials in the selected scope; this builder does not generate a separate fan-support material assembly.",
+        "Addition customer-supplied ceiling fans: fan purchase cost is intentionally excluded and installation labor is retained. Select new fan-rated support with required wiring/controls or verified reuse of existing fan-rated support and suitable wiring/controls; complete the installation confirmations before marking this estimate ready.",
       );
     } else if (!inputs.customerSuppliedFans &&
       inputs.ceilingFanMaterialCostOverride !== undefined &&
