@@ -90,6 +90,10 @@ allowBuilds:
   unrs-resolver: true
 
 overrides:
+  # Reviewed same-release-line security patches; see docs/dependency-patches-20260929.md.
+  "qs@6.15.3": "6.16.0"
+  "undici@6.28.0": "6.28.1"
+  "adm-zip@0.6.0": "0.6.1"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"
@@ -173,5 +177,3 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
-
-
