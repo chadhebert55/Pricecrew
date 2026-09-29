@@ -148,7 +148,9 @@ export function customerWorkScope(
     count("fans", "Install ceiling fans", /^addition-ceiling-fans$/);
     count(
       "exhaust",
-      "Install bathroom exhaust fans",
+      (inputs.bathroomExhaust as {control?:string})?.control === "Stacked single-pole/single-pole"
+        ? "Install bathroom exhaust fans with independent light/fan controls"
+        : "Install bathroom exhaust fans",
       /^addition-exhaust-fans$/,
     );
     circuits(/^addition-(?:circuit-\d+-breaker|breakers)$/);

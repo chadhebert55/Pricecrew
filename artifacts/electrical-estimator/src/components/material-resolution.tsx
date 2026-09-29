@@ -10,7 +10,7 @@ export function MaterialResolution({line}: {line: AssemblyLine}) {
       : line.resolutionStatus === "UNRESOLVED_AMBIGUOUS" ? "Equally valid catalog matches need a company preference"
       : "Needs company material selection"}</p>
     <a className="underline" href={`/price-book?material=${encodeURIComponent(line.materialRequestKey ?? snapshot?.requestKey ?? line.description)}`}>
-      Select Catalog Item
+      Resolve in Price Book
     </a>
   </div>
   if (!snapshot) return <span className="text-xs text-muted-foreground">{line.source}</span>
@@ -24,6 +24,20 @@ export function MaterialResolution({line}: {line: AssemblyLine}) {
       <p>Catalog #{snapshot.catalogId ?? "not recorded"} · SKU {snapshot.supplierSku ?? "not recorded"} · Price date {snapshot.sourceDate ?? "not recorded"}</p>
       <p>{snapshot.supplierCost != null ? `Supplier: ${snapshot.supplierCost} / ${snapshot.supplierUom}` : "Legacy canonical cost; raw supplier basis not recorded"} · Internal: {snapshot.normalizedUnitCost} / {snapshot.normalizedUnit}</p>
     </details>
+  </div>
+}
+
+export function MaterialReviewActions({assembly,builder}:{assembly:AssemblyLine[];builder:string}){
+  const unresolved=assembly.filter(hasUnresolvedMaterialCost)
+  if(!unresolved.length)return null
+  return <div className="space-y-2 rounded-md border p-3 text-sm" aria-label={`${builder} unresolved materials`}>
+    <p className="font-semibold">{builder}: resolve required materials</p>
+    {unresolved.map((line,index)=><div key={`${line.id}-${index}`} className="flex flex-wrap justify-between gap-2">
+      <span>{line.materialRequestKey??line.materialSnapshot?.requestKey??line.description}</span>
+      <a target="_blank" rel="noreferrer" className="underline" href={`/price-book?builder=${encodeURIComponent(builder)}&material=${encodeURIComponent(line.materialRequestKey??line.materialSnapshot?.requestKey??line.description)}`}>
+        Resolve in Price Book</a>
+    </div>)}
+    <p className="text-xs">Missing identity, qualification or pricing remains Needs Review. Catalog changes apply to new calculations, not historical quotes.</p>
   </div>
 }
 

@@ -2335,6 +2335,14 @@ components:
         - crewHours
         - notes
       properties:
+        additionScopeVersion:
+          type: number
+          enum: [2]
+        subpanelLaborHours:
+          type: number
+          minimum: 0
+          maximum: 10000
+          description: Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.
         bathroomExhaust:
           $ref: "#/components/schemas/AdditionBathroomExhaust"
         ceilingFanInstallation:
@@ -2455,6 +2463,11 @@ components:
       description: Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
       required: [quantity, customerSupplied, control, cableType]
       properties:
+        stackedWiringVerified:
+          type: boolean
+        verifiedControlQuantity:
+          type: number
+          minimum: 0
         quantity:
           type: number
           multipleOf: 1
@@ -2463,7 +2476,7 @@ components:
           type: boolean
         control:
           type: string
-          enum: [Standard switch, Timer switch, Humidity-sensing control]
+          enum: [Standard switch, Timer switch, Humidity-sensing control, Stacked single-pole/single-pole, Not selected]
         cableType:
           type: string
           enum: [12/2 NM-B, 14/2 NM-B, 14/3 NM-B]
@@ -3652,6 +3665,28 @@ components:
       type: object
       required: [requestKey, kind]
       properties:
+        verifiedComponent:
+          type: object
+          required: [kind, manufacturer, manufacturerPartNumber, source]
+          properties:
+            kind:
+              type: string
+              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate]
+            manufacturer:
+              type: string
+              minLength: 1
+              maxLength: 100
+            manufacturerPartNumber:
+              type: string
+              minLength: 1
+              maxLength: 200
+            source:
+              type: string
+              minLength: 1
+              maxLength: 1000
+            plateOpening:
+              type: string
+              enum: [decorator, duplex, toggle]
         requestKey:
           type: string
           minLength: 1

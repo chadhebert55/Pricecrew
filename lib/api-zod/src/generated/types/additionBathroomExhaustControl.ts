@@ -13,4 +13,6 @@ export const AdditionBathroomExhaustControl = {
   Standard_switch: 'Standard switch',
   Timer_switch: 'Timer switch',
   'Humidity-sensing_control': 'Humidity-sensing control',
+  'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
+  Not_selected: 'Not selected',
 } as const;
