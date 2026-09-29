@@ -20,6 +20,11 @@
     "typescript": "~5.9.3"
   },
   "pnpm": {
+    "overrides": {
+      "qs@6.15.3": "6.16.0",
+      "undici@6.28.0": "6.28.1",
+      "adm-zip@0.6.0": "0.6.1"
+    },
     "onlyBuiltDependencies": [
       "@clerk/shared",
       "@swc/core",
