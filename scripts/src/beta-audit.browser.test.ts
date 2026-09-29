@@ -73,9 +73,6 @@ test.describe("Electrical beta audit", () => {
       }
       const generate=page.getByRole("button",{name:/^Generate (?:.* )?Quote$|^Create Quote Snapshot$/}).last();
       const uiPreviews:any[]=[];
-      page.on("response",async r=>{
-        if(r.url().endsWith("/api/quotes/preview")&&r.ok())uiPreviews.push({request:r.request().postDataJSON(),result:await r.json()});
-      });
       const customer=page.locator('input[id$="-customer"],#customerName').first();
       const project=page.locator('input[id$="-project"],#projectName').first();
       await customer.fill("QA Electrical Customer");
@@ -86,6 +83,11 @@ test.describe("Electrical beta audit", () => {
       await expect.poll(()=>page.evaluate(()=>JSON.stringify(localStorage).includes("realistic estimate"))).toBe(true);
       evidence.draftBefore=await page.evaluate(()=>({...localStorage}));
       await page.reload();
+      // Capture restored previews only. Reading a pre-reload response body from
+      // a detached document is a Playwright protocol error, not draft data loss.
+      page.on("response",async r=>{
+        if(r.url().endsWith("/api/quotes/preview")&&r.ok())uiPreviews.push({request:r.request().postDataJSON(),result:await r.json()});
+      });
       await page.getByTestId("button-restore-quote-draft").click();
       await expect(project).toHaveValue(`QA ${builder} realistic estimate`);
       if(builder==="recessed-lighting")await page.getByText("Room Planning Guidance",{exact:false}).click();
@@ -104,6 +106,9 @@ test.describe("Electrical beta audit", () => {
       evidence.editedUiRequest=editedPreview.request;
       evidence.editedUiPreview=editedPreview.result;
       evidence.draftRestored=true;
+      // Finish all body reads before Generate Quote can navigate away. Do not
+      // catch/discard failed reads or increase timeouts to conceal this race.
+      await page.removeAllListeners("response",{behavior:"wait"});
       // Use the actual browser-edited scope. Flexible samples are labor-only work.
       const payload=structuredClone(evidence.editedUiRequest);
       evidence.testRequest=payload;
@@ -191,6 +196,9 @@ test.describe("Electrical beta audit", () => {
       evidence.failure=String(error);
       throw error;
     } finally {
+      // An earlier assertion may fail while a body read is still in flight.
+      // Drain listeners before closing their document, even on failure.
+      await page.removeAllListeners("response",{behavior:"wait"});
       await writeFile(`${out}/${builder}.json`,JSON.stringify(evidence,null,2));
       await context.close();
     }
