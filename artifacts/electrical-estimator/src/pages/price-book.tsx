@@ -15,10 +15,12 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PriceBookImportPanel } from "@/components/price-book-import-panel"
+import {CatalogComponentPanel} from "@/components/catalog-component-panel"
+import {qualifiedComponentKinds} from "@workspace/api-zod/catalog-components"
 
 export function PriceBook() {
   const requestedMaterial = new URLSearchParams(window.location.search).get("material") ?? ""
-  const { data: items, isLoading } = useListPriceBookItems()
+  const { data: items, isLoading, isError, refetch } = useListPriceBookItems()
   const [historyPage, setHistoryPage] = useState(1)
   const [activeImport, setActiveImport] = useState<PriceBookImport | null>(null)
   const importHistory = useListPriceBookImports({
@@ -30,7 +32,7 @@ export function PriceBook() {
   const [search, setSearch] = useState("")
   const [builder, setBuilder] = useState("all")
   const [category, setCategory] = useState("all")
-  const [status, setStatus] = useState(requestedMaterial ? "verified" : "unresolved")
+  const [status, setStatus] = useState(requestedMaterial ? "all" : "unresolved")
 
   const allItems = items ?? []
   const normalizedSearch = search.trim().toLowerCase()
@@ -74,6 +76,8 @@ export function PriceBook() {
         review={activeImport}
         onReviewChange={setActiveImport}
       />
+      {isError ? <div role="alert">Price Book could not load. <Button onClick={()=>refetch()}>Retry</Button></div>
+        : !isLoading&&<CatalogComponentPanel key={requestedMaterial} items={allItems} requestedMaterial={requestedMaterial} onReviewChange={setActiveImport}/>}
       {requestedMaterial && <div className="rounded-md border border-primary/40 p-4 text-sm">
         <strong>Select a company material for: {requestedMaterial}</strong>
         <p className="mt-1 text-muted-foreground">Search by SKU, part or description. Approve only an electrically compatible item with the correct unit. This saves a company preference for future calculations, not a change to existing quote snapshots.</p>
@@ -442,7 +446,8 @@ function PriceBookRow({
                     {onSuccess:()=>setSavedMessage("Preference removed. Refresh the Price Book to review.")})}>Remove</Button>
               </div>)}
               <Input aria-label={`Material request for ${item.item}`} value={family} placeholder="Exact builder material request / family" onChange={e=>setFamily(e.target.value)}/>
-              <Button type="button" size="sm" variant="outline" disabled={!family.trim() || item.isUnresolved || isPending}
+              {qualifiedComponentKinds[family.trim()] && <a className="block underline" href={`/price-book?material=${encodeURIComponent(family.trim())}`}>Qualify this component in Builder material components</a>}
+              <Button type="button" size="sm" variant="outline" disabled={!family.trim() || !!qualifiedComponentKinds[family.trim()] || item.isUnresolved || isPending}
                 onClick={()=>updateItem.mutate({id:item.id,data:{materialPreferences:[
                   ...(item.materialPreferences ?? []).filter(p=>p.requestKey.trim().toLowerCase()!==family.trim().toLowerCase()),
                   {requestKey:family.trim(),kind:"exact"}]}},

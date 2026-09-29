@@ -1,4 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
+import { componentProof, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
 import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, materialRequirementsSatisfied, EXTERIOR_WR_RECEPTACLE_REQUEST, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
@@ -108,6 +109,22 @@ function stableWarningCode(message: string) {
 }
 
 function warningMetadata(message: string): WarningMetadata {
+  if (message.startsWith("Addition subpanel labor:")) return {
+    code:"ADDITION_SUBPANEL_LABOR_REQUIRED",severity:"error",category:"field-verification",source:"addition-subpanel",
+    context:{rule:"Enter quote-local total subpanel person-hours once, excluding these hours from project labor and adjustments."},
+  };
+  if (message.startsWith("Addition subpanel qualification:")) return {
+    code:"ADDITION_SUBPANEL_SCOPE_UNQUALIFIED",severity:"error",category:"field-verification",source:"addition-subpanel",
+    context:{rule:"A priced enclosure, cable and breaker alone do not prove a complete compatible subpanel installation."},
+  };
+  if (message.startsWith("Addition exhaust control:")) return {
+    code:"ADDITION_EXHAUST_CONTROL_REQUIRED",severity:"error",category:"field-verification",source:"addition-exhaust-fan",
+    context:{rule:"Select and qualify the device, matching plate and complete non-duplicated wiring scope."},
+  };
+  if (message.startsWith("EV neutral scope:")) return {
+    code:"EV_NEUTRAL_SCOPE_REQUIRED",severity:"error",category:"compatibility",source:"ev-receptacle",
+    context:{rule:"NEMA 14-50 scope must represent the required neutral; no conductor is inferred or priced automatically."},
+  };
   if (message.startsWith("Addition ceiling-fan installation:")) {
     return { code: "ADDITION_FAN_INSTALLATION_REQUIRED", severity: "error", category: "field-verification",
       source: "addition-fan-scope", context: { rule: "Select complete new installation or verified reuse for every ceiling fan." } };
@@ -754,12 +771,19 @@ function addBuilderIf(
 export function auditPriceBookItem(
   item: Pick<
     PriceBookItem,
-    "category" | "item" | "unitCost" | "isDefault" | "supplierSku"
+    "category" | "item" | "unitCost" | "isDefault" | "supplierSku" | "materialPreferences"
   >,
 ): PriceBookAudit {
   const name = normalized(item.item);
   const category = normalized(item.category);
   const builders = new Set<string>();
+  // Product display names need not contain a builder's semantic request.
+  for (const preference of item.materialPreferences ?? []) {
+    if (evCatalogComponents.some(key => normalized(key) === normalized(preference.requestKey)))
+      builders.add("EV Charger");
+    if ([STACKED_CONTROL, STACKED_PLATE].some(key => normalized(key) === normalized(preference.requestKey)))
+      builders.add("Addition");
+  }
   const exactSelectorSku =
     item.supplierSku?.trim() ??
     item.item.match(/(?:SKU|Northeast #)\s*([A-Z0-9-]+)/i)?.[1];
@@ -1300,6 +1324,7 @@ type ResolvedBreaker = {
   description: string;
   source: string;
   item?: PriceBookItem;
+  requestKey?: string;
 };
 
 function resolveBreaker(
@@ -1350,6 +1375,7 @@ function resolveBreaker(
       value: 0,
       description: `${selection.poleCount || "?"}-pole ${selection.amperage || "?"}A ${exactProtectionType} breaker — unresolved duplicate catalog matches`,
       source: "Unresolved duplicate exact breaker matches",
+      requestKey: breakerIdentity,
     };
   }
 
@@ -1365,6 +1391,7 @@ function resolveBreaker(
       value: 0,
       description: `${selection.poleCount || "?"}-pole ${selection.amperage || "?"}A ${exactProtectionType} breaker — unresolved`,
       source: "Unresolved exact breaker — add compatible catalog item",
+      requestKey: breakerIdentity,
     };
   }
 
@@ -1759,6 +1786,10 @@ export function calculateEvChargerEstimate(
   }
 
   if (isReceptacle) {
+    if (/14-50/i.test(inputs.connection) &&
+        (isConduit || /ser cable/i.test(inputs.wiringMethod) || !/\/3 NM-B$/.test(inputs.cableType ?? selectedEvCableType(settings.evDefaultCableType)))) {
+      pricingWarnings.push("EV neutral scope: the selected NEMA 14-50 conductor assembly does not represent a neutral. Select a verified suitable cable configuration or resolve the conductor assembly before customer-ready status; no extra conductor size or price has been assumed.");
+    }
     const receptacle = unitCost(
       /14-50/i.test(inputs.connection)
         ? "NEMA 14-50 receptacle"
@@ -3208,14 +3239,30 @@ export function calculateAdditionEstimate(
   if (exhaust && n(exhaust.quantity) > 0) {
     const qty = n(exhaust.quantity);
     const wire = n(exhaust.wiringLength);
-    const control = bathroomFanControl(exhaust.control);
+    const stacked = exhaust.control === "Stacked single-pole/single-pole";
+    // One yoke, one existing single-pole control allowance. Bathroom stays unchanged.
+    const control = stacked
+      ? {...bathroomFanControl("Standard switch"), key:STACKED_CONTROL}
+      : bathroomFanControl(exhaust.control);
+    if (exhaust.control === "Not selected")
+      pricingWarnings.push("Addition exhaust control: select a required control; none has been assumed.");
+    if (stacked && (exhaust.stackedWiringVerified !== true || exhaust.verifiedControlQuantity !== qty))
+      pricingWarnings.push("Addition exhaust control: confirm separate controlled functions and wiring for every stacked device, and exclude the same controls from general switch counts.");
     const priced = bathroomPricedItems(assembly, pricingWarnings, priceBook);
     priced("addition-exhaust-fans", "Ventilation", bathroomExhaustEquipment.key,
       exhaust.customerSupplied ? "Customer-supplied bathroom exhaust fan" : bathroomExhaustEquipment.description,
       qty, exhaust.customerSupplied, "ea", exhaust.materialCostOverride, false);
-    priced("addition-exhaust-controls", "Controls", control.key, control.key, qty);
+    if (exhaust.control !== "Not selected")
+      priced("addition-exhaust-controls", "Controls", control.key, control.key, qty);
     priced("addition-exhaust-boxes", "Rough-in", bathroomControlBox, bathroomControlBox, qty);
-    priced("addition-exhaust-plates", "Trim", bathroomControlPlate, bathroomControlPlate, qty);
+    priced("addition-exhaust-plates", "Trim", stacked ? STACKED_PLATE : bathroomControlPlate,
+      stacked ? "Matching white stacked-control plate" : bathroomControlPlate, qty);
+    if (stacked) {
+      const selected = (id:string) => priceBook.find(p=>p.id===assembly.find(l=>l.id===id)?.materialSnapshot?.catalogId);
+      const device = selected("addition-exhaust-controls"), plate = selected("addition-exhaust-plates");
+      if (!device || !plate || componentProof(device,STACKED_CONTROL)?.plateOpening !== componentProof(plate,STACKED_PLATE)?.plateOpening)
+        pricingWarnings.push("Addition exhaust control: qualify the exact stacked device and a matching white plate opening; one yoke does not determine the plate opening.");
+    }
     priced("addition-exhaust-wiring", "Conductor", `${exhaust.cableType} cable`,
       `Additional bathroom fan in-room / switch-leg wiring: ${exhaust.cableType}`, wire, false, "ft");
     if (!wire) pricingWarnings.push(
@@ -3225,7 +3272,7 @@ export function calculateAdditionEstimate(
       "Bathroom exhaust-fan electrical scope uses the Bathroom equipment, one control/box/plate per fan, and separately measured wiring. Verify circuit assignment, cable suitability, equipment mounting/termination requirements and field conditions. Ductwork is not included.",
     );
     // Addition already has project/crew labor; do not add Bathroom's shared setup.
-    exhaustLabor = qty * (bathroomExhaustEquipment.laborHours + control.laborHours) + bathroomWiringLabor(wire);
+    exhaustLabor = qty * (bathroomExhaustEquipment.laborHours + (exhaust.control === "Not selected" ? 0 : control.laborHours)) + bathroomWiringLabor(wire);
   }
 
   const circuitEntries = Array.isArray(inputs.circuitEntries)
@@ -3364,6 +3411,12 @@ export function calculateAdditionEstimate(
   }
 
   const subpanelOption = inputs.subpanelOption ?? "No Subpanel";
+  const subpanelLabor = inputs.additionScopeVersion === 2 && subpanelOption !== "No Subpanel"
+    ? n(inputs.subpanelLaborHours) : 0;
+  if (inputs.additionScopeVersion === 2 && subpanelOption !== "No Subpanel" && !subpanelLabor)
+    pricingWarnings.push("Addition subpanel labor: enter total person-hours for mounting, SER routing, breaker installation, terminations, neutral/ground and ground-bar work, fittings, labeling and testing. Blank or zero is unresolved. Do not repeat these hours in project labor or adjustments.");
+  if (inputs.additionScopeVersion === 2 && subpanelOption !== "No Subpanel")
+    pricingWarnings.push("Addition subpanel qualification: the current three-component assembly does not establish the existing panel product family, complete SER product suitability, compatible panel/breaker, ground bar, fittings and mounting materials. Complete assembly qualification is still required; entering labor or mapping a generic enclosure does not make this scope customer-ready.");
   if (subpanelOption !== "No Subpanel") {
     const feederDistance = n(inputs.feederDistance);
     const subpanelAmperage = subpanelOption === "60A Subpanel" ? 60 : 100;
@@ -3442,7 +3495,7 @@ export function calculateAdditionEstimate(
     n(inputs.recessedLights) +
     fans * 1.75 +
     circuits * 2.5 +
-    exhaustLabor + ceilingControlLabor;
+    exhaustLabor + ceilingControlLabor + subpanelLabor;
   const adjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
     ? Number(inputs.laborAdjustmentHours)
     : 0;

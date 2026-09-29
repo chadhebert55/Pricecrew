@@ -284,6 +284,9 @@ export type AdditionSubpanelOption =
   | "100A Subpanel";
 
 export type AdditionInputRecord = {
+  /** Versioned editable-input path. Existing saved estimates are never recalculated. */
+  additionScopeVersion?: number;
+  subpanelLaborHours?: number;
   ceilingFanInstallation?: {
     mode: "new" | "reuse";
     verifiedFanQuantity?: number;
@@ -299,7 +302,9 @@ export type AdditionInputRecord = {
   bathroomExhaust?: {
     quantity: number;
     customerSupplied: boolean;
-    control: "Standard switch" | "Timer switch" | "Humidity-sensing control";
+    control: "Standard switch" | "Timer switch" | "Humidity-sensing control" | "Stacked single-pole/single-pole" | "Not selected";
+    stackedWiringVerified?: boolean;
+    verifiedControlQuantity?: number;
     cableType: "12/2 NM-B" | "14/2 NM-B" | "14/3 NM-B";
     wiringLength?: number;
     materialCostOverride?: number;
@@ -671,6 +676,13 @@ export type AssemblyLineRecord = {
 };
 
 export type MaterialPreference = {
+  verifiedComponent?: {
+    kind: string;
+    manufacturer: string;
+    manufacturerPartNumber: string;
+    source: string;
+    plateOpening?: "decorator" | "duplex" | "toggle";
+  };
   requestKey: string;
   kind: "exact" | "manufacturer" | "family" | "alternate";
   manufacturer?: string;

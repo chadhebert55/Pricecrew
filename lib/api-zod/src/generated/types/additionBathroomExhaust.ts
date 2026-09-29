@@ -12,6 +12,9 @@ import type { AdditionBathroomExhaustControl } from './additionBathroomExhaustCo
  * Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
  */
 export interface AdditionBathroomExhaust {
+  stackedWiringVerified?: boolean;
+  /** @minimum 0 */
+  verifiedControlQuantity?: number;
   /** @minimum 0 */
   quantity: number;
   customerSupplied: boolean;

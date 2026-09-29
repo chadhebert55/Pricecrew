@@ -18,8 +18,10 @@ import { useLocation } from "wouter"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
 import { AdditionExhaustFanFields } from "@/components/addition-exhaust-fan-fields"
 import { AdditionCeilingFanFields } from "@/components/addition-ceiling-fan-fields"
+import { MaterialReviewActions } from "@/components/material-resolution"
 
 const initialInputs: AdditionInputs = {
+  additionScopeVersion: 2,
   length: 20,
   width: 16,
   receptacles: 6,
@@ -86,6 +88,7 @@ function synchronizeCircuitInputs(inputs: AdditionInputs): AdditionInputs {
   const first = circuitEntries[0]
   return {
     ...inputs,
+    additionScopeVersion: 2,
     circuitEntries,
     circuitCount: circuitEntries.reduce((sum, entry) => sum + entry.quantity, 0),
     ...(first ? {
@@ -113,6 +116,7 @@ export function NewAdditionQuote() {
   const [, setLocation] = useLocation()
   const createQuote = useQuoteCreateMutation()
   const previewQuote = usePreviewQuote()
+  const [catalogRefresh, setCatalogRefresh] = useState(0)
   const settingsQuery = useGetSettings()
   const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
@@ -183,7 +187,13 @@ export function NewAdditionQuote() {
       previewQuote.mutate({ data: previewPayload }, { onSuccess: () => setPreviewedInputKey(inputKey) })
     }, 250)
     return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded])
+  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded, catalogRefresh])
+
+  useEffect(() => {
+    const refresh = () => { setPreviewedInputKey(""); setCatalogRefresh(n => n + 1) }
+    window.addEventListener("focus", refresh)
+    return () => window.removeEventListener("focus", refresh)
+  }, [])
 
   const setNumber = (key: keyof AdditionInputs, value: string) => {
     setInputs((current) => ({ ...current, [key]: nonNegativeNumber(value) }))
@@ -413,8 +423,15 @@ export function NewAdditionQuote() {
                           Add a dedicated subpanel when the addition needs separate panel space. Missing verified catalog prices remain unresolved.
                         </p>
                       </div>
-                      {hasSubpanel && (
+                    {hasSubpanel && (
                         <>
+                          <div className="space-y-2">
+                            <Label htmlFor="addition-subpanel-labor">Subpanel Labor Hours (person-hours)</Label>
+                            <Input id="addition-subpanel-labor" type="number" min="0" max="10000" step="0.25"
+                              placeholder="Required total person-hours" value={inputs.subpanelLaborHours ?? ""}
+                              onChange={event => setOptionalNumber("subpanelLaborHours",event.target.value)}/>
+                            <p className="text-xs text-muted-foreground">Complete subpanel installation: mounting, SER routing, feeder breaker, terminations, neutral/ground and ground-bar work, fittings, labeling and testing. 2 electricians × 6 hours = 12 person-hours. Added once; exclude this work from crew hours and labor adjustments below. Blank or zero stays Needs Review.</p>
+                          </div>
                           <div className="space-y-2">
                             <Label htmlFor="addition-subpanel-size">Subpanel size</Label>
                             <select
@@ -444,9 +461,7 @@ export function NewAdditionQuote() {
                               onChange={(event) => setNumber("feederDistance", event.target.value)}
                             />
                             <p className="text-xs text-muted-foreground">
-                              {inputs.subpanelOption === "60A Subpanel"
-                                ? "Uses #6 copper SER as the proper 4-wire feeder when a verified catalog row is available."
-                                : "Uses #1 aluminum SER as the proper 4-wire feeder when a verified catalog row is available."}
+                              Current feeder request is an estimating selection, not a conductor-sizing or installation-completeness certification. Confirm the complete feeder and equipment configuration before use.
                             </p>
                           </div>
                         </>
@@ -470,6 +485,7 @@ export function NewAdditionQuote() {
             <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm"><Info className="mt-0.5 shrink-0 text-primary" size={16} /><p className="text-secondary-foreground/80">The square-foot figure creates starting allowances only. Final pricing is based on the selected scope, materials, labor, markup, and margin.</p></div>
             {pricing && previewIsCurrent ? <><>{pricing.pricingWarnings.length > 0 && <div className="rounded-md border border-amber-400/40 bg-amber-400/10 p-3"><div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-300"><TriangleAlert size={16} /> Estimate needs confirmation</div><ul className="list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">{pricing.pricingWarnings.map((warning, index) => <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>)}</ul></div>}</><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="mb-2 font-semibold">Circuit schedule</p><div className="space-y-1 text-xs">{circuitEntries.map((entry, index) => <div key={index} className="flex justify-between gap-3"><span>{entry.label ? <><span className="font-semibold">{entry.label}</span>{" · "}</> : null}{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span><span className="font-mono text-right">{entry.cableType}</span></div>)}</div></div><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="font-semibold">Subpanel scope</p><p className="mt-1 text-xs text-secondary-foreground/75">{inputs.subpanelOption ?? "No Subpanel"}{(inputs.subpanelOption ?? "No Subpanel") !== "No Subpanel" ? ` · ${inputs.feederDistance ?? 0} ft feeder` : ""}</p></div><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div><div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>{pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}<div className="flex justify-between"><span>Gross Profit</span><span className="font-mono">${pricing.grossProfit.toFixed(2)}</span></div><div className="flex justify-between"><span>Gross Margin</span><span className="font-mono">{(pricing.grossMargin * 100).toFixed(1)}%</span></div><div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div></div>{assembly && assembly.length > 0 && <div className="border-t border-secondary-border pt-4"><h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-secondary-foreground/60">Priced Assembly</h4><div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-xs">{assembly.map((line, index) => <div key={`${line.id}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3"><span className="text-secondary-foreground/80">{contractorMaterialName(line.description)} × {line.quantity} {line.unit} @ ${line.unitCost.toFixed(3)}</span><span className="font-mono">${line.extendedCost.toFixed(3)}</span></div>)}</div></div>}</> : <div className="py-6 text-center text-sm text-secondary-foreground/70">Updating authoritative estimate...</div>}
             <div className="space-y-3 border-t border-secondary-border pt-4"><div className="space-y-2"><Label htmlFor="addition-labor-override">Internal Labor Cost Override ($)</Label><Input id="addition-labor-override" min="0" step="0.01" type="number" value={laborOverride} onChange={(event) => setLaborOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.laborCost.toFixed(2)}` : "Optional"} /></div><div className="space-y-2"><Label htmlFor="addition-price-override">Selling Price Override ($)</Label><Input id="addition-price-override" min="0" step="0.01" type="number" value={sellingPriceOverride} onChange={(event) => setSellingPriceOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.calculatedSellingPrice.toFixed(2)}` : "Optional"} /></div></div>
+            {previewIsCurrent && <MaterialReviewActions assembly={assembly ?? []} builder="Addition" />}
             {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
             <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError}>{createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Addition Quote"}</Button>
           </CardContent></Card></div></div>

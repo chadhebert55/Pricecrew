@@ -13,6 +13,7 @@ import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
 import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
 import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
 import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
+import { MaterialReviewActions } from "@/components/material-resolution"
 
 function BasicSelect({ value, onChange, options, id }: { value: string, onChange: (v: string) => void, options: {label: string, value: string}[], id?: string }) {
   return (
@@ -36,6 +37,7 @@ export function NewQuote() {
   const { data: settings } = settingsQuery
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [previewedInputKey, setPreviewedInputKey] = useState("")
+  const [catalogRefresh, setCatalogRefresh] = useState(0)
   
   // Base details
   const [customerName, setCustomerName] = useState("")
@@ -109,7 +111,13 @@ export function NewQuote() {
     }, 250)
 
     return () => window.clearTimeout(timeout)
-  }, [inputs, settingsLoaded])
+  }, [inputs, settingsLoaded, catalogRefresh])
+
+  useEffect(() => {
+    const refresh = () => { setPreviewedInputKey(""); setCatalogRefresh(n => n + 1) }
+    window.addEventListener("focus", refresh)
+    return () => window.removeEventListener("focus", refresh)
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -576,6 +584,7 @@ export function NewQuote() {
                     </div>
                   ) : (
                     <>
+                      <MaterialReviewActions assembly={previewQuote.data?.assembly ?? []} builder="EV Charger" />
                       {previewPricing.pricingWarnings.length > 0 && (
                         <div className="space-y-2 rounded-md border border-amber-400/40 bg-amber-400/10 p-3">
                           <div className="flex items-center gap-2 text-sm font-semibold text-amber-300">

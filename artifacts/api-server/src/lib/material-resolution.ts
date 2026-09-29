@@ -1,4 +1,5 @@
 import type { MaterialPreference, MaterialSnapshot } from "@workspace/db";
+import { componentProof, qualifiedComponentKinds } from "@workspace/api-zod/catalog-components";
 
 export type CatalogMaterial = {
   id?: number;
@@ -30,6 +31,8 @@ export const EXTERIOR_WR_RECEPTACLE_REQUEST = "15A TR weather-resistant exterior
 /** Narrow qualified family: no fuzzy descriptions, suffix inference, or GFCI substitution.
  * Other existing request families retain their current matching behavior. */
 export function materialRequirementsSatisfied(item: CatalogMaterial, requestKey: string): boolean {
+  const qualifiedRequest = Object.keys(qualifiedComponentKinds).find(k => materialKey(k) === materialKey(requestKey));
+  if (qualifiedRequest) return !!componentProof(item, qualifiedRequest);
   if (materialKey(requestKey) !== materialKey(EXTERIOR_WR_RECEPTACLE_REQUEST)) return true;
   return matchingPreferences(item, requestKey).some(preference => {
     const proof = preference.verifiedReceptacle;

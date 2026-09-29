@@ -802,6 +802,11 @@ export const createQuoteBodyJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const createQuoteBodyJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const createQuoteBodyJobInputsFourSubpanelLaborHoursMin = 0;
+export const createQuoteBodyJobInputsFourSubpanelLaborHoursMax = 10000;
+
+export const createQuoteBodyJobInputsFourBathroomExhaustVerifiedControlQuantityMin = 0;
+
 export const createQuoteBodyJobInputsFourBathroomExhaustQuantityMin = 0;
 export const createQuoteBodyJobInputsFourBathroomExhaustQuantityMultipleOf = 1;
 
@@ -1337,10 +1342,14 @@ export const CreateQuoteBody = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "additionScopeVersion": zod.literal(2).optional(),
+  "subpanelLaborHours": zod.number().min(createQuoteBodyJobInputsFourSubpanelLaborHoursMin).max(createQuoteBodyJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "stackedWiringVerified": zod.boolean().optional(),
+  "verifiedControlQuantity": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustQuantityMin).multipleOf(createQuoteBodyJobInputsFourBathroomExhaustQuantityMultipleOf),
   "customerSupplied": zod.boolean(),
-  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']),
+  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control', 'Stacked single-pole/single-pole', 'Not selected']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "wiringLength": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
@@ -1871,6 +1880,11 @@ export const createQuoteResponseTwoJobInputsThreeApplianceHomeRun122LengthMin = 
 export const createQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
+
+export const createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin = 0;
+export const createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax = 10000;
+
+export const createQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin = 0;
 export const createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf = 1;
@@ -2448,10 +2462,14 @@ export const CreateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "additionScopeVersion": zod.literal(2).optional(),
+  "subpanelLaborHours": zod.number().min(createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin).max(createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "stackedWiringVerified": zod.boolean().optional(),
+  "verifiedControlQuantity": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
   "customerSupplied": zod.boolean(),
-  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']),
+  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control', 'Stacked single-pole/single-pole', 'Not selected']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "wiringLength": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
@@ -3100,6 +3118,11 @@ export const previewQuoteBodyJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const previewQuoteBodyJobInputsFourSubpanelLaborHoursMin = 0;
+export const previewQuoteBodyJobInputsFourSubpanelLaborHoursMax = 10000;
+
+export const previewQuoteBodyJobInputsFourBathroomExhaustVerifiedControlQuantityMin = 0;
+
 export const previewQuoteBodyJobInputsFourBathroomExhaustQuantityMin = 0;
 export const previewQuoteBodyJobInputsFourBathroomExhaustQuantityMultipleOf = 1;
 
@@ -3627,10 +3650,14 @@ export const PreviewQuoteBody = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "additionScopeVersion": zod.literal(2).optional(),
+  "subpanelLaborHours": zod.number().min(previewQuoteBodyJobInputsFourSubpanelLaborHoursMin).max(previewQuoteBodyJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "stackedWiringVerified": zod.boolean().optional(),
+  "verifiedControlQuantity": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustQuantityMin).multipleOf(previewQuoteBodyJobInputsFourBathroomExhaustQuantityMultipleOf),
   "customerSupplied": zod.boolean(),
-  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']),
+  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control', 'Stacked single-pole/single-pole', 'Not selected']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "wiringLength": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
@@ -4815,6 +4842,11 @@ export const getQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin = 0;
+export const getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax = 10000;
+
+export const getQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin = 0;
+
 export const getQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin = 0;
 export const getQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf = 1;
 
@@ -5391,10 +5423,14 @@ export const GetQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "additionScopeVersion": zod.literal(2).optional(),
+  "subpanelLaborHours": zod.number().min(getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin).max(getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "stackedWiringVerified": zod.boolean().optional(),
+  "verifiedControlQuantity": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
   "customerSupplied": zod.boolean(),
-  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']),
+  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control', 'Stacked single-pole/single-pole', 'Not selected']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "wiringLength": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
@@ -6069,6 +6105,11 @@ export const updateQuoteResponseOneTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMax = 10000;
+
+export const updateQuoteResponseOneTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin = 0;
+
 export const updateQuoteResponseOneTwoJobInputsFourBathroomExhaustQuantityMin = 0;
 export const updateQuoteResponseOneTwoJobInputsFourBathroomExhaustQuantityMultipleOf = 1;
 
@@ -6645,10 +6686,14 @@ export const UpdateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "additionScopeVersion": zod.literal(2).optional(),
+  "subpanelLaborHours": zod.number().min(updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMin).max(updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "stackedWiringVerified": zod.boolean().optional(),
+  "verifiedControlQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
   "customerSupplied": zod.boolean(),
-  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']),
+  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control', 'Stacked single-pole/single-pole', 'Not selected']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "wiringLength": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
@@ -7748,6 +7793,11 @@ export const duplicateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax = 10000;
+
+export const duplicateQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin = 0;
+
 export const duplicateQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin = 0;
 export const duplicateQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf = 1;
 
@@ -8324,10 +8374,14 @@ export const DuplicateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
+  "additionScopeVersion": zod.literal(2).optional(),
+  "subpanelLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin).max(duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "stackedWiringVerified": zod.boolean().optional(),
+  "verifiedControlQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
   "customerSupplied": zod.boolean(),
-  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control']),
+  "control": zod.enum(['Standard switch', 'Timer switch', 'Humidity-sensing control', 'Stacked single-pole/single-pole', 'Not selected']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']),
   "wiringLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustWiringLengthMin).optional().describe('Total additional fan switch-leg\/in-room cable footage; not per fan or a circuit home run. Missing or zero remains Needs Review.'),
   "materialCostOverride": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustMaterialCostOverrideMin).optional().describe('Quote-local fan equipment cost only. Ignored when customerSupplied is true.')
@@ -8836,6 +8890,12 @@ export const DuplicateQuoteResponse = zod.object({
 /**
  * @summary List price book items
  */
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerMax = 100;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax = 200;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentSourceMax = 1000;
+
 export const listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax = 300;
 
 export const listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax = 100;
@@ -8868,6 +8928,13 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "isDefault": zod.boolean(),
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
+  "verifiedComponent": zod.object({
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate']),
+  "manufacturer": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentSourceMax),
+  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional()
+}).optional(),
   "requestKey": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
   "manufacturer": zod.string().max(listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax).optional(),
@@ -9229,6 +9296,12 @@ export const UpdatePriceBookItemParams = zod.object({
 
 export const updatePriceBookItemBodyUnitCostMin = 0;
 
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerMax = 100;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax = 200;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentSourceMax = 1000;
+
 export const updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax = 300;
 
 export const updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax = 100;
@@ -9252,6 +9325,13 @@ export const updatePriceBookItemBodySupplierUnitQuantityMin = 0.000001;
 export const UpdatePriceBookItemBody = zod.object({
   "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin).optional(),
   "materialPreferences": zod.array(zod.object({
+  "verifiedComponent": zod.object({
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate']),
+  "manufacturer": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentSourceMax),
+  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional()
+}).optional(),
   "requestKey": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
   "manufacturer": zod.string().max(updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax).optional(),
@@ -9270,6 +9350,12 @@ export const UpdatePriceBookItemBody = zod.object({
   "normalizedUnit": zod.enum(['ea', 'ft']).optional(),
   "supplierUnitQuantity": zod.number().min(updatePriceBookItemBodySupplierUnitQuantityMin).optional()
 })
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerMax = 100;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax = 200;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentSourceMax = 1000;
 
 export const updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax = 300;
 
@@ -9303,6 +9389,13 @@ export const UpdatePriceBookItemResponse = zod.object({
   "isDefault": zod.boolean(),
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
+  "verifiedComponent": zod.object({
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate']),
+  "manufacturer": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentSourceMax),
+  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional()
+}).optional(),
   "requestKey": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
   "manufacturer": zod.string().max(updatePriceBookItemResponseMaterialPreferencesItemManufacturerMax).optional(),

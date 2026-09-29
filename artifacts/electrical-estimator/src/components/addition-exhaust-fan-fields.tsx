@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 const empty: AdditionBathroomExhaust = {
-  quantity: 0, customerSupplied: false, control: "Standard switch", cableType: "12/2 NM-B",
+  quantity: 0, customerSupplied: false, control: "Not selected", cableType: "12/2 NM-B",
 }
 
 export function AdditionExhaustFanFields({ value, onChange }: {
@@ -12,7 +12,8 @@ export function AdditionExhaustFanFields({ value, onChange }: {
 }) {
   const scope = value ?? empty
   const set = <K extends keyof AdditionBathroomExhaust>(key: K, value: AdditionBathroomExhaust[K]) =>
-    onChange({ ...scope, [key]: value })
+    onChange({ ...scope, ...(key==="control"||key==="quantity"||key==="cableType"||key==="wiringLength"
+      ? {stackedWiringVerified:false}:{}), [key]: value })
   const selectClass = "flex min-h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
   return <section aria-labelledby="addition-bathroom-heading" className="space-y-4">
     <h3 id="addition-bathroom-heading" className="border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Bathroom exhaust fans</h3>
@@ -35,7 +36,11 @@ export function AdditionExhaustFanFields({ value, onChange }: {
           <Label htmlFor="addition-exhaust-control">One control per exhaust fan</Label>
           <select id="addition-exhaust-control" className={selectClass} value={scope.control}
             onChange={e => set("control", e.target.value as AdditionBathroomExhaust["control"])}>
-            <option>Standard switch</option><option>Timer switch</option><option>Humidity-sensing control</option>
+            <option value="Not selected" disabled>Select required control</option>
+            <option value="Standard switch">Standard Single-Pole Switch</option>
+            <option value="Timer switch">Countdown Timer</option>
+            <option value="Humidity-sensing control">Humidity Sensor Control</option>
+            <option value="Stacked single-pole/single-pole">Stacked Single-Pole / Single-Pole Switch</option>
           </select>
         </div>
         <div className="space-y-2">
@@ -52,6 +57,14 @@ export function AdditionExhaustFanFields({ value, onChange }: {
           </select>
         </div>
       </div>
+      {scope.control==="Stacked single-pole/single-pole" && <div className="space-y-2 text-sm">
+        <p>One yoke/location per fan, with two independently controlled functions. Uses the existing single-pole control labor once, plus unchanged fan and wiring labor. Product and matching white plate require qualification.</p>
+        <label className="flex items-start gap-3"><input id="addition-stacked-wiring" type="checkbox" className="mt-1 h-5 w-5"
+          checked={scope.stackedWiringVerified===true&&scope.verifiedControlQuantity===scope.quantity}
+          onChange={e=>onChange({...scope,stackedWiringVerified:e.target.checked,verifiedControlQuantity:scope.quantity})}/>
+          I verified both controlled functions and their wiring at every location; these controls are excluded from the general switch count.</label>
+        <a className="underline" href="/price-book?material=Addition%20stacked%20single-pole%2Fsingle-pole%20control&builder=Addition" target="_blank" rel="noreferrer">Qualify stacked control and matching plate in Price Book</a>
+      </div>}
       <p className="text-xs text-muted-foreground">Wiring is total additional in-room / switch-leg footage, not per fan. Do not repeat footage already in the common route or circuit home runs. Each fan adds its own control, control box and plate; exclude those from the general switch count.</p>
       <p className="text-xs text-muted-foreground">Uses the Bathroom exhaust-fan assembly and installation labor. Confirm circuit assignment, cable suitability, mounting and termination requirements. No fan/light/heat combination or ductwork is inferred.</p>
       {scope.customerSupplied

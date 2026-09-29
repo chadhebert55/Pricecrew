@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MaterialPreferenceKind } from './materialPreferenceKind';
+import type { MaterialPreferenceVerifiedComponent } from './materialPreferenceVerifiedComponent';
 import type { MaterialPreferenceVerifiedReceptacle } from './materialPreferenceVerifiedReceptacle';
 
 export interface MaterialPreference {
+  verifiedComponent?: MaterialPreferenceVerifiedComponent;
   /**
      * @minLength 1
      * @maxLength 300

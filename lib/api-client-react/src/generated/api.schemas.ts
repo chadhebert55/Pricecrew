@@ -833,6 +833,13 @@ export interface KitchenInputs {
   cableType?: KitchenInputsCableType;
 }
 
+export type AdditionInputsAdditionScopeVersion = typeof AdditionInputsAdditionScopeVersion[keyof typeof AdditionInputsAdditionScopeVersion];
+
+
+export const AdditionInputsAdditionScopeVersion = {
+  NUMBER_2: 2,
+} as const;
+
 export type AdditionBathroomExhaustControl = typeof AdditionBathroomExhaustControl[keyof typeof AdditionBathroomExhaustControl];
 
 
@@ -840,6 +847,8 @@ export const AdditionBathroomExhaustControl = {
   Standard_switch: 'Standard switch',
   Timer_switch: 'Timer switch',
   'Humidity-sensing_control': 'Humidity-sensing control',
+  'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
+  Not_selected: 'Not selected',
 } as const;
 
 export type AdditionBathroomExhaustCableType = typeof AdditionBathroomExhaustCableType[keyof typeof AdditionBathroomExhaustCableType];
@@ -855,6 +864,9 @@ export const AdditionBathroomExhaustCableType = {
  * Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
  */
 export interface AdditionBathroomExhaust {
+  stackedWiringVerified?: boolean;
+  /** @minimum 0 */
+  verifiedControlQuantity?: number;
   /** @minimum 0 */
   quantity: number;
   customerSupplied: boolean;
@@ -1039,6 +1051,13 @@ export type AdditionInputsCeilingFanInstallation = {
 };
 
 export interface AdditionInputs {
+  additionScopeVersion?: AdditionInputsAdditionScopeVersion;
+  /**
+     * Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.
+     * @minimum 0
+     * @maximum 10000
+     */
+  subpanelLaborHours?: number;
   bathroomExhaust?: AdditionBathroomExhaust;
   ceilingFanInstallation?: AdditionInputsCeilingFanInstallation;
   /** @minimum 0 */
@@ -2687,6 +2706,45 @@ export interface QuoteExportInvalid {
   issues: QuoteExportPreflightIssue[];
 }
 
+export type MaterialPreferenceVerifiedComponentKind = typeof MaterialPreferenceVerifiedComponentKind[keyof typeof MaterialPreferenceVerifiedComponentKind];
+
+
+export const MaterialPreferenceVerifiedComponentKind = {
+  'NEMA_14-50R': 'NEMA 14-50R',
+  'NEMA_6-50R': 'NEMA 6-50R',
+  'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
+  Matching_white_wall_plate: 'Matching white wall plate',
+} as const;
+
+export type MaterialPreferenceVerifiedComponentPlateOpening = typeof MaterialPreferenceVerifiedComponentPlateOpening[keyof typeof MaterialPreferenceVerifiedComponentPlateOpening];
+
+
+export const MaterialPreferenceVerifiedComponentPlateOpening = {
+  decorator: 'decorator',
+  duplex: 'duplex',
+  toggle: 'toggle',
+} as const;
+
+export type MaterialPreferenceVerifiedComponent = {
+  kind: MaterialPreferenceVerifiedComponentKind;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  manufacturer: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  manufacturerPartNumber: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  source: string;
+  plateOpening?: MaterialPreferenceVerifiedComponentPlateOpening;
+};
+
 export type MaterialPreferenceKind = typeof MaterialPreferenceKind[keyof typeof MaterialPreferenceKind];
 
 
@@ -2743,6 +2801,7 @@ export type MaterialPreferenceVerifiedReceptacle = {
 };
 
 export interface MaterialPreference {
+  verifiedComponent?: MaterialPreferenceVerifiedComponent;
   /**
      * @minLength 1
      * @maxLength 300

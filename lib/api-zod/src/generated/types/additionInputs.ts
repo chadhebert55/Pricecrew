@@ -7,6 +7,7 @@
  */
 import type { AdditionBathroomExhaust } from './additionBathroomExhaust';
 import type { AdditionCircuitEntry } from './additionCircuitEntry';
+import type { AdditionInputsAdditionScopeVersion } from './additionInputsAdditionScopeVersion';
 import type { AdditionInputsBreakerAmperage } from './additionInputsBreakerAmperage';
 import type { AdditionInputsBreakerPoleCount } from './additionInputsBreakerPoleCount';
 import type { AdditionInputsBreakerProtectionType } from './additionInputsBreakerProtectionType';
@@ -18,6 +19,13 @@ import type { AdditionInputsSubpanelOption } from './additionInputsSubpanelOptio
 import type { LaborRateType } from './laborRateType';
 
 export interface AdditionInputs {
+  additionScopeVersion?: AdditionInputsAdditionScopeVersion;
+  /**
+     * Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.
+     * @minimum 0
+     * @maximum 10000
+     */
+  subpanelLaborHours?: number;
   bathroomExhaust?: AdditionBathroomExhaust;
   ceilingFanInstallation?: AdditionInputsCeilingFanInstallation;
   /** @minimum 0 */

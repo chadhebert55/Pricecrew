@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./catalog-components": "./src/catalog-components.ts",
     ".": "./src/index.ts",
     "./pricing-readiness": "./src/pricing-readiness.ts",
     "./remodel-circuits": "./src/remodel-circuits.ts",

@@ -46,6 +46,9 @@ test("Addition bathroom exhaust: supplied precedence, measured wiring, responsiv
     for(const id of ["receptacles","switches","dimmers","recessedLights","ceilingFans"])
       await page.locator(`#addition-${id}`).fill("0");
     await page.locator("#addition-exhaust-quantity").fill("2");
+    // New estimates require an explicit control selection; preserve this fixture's
+    // established single-pole scope and its unchanged 17-hour assertion.
+    await page.locator("#addition-exhaust-control").selectOption("Standard switch");
     await expect(page.getByText(/Addition exhaust-fan wiring is unresolved:/)).toBeVisible();
     await page.locator("#addition-exhaust-wire").fill("30");
     await page.getByText("Advanced exhaust-fan equipment cost",{exact:true}).click();
