@@ -1,6 +1,6 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
-import { compatibleStackedPlate, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
-import {bathroomDeviceHours,bathroomRoomLabor,laundryRoomLabor,requiredRoomCircuits} from "@workspace/api-zod/addition-rooms";
+import { componentProof, compatibleStackedPlate, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
+import {bathroomDeviceHours,bathroomRoomLabor,laundryRoomLabor,requiredRoomCircuits,additionSubpanelRequest} from "@workspace/api-zod/addition-rooms";
 import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, materialRequirementsSatisfied, EXTERIOR_WR_RECEPTACLE_REQUEST, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
@@ -3504,7 +3504,10 @@ export function calculateAdditionEstimate(
       : subpanelAmperage === 60
         ? "#6 copper SER 4-wire feeder"
         : "#1 aluminum SER 4-wire feeder";
-    const panelKey = `${subpanelAmperage}A subpanel load center`;
+    const panelKey = currentFeederPath
+      ? additionSubpanelRequest(inputs.panelManufacturer,subpanelAmperage,"load center")
+      : `${subpanelAmperage}A subpanel load center`;
+    const breakerKey = additionSubpanelRequest(inputs.panelManufacturer,subpanelAmperage,"feeder breaker");
 
     if (feederDistance <= 0) {
       pricingWarnings.push(
@@ -3530,9 +3533,10 @@ export function calculateAdditionEstimate(
         poleCount: 2,
         protectionType: "Standard",
       },
-      priceBook,
+      currentFeederPath ? priceBook.filter(item=>componentProof(item,breakerKey)) : priceBook,
       pricingWarnings,
     );
+    if(currentFeederPath) feederBreaker.requestKey=breakerKey;
     addLine(assembly, {
       id: "addition-subpanel-feeder-breaker",
       category: "Protection",
@@ -3543,7 +3547,9 @@ export function calculateAdditionEstimate(
       ...resolvedMaterial(feederBreaker), source: feederBreaker.source,
     });
 
-    const panel = unitCost(panelKey, priceBook, pricingWarnings, "Panel");
+    const panel = unitCost(panelKey, currentFeederPath
+      ? priceBook.filter(item=>breakerManufacturerCompatible(item,inputs.panelManufacturer))
+      : priceBook, pricingWarnings, "Panel");
     const panelIdentity = panel.item
       ? [
           panel.item.manufacturer,

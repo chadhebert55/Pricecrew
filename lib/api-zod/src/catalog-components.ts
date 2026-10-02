@@ -1,5 +1,5 @@
 /** Semantic builder requests, not catalog products or electrical sizing rules. */
-import {additionFeederRequests} from "./addition-rooms";
+import {additionFeederRequests, additionSubpanelComponentRequests} from "./addition-rooms";
 export const NEMA_1450 = "NEMA 14-50 receptacle";
 export const NEMA_650 = "NEMA 6-50 receptacle";
 export const STACKED_CONTROL =
@@ -8,6 +8,8 @@ export const STACKED_PLATE =
   "Addition stacked control matching white wall plate";
 export const qualifiedComponentKinds: Record<string, string> = {
   ...Object.fromEntries(additionFeederRequests.map(request=>[request,"Qualified Addition SER feeder"])),
+  ...Object.fromEntries(additionSubpanelComponentRequests.map(request=>[request,request.endsWith("load center")
+    ? "Qualified Addition load center" : "Qualified Addition feeder breaker"])),
   [NEMA_1450]: "NEMA 14-50R",
   [NEMA_650]: "NEMA 6-50R",
   [STACKED_CONTROL]: "Stacked single-pole/single-pole",
@@ -43,6 +45,7 @@ export function componentProof(
   request: string,
 ): ComponentProof | undefined {
   const kind = qualifiedComponentKinds[request];
+  if (!kind) return undefined;
   return item.materialPreferences?.find(
     (p) =>
       key(p.requestKey) === key(request) &&

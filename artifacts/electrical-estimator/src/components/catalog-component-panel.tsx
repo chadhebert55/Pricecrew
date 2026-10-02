@@ -18,9 +18,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {additionFeederRequests} from "@workspace/api-zod/addition-rooms";
+import {additionFeederRequests, additionSubpanelComponentRequests} from "@workspace/api-zod/addition-rooms";
 
-const requests = [...evCatalogComponents, STACKED_CONTROL, STACKED_PLATE, ...additionFeederRequests];
+const requests = [...evCatalogComponents, STACKED_CONTROL, STACKED_PLATE, ...additionFeederRequests, ...additionSubpanelComponentRequests];
 const same = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
 export function CatalogComponentPanel({
@@ -100,7 +100,11 @@ export function CatalogComponentPanel({
             | "NEMA 6-50R"
             | "Stacked single-pole/single-pole"
             | "Matching white wall plate"
-            | "Qualified Addition SER feeder",
+            | "Qualified Addition SER feeder"
+            | "Qualified Addition load center"
+            | "Qualified Addition feeder breaker",
+          // Additional exact requests qualify a load center or feeder breaker
+          // for the named existing panel family; they do not qualify the full BOM.
           // The qualification is bound to the explicit size/material request,
           // not inferred from a conductor description or an amperage.
           manufacturer: item.manufacturer!,

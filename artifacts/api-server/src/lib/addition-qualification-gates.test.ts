@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { AdditionInputRecord } from "@workspace/db";
 import { calculateAdditionEstimate, type PriceBookItem } from "./estimating-engine";
-import { defaultLaundryRoom, requiredRoomCircuits, roomCircuitSuggestion } from "@workspace/api-zod/addition-rooms";
+import { defaultLaundryRoom, requiredRoomCircuits, roomCircuitSuggestion, additionSubpanelRequest } from "@workspace/api-zod/addition-rooms";
 import { compatibleStackedPlate, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
 
 // Every auxiliary product and price in this file is isolated synthetic QA data.
@@ -38,8 +38,12 @@ test(`${amps}A ${material}: qualified feeder is one cable-foot per route-foot, b
  const feeder=row(1,"Synthetic approved SER cable",material==="Aluminum"?2:4,{unit:"ft",category:"Conductor",
   materialPreferences:[{requestKey,kind:"exact",verifiedComponent:{kind:"Qualified Addition SER feeder",
    manufacturer:"QA",manufacturerPartNumber:"QA-1",source:"Synthetic request-specific approval; no real sizing claim"}}]});
- const panel=row(2,`${amps}A subpanel load center`,100,{category:"Panel"});
- const breaker=row(3,"Synthetic feeder breaker",20,{manufacturer:"Siemens",category:"Protection",amperage:amps,poleCount:2,protectionType:"Standard"});
+ const qualify=(p:PriceBookItem,role:"load center"|"feeder breaker")=>({...p,materialPreferences:[{
+  requestKey:additionSubpanelRequest("Siemens",amps,role),kind:"exact" as const,verifiedComponent:{
+   kind:`Qualified Addition ${role}`,manufacturer:p.manufacturer!,manufacturerPartNumber:p.manufacturerPartNumber!,
+   source:"Synthetic request-specific product and family approval only"}}]});
+ const panel=qualify(row(2,`${amps}A subpanel load center`,100,{category:"Panel",manufacturer:"Siemens"}),"load center");
+ const breaker=qualify(row(3,"Synthetic feeder breaker",20,{manufacturer:"Siemens",category:"Protection",amperage:amps,poleCount:2,protectionType:"Standard"}),"feeder breaker");
  const inputs:Partial<AdditionInputRecord>={subpanelOption:`${amps}A Subpanel`,feederMaterial:material,feederDistance:50,subpanelLaborHours:12};
  const r=calc(inputs,[feeder,panel,breaker]);
  assert.ok(has(r,"ADDITION_SUBPANEL_SCOPE_UNQUALIFIED"));
@@ -47,11 +51,31 @@ test(`${amps}A ${material}: qualified feeder is one cable-foot per route-foot, b
  assert.equal(r.assembly.find(l=>l.id==="addition-subpanel-feeder")?.quantity,50);
  assert.equal(r.pricing.materialCost,120+50*feeder.unitCost);
  assert.equal(r.pricing.finalLaborHours,12);
+ const unqualified=calc(inputs,[feeder,{...panel,materialPreferences:[]},{...breaker,materialPreferences:[]}]);
+ assert.equal(unqualified.assembly.find(l=>l.id==="addition-subpanel-load-center")?.unitCost,0);
+ assert.equal(unqualified.assembly.find(l=>l.id==="addition-subpanel-feeder-breaker")?.unitCost,0);
  assert.equal(calc({...inputs,feederDistance:75},[feeder,panel,breaker]).pricing.materialCost,120+75*feeder.unitCost);
  assert.equal(calc(inputs,[{...feeder,unit:"ea"},panel,breaker]).assembly.find(l=>l.id==="addition-subpanel-feeder")?.unitCost,0);
+ assert.equal(calc(inputs,[feeder,{...panel,manufacturer:"GE"},breaker]).assembly.find(l=>l.id==="addition-subpanel-load-center")?.unitCost,0);
  assert.equal(calc(inputs,[feeder,panel,{...breaker,manufacturer:"GE"}]).assembly.find(l=>l.id==="addition-subpanel-feeder-breaker")?.unitCost,0);
- assert.equal(calc(inputs,[feeder,panel,breaker,{...breaker,id:4,manufacturerPartNumber:"QA-other"}]).assembly.find(l=>l.id==="addition-subpanel-feeder-breaker")?.unitCost,0);
+ assert.equal(calc(inputs,[feeder,panel,breaker,qualify({...breaker,id:4,manufacturerPartNumber:"QA-other"},"feeder breaker")]).assembly.find(l=>l.id==="addition-subpanel-feeder-breaker")?.unitCost,0);
  trace(`${amps}A ${material}: partial assembly, NOT Ready`,r);
+});
+for(const [manufacturer,panelFamily] of [["Eaton","br"],["Square D","homeline"]] as const)
+test(`${manufacturer}: subpanel exact component approval is family-specific and not interchangeable`,()=>{
+ const qualify=(role:"load center"|"feeder breaker",id:number)=>row(id,`Synthetic ${role}`,25,{
+  category:role==="load center"?"Panel":"Protection",
+  manufacturer,panelFamily,amperage:60,poleCount:2,protectionType:"Standard",
+  materialPreferences:[{requestKey:additionSubpanelRequest(manufacturer,60,role),kind:"exact",verifiedComponent:{
+   kind:`Qualified Addition ${role}`,manufacturer,manufacturerPartNumber:`QA-${id}`,source:"Synthetic family-bound qualification"}}]});
+ const book=[qualify("load center",60),qualify("feeder breaker",61)];
+ const inputs:Partial<AdditionInputRecord>={panelManufacturer:manufacturer,subpanelOption:"60A Subpanel",feederMaterial:"Aluminum",feederDistance:50,subpanelLaborHours:12};
+ const matched=calc(inputs,book),wrong=calc({...inputs,panelManufacturer:"Siemens"},book);
+ for(const id of ["addition-subpanel-load-center","addition-subpanel-feeder-breaker"]){
+  assert.equal(matched.assembly.find(l=>l.id===id)?.unitCost,25);
+  assert.equal(wrong.assembly.find(l=>l.id===id)?.unitCost,0);
+ }
+ assert.ok(has(matched,"ADDITION_SUBPANEL_SCOPE_UNQUALIFIED"));
 });
 for(const dryerType of ["None","Gas","Electric"] as const)
 test(`Laundry ${dryerType}: one schedule, no fabricated connection device or hidden labor`,()=>{

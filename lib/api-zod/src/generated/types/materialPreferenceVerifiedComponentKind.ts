@@ -15,4 +15,6 @@ export const MaterialPreferenceVerifiedComponentKind = {
   'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
   Matching_white_wall_plate: 'Matching white wall plate',
   Qualified_Addition_SER_feeder: 'Qualified Addition SER feeder',
+  Qualified_Addition_load_center: 'Qualified Addition load center',
+  Qualified_Addition_feeder_breaker: 'Qualified Addition feeder breaker',
 } as const;

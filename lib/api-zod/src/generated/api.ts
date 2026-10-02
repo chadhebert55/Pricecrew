@@ -9307,7 +9307,7 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder', 'Qualified Addition load center', 'Qualified Addition feeder breaker']),
   "manufacturer": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentSourceMax),
@@ -9715,7 +9715,7 @@ export const UpdatePriceBookItemBody = zod.object({
   "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin).optional(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder', 'Qualified Addition load center', 'Qualified Addition feeder breaker']),
   "manufacturer": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentSourceMax),
@@ -9790,7 +9790,7 @@ export const UpdatePriceBookItemResponse = zod.object({
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder', 'Qualified Addition load center', 'Qualified Addition feeder breaker']),
   "manufacturer": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentSourceMax),

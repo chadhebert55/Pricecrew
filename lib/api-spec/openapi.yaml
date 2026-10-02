@@ -3717,7 +3717,7 @@ components:
           properties:
             kind:
               type: string
-              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate, Qualified Addition SER feeder]
+              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate, Qualified Addition SER feeder, Qualified Addition load center, Qualified Addition feeder breaker]
             manufacturer:
               type: string
               minLength: 1
