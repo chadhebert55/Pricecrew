@@ -268,8 +268,8 @@ for (const scenario of ["subpanel", "stacked", "ev"] as const)
         expect(
           preview.pricing.pricingWarnings.filter(
             (w: any) => w.severity === "error",
-          ),
-        ).toEqual([]);
+          ).map((w: any) => w.code),
+        ).toEqual(["EV_RECEPTACLE_INSTALLATION_UNQUALIFIED"]);
         await screenshot(page, "ev-resolved");
         await pricebook.close();
       } else {
@@ -384,7 +384,8 @@ for (const scenario of ["subpanel", "stacked", "ev"] as const)
         headers,
         data: { status: "ready" },
       });
-      expect(ready.status()).toBe(scenario === "subpanel" ? 409 : 200);
+      // A priced receptacle does not qualify the currently unmodeled box/cover.
+      expect(ready.status()).toBe(scenario === "stacked" ? 200 : 409);
       const immutableBaseline = await (
         await request.get(`${api}/quotes/${saved.id}`, { headers })
       ).json();
