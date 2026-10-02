@@ -19,6 +19,7 @@ export type LaundryRoom = {
   enabled: boolean;
   washerCircuits: number;
   dryerType: "None" | "Gas" | "Electric";
+  dryerConnectionMethod?: "Receptacle" | "Hardwired";
   generalReceptacles: number;
   lightingLocations: number;
   switches: number;

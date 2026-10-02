@@ -21,6 +21,18 @@ const proof=(r:PriceBookItem,requestKey:string,kind:string):PriceBookItem=>({...
 }}]});
 const catalog=[proof(rows[0],NEMA_1450,"NEMA 14-50R"),proof(rows[1],STACKED_CONTROL,"Stacked single-pole/single-pole"),rows[2]];
 const settings={residentialLaborSellRate:150,commercialLaborSellRate:165,loadedLaborCost:65,materialMarkup:.25,targetMargin:.4};
+function financialTrace(name:string,r:ReturnType<typeof calculateAdditionEstimate>){
+ assert.ok(typeof r.pricing.finalLaborHours === "number");
+ const round=(n:number)=>Math.round(n*100)/100;
+ assert.equal(r.pricing.materialCost,round(r.assembly.reduce((s,l)=>s+l.extendedCost,0)));
+ assert.equal(r.pricing.laborCost,round(r.pricing.finalLaborHours*65));
+ assert.equal(r.pricing.laborSellAmount,round(r.pricing.finalLaborHours*150));
+ assert.equal(r.pricing.grossProfit,round(r.pricing.finalSellingPrice-r.pricing.materialCost-r.pricing.laborCost));
+ if(process.env.QUALIFICATION_TRACE) console.log(JSON.stringify({name,complete:false,
+  components:r.assembly.map(l=>({id:l.id,quantity:l.quantity,unit:l.unit,unitCost:l.unitCost,extendedCost:l.extendedCost})),
+  materialCost:r.pricing.materialCost,personHours:r.pricing.finalLaborHours,loadedLabor:r.pricing.laborCost,
+  customerLabor:r.pricing.laborSellAmount,sellingPrice:r.pricing.finalSellingPrice,grossProfit:r.pricing.grossProfit,margin:r.pricing.grossMargin}));
+}
 const addition:AdditionInputRecord={additionScopeVersion:2,length:20,width:16,receptacles:0,switches:0,dimmers:0,recessedLights:0,
  ceilingFans:0,customerSuppliedFans:true,circuitCount:0,routeLength:0,homeRunLength:0,panelManufacturer:"Siemens",
  breakerAmperage:20,breakerPoleCount:1,breakerProtectionType:"AFCI",cableType:"12/2 NM-B",crewSize:1,crewHours:0,notes:"",
@@ -58,6 +70,7 @@ test("RCD11W costs 21.48 and contributes one 0.5-hour control allowance, with se
  const single=calculateAdditionEstimate({...addition,bathroomExhaust:{...addition.bathroomExhaust!,control:"Standard switch"}},settings,catalog);
  assert.equal(r.pricing.finalLaborHours,single.pricing.finalLaborHours);
  assert.equal(r.assembly.find(l=>l.id==="addition-exhaust-fans")?.extendedCost,0);
+ financialTrace("Exact RCD11W at contractor cost; plate and other materials unresolved",r);
 });
 test("priced TP26-W without independently established pair qualification remains unresolved",()=>{
  const barePreference={...rows[2],materialPreferences:[{requestKey:STACKED_PLATE,kind:"exact" as const}]};
@@ -66,6 +79,14 @@ test("priced TP26-W without independently established pair qualification remains
   assert.equal(r.assembly.find(l=>l.id==="addition-exhaust-plates")?.unitCost,0);
   assert.ok(r.pricing.pricingWarnings.some(w=>typeof w!=="string"&&w.code==="ADDITION_EXHAUST_CONTROL_REQUIRED"));
  }
+});
+test("matching decorator openings alone do not qualify RCD11W with TP26-W",()=>{
+ const plate={...rows[2],materialPreferences:[{requestKey:STACKED_PLATE,kind:"exact" as const,
+  verifiedComponent:{kind:"Matching white wall plate",manufacturer:rows[2].manufacturer!,
+   manufacturerPartNumber:"TP26-W",source:"Plate product identity only; no pair approval",plateOpening:"decorator" as const}}]};
+ const r=calculateAdditionEstimate(addition,settings,[catalog[0],catalog[1],plate]);
+ assert.equal(r.assembly.find(l=>l.id==="addition-exhaust-plates")?.unitCost,0);
+ assert.ok(r.pricing.pricingWarnings.some(w=>typeof w!=="string"&&w.code==="ADDITION_EXHAUST_CONTROL_REQUIRED"));
 });
 test("receptacle qualification does not remove neutral or missing breaker blockers",()=>{
  for(const patch of [{wiringMethod:"EMT Conduit"},{wiringMethod:"PVC Conduit"},{cableType:"8/2 NM-B" as const},{wiringMethod:"SER Cable",cableType:"8/2 SER" as const}]){
@@ -76,7 +97,7 @@ test("receptacle qualification does not remove neutral or missing breaker blocke
  }
 });
 test("future supplier preview updates exact existing products and preserves C-to-each conversion",()=>{
- const existing=rows.map(r=>({...r,isContractorOwned:false}));
+ const existing=rows.map(r=>({...r,id:r.id!,unit:r.unit!,isContractorOwned:false}));
  const repeat=parsePriceBookImport(productCsv,existing);
  assert.ok(repeat.rows.every(r=>r.action!=="insert"));
  const changed=parsePriceBookImport(productCsv.replace(",46.83,100,",",47.83,100,"),existing);
@@ -96,4 +117,5 @@ test("priced 3894WREV, neutral-bearing cable and breaker cannot bypass unmodeled
  assert.equal(r.pricing.materialCost,187.32);
  assert.ok(r.pricing.pricingWarnings.some(w=>typeof w!=="string"&&w.code==="EV_RECEPTACLE_INSTALLATION_UNQUALIFIED"),
   "a qualified receptacle does not certify a complete box/cover installation");
+ financialTrace("Exact 3894WREV with synthetic cable/breaker costs; box/cover unresolved",r);
 });

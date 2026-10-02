@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdditionLaundryRoomDryerConnectionMethod } from './additionLaundryRoomDryerConnectionMethod';
 import type { AdditionLaundryRoomDryerType } from './additionLaundryRoomDryerType';
 
 export interface AdditionLaundryRoom {
@@ -12,6 +13,7 @@ export interface AdditionLaundryRoom {
   /** @minimum 0 */
   washerCircuits: number;
   dryerType: AdditionLaundryRoomDryerType;
+  dryerConnectionMethod?: AdditionLaundryRoomDryerConnectionMethod;
   /** @minimum 0 */
   generalReceptacles: number;
   /** @minimum 0 */

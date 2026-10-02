@@ -51,6 +51,14 @@ test("exact Northeast product import, mapping, refreshed estimate and immutable 
   }
   const mapped=await getRows();
   expect(mapped.find((r:any)=>r.id===products[2].id).materialPreferences).toEqual([]);
+  await page.locator("#component-request").selectOption("Addition stacked control matching white wall plate");
+  await page.locator("#component-product").selectOption(String(products[2].id));
+  await page.locator("#component-source").fill("TP26-W identity only, not approved for RCD11W");
+  await page.locator("#component-compatible-control").selectOption(String(products[1].id));
+  await page.locator("#component-confirm").check();
+  await expect(page.getByRole("button",{name:"Save component mapping",exact:true})).toBeDisabled();
+  await expect(page.locator("#component-pair-source")).toHaveValue("");
+  await expect(page.getByTestId("component-status")).toHaveText("Missing Catalog Item");
   await page.screenshot({path:info.outputPath("exact-products-local-mapping.png"),fullPage:true});
   const after=await(await request.post(`${api}/quotes/preview`,{headers,data:payload})).json();
   const receptacle=after.assembly.find((r:any)=>r.id==="receptacle");

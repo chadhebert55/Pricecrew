@@ -1,5 +1,5 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
-import { componentProof, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
+import { compatibleStackedPlate, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
 import {bathroomDeviceHours,bathroomRoomLabor,laundryRoomLabor,requiredRoomCircuits} from "@workspace/api-zod/addition-rooms";
 import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, materialRequirementsSatisfied, EXTERIOR_WR_RECEPTACLE_REQUEST, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
@@ -3289,6 +3289,8 @@ export function calculateAdditionEstimate(
     // Appliance connection products are not determined by a circuit amp rating.
     if(r.washerCircuits>0 || r.dryerType!=="None")
       pricingWarnings.push("Addition room scope: qualify the selected laundry appliance connection devices, boxes/covers and any gas-dryer power connection. Circuit cable and breaker alone do not establish a complete appliance connection; no receptacle or price has been guessed.");
+    if(r.dryerType==="Electric" && !r.dryerConnectionMethod)
+      pricingWarnings.push("Addition room scope: Dryer connection method/material selection required. Select Receptacle or Hardwired; neither connection method nor its materials have been assumed.");
   }
   // Explicitly disabled room ignores retained draft values, including its fan.
   const exhaust = inputs.bathroomRoom && !inputs.bathroomRoom.enabled ? undefined : inputs.bathroomExhaust;
@@ -3319,8 +3321,8 @@ export function calculateAdditionEstimate(
     if (stacked) {
       const selected = (id:string) => priceBook.find(p=>p.id===assembly.find(l=>l.id===id)?.materialSnapshot?.catalogId);
       const device = selected("addition-exhaust-controls"), plate = selected("addition-exhaust-plates");
-      if (!device || !plate || componentProof(device,STACKED_CONTROL)?.plateOpening !== componentProof(plate,STACKED_PLATE)?.plateOpening)
-        pricingWarnings.push("Addition exhaust control: qualify the exact stacked device and a matching white plate opening; one yoke does not determine the plate opening.");
+      if (!device || !plate || !compatibleStackedPlate(device,plate))
+        pricingWarnings.push("Addition exhaust control: Compatible stacked-control wall plate selection required. Qualify the exact plate against the selected control manufacturer/part with authoritative pairing evidence; matching openings alone do not establish compatibility.");
     }
     priced("addition-exhaust-wiring", "Conductor", `${exhaust.cableType} cable`,
       `Additional bathroom fan in-room / switch-leg wiring: ${exhaust.cableType}`, wire, false, "ft");

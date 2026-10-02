@@ -19,6 +19,11 @@ export type ComponentProof = {
   manufacturerPartNumber: string;
   source: string;
   plateOpening?: "decorator" | "duplex" | "toggle";
+  compatibleControl?: {
+    manufacturer: string;
+    manufacturerPartNumber: string;
+    source: string;
+  };
 };
 type Product = {
   manufacturer?: string | null;
@@ -54,8 +59,21 @@ export function componentProof(
       (![STACKED_CONTROL, STACKED_PLATE].includes(request) ||
         ["decorator", "duplex", "toggle"].includes(
           p.verifiedComponent.plateOpening ?? "",
-        )),
+        )) &&
+      (request !== STACKED_PLATE ||
+        (!!p.verifiedComponent.compatibleControl?.manufacturer.trim() &&
+         !!p.verifiedComponent.compatibleControl.manufacturerPartNumber.trim() &&
+         !!p.verifiedComponent.compatibleControl.source.trim())),
   )?.verifiedComponent;
+}
+/** Matching openings are necessary, not sufficient: evidence names the exact control. */
+export function compatibleStackedPlate(control: Product, plate: Product): boolean {
+  const device = componentProof(control, STACKED_CONTROL);
+  const cover = componentProof(plate, STACKED_PLATE);
+  return !!device && !!cover?.compatibleControl &&
+    device.plateOpening === cover.plateOpening &&
+    key(cover.compatibleControl.manufacturer) === key(control.manufacturer ?? "") &&
+    key(cover.compatibleControl.manufacturerPartNumber) === key(control.manufacturerPartNumber ?? "");
 }
 export const evCatalogComponents = [
   NEMA_1450,

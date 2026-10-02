@@ -149,6 +149,10 @@ for (const scenario of ["subpanel", "stacked", "ev"] as const)
                     manufacturerPartNumber: part,
                     source: "Synthetic qualification only",
                     plateOpening: "duplex",
+                    ...(key === STACKED_PLATE ? {compatibleControl: {
+                      manufacturer: "QA", manufacturerPartNumber: "QA-STACK",
+                      source: "Isolated synthetic pair approval only",
+                    }} : {}),
                   },
                 },
               ],

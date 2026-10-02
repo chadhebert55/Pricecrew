@@ -296,6 +296,7 @@ export type AdditionInputRecord = {
   };
   laundryRoom?: {
     enabled:boolean;washerCircuits:number;dryerType:"None"|"Gas"|"Electric";
+    dryerConnectionMethod?: "Receptacle" | "Hardwired";
     generalReceptacles:number;lightingLocations:number;switches:number;recessedLights:number;customerSuppliedFixtures:boolean;
   };
   feederMaterial?: "Copper" | "Aluminum";
@@ -696,6 +697,11 @@ export type MaterialPreference = {
     manufacturerPartNumber: string;
     source: string;
     plateOpening?: "decorator" | "duplex" | "toggle";
+    compatibleControl?: {
+      manufacturer: string;
+      manufacturerPartNumber: string;
+      source: string;
+    };
   };
   requestKey: string;
   kind: "exact" | "manufacturer" | "family" | "alternate";
