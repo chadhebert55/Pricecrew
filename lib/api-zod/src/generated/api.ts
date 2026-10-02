@@ -1393,6 +1393,7 @@ export const CreateQuoteBody = zod.object({
   "enabled": zod.boolean(),
   "washerCircuits": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
   "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "dryerConnectionMethod": zod.enum(['Receptacle', 'Hardwired']).optional(),
   "generalReceptacles": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
   "lightingLocations": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomLightingLocationsMultipleOf),
   "switches": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomSwitchesMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomSwitchesMultipleOf),
@@ -2574,6 +2575,7 @@ export const CreateQuoteResponse = zod.object({
   "enabled": zod.boolean(),
   "washerCircuits": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
   "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "dryerConnectionMethod": zod.enum(['Receptacle', 'Hardwired']).optional(),
   "generalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
   "lightingLocations": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
   "switches": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
@@ -3823,6 +3825,7 @@ export const PreviewQuoteBody = zod.object({
   "enabled": zod.boolean(),
   "washerCircuits": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
   "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "dryerConnectionMethod": zod.enum(['Receptacle', 'Hardwired']).optional(),
   "generalReceptacles": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
   "lightingLocations": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomLightingLocationsMultipleOf),
   "switches": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomSwitchesMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomSwitchesMultipleOf),
@@ -5657,6 +5660,7 @@ export const GetQuoteResponse = zod.object({
   "enabled": zod.boolean(),
   "washerCircuits": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
   "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "dryerConnectionMethod": zod.enum(['Receptacle', 'Hardwired']).optional(),
   "generalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
   "lightingLocations": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
   "switches": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
@@ -6981,6 +6985,7 @@ export const UpdateQuoteResponse = zod.object({
   "enabled": zod.boolean(),
   "washerCircuits": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
   "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "dryerConnectionMethod": zod.enum(['Receptacle', 'Hardwired']).optional(),
   "generalReceptacles": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
   "lightingLocations": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
   "switches": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
@@ -8730,6 +8735,7 @@ export const DuplicateQuoteResponse = zod.object({
   "enabled": zod.boolean(),
   "washerCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
   "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "dryerConnectionMethod": zod.enum(['Receptacle', 'Hardwired']).optional(),
   "generalReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
   "lightingLocations": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
   "switches": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
@@ -9262,6 +9268,12 @@ export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentM
 
 export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentSourceMax = 1000;
 
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerMax = 100;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerPartNumberMax = 200;
+
+export const listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentCompatibleControlSourceMax = 1000;
+
 export const listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax = 300;
 
 export const listPriceBookItemsResponseMaterialPreferencesItemManufacturerMax = 100;
@@ -9295,11 +9307,16 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder', 'Qualified Addition load center', 'Qualified Addition feeder breaker']),
   "manufacturer": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentSourceMax),
-  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional()
+  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional(),
+  "compatibleControl": zod.object({
+  "manufacturer": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentCompatibleControlSourceMax)
+}).optional()
 }).optional(),
   "requestKey": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
@@ -9668,6 +9685,12 @@ export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManu
 
 export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentSourceMax = 1000;
 
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerMax = 100;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerPartNumberMax = 200;
+
+export const updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentCompatibleControlSourceMax = 1000;
+
 export const updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax = 300;
 
 export const updatePriceBookItemBodyMaterialPreferencesItemManufacturerMax = 100;
@@ -9692,11 +9715,16 @@ export const UpdatePriceBookItemBody = zod.object({
   "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin).optional(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder', 'Qualified Addition load center', 'Qualified Addition feeder breaker']),
   "manufacturer": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentSourceMax),
-  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional()
+  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional(),
+  "compatibleControl": zod.object({
+  "manufacturer": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentCompatibleControlSourceMax)
+}).optional()
 }).optional(),
   "requestKey": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),
@@ -9722,6 +9750,12 @@ export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponent
 export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax = 200;
 
 export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentSourceMax = 1000;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerMax = 100;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerPartNumberMax = 200;
+
+export const updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentCompatibleControlSourceMax = 1000;
 
 export const updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax = 300;
 
@@ -9756,11 +9790,16 @@ export const UpdatePriceBookItemResponse = zod.object({
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder', 'Qualified Addition load center', 'Qualified Addition feeder breaker']),
   "manufacturer": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentSourceMax),
-  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional()
+  "plateOpening": zod.enum(['decorator', 'duplex', 'toggle']).optional(),
+  "compatibleControl": zod.object({
+  "manufacturer": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerMax),
+  "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentCompatibleControlManufacturerPartNumberMax),
+  "source": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentCompatibleControlSourceMax)
+}).optional()
 }).optional(),
   "requestKey": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemRequestKeyMax),
   "kind": zod.enum(['exact', 'manufacturer', 'family', 'alternate']),

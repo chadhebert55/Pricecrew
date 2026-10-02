@@ -209,6 +209,28 @@ export function AdditionRoomFields({
                 })
               }
             />
+            {i.laundryRoom!.dryerType === "Electric" && (
+              <div className="space-y-2">
+                <label htmlFor="addition-laundry-dryer-connection" className="text-sm font-medium">
+                  Electric dryer connection method
+                </label>
+                <select
+                  id="addition-laundry-dryer-connection"
+                  className="min-h-11 w-full min-w-0 rounded-md border bg-background p-2 text-sm"
+                  value={i.laundryRoom!.dryerConnectionMethod ?? ""}
+                  onChange={(e) => onChange({...i, laundryRoom: {...i.laundryRoom!,
+                    dryerConnectionMethod: (e.target.value || undefined) as "Receptacle" | "Hardwired" | undefined}})}
+                >
+                  <option value="">Select connection method</option>
+                  <option value="Receptacle">Receptacle</option>
+                  <option value="Hardwired">Hardwired</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Method selection does not qualify the device, box, cover or termination materials.
+                  Exact company products and complete connection scope still require review.
+                </p>
+              </div>
+            )}
           </div>
           {checkbox(
             "addition-laundry-supplied",

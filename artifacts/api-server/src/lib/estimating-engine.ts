@@ -1,6 +1,6 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
-import { componentProof, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
-import {bathroomDeviceHours,bathroomRoomLabor,laundryRoomLabor,requiredRoomCircuits} from "@workspace/api-zod/addition-rooms";
+import { componentProof, compatibleStackedPlate, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
+import {bathroomDeviceHours,bathroomRoomLabor,laundryRoomLabor,requiredRoomCircuits,additionSubpanelRequest} from "@workspace/api-zod/addition-rooms";
 import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, materialRequirementsSatisfied, EXTERIOR_WR_RECEPTACLE_REQUEST, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
@@ -133,6 +133,10 @@ function warningMetadata(message: string): WarningMetadata {
   if (message.startsWith("EV neutral scope:")) return {
     code:"EV_NEUTRAL_SCOPE_REQUIRED",severity:"error",category:"compatibility",source:"ev-receptacle",
     context:{rule:"NEMA 14-50 scope must represent the required neutral; no conductor is inferred or priced automatically."},
+  };
+  if (message.startsWith("EV receptacle installation scope:")) return {
+    code:"EV_RECEPTACLE_INSTALLATION_UNQUALIFIED",severity:"error",category:"field-verification",source:"ev-receptacle",
+    context:{rule:"A qualified receptacle alone does not establish a complete qualified box/cover installation."},
   };
   if (message.startsWith("Addition ceiling-fan installation:")) {
     return { code: "ADDITION_FAN_INSTALLATION_REQUIRED", severity: "error", category: "field-verification",
@@ -1795,6 +1799,11 @@ export function calculateEvChargerEstimate(
   }
 
   if (isReceptacle) {
+    if (/14-50/i.test(inputs.connection)) {
+      // The current assembly has no qualified box/cover selection. Do not infer
+      // completeness from a priced receptacle or add guessed installation parts.
+      pricingWarnings.push("EV receptacle installation scope: the NEMA 14-50 box/cover assembly has not been qualified in this builder. Contractor/catalog qualification of the complete connection assembly is required before customer-ready status; pricing the receptacle alone does not resolve this scope. No box, cover, price or additional labor has been assumed.");
+    }
     if (/14-50/i.test(inputs.connection) &&
         (isConduit || /ser cable/i.test(inputs.wiringMethod) || !/\/3 NM-B$/.test(inputs.cableType ?? selectedEvCableType(settings.evDefaultCableType)))) {
       pricingWarnings.push("EV neutral scope: the selected NEMA 14-50 conductor assembly does not represent a neutral. Select a verified suitable cable configuration or resolve the conductor assembly before customer-ready status; no extra conductor size or price has been assumed.");
@@ -3280,6 +3289,8 @@ export function calculateAdditionEstimate(
     // Appliance connection products are not determined by a circuit amp rating.
     if(r.washerCircuits>0 || r.dryerType!=="None")
       pricingWarnings.push("Addition room scope: qualify the selected laundry appliance connection devices, boxes/covers and any gas-dryer power connection. Circuit cable and breaker alone do not establish a complete appliance connection; no receptacle or price has been guessed.");
+    if(r.dryerType==="Electric" && !r.dryerConnectionMethod)
+      pricingWarnings.push("Addition room scope: Dryer connection method/material selection required. Select Receptacle or Hardwired; neither connection method nor its materials have been assumed.");
   }
   // Explicitly disabled room ignores retained draft values, including its fan.
   const exhaust = inputs.bathroomRoom && !inputs.bathroomRoom.enabled ? undefined : inputs.bathroomExhaust;
@@ -3310,8 +3321,8 @@ export function calculateAdditionEstimate(
     if (stacked) {
       const selected = (id:string) => priceBook.find(p=>p.id===assembly.find(l=>l.id===id)?.materialSnapshot?.catalogId);
       const device = selected("addition-exhaust-controls"), plate = selected("addition-exhaust-plates");
-      if (!device || !plate || componentProof(device,STACKED_CONTROL)?.plateOpening !== componentProof(plate,STACKED_PLATE)?.plateOpening)
-        pricingWarnings.push("Addition exhaust control: qualify the exact stacked device and a matching white plate opening; one yoke does not determine the plate opening.");
+      if (!device || !plate || !compatibleStackedPlate(device,plate))
+        pricingWarnings.push("Addition exhaust control: Compatible stacked-control wall plate selection required. Qualify the exact plate against the selected control manufacturer/part with authoritative pairing evidence; matching openings alone do not establish compatibility.");
     }
     priced("addition-exhaust-wiring", "Conductor", `${exhaust.cableType} cable`,
       `Additional bathroom fan in-room / switch-leg wiring: ${exhaust.cableType}`, wire, false, "ft");
@@ -3493,7 +3504,10 @@ export function calculateAdditionEstimate(
       : subpanelAmperage === 60
         ? "#6 copper SER 4-wire feeder"
         : "#1 aluminum SER 4-wire feeder";
-    const panelKey = `${subpanelAmperage}A subpanel load center`;
+    const panelKey = currentFeederPath
+      ? additionSubpanelRequest(inputs.panelManufacturer,subpanelAmperage,"load center")
+      : `${subpanelAmperage}A subpanel load center`;
+    const breakerKey = additionSubpanelRequest(inputs.panelManufacturer,subpanelAmperage,"feeder breaker");
 
     if (feederDistance <= 0) {
       pricingWarnings.push(
@@ -3519,9 +3533,10 @@ export function calculateAdditionEstimate(
         poleCount: 2,
         protectionType: "Standard",
       },
-      priceBook,
+      currentFeederPath ? priceBook.filter(item=>componentProof(item,breakerKey)) : priceBook,
       pricingWarnings,
     );
+    if(currentFeederPath) feederBreaker.requestKey=breakerKey;
     addLine(assembly, {
       id: "addition-subpanel-feeder-breaker",
       category: "Protection",
@@ -3532,7 +3547,9 @@ export function calculateAdditionEstimate(
       ...resolvedMaterial(feederBreaker), source: feederBreaker.source,
     });
 
-    const panel = unitCost(panelKey, priceBook, pricingWarnings, "Panel");
+    const panel = unitCost(panelKey, currentFeederPath
+      ? priceBook.filter(item=>breakerManufacturerCompatible(item,inputs.panelManufacturer))
+      : priceBook, pricingWarnings, "Panel");
     const panelIdentity = panel.item
       ? [
           panel.item.manufacturer,

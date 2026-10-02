@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MaterialPreferenceVerifiedComponentCompatibleControl } from './materialPreferenceVerifiedComponentCompatibleControl';
 import type { MaterialPreferenceVerifiedComponentKind } from './materialPreferenceVerifiedComponentKind';
 import type { MaterialPreferenceVerifiedComponentPlateOpening } from './materialPreferenceVerifiedComponentPlateOpening';
 
@@ -26,4 +27,5 @@ export type MaterialPreferenceVerifiedComponent = {
      */
   source: string;
   plateOpening?: MaterialPreferenceVerifiedComponentPlateOpening;
+  compatibleControl?: MaterialPreferenceVerifiedComponentCompatibleControl;
 };

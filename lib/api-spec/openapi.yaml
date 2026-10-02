@@ -2528,6 +2528,7 @@ components:
         enabled: {type: boolean}
         washerCircuits: {type: number, minimum: 0, multipleOf: 1}
         dryerType: {type: string, enum: [None, Gas, Electric]}
+        dryerConnectionMethod: {type: string, enum: [Receptacle, Hardwired]}
         generalReceptacles: {type: number, minimum: 0, multipleOf: 1}
         lightingLocations: {type: number, minimum: 0, multipleOf: 1}
         switches: {type: number, minimum: 0, multipleOf: 1}
@@ -3716,7 +3717,7 @@ components:
           properties:
             kind:
               type: string
-              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate, Qualified Addition SER feeder]
+              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate, Qualified Addition SER feeder, Qualified Addition load center, Qualified Addition feeder breaker]
             manufacturer:
               type: string
               minLength: 1
@@ -3732,6 +3733,13 @@ components:
             plateOpening:
               type: string
               enum: [decorator, duplex, toggle]
+            compatibleControl:
+              type: object
+              required: [manufacturer, manufacturerPartNumber, source]
+              properties:
+                manufacturer: {type: string, minLength: 1, maxLength: 100}
+                manufacturerPartNumber: {type: string, minLength: 1, maxLength: 200}
+                source: {type: string, minLength: 1, maxLength: 1000}
         requestKey:
           type: string
           minLength: 1

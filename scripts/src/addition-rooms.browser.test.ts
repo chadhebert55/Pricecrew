@@ -112,6 +112,8 @@ test("Addition rooms: unified circuits, explicit feeder, responsive draft/revise
       page.locator('input[value="Laundry — Electric Dryer"]'),
     ).toHaveCount(0);
     await page.locator("#addition-laundry-dryer").selectOption("Electric");
+    await expect(page.locator("#addition-laundry-dryer-connection")).toHaveValue("");
+    await page.locator("#addition-laundry-dryer-connection").selectOption("Receptacle");
     await expect(page.locator("#addition-circuit-4-label")).toHaveValue(
       "Laundry — Electric Dryer",
     );
@@ -179,6 +181,7 @@ test("Addition rooms: unified circuits, explicit feeder, responsive draft/revise
       ["addition-circuit-1-length", "75"],
       ["addition-circuit-2-length", "30"],
       ["addition-laundry-dryer", "Electric"],
+      ["addition-laundry-dryer-connection", "Receptacle"],
     ])
       await expect(page.locator(`#${id}`)).toHaveValue(value);
     await expect(page.locator("#addition-room-bathroom")).toBeChecked();

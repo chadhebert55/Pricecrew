@@ -19,6 +19,7 @@ export type LaundryRoom = {
   enabled: boolean;
   washerCircuits: number;
   dryerType: "None" | "Gas" | "Electric";
+  dryerConnectionMethod?: "Receptacle" | "Hardwired";
   generalReceptacles: number;
   lightingLocations: number;
   switches: number;
@@ -128,3 +129,10 @@ export const additionFeederRequests = [
   "Addition 100A Aluminum SER feeder",
   "Addition 100A Copper SER feeder",
 ] as const;
+/** Existing UI families only; request approval is not inferred from amp text. */
+export function additionSubpanelRequest(manufacturer: string, amps: number, role: "load center" | "feeder breaker") {
+  const family = ({Siemens:"Siemens",Eaton:"Eaton BR","Square D":"Square D Homeline"} as Record<string,string>)[manufacturer];
+  return `Addition ${family ?? "unverified panel family"} ${amps}A ${role}`;
+}
+export const additionSubpanelComponentRequests = ["Siemens","Eaton","Square D"].flatMap(manufacturer =>
+  [60,100].flatMap(amps => (["load center","feeder breaker"] as const).map(role => additionSubpanelRequest(manufacturer,amps,role))));
