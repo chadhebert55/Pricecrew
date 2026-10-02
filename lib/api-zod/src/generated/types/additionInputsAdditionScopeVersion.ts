@@ -11,4 +11,5 @@ export type AdditionInputsAdditionScopeVersion = typeof AdditionInputsAdditionSc
 
 export const AdditionInputsAdditionScopeVersion = {
   NUMBER_2: 2,
+  NUMBER_3: 3,
 } as const;

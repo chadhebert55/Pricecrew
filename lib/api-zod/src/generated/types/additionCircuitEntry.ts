@@ -9,11 +9,20 @@ import type { AdditionCircuitEntryAmperage } from './additionCircuitEntryAmperag
 import type { AdditionCircuitEntryCableType } from './additionCircuitEntryCableType';
 import type { AdditionCircuitEntryPoleCount } from './additionCircuitEntryPoleCount';
 import type { AdditionCircuitEntryProtectionType } from './additionCircuitEntryProtectionType';
+import type { AdditionCircuitEntryRoomCircuitRole } from './additionCircuitEntryRoomCircuitRole';
 
 /**
  * One exact Addition branch-circuit schedule entry. Compatibility is validated against the selected breaker and catalog rows.
  */
 export interface AdditionCircuitEntry {
+  /**
+     * Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.
+     * @minimum 0
+     */
+  homeRunLength?: number;
+  roomCircuitRole?: AdditionCircuitEntryRoomCircuitRole;
+  /** Estimator reviewed the suggested circuit configuration and assignment. */
+  roomCircuitReviewed?: boolean;
   /**
      * Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.
      * @maxLength 80

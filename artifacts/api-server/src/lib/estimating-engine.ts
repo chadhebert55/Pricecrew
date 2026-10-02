@@ -1,5 +1,6 @@
 import { hasUnresolvedMaterialCost, PANEL_CLOSEOUT_LABOR_REASON } from "@workspace/api-zod/pricing-readiness";
 import { componentProof, evCatalogComponents, STACKED_CONTROL, STACKED_PLATE } from "@workspace/api-zod/catalog-components";
+import {bathroomDeviceHours,bathroomRoomLabor,laundryRoomLabor,requiredRoomCircuits} from "@workspace/api-zod/addition-rooms";
 import { selectCatalogMaterial, usableCatalogCost, matchingPreferences, catalogSnapshot, breakerManufacturerCompatible, materialRequirementsSatisfied, EXTERIOR_WR_RECEPTACLE_REQUEST, type CatalogMaterial } from "./material-resolution";
 import { kitchenCircuitPlan, bathroomCircuitPlan, recessedWiringPlan, lightingControls, lightingWiringScopes, breakerRequirements, circuitCompatibilityIssue, type RemodelCircuit } from "@workspace/api-zod/remodel-circuits";
 import type {
@@ -116,6 +117,14 @@ function warningMetadata(message: string): WarningMetadata {
   if (message.startsWith("Addition subpanel qualification:")) return {
     code:"ADDITION_SUBPANEL_SCOPE_UNQUALIFIED",severity:"error",category:"field-verification",source:"addition-subpanel",
     context:{rule:"A priced enclosure, cable and breaker alone do not prove a complete compatible subpanel installation."},
+  };
+  if (message.startsWith("Addition feeder selection:")) return {
+    code:"ADDITION_SUBPANEL_FEEDER_REQUIRED",severity:"error",category:"field-verification",source:"addition-subpanel",
+    context:{rule:"Select Copper or Aluminum and qualify the exact size/material SER product in Price Book."},
+  };
+  if (message.startsWith("Addition room scope:")) return {
+    code:"ADDITION_ROOM_SCOPE_REQUIRED",severity:"error",category:"field-verification",source:"addition-rooms",
+    context:{rule:"Review the visible room circuit assignments and scope; no hidden circuits are inferred."},
   };
   if (message.startsWith("Addition exhaust control:")) return {
     code:"ADDITION_EXHAUST_CONTROL_REQUIRED",severity:"error",category:"field-verification",source:"addition-exhaust-fan",
@@ -1911,10 +1920,18 @@ export function calculateEvChargerEstimate(
 const bathroomExhaustEquipment = {
   key: "Panasonic FV-0511VF1 exhaust fan",
   description: "Panasonic FV-0511VF1 exhaust fan with new switch leg",
-  laborHours: 2.25,
+  laborHours: bathroomDeviceHours.exhaust,
 };
 const bathroomControlBox = "Pass & Seymour S1-18-W 1-gang box — SKU 18134";
 const bathroomControlPlate = "Legrand radiant RWP26WCC10 1-gang screwless wall plate";
+const bathroomDeviceKeys = {
+  gfci15:"Pass & Seymour 1597-TRWRW 15A TR self-test GFCI",
+  gfci20:"Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
+  downstream:"Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+  vanity:"vanity light",shower:"wet-location recessed light",
+  fanLight:"Contractor-supplied bathroom fan/light combination",
+  fanLightHeat:"Contractor-supplied bathroom fan/light/heat combination",
+};
 function bathroomFanControl(control = "Standard switch") {
   return {
     key: control === "Standard switch" ? "Pass & Seymour TM870-W 15A single-pole switch — SKU 3211"
@@ -1962,15 +1979,15 @@ function bathroomPricedItems(assembly: AssemblyLineRecord[], pricingWarnings: st
 function bathroomBaseLaborComponents(inputs: BathroomInputRecord) {
   return {
     sharedSetup: 1.5,
-    gfciReceptacles: inputs.gfciReceptacles * .75,
-    downstreamReceptacles: inputs.additionalReceptacles * .55,
-    vanityLights: inputs.vanityLights * .8,
-    recessedLights: inputs.recessedLights * .9,
+    gfciReceptacles: inputs.gfciReceptacles * bathroomDeviceHours.gfci,
+    downstreamReceptacles: inputs.additionalReceptacles * bathroomDeviceHours.downstream,
+    vanityLights: inputs.vanityLights * bathroomDeviceHours.vanity,
+    recessedLights: inputs.recessedLights * bathroomDeviceHours.recessed,
     exhaustFans: inputs.exhaustFans * bathroomExhaustEquipment.laborHours,
-    fanLights: inputs.fanLights * 2.5,
-    fanLightHeat: inputs.fanLightHeatUnits * 3.5,
+    fanLights: inputs.fanLights * bathroomDeviceHours.fanLight,
+    fanLightHeat: inputs.fanLightHeatUnits * bathroomDeviceHours.fanLightHeat,
     legacyHeatedFloor: inputs.heatedFloorCircuit ? 3 : 0,
-    singlePoleControls: inputs.additionalSwitches * .5,
+    singlePoleControls: inputs.additionalSwitches * bathroomDeviceHours.switch,
     inRoomWiring: bathroomWiringLabor(Math.max(0, Number(inputs.routeLength) || 0)),
     legacyCircuit: /new/i.test(inputs.circuitOption)
       ? Number.isFinite(Number(inputs.newCircuitLaborHours)) ? Math.max(0, Number(inputs.newCircuitLaborHours)) : 3
@@ -1984,13 +2001,13 @@ export function bathroomLaborBreakdown(inputs: BathroomInputRecord) {
     ...bathroomBaseLaborComponents(modern ? {...inputs, circuitOption: "Reuse existing circuit",
       heatedFloorCircuit: false, additionalSwitches: 0, routeLength: inputs.branchWiringLength ?? 0} : inputs),
     ...(modern ? {
-      singlePoleControls: inputs.additionalSwitches * .5,
+      singlePoleControls: inputs.additionalSwitches * bathroomDeviceHours.switch,
       threeWayControls: (inputs.threeWaySwitches ?? 0) * .5,
       dimmers: (inputs.dimmers ?? 0) * .5,
       smartControls: (inputs.smartSwitches ?? 0) * .75,
       fanControls: (inputs.exhaustFans + inputs.fanLights + inputs.fanLightHeatUnits)
         * bathroomFanControl(inputs.fanControl).laborHours,
-      showerLights: (inputs.showerLights ?? 0) * .9,
+      showerLights: (inputs.showerLights ?? 0) * bathroomDeviceHours.shower,
       floorThermostat: inputs.heatedFloorCircuit && inputs.heatedFloorThermostat ? .75 : 0,
       circuitHomeRuns: bathroomCircuitPlan(inputs).reduce((s,c)=>s+c.quantity*(3+(c.routeLength??0)/30),0),
     } : {}),
@@ -2039,7 +2056,7 @@ export function calculateBathroomEstimate(
   priced("bathroom-fan-controls", bathroomFanControl(fanControl).key, fans);
   const thermostat = inputs.heatedFloorCircuit && inputs.heatedFloorThermostat ? 1 : 0;
   priced("bathroom-floor-thermostat", "heated-floor thermostat", thermostat);
-  priced("bathroom-shower-lights", "wet-location recessed light", inputs.showerLights ?? 0, "Lighting");
+  priced("bathroom-shower-lights", bathroomDeviceKeys.shower, inputs.showerLights ?? 0, "Lighting");
   const controls = single + three + dimmers + smart + fans + thermostat;
   const devices = inputs.gfciReceptacles + inputs.additionalReceptacles + controls;
   priced("bathroom-device-boxes", bathroomControlBox, devices, "Rough-in");
@@ -2068,22 +2085,22 @@ function calculateLegacyBathroomEstimate(
     "gfci-receptacles",
     "Devices",
     gfciAmperage === 15
-      ? "Pass & Seymour 1597-TRWRW 15A TR self-test GFCI"
-      : "Pass & Seymour 2097-TRWRW 20A TR self-test GFCI",
+      ? bathroomDeviceKeys.gfci15
+      : bathroomDeviceKeys.gfci20,
     `${gfciAmperage}A tamper-resistant self-test GFCI receptacle`,
     inputs.gfciReceptacles,
   );
   addPricedItem(
     "additional-receptacles",
     "Devices",
-    "Pass & Seymour 3232-TRW 15A TR duplex receptacle",
+    bathroomDeviceKeys.downstream,
     "15A tamper-resistant duplex receptacle downstream of GFCI",
     inputs.additionalReceptacles,
   );
   addPricedItem(
     "vanity-lights",
     "Lighting",
-    inputs.circuitConfigurationVersion === 2 ? "vanity light" : "Unverified allowance — vanity light",
+    inputs.circuitConfigurationVersion === 2 ? bathroomDeviceKeys.vanity : "Unverified allowance — vanity light",
     inputs.circuitConfigurationVersion === 2 && !inputs.customerSuppliedFixtures ? "Vanity light fixture" : "Customer-supplied vanity light fixture",
     inputs.vanityLights,
     inputs.circuitConfigurationVersion === 2 ? inputs.customerSuppliedFixtures : true,
@@ -2111,7 +2128,7 @@ function calculateLegacyBathroomEstimate(
   addPricedItem(
     "fan-lights",
     "Ventilation",
-    "Contractor-supplied bathroom fan/light combination",
+    bathroomDeviceKeys.fanLight,
     "Panasonic FV-0511VFL bathroom fan/light combination",
     inputs.fanLights,
     false,
@@ -2121,7 +2138,7 @@ function calculateLegacyBathroomEstimate(
   addPricedItem(
     "fan-light-heat",
     "Ventilation",
-    "Contractor-supplied bathroom fan/light/heat combination",
+    bathroomDeviceKeys.fanLightHeat,
     "Panasonic FV-0511VHL bathroom fan/light/heat combination",
     inputs.fanLightHeatUnits,
     false,
@@ -3100,8 +3117,8 @@ export function calculateAdditionEstimate(
     quantity: number,
   ) => {
     if (!n(quantity)) return;
-    const price = id === "addition-switches" ? controlCost(key, "Pass & Seymour", "TM870-W")
-      : id === "addition-dimmers" ? controlCost(key, "Lutron", "DVCL-153P-WH")
+    const price = key === "Pass & Seymour TM870-W 15A single-pole switch" ? controlCost(key, "Pass & Seymour", "TM870-W")
+      : key === "Lutron DVCL-153P-WH Diva LED+ dimmer" ? controlCost(key, "Lutron", "DVCL-153P-WH")
       : unitCost(key, priceBook, pricingWarnings);
     addLine(assembly, {
       id,
@@ -3234,7 +3251,38 @@ export function calculateAdditionEstimate(
     }
   }
 
-  const exhaust = inputs.bathroomExhaust;
+  const bathroomRoom = inputs.bathroomRoom?.enabled ? inputs.bathroomRoom : undefined;
+  const laundryRoom = inputs.laundryRoom?.enabled ? inputs.laundryRoom : undefined;
+  const roomPriced = bathroomPricedItems(assembly, pricingWarnings, priceBook);
+  if (bathroomRoom) {
+    const r=bathroomRoom;
+    roomPriced("addition-bathroom-gfci","Devices",bathroomDeviceKeys.gfci20,"Bathroom GFCI receptacles",r.gfciReceptacles);
+    roomPriced("addition-bathroom-downstream","Devices",bathroomDeviceKeys.downstream,"Bathroom downstream receptacles",r.additionalReceptacles);
+    roomPriced("addition-bathroom-vanity","Lighting",bathroomDeviceKeys.vanity,"Vanity light fixtures",r.vanityLights,r.customerSuppliedFixtures,"ea",undefined,false);
+    roomPriced("addition-bathroom-recessed","Lighting",size==="6-inch"?JUNO_WF6_VERIFIED:JUNO_WF4_VERIFIED,"Bathroom recessed lights",r.recessedLights,r.customerSuppliedRecessedLights,"ea",undefined,false);
+    roomPriced("addition-bathroom-shower","Lighting",bathroomDeviceKeys.shower,"Wet-location lights",r.showerLights,r.customerSuppliedRecessedLights,"ea",undefined,false);
+    catalogLine("addition-bathroom-switches","Controls","Pass & Seymour TM870-W 15A single-pole switch","Bathroom lighting switches",r.switches);
+    roomPriced("addition-bathroom-boxes","Rough-in",bathroomControlBox,"Bathroom device boxes",r.gfciReceptacles+r.additionalReceptacles+r.switches);
+    roomPriced("addition-bathroom-decora-plates","Trim",bathroomControlPlate,"Bathroom decorator plates",r.gfciReceptacles+r.switches);
+    roomPriced("addition-bathroom-duplex-plates","Trim","duplex receptacle wall plate","Bathroom duplex plates",r.additionalReceptacles);
+    roomPriced("addition-bathroom-fixture-boxes","Rough-in","fixture outlet box","Vanity fixture boxes",r.vanityLights);
+  }
+  if (laundryRoom) {
+    const r=laundryRoom;
+    catalogLine("addition-laundry-receptacles","Devices",bathroomDeviceKeys.downstream,"Laundry general receptacles",r.generalReceptacles);
+    catalogLine("addition-laundry-switches","Controls","Pass & Seymour TM870-W 15A single-pole switch","Laundry switches",r.switches);
+    roomPriced("addition-laundry-lights","Lighting","decorative light fixture","Laundry light fixtures",r.lightingLocations,r.customerSuppliedFixtures,"ea",undefined,false);
+    roomPriced("addition-laundry-recessed","Lighting",size==="6-inch"?JUNO_WF6_VERIFIED:JUNO_WF4_VERIFIED,"Laundry recessed lights",r.recessedLights);
+    roomPriced("addition-laundry-boxes","Rough-in",bathroomControlBox,"Laundry device boxes",r.generalReceptacles+r.switches);
+    roomPriced("addition-laundry-decora-plates","Trim",bathroomControlPlate,"Laundry switch plates",r.switches);
+    roomPriced("addition-laundry-duplex-plates","Trim","duplex receptacle wall plate","Laundry duplex plates",r.generalReceptacles);
+    roomPriced("addition-laundry-fixture-boxes","Rough-in","fixture outlet box","Laundry fixture boxes",r.lightingLocations);
+    // Appliance connection products are not determined by a circuit amp rating.
+    if(r.washerCircuits>0 || r.dryerType!=="None")
+      pricingWarnings.push("Addition room scope: qualify the selected laundry appliance connection devices, boxes/covers and any gas-dryer power connection. Circuit cable and breaker alone do not establish a complete appliance connection; no receptacle or price has been guessed.");
+  }
+  // Explicitly disabled room ignores retained draft values, including its fan.
+  const exhaust = inputs.bathroomRoom && !inputs.bathroomRoom.enabled ? undefined : inputs.bathroomExhaust;
   let exhaustLabor = 0;
   if (exhaust && n(exhaust.quantity) > 0) {
     const qty = n(exhaust.quantity);
@@ -3249,8 +3297,10 @@ export function calculateAdditionEstimate(
     if (stacked && (exhaust.stackedWiringVerified !== true || exhaust.verifiedControlQuantity !== qty))
       pricingWarnings.push("Addition exhaust control: confirm separate controlled functions and wiring for every stacked device, and exclude the same controls from general switch counts.");
     const priced = bathroomPricedItems(assembly, pricingWarnings, priceBook);
-    priced("addition-exhaust-fans", "Ventilation", bathroomExhaustEquipment.key,
-      exhaust.customerSupplied ? "Customer-supplied bathroom exhaust fan" : bathroomExhaustEquipment.description,
+    const equipment = exhaust.equipmentType==="Fan/light" ? {key:bathroomDeviceKeys.fanLight,description:"Bathroom fan/light",laborHours:bathroomDeviceHours.fanLight}
+      : exhaust.equipmentType==="Fan/light/heat" ? {key:bathroomDeviceKeys.fanLightHeat,description:"Bathroom fan/light/heat",laborHours:bathroomDeviceHours.fanLightHeat} : bathroomExhaustEquipment;
+    priced("addition-exhaust-fans", "Ventilation", equipment.key,
+      exhaust.customerSupplied ? `Customer-supplied ${equipment.description}` : equipment.description,
       qty, exhaust.customerSupplied, "ea", exhaust.materialCostOverride, false);
     if (exhaust.control !== "Not selected")
       priced("addition-exhaust-controls", "Controls", control.key, control.key, qty);
@@ -3272,7 +3322,9 @@ export function calculateAdditionEstimate(
       "Bathroom exhaust-fan electrical scope uses the Bathroom equipment, one control/box/plate per fan, and separately measured wiring. Verify circuit assignment, cable suitability, equipment mounting/termination requirements and field conditions. Ductwork is not included.",
     );
     // Addition already has project/crew labor; do not add Bathroom's shared setup.
-    exhaustLabor = qty * (bathroomExhaustEquipment.laborHours + (exhaust.control === "Not selected" ? 0 : control.laborHours)) + bathroomWiringLabor(wire);
+    exhaustLabor = qty * (equipment.laborHours + (exhaust.control === "Not selected" ? 0 : control.laborHours)) + bathroomWiringLabor(wire);
+    if(exhaust.equipmentType && exhaust.equipmentType!=="Exhaust fan")
+      pricingWarnings.push("Addition room scope: verify the fan combination's required independent controls and wiring configuration. The existing one-control exhaust assembly does not qualify fan/light or fan/light/heat connections.");
   }
 
   const circuitEntries = Array.isArray(inputs.circuitEntries)
@@ -3280,6 +3332,16 @@ export function calculateAdditionEstimate(
     : null;
   const additionCableCompatible = (entry: AdditionCircuitEntry) =>
     isCompatibleNmBCable(entry.amperage, entry.cableType);
+  const roles=requiredRoomCircuits(bathroomRoom,laundryRoom);
+  const roomIssues:string[]=[];
+  for(const role of roles){
+    const rows=(circuitEntries??[]).filter(c=>c.roomCircuitRole===role&&n(c.quantity)>0);
+    if(rows.length!==1 || rows[0]?.roomCircuitReviewed!==true) roomIssues.push(`${role}: assign and review exactly one visible schedule row`);
+    if(role==="laundry-washer" && rows[0]?.quantity!==laundryRoom?.washerCircuits) roomIssues.push("washer circuit count must match its schedule row");
+  }
+  if((circuitEntries??[]).some(c=>c.roomCircuitRole&&!roles.includes(c.roomCircuitRole)&&n(c.quantity)>0))
+    roomIssues.push("remove or reassign a circuit whose room scope is disabled");
+  if(roomIssues.length) pricingWarnings.push(`Addition room scope: ${roomIssues.join("; ")}.`);
 
   if (circuitEntries) {
     let commonRouteAllocated = false;
@@ -3290,7 +3352,7 @@ export function calculateAdditionEstimate(
         ? 0
         : n(inputs.routeLength);
       commonRouteAllocated = true;
-      const footage = commonRouteFootage + n(inputs.homeRunLength) * quantity;
+      const footage = commonRouteFootage + n(entry.homeRunLength ?? inputs.homeRunLength) * quantity;
       const compatible = additionCableCompatible(entry);
       if (!compatible) {
         pricingWarnings.push(
@@ -3411,19 +3473,24 @@ export function calculateAdditionEstimate(
   }
 
   const subpanelOption = inputs.subpanelOption ?? "No Subpanel";
-  const subpanelLabor = inputs.additionScopeVersion === 2 && subpanelOption !== "No Subpanel"
+  const subpanelLabor = (inputs.additionScopeVersion ?? 0) >= 2 && subpanelOption !== "No Subpanel"
     ? n(inputs.subpanelLaborHours) : 0;
-  if (inputs.additionScopeVersion === 2 && subpanelOption !== "No Subpanel" && !subpanelLabor)
+  if ((inputs.additionScopeVersion ?? 0) >= 2 && subpanelOption !== "No Subpanel" && !subpanelLabor)
     pricingWarnings.push("Addition subpanel labor: enter total person-hours for mounting, SER routing, breaker installation, terminations, neutral/ground and ground-bar work, fittings, labeling and testing. Blank or zero is unresolved. Do not repeat these hours in project labor or adjustments.");
-  if (inputs.additionScopeVersion === 2 && subpanelOption !== "No Subpanel")
+  if ((inputs.additionScopeVersion ?? 0) >= 2 && subpanelOption !== "No Subpanel")
     pricingWarnings.push("Addition subpanel qualification: the current three-component assembly does not establish the existing panel product family, complete SER product suitability, compatible panel/breaker, ground bar, fittings and mounting materials. Complete assembly qualification is still required; entering labor or mapping a generic enclosure does not make this scope customer-ready.");
   if (subpanelOption !== "No Subpanel") {
     const feederDistance = n(inputs.feederDistance);
     const subpanelAmperage = subpanelOption === "60A Subpanel" ? 60 : 100;
-    const feederKey =
-      subpanelAmperage === 60 ? "#6 copper SER cable" : "#1 aluminum SER cable";
+    const currentFeederPath = (inputs.additionScopeVersion??0)>=3;
+    const feederKey = currentFeederPath
+      ? `Addition ${subpanelAmperage}A ${inputs.feederMaterial ?? "unselected material"} SER feeder`
+      : subpanelAmperage === 60 ? "#6 copper SER cable" : "#1 aluminum SER cable";
+    if(currentFeederPath && !inputs.feederMaterial)
+      pricingWarnings.push("Addition feeder selection: explicitly select Copper or Aluminum. No conductor material or size has been assumed.");
     const feederDescription =
-      subpanelAmperage === 60
+      currentFeederPath ? `${subpanelAmperage}A ${inputs.feederMaterial??"unselected material"} qualified SER feeder`
+      : subpanelAmperage === 60
         ? "#6 copper SER 4-wire feeder"
         : "#1 aluminum SER 4-wire feeder";
     const panelKey = `${subpanelAmperage}A subpanel load center`;
@@ -3495,11 +3562,11 @@ export function calculateAdditionEstimate(
     n(inputs.recessedLights) +
     fans * 1.75 +
     circuits * 2.5 +
-    exhaustLabor + ceilingControlLabor + subpanelLabor;
+    exhaustLabor + ceilingControlLabor + subpanelLabor + bathroomRoomLabor(bathroomRoom) + laundryRoomLabor(laundryRoom);
   const adjustment = Number.isFinite(Number(inputs.laborAdjustmentHours))
     ? Number(inputs.laborAdjustmentHours)
     : 0;
-  return finalizeEstimate(
+  const result = finalizeEstimate(
     assembly,
     Math.max(
       0,
@@ -3511,6 +3578,11 @@ export function calculateAdditionEstimate(
     pricingWarnings,
     inputs.laborRateType,
   );
+  if((inputs.additionScopeVersion??0)>=3){
+    result.pricing.calculatedLaborHours=taskHours+Math.max(1,n(inputs.crewSize))*n(inputs.crewHours);
+    result.pricing.manualLaborAdjustmentHours=adjustment;
+  }
+  return result;
 }
 
 export function calculateServiceUpgradeEstimate(

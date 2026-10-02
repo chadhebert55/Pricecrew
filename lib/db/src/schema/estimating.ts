@@ -262,6 +262,9 @@ export type KitchenInputRecord = {
 };
 
 export type AdditionCircuitEntry = {
+  homeRunLength?: number;
+  roomCircuitRole?: "bathroom-receptacles" | "bathroom-lighting" | "laundry-washer" | "laundry-dryer";
+  roomCircuitReviewed?: boolean;
   label?: string;
   amperage: 15 | 20 | 30 | 40 | 50 | 60;
   poleCount: 1 | 2;
@@ -286,6 +289,16 @@ export type AdditionSubpanelOption =
 export type AdditionInputRecord = {
   /** Versioned editable-input path. Existing saved estimates are never recalculated. */
   additionScopeVersion?: number;
+  bathroomRoom?: {
+    enabled:boolean;gfciReceptacles:number;additionalReceptacles:number;vanityLights:number;
+    recessedLights:number;showerLights:number;switches:number;
+    customerSuppliedFixtures:boolean;customerSuppliedRecessedLights:boolean;
+  };
+  laundryRoom?: {
+    enabled:boolean;washerCircuits:number;dryerType:"None"|"Gas"|"Electric";
+    generalReceptacles:number;lightingLocations:number;switches:number;recessedLights:number;customerSuppliedFixtures:boolean;
+  };
+  feederMaterial?: "Copper" | "Aluminum";
   subpanelLaborHours?: number;
   ceilingFanInstallation?: {
     mode: "new" | "reuse";
@@ -300,6 +313,7 @@ export type AdditionInputRecord = {
   };
   /** Optional new scope; absence preserves legacy Addition estimates. */
   bathroomExhaust?: {
+    equipmentType?: "Exhaust fan" | "Fan/light" | "Fan/light/heat";
     quantity: number;
     customerSupplied: boolean;
     control: "Standard switch" | "Timer switch" | "Humidity-sensing control" | "Stacked single-pole/single-pole" | "Not selected";

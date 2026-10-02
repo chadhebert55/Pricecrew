@@ -802,6 +802,39 @@ export const createQuoteBodyJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const createQuoteBodyJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const createQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMin = 0;
+export const createQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMin = 0;
+export const createQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourBathroomRoomVanityLightsMin = 0;
+export const createQuoteBodyJobInputsFourBathroomRoomVanityLightsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourBathroomRoomRecessedLightsMin = 0;
+export const createQuoteBodyJobInputsFourBathroomRoomRecessedLightsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourBathroomRoomShowerLightsMin = 0;
+export const createQuoteBodyJobInputsFourBathroomRoomShowerLightsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourBathroomRoomSwitchesMin = 0;
+export const createQuoteBodyJobInputsFourBathroomRoomSwitchesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMin = 0;
+export const createQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMin = 0;
+export const createQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourLaundryRoomLightingLocationsMin = 0;
+export const createQuoteBodyJobInputsFourLaundryRoomLightingLocationsMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourLaundryRoomSwitchesMin = 0;
+export const createQuoteBodyJobInputsFourLaundryRoomSwitchesMultipleOf = 1;
+
+export const createQuoteBodyJobInputsFourLaundryRoomRecessedLightsMin = 0;
+export const createQuoteBodyJobInputsFourLaundryRoomRecessedLightsMultipleOf = 1;
+
 export const createQuoteBodyJobInputsFourSubpanelLaborHoursMin = 0;
 export const createQuoteBodyJobInputsFourSubpanelLaborHoursMax = 10000;
 
@@ -843,6 +876,8 @@ export const createQuoteBodyJobInputsFourCircuitCountMin = 0;
 export const createQuoteBodyJobInputsFourRouteLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourHomeRunLengthMin = 0;
+
+export const createQuoteBodyJobInputsFourCircuitEntriesItemHomeRunLengthMin = 0;
 
 export const createQuoteBodyJobInputsFourCircuitEntriesItemLabelMax = 80;
 
@@ -1342,9 +1377,32 @@ export const CreateQuoteBody = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
-  "additionScopeVersion": zod.literal(2).optional(),
+  "additionScopeVersion": zod.union([zod.literal(2),zod.literal(3)]).optional(),
+  "bathroomRoom": zod.object({
+  "enabled": zod.boolean(),
+  "gfciReceptacles": zod.number().min(createQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMin).multipleOf(createQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMultipleOf),
+  "additionalReceptacles": zod.number().min(createQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMin).multipleOf(createQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf),
+  "vanityLights": zod.number().min(createQuoteBodyJobInputsFourBathroomRoomVanityLightsMin).multipleOf(createQuoteBodyJobInputsFourBathroomRoomVanityLightsMultipleOf),
+  "recessedLights": zod.number().min(createQuoteBodyJobInputsFourBathroomRoomRecessedLightsMin).multipleOf(createQuoteBodyJobInputsFourBathroomRoomRecessedLightsMultipleOf),
+  "showerLights": zod.number().min(createQuoteBodyJobInputsFourBathroomRoomShowerLightsMin).multipleOf(createQuoteBodyJobInputsFourBathroomRoomShowerLightsMultipleOf),
+  "switches": zod.number().min(createQuoteBodyJobInputsFourBathroomRoomSwitchesMin).multipleOf(createQuoteBodyJobInputsFourBathroomRoomSwitchesMultipleOf),
+  "customerSuppliedFixtures": zod.boolean(),
+  "customerSuppliedRecessedLights": zod.boolean()
+}).optional(),
+  "laundryRoom": zod.object({
+  "enabled": zod.boolean(),
+  "washerCircuits": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
+  "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "generalReceptacles": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
+  "lightingLocations": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomLightingLocationsMultipleOf),
+  "switches": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomSwitchesMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomSwitchesMultipleOf),
+  "recessedLights": zod.number().min(createQuoteBodyJobInputsFourLaundryRoomRecessedLightsMin).multipleOf(createQuoteBodyJobInputsFourLaundryRoomRecessedLightsMultipleOf),
+  "customerSuppliedFixtures": zod.boolean()
+}).optional(),
+  "feederMaterial": zod.enum(['Copper', 'Aluminum']).optional(),
   "subpanelLaborHours": zod.number().min(createQuoteBodyJobInputsFourSubpanelLaborHoursMin).max(createQuoteBodyJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "equipmentType": zod.enum(['Exhaust fan', 'Fan/light', 'Fan/light/heat']).optional(),
   "stackedWiringVerified": zod.boolean().optional(),
   "verifiedControlQuantity": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(createQuoteBodyJobInputsFourBathroomExhaustQuantityMin).multipleOf(createQuoteBodyJobInputsFourBathroomExhaustQuantityMultipleOf),
@@ -1385,6 +1443,9 @@ export const CreateQuoteBody = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/2 NM-B', '8/3 NM-B', '6/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "homeRunLength": zod.number().min(createQuoteBodyJobInputsFourCircuitEntriesItemHomeRunLengthMin).optional().describe('Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.'),
+  "roomCircuitRole": zod.enum(['bathroom-receptacles', 'bathroom-lighting', 'laundry-washer', 'laundry-dryer']).optional(),
+  "roomCircuitReviewed": zod.boolean().optional().describe('Estimator reviewed the suggested circuit configuration and assignment.'),
   "label": zod.string().max(createQuoteBodyJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
@@ -1881,6 +1942,39 @@ export const createQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const createQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const createQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMin = 0;
+export const createQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin = 0;
+export const createQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMin = 0;
+export const createQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMin = 0;
+export const createQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMin = 0;
+export const createQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMin = 0;
+export const createQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin = 0;
+export const createQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin = 0;
+export const createQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin = 0;
+export const createQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin = 0;
+export const createQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf = 1;
+
+export const createQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMin = 0;
+export const createQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf = 1;
+
 export const createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin = 0;
 export const createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax = 10000;
 
@@ -1922,6 +2016,8 @@ export const createQuoteResponseTwoJobInputsFourCircuitCountMin = 0;
 export const createQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
+
+export const createQuoteResponseTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin = 0;
 
 export const createQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
 
@@ -2462,9 +2558,32 @@ export const CreateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
-  "additionScopeVersion": zod.literal(2).optional(),
+  "additionScopeVersion": zod.union([zod.literal(2),zod.literal(3)]).optional(),
+  "bathroomRoom": zod.object({
+  "enabled": zod.boolean(),
+  "gfciReceptacles": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf),
+  "additionalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf),
+  "vanityLights": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMultipleOf),
+  "recessedLights": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf),
+  "showerLights": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMultipleOf),
+  "switches": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMultipleOf),
+  "customerSuppliedFixtures": zod.boolean(),
+  "customerSuppliedRecessedLights": zod.boolean()
+}).optional(),
+  "laundryRoom": zod.object({
+  "enabled": zod.boolean(),
+  "washerCircuits": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
+  "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "generalReceptacles": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
+  "lightingLocations": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
+  "switches": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
+  "recessedLights": zod.number().min(createQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMin).multipleOf(createQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf),
+  "customerSuppliedFixtures": zod.boolean()
+}).optional(),
+  "feederMaterial": zod.enum(['Copper', 'Aluminum']).optional(),
   "subpanelLaborHours": zod.number().min(createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin).max(createQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "equipmentType": zod.enum(['Exhaust fan', 'Fan/light', 'Fan/light/heat']).optional(),
   "stackedWiringVerified": zod.boolean().optional(),
   "verifiedControlQuantity": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(createQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
@@ -2505,6 +2624,9 @@ export const CreateQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/2 NM-B', '8/3 NM-B', '6/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "homeRunLength": zod.number().min(createQuoteResponseTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin).optional().describe('Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.'),
+  "roomCircuitRole": zod.enum(['bathroom-receptacles', 'bathroom-lighting', 'laundry-washer', 'laundry-dryer']).optional(),
+  "roomCircuitReviewed": zod.boolean().optional().describe('Estimator reviewed the suggested circuit configuration and assignment.'),
   "label": zod.string().max(createQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
@@ -3118,6 +3240,39 @@ export const previewQuoteBodyJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const previewQuoteBodyJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const previewQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMin = 0;
+export const previewQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMin = 0;
+export const previewQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourBathroomRoomVanityLightsMin = 0;
+export const previewQuoteBodyJobInputsFourBathroomRoomVanityLightsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourBathroomRoomRecessedLightsMin = 0;
+export const previewQuoteBodyJobInputsFourBathroomRoomRecessedLightsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourBathroomRoomShowerLightsMin = 0;
+export const previewQuoteBodyJobInputsFourBathroomRoomShowerLightsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourBathroomRoomSwitchesMin = 0;
+export const previewQuoteBodyJobInputsFourBathroomRoomSwitchesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMin = 0;
+export const previewQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMin = 0;
+export const previewQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourLaundryRoomLightingLocationsMin = 0;
+export const previewQuoteBodyJobInputsFourLaundryRoomLightingLocationsMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourLaundryRoomSwitchesMin = 0;
+export const previewQuoteBodyJobInputsFourLaundryRoomSwitchesMultipleOf = 1;
+
+export const previewQuoteBodyJobInputsFourLaundryRoomRecessedLightsMin = 0;
+export const previewQuoteBodyJobInputsFourLaundryRoomRecessedLightsMultipleOf = 1;
+
 export const previewQuoteBodyJobInputsFourSubpanelLaborHoursMin = 0;
 export const previewQuoteBodyJobInputsFourSubpanelLaborHoursMax = 10000;
 
@@ -3159,6 +3314,8 @@ export const previewQuoteBodyJobInputsFourCircuitCountMin = 0;
 export const previewQuoteBodyJobInputsFourRouteLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourHomeRunLengthMin = 0;
+
+export const previewQuoteBodyJobInputsFourCircuitEntriesItemHomeRunLengthMin = 0;
 
 export const previewQuoteBodyJobInputsFourCircuitEntriesItemLabelMax = 80;
 
@@ -3650,9 +3807,32 @@ export const PreviewQuoteBody = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
-  "additionScopeVersion": zod.literal(2).optional(),
+  "additionScopeVersion": zod.union([zod.literal(2),zod.literal(3)]).optional(),
+  "bathroomRoom": zod.object({
+  "enabled": zod.boolean(),
+  "gfciReceptacles": zod.number().min(previewQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMin).multipleOf(previewQuoteBodyJobInputsFourBathroomRoomGfciReceptaclesMultipleOf),
+  "additionalReceptacles": zod.number().min(previewQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMin).multipleOf(previewQuoteBodyJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf),
+  "vanityLights": zod.number().min(previewQuoteBodyJobInputsFourBathroomRoomVanityLightsMin).multipleOf(previewQuoteBodyJobInputsFourBathroomRoomVanityLightsMultipleOf),
+  "recessedLights": zod.number().min(previewQuoteBodyJobInputsFourBathroomRoomRecessedLightsMin).multipleOf(previewQuoteBodyJobInputsFourBathroomRoomRecessedLightsMultipleOf),
+  "showerLights": zod.number().min(previewQuoteBodyJobInputsFourBathroomRoomShowerLightsMin).multipleOf(previewQuoteBodyJobInputsFourBathroomRoomShowerLightsMultipleOf),
+  "switches": zod.number().min(previewQuoteBodyJobInputsFourBathroomRoomSwitchesMin).multipleOf(previewQuoteBodyJobInputsFourBathroomRoomSwitchesMultipleOf),
+  "customerSuppliedFixtures": zod.boolean(),
+  "customerSuppliedRecessedLights": zod.boolean()
+}).optional(),
+  "laundryRoom": zod.object({
+  "enabled": zod.boolean(),
+  "washerCircuits": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
+  "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "generalReceptacles": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
+  "lightingLocations": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomLightingLocationsMultipleOf),
+  "switches": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomSwitchesMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomSwitchesMultipleOf),
+  "recessedLights": zod.number().min(previewQuoteBodyJobInputsFourLaundryRoomRecessedLightsMin).multipleOf(previewQuoteBodyJobInputsFourLaundryRoomRecessedLightsMultipleOf),
+  "customerSuppliedFixtures": zod.boolean()
+}).optional(),
+  "feederMaterial": zod.enum(['Copper', 'Aluminum']).optional(),
   "subpanelLaborHours": zod.number().min(previewQuoteBodyJobInputsFourSubpanelLaborHoursMin).max(previewQuoteBodyJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "equipmentType": zod.enum(['Exhaust fan', 'Fan/light', 'Fan/light/heat']).optional(),
   "stackedWiringVerified": zod.boolean().optional(),
   "verifiedControlQuantity": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(previewQuoteBodyJobInputsFourBathroomExhaustQuantityMin).multipleOf(previewQuoteBodyJobInputsFourBathroomExhaustQuantityMultipleOf),
@@ -3693,6 +3873,9 @@ export const PreviewQuoteBody = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/2 NM-B', '8/3 NM-B', '6/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "homeRunLength": zod.number().min(previewQuoteBodyJobInputsFourCircuitEntriesItemHomeRunLengthMin).optional().describe('Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.'),
+  "roomCircuitRole": zod.enum(['bathroom-receptacles', 'bathroom-lighting', 'laundry-washer', 'laundry-dryer']).optional(),
+  "roomCircuitReviewed": zod.boolean().optional().describe('Estimator reviewed the suggested circuit configuration and assignment.'),
   "label": zod.string().max(previewQuoteBodyJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
@@ -4842,6 +5025,39 @@ export const getQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const getQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const getQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMin = 0;
+export const getQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin = 0;
+export const getQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMin = 0;
+export const getQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMin = 0;
+export const getQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMin = 0;
+export const getQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMin = 0;
+export const getQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin = 0;
+export const getQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin = 0;
+export const getQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin = 0;
+export const getQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin = 0;
+export const getQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf = 1;
+
+export const getQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMin = 0;
+export const getQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf = 1;
+
 export const getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin = 0;
 export const getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax = 10000;
 
@@ -4883,6 +5099,8 @@ export const getQuoteResponseTwoJobInputsFourCircuitCountMin = 0;
 export const getQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
+
+export const getQuoteResponseTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin = 0;
 
 export const getQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
 
@@ -5423,9 +5641,32 @@ export const GetQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
-  "additionScopeVersion": zod.literal(2).optional(),
+  "additionScopeVersion": zod.union([zod.literal(2),zod.literal(3)]).optional(),
+  "bathroomRoom": zod.object({
+  "enabled": zod.boolean(),
+  "gfciReceptacles": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf),
+  "additionalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf),
+  "vanityLights": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMultipleOf),
+  "recessedLights": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf),
+  "showerLights": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMultipleOf),
+  "switches": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMultipleOf),
+  "customerSuppliedFixtures": zod.boolean(),
+  "customerSuppliedRecessedLights": zod.boolean()
+}).optional(),
+  "laundryRoom": zod.object({
+  "enabled": zod.boolean(),
+  "washerCircuits": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
+  "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "generalReceptacles": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
+  "lightingLocations": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
+  "switches": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
+  "recessedLights": zod.number().min(getQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMin).multipleOf(getQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf),
+  "customerSuppliedFixtures": zod.boolean()
+}).optional(),
+  "feederMaterial": zod.enum(['Copper', 'Aluminum']).optional(),
   "subpanelLaborHours": zod.number().min(getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin).max(getQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "equipmentType": zod.enum(['Exhaust fan', 'Fan/light', 'Fan/light/heat']).optional(),
   "stackedWiringVerified": zod.boolean().optional(),
   "verifiedControlQuantity": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(getQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(getQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
@@ -5466,6 +5707,9 @@ export const GetQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/2 NM-B', '8/3 NM-B', '6/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "homeRunLength": zod.number().min(getQuoteResponseTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin).optional().describe('Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.'),
+  "roomCircuitRole": zod.enum(['bathroom-receptacles', 'bathroom-lighting', 'laundry-washer', 'laundry-dryer']).optional(),
+  "roomCircuitReviewed": zod.boolean().optional().describe('Estimator reviewed the suggested circuit configuration and assignment.'),
   "label": zod.string().max(getQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
@@ -6105,6 +6349,39 @@ export const updateQuoteResponseOneTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomGfciReceptaclesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomVanityLightsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomVanityLightsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomRecessedLightsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomShowerLightsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomShowerLightsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomSwitchesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourBathroomRoomSwitchesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomWasherCircuitsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomGeneralReceptaclesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomLightingLocationsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomSwitchesMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomSwitchesMultipleOf = 1;
+
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomRecessedLightsMin = 0;
+export const updateQuoteResponseOneTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf = 1;
+
 export const updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMin = 0;
 export const updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMax = 10000;
 
@@ -6146,6 +6423,8 @@ export const updateQuoteResponseOneTwoJobInputsFourCircuitCountMin = 0;
 export const updateQuoteResponseOneTwoJobInputsFourRouteLengthMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFourHomeRunLengthMin = 0;
+
+export const updateQuoteResponseOneTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin = 0;
 
 export const updateQuoteResponseOneTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
 
@@ -6686,9 +6965,32 @@ export const UpdateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
-  "additionScopeVersion": zod.literal(2).optional(),
+  "additionScopeVersion": zod.union([zod.literal(2),zod.literal(3)]).optional(),
+  "bathroomRoom": zod.object({
+  "enabled": zod.boolean(),
+  "gfciReceptacles": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomRoomGfciReceptaclesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf),
+  "additionalReceptacles": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf),
+  "vanityLights": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomRoomVanityLightsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomRoomVanityLightsMultipleOf),
+  "recessedLights": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomRoomRecessedLightsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf),
+  "showerLights": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomRoomShowerLightsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomRoomShowerLightsMultipleOf),
+  "switches": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomRoomSwitchesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomRoomSwitchesMultipleOf),
+  "customerSuppliedFixtures": zod.boolean(),
+  "customerSuppliedRecessedLights": zod.boolean()
+}).optional(),
+  "laundryRoom": zod.object({
+  "enabled": zod.boolean(),
+  "washerCircuits": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
+  "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "generalReceptacles": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
+  "lightingLocations": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
+  "switches": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
+  "recessedLights": zod.number().min(updateQuoteResponseOneTwoJobInputsFourLaundryRoomRecessedLightsMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf),
+  "customerSuppliedFixtures": zod.boolean()
+}).optional(),
+  "feederMaterial": zod.enum(['Copper', 'Aluminum']).optional(),
   "subpanelLaborHours": zod.number().min(updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMin).max(updateQuoteResponseOneTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "equipmentType": zod.enum(['Exhaust fan', 'Fan/light', 'Fan/light/heat']).optional(),
   "stackedWiringVerified": zod.boolean().optional(),
   "verifiedControlQuantity": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(updateQuoteResponseOneTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
@@ -6729,6 +7031,9 @@ export const UpdateQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/2 NM-B', '8/3 NM-B', '6/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "homeRunLength": zod.number().min(updateQuoteResponseOneTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin).optional().describe('Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.'),
+  "roomCircuitRole": zod.enum(['bathroom-receptacles', 'bathroom-lighting', 'laundry-washer', 'laundry-dryer']).optional(),
+  "roomCircuitReviewed": zod.boolean().optional().describe('Estimator reviewed the suggested circuit configuration and assignment.'),
   "label": zod.string().max(updateQuoteResponseOneTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
@@ -7793,6 +8098,39 @@ export const duplicateQuoteResponseTwoJobInputsThreeBreaker15AQuantityMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsThreeBreaker20AQuantityMin = 0;
 
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf = 1;
+
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMin = 0;
+export const duplicateQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf = 1;
+
 export const duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin = 0;
 export const duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax = 10000;
 
@@ -7834,6 +8172,8 @@ export const duplicateQuoteResponseTwoJobInputsFourCircuitCountMin = 0;
 export const duplicateQuoteResponseTwoJobInputsFourRouteLengthMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFourHomeRunLengthMin = 0;
+
+export const duplicateQuoteResponseTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin = 0;
 
 export const duplicateQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax = 80;
 
@@ -8374,9 +8714,32 @@ export const DuplicateQuoteResponse = zod.object({
   "recessedLightSize": zod.enum(['4-inch', '6-inch']).optional(),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B']).optional()
 }),zod.object({
-  "additionScopeVersion": zod.literal(2).optional(),
+  "additionScopeVersion": zod.union([zod.literal(2),zod.literal(3)]).optional(),
+  "bathroomRoom": zod.object({
+  "enabled": zod.boolean(),
+  "gfciReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomRoomGfciReceptaclesMultipleOf),
+  "additionalReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomRoomAdditionalReceptaclesMultipleOf),
+  "vanityLights": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomRoomVanityLightsMultipleOf),
+  "recessedLights": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomRoomRecessedLightsMultipleOf),
+  "showerLights": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomRoomShowerLightsMultipleOf),
+  "switches": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomRoomSwitchesMultipleOf),
+  "customerSuppliedFixtures": zod.boolean(),
+  "customerSuppliedRecessedLights": zod.boolean()
+}).optional(),
+  "laundryRoom": zod.object({
+  "enabled": zod.boolean(),
+  "washerCircuits": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomWasherCircuitsMultipleOf),
+  "dryerType": zod.enum(['None', 'Gas', 'Electric']),
+  "generalReceptacles": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomGeneralReceptaclesMultipleOf),
+  "lightingLocations": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomLightingLocationsMultipleOf),
+  "switches": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomSwitchesMultipleOf),
+  "recessedLights": zod.number().min(duplicateQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourLaundryRoomRecessedLightsMultipleOf),
+  "customerSuppliedFixtures": zod.boolean()
+}).optional(),
+  "feederMaterial": zod.enum(['Copper', 'Aluminum']).optional(),
   "subpanelLaborHours": zod.number().min(duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMin).max(duplicateQuoteResponseTwoJobInputsFourSubpanelLaborHoursMax).optional().describe('Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.'),
   "bathroomExhaust": zod.object({
+  "equipmentType": zod.enum(['Exhaust fan', 'Fan/light', 'Fan/light/heat']).optional(),
   "stackedWiringVerified": zod.boolean().optional(),
   "verifiedControlQuantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustVerifiedControlQuantityMin).optional(),
   "quantity": zod.number().min(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMin).multipleOf(duplicateQuoteResponseTwoJobInputsFourBathroomExhaustQuantityMultipleOf),
@@ -8417,6 +8780,9 @@ export const DuplicateQuoteResponse = zod.object({
   "breakerProtectionType": zod.enum(['Standard', 'GFCI', 'AFCI', 'Dual Function']),
   "cableType": zod.enum(['12/2 NM-B', '14/2 NM-B', '14/3 NM-B', '10/2 NM-B', '10/3 NM-B', '8/2 NM-B', '8/3 NM-B', '6/3 NM-B']),
   "circuitEntries": zod.array(zod.object({
+  "homeRunLength": zod.number().min(duplicateQuoteResponseTwoJobInputsFourCircuitEntriesItemHomeRunLengthMin).optional().describe('Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.'),
+  "roomCircuitRole": zod.enum(['bathroom-receptacles', 'bathroom-lighting', 'laundry-washer', 'laundry-dryer']).optional(),
+  "roomCircuitReviewed": zod.boolean().optional().describe('Estimator reviewed the suggested circuit configuration and assignment.'),
   "label": zod.string().max(duplicateQuoteResponseTwoJobInputsFourCircuitEntriesItemLabelMax).optional().describe('Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.'),
   "amperage": zod.union([zod.literal(15),zod.literal(20),zod.literal(30),zod.literal(40),zod.literal(50),zod.literal(60)]),
   "poleCount": zod.union([zod.literal(1),zod.literal(2)]),
@@ -8929,7 +9295,7 @@ export const ListPriceBookItemsResponseItem = zod.object({
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
   "manufacturer": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(listPriceBookItemsResponseMaterialPreferencesItemVerifiedComponentSourceMax),
@@ -9326,7 +9692,7 @@ export const UpdatePriceBookItemBody = zod.object({
   "unitCost": zod.number().min(updatePriceBookItemBodyUnitCostMin).optional(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
   "manufacturer": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(updatePriceBookItemBodyMaterialPreferencesItemVerifiedComponentSourceMax),
@@ -9390,7 +9756,7 @@ export const UpdatePriceBookItemResponse = zod.object({
   "isContractorOwned": zod.boolean(),
   "materialPreferences": zod.array(zod.object({
   "verifiedComponent": zod.object({
-  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate']),
+  "kind": zod.enum(['NEMA 14-50R', 'NEMA 6-50R', 'Stacked single-pole/single-pole', 'Matching white wall plate', 'Qualified Addition SER feeder']),
   "manufacturer": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerMax),
   "manufacturerPartNumber": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentManufacturerPartNumberMax),
   "source": zod.string().min(1).max(updatePriceBookItemResponseMaterialPreferencesItemVerifiedComponentSourceMax),

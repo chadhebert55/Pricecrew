@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdditionBathroomExhaust } from './additionBathroomExhaust';
+import type { AdditionBathroomRoom } from './additionBathroomRoom';
 import type { AdditionCircuitEntry } from './additionCircuitEntry';
 import type { AdditionInputsAdditionScopeVersion } from './additionInputsAdditionScopeVersion';
 import type { AdditionInputsBreakerAmperage } from './additionInputsBreakerAmperage';
@@ -13,13 +14,18 @@ import type { AdditionInputsBreakerPoleCount } from './additionInputsBreakerPole
 import type { AdditionInputsBreakerProtectionType } from './additionInputsBreakerProtectionType';
 import type { AdditionInputsCableType } from './additionInputsCableType';
 import type { AdditionInputsCeilingFanInstallation } from './additionInputsCeilingFanInstallation';
+import type { AdditionInputsFeederMaterial } from './additionInputsFeederMaterial';
 import type { AdditionInputsPanelManufacturer } from './additionInputsPanelManufacturer';
 import type { AdditionInputsRecessedLightSize } from './additionInputsRecessedLightSize';
 import type { AdditionInputsSubpanelOption } from './additionInputsSubpanelOption';
+import type { AdditionLaundryRoom } from './additionLaundryRoom';
 import type { LaborRateType } from './laborRateType';
 
 export interface AdditionInputs {
   additionScopeVersion?: AdditionInputsAdditionScopeVersion;
+  bathroomRoom?: AdditionBathroomRoom;
+  laundryRoom?: AdditionLaundryRoom;
+  feederMaterial?: AdditionInputsFeederMaterial;
   /**
      * Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.
      * @minimum 0

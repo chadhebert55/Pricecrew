@@ -1,27 +1,47 @@
-import { type AdditionCircuitEntry, type AdditionInputs, useGetSettings, usePreviewQuote } from "@workspace/api-client-react"
-import { pricingWarningKey, pricingWarningMessage } from "@/lib/pricing-warnings"
-import { contractorMaterialName } from "@/lib/material-display"
-import { CustomerPicker } from "@/components/customer-picker"
-import { PlanTakeoffReview } from "@/components/plan-takeoff-review"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation"
-import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill"
-import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft"
-import { Calculator, HousePlus, Info, TriangleAlert } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { useLocation } from "wouter"
-import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery"
-import { AdditionExhaustFanFields } from "@/components/addition-exhaust-fan-fields"
-import { AdditionCeilingFanFields } from "@/components/addition-ceiling-fan-fields"
-import { MaterialReviewActions } from "@/components/material-resolution"
+import {
+  type AdditionCircuitEntry,
+  type AdditionInputs,
+  useGetSettings,
+  usePreviewQuote,
+} from "@workspace/api-client-react";
+import {
+  pricingWarningKey,
+  pricingWarningMessage,
+} from "@/lib/pricing-warnings";
+import { contractorMaterialName } from "@/lib/material-display";
+import { CustomerPicker } from "@/components/customer-picker";
+import { PlanTakeoffReview } from "@/components/plan-takeoff-review";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useQuoteCreateMutation } from "@/hooks/use-quote-create-mutation";
+import { useQuoteRevisionPrefill } from "@/hooks/use-quote-revision-prefill";
+import { useQuoteBuilderDraft } from "@/hooks/use-quote-builder-draft";
+import { Calculator, HousePlus, Info, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import { QuoteBuilderRecovery } from "@/components/quote-builder-recovery";
+import { AdditionRoomFields } from "@/components/addition-room-fields";
+import { BuilderSection, pricingNeedsReview } from "@/components/remodel-builder";
+import {
+  bathroomRoomLabor,
+  laundryRoomLabor,
+  requiredRoomCircuits,
+} from "@workspace/api-zod/addition-rooms";
+import { AdditionCeilingFanFields } from "@/components/addition-ceiling-fan-fields";
+import { MaterialReviewActions, MaterialResolution } from "@/components/material-resolution";
 
 const initialInputs: AdditionInputs = {
-  additionScopeVersion: 2,
+  additionScopeVersion: 3,
   length: 20,
   width: 16,
   receptacles: 6,
@@ -38,13 +58,15 @@ const initialInputs: AdditionInputs = {
   breakerPoleCount: 1,
   breakerProtectionType: "AFCI",
   cableType: "12/2 NM-B",
-  circuitEntries: [{
-    amperage: 20,
-    poleCount: 1,
-    protectionType: "AFCI",
-    cableType: "12/2 NM-B",
-    quantity: 1,
-  }],
+  circuitEntries: [
+    {
+      amperage: 20,
+      poleCount: 1,
+      protectionType: "AFCI",
+      cableType: "12/2 NM-B",
+      quantity: 1,
+    },
+  ],
   subpanelOption: "No Subpanel",
   feederDistance: 50,
   crewSize: 1,
@@ -52,16 +74,16 @@ const initialInputs: AdditionInputs = {
   laborAdjustmentHours: 0,
   laborRateType: "residential",
   notes: "",
-}
+};
 
 function optionalAmount(value: string) {
-  if (value.trim() === "") return null
-  const amount = Number(value)
-  return Number.isFinite(amount) && amount >= 0 ? amount : null
+  if (value.trim() === "") return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
 }
 
 function nonNegativeNumber(value: string) {
-  return Math.max(0, Number(value) || 0)
+  return Math.max(0, Number(value) || 0);
 }
 
 const defaultCircuitEntry: AdditionCircuitEntry = {
@@ -70,220 +92,375 @@ const defaultCircuitEntry: AdditionCircuitEntry = {
   protectionType: "Standard",
   cableType: "14/2 NM-B",
   quantity: 1,
-}
+};
 
 function legacyCircuitEntries(inputs: AdditionInputs): AdditionCircuitEntry[] {
-  if (inputs.circuitCount <= 0) return []
-  return [{
-    amperage: inputs.breakerAmperage,
-    poleCount: inputs.breakerPoleCount,
-    protectionType: inputs.breakerProtectionType,
-    cableType: inputs.cableType,
-    quantity: inputs.circuitCount,
-  }]
+  if (inputs.circuitCount <= 0) return [];
+  return [
+    {
+      amperage: inputs.breakerAmperage,
+      poleCount: inputs.breakerPoleCount,
+      protectionType: inputs.breakerProtectionType,
+      cableType: inputs.cableType,
+      quantity: inputs.circuitCount,
+    },
+  ];
 }
 
 function synchronizeCircuitInputs(inputs: AdditionInputs): AdditionInputs {
-  const circuitEntries = inputs.circuitEntries ?? legacyCircuitEntries(inputs)
-  const first = circuitEntries[0]
+  const circuitEntries = inputs.circuitEntries ?? legacyCircuitEntries(inputs);
+  const first = circuitEntries[0];
   return {
     ...inputs,
-    additionScopeVersion: 2,
+    additionScopeVersion: 3,
     circuitEntries,
-    circuitCount: circuitEntries.reduce((sum, entry) => sum + entry.quantity, 0),
-    ...(first ? {
-      breakerAmperage: first.amperage,
-      breakerPoleCount: first.poleCount,
-      breakerProtectionType: first.protectionType,
-      cableType: first.cableType,
-    } : {}),
-  }
+    circuitCount: circuitEntries.reduce(
+      (sum, entry) => sum + entry.quantity,
+      0,
+    ),
+    ...(first
+      ? {
+          breakerAmperage: first.amperage,
+          breakerPoleCount: first.poleCount,
+          breakerProtectionType: first.protectionType,
+          cableType: first.cableType,
+        }
+      : {}),
+  };
 }
 
 function cableForAmperage(
   currentCable: AdditionCircuitEntry["cableType"],
   amperage: AdditionCircuitEntry["amperage"],
 ): AdditionCircuitEntry["cableType"] {
-  const threeWire = currentCable.includes("/3")
-  if (amperage >= 50) return "6/3 NM-B"
-  if (amperage === 40) return threeWire ? "8/3 NM-B" : "8/2 NM-B"
-  if (amperage === 30) return threeWire ? "10/3 NM-B" : "10/2 NM-B"
-  if (amperage === 20) return "12/2 NM-B"
-  return threeWire ? "14/3 NM-B" : "14/2 NM-B"
+  const threeWire = currentCable.includes("/3");
+  if (amperage >= 50) return "6/3 NM-B";
+  if (amperage === 40) return threeWire ? "8/3 NM-B" : "8/2 NM-B";
+  if (amperage === 30) return threeWire ? "10/3 NM-B" : "10/2 NM-B";
+  if (amperage === 20) return "12/2 NM-B";
+  return threeWire ? "14/3 NM-B" : "14/2 NM-B";
 }
 
 export function NewAdditionQuote() {
-  const [, setLocation] = useLocation()
-  const createQuote = useQuoteCreateMutation()
-  const previewQuote = usePreviewQuote()
-  const [catalogRefresh, setCatalogRefresh] = useState(0)
-  const settingsQuery = useGetSettings()
-  const { data: settings } = settingsQuery
-  const [settingsLoaded, setSettingsLoaded] = useState(false)
-  const [previewedInputKey, setPreviewedInputKey] = useState("")
-  const [customerName, setCustomerName] = useState("")
-  const [customerEmail, setCustomerEmail] = useState("")
-  const [customerId, setCustomerId] = useState<number | undefined>()
-  const [projectName, setProjectName] = useState("")
+  const [, setLocation] = useLocation();
+  const createQuote = useQuoteCreateMutation();
+  const previewQuote = usePreviewQuote();
+  const [catalogRefresh, setCatalogRefresh] = useState(0);
+  const settingsQuery = useGetSettings();
+  const { data: settings } = settingsQuery;
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [previewedInputKey, setPreviewedInputKey] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerId, setCustomerId] = useState<number | undefined>();
+  const [projectName, setProjectName] = useState("");
   const [proposalDescription, setProposalDescription] = useState(
     "Provide labor and listed materials for the selected addition electrical scope, including the selected outlets, lighting, ceiling-fan connections, switching, branch circuits, testing, and final trim. Final layout, equipment specifications, applicable protection requirements, and existing conditions will be verified before work begins.",
-  )
-  const [laborOverride, setLaborOverride] = useState("")
-  const [sellingPriceOverride, setSellingPriceOverride] = useState("")
-  const [inputs, setInputs] = useState<AdditionInputs>(initialInputs)
-  const [takeoffId, setTakeoffId] = useState<number | undefined>()
+  );
+  const [laborOverride, setLaborOverride] = useState("");
+  const [sellingPriceOverride, setSellingPriceOverride] = useState("");
+  const [inputs, setInputs] = useState<AdditionInputs>(initialInputs);
+  const [takeoffId, setTakeoffId] = useState<number | undefined>();
   const revision = useQuoteRevisionPrefill("ADDITION", {
     setCustomerName,
     setCustomerEmail,
     setCustomerId,
     setProjectName,
     setProposalDescription,
-    setInputs: (value: AdditionInputs) => setInputs(synchronizeCircuitInputs(value)),
+    setInputs: (value: AdditionInputs) =>
+      setInputs(synchronizeCircuitInputs(value)),
     setSettingsLoaded,
-  })
+  });
   const { draftRecovery } = useQuoteBuilderDraft({
     module: "ADDITION",
     ready: settingsLoaded && !revision.isRevision,
-    values: { customerName, customerEmail, customerId, projectName, proposalDescription, inputs, laborOverride, sellingPriceOverride, takeoffId },
-    setters: { setCustomerName, setCustomerEmail, setCustomerId, setProjectName, setProposalDescription, setInputs: (value) => setInputs(synchronizeCircuitInputs(value)), setLaborOverride, setSellingPriceOverride, setTakeoffId },
-  })
+    values: {
+      customerName,
+      customerEmail,
+      customerId,
+      projectName,
+      proposalDescription,
+      inputs,
+      laborOverride,
+      sellingPriceOverride,
+      takeoffId,
+    },
+    setters: {
+      setCustomerName,
+      setCustomerEmail,
+      setCustomerId,
+      setProjectName,
+      setProposalDescription,
+      setInputs: (value) => setInputs(synchronizeCircuitInputs(value)),
+      setLaborOverride,
+      setSellingPriceOverride,
+      setTakeoffId,
+    },
+  });
 
   useEffect(() => {
     if (settings && !settingsLoaded && !revision.isRevision) {
       setInputs((current) => ({
         ...current,
         laborAdjustmentHours: settings.additionLaborAdjustmentHours ?? 0,
-      }))
-      setSettingsLoaded(true)
+      }));
+      setSettingsLoaded(true);
     }
-  }, [revision.isRevision, settings, settingsLoaded])
+  }, [revision.isRevision, settings, settingsLoaded]);
 
-  const calculatedSquareFeet = Math.round(Math.max(0, inputs.length) * Math.max(0, inputs.width))
-  const squareFeet = inputs.squareFootageOverride ?? calculatedSquareFeet
-  const allowances = useMemo(() => ({
-    receptacles: Math.max(1, Math.ceil(squareFeet / 75)),
-    switches: Math.max(1, Math.ceil(squareFeet / 250)),
-    dimmers: Math.max(0, Math.ceil(squareFeet / 500)),
-    recessedLights: Math.max(1, Math.ceil(squareFeet / 100)),
-    ceilingFans: squareFeet >= 250 ? 1 : 0,
-    routeLength: Math.max(20, Math.ceil(squareFeet / 4)),
-    homeRunLength: Math.max(20, Math.ceil(squareFeet / 4)),
-    crewHours: Math.max(4, Math.ceil(squareFeet / 50)),
-  }), [squareFeet])
+  const calculatedSquareFeet = Math.round(
+    Math.max(0, inputs.length) * Math.max(0, inputs.width),
+  );
+  const squareFeet = inputs.squareFootageOverride ?? calculatedSquareFeet;
+  const allowances = useMemo(
+    () => ({
+      receptacles: Math.max(1, Math.ceil(squareFeet / 75)),
+      switches: Math.max(1, Math.ceil(squareFeet / 250)),
+      dimmers: Math.max(0, Math.ceil(squareFeet / 500)),
+      recessedLights: Math.max(1, Math.ceil(squareFeet / 100)),
+      ceilingFans: squareFeet >= 250 ? 1 : 0,
+      routeLength: Math.max(20, Math.ceil(squareFeet / 4)),
+      homeRunLength: Math.max(20, Math.ceil(squareFeet / 4)),
+      crewHours: Math.max(4, Math.ceil(squareFeet / 50)),
+    }),
+    [squareFeet],
+  );
 
   const previewPayload = {
     module: "ADDITION" as const,
     jobInputs: inputs,
     laborOverride: optionalAmount(laborOverride),
     sellingPriceOverride: optionalAmount(sellingPriceOverride),
-  }
-  const currentInputKey = JSON.stringify(previewPayload)
-  const previewIsCurrent = currentInputKey === previewedInputKey
+  };
+  const currentInputKey = JSON.stringify(previewPayload);
+  const previewIsCurrent = currentInputKey === previewedInputKey;
 
   useEffect(() => {
-    if (!settingsLoaded) return
-    const inputKey = JSON.stringify(previewPayload)
+    if (!settingsLoaded) return;
+    const inputKey = JSON.stringify(previewPayload);
     const timeout = window.setTimeout(() => {
-      previewQuote.mutate({ data: previewPayload }, { onSuccess: () => setPreviewedInputKey(inputKey) })
-    }, 250)
-    return () => window.clearTimeout(timeout)
-  }, [inputs, laborOverride, sellingPriceOverride, settingsLoaded, catalogRefresh])
+      previewQuote.mutate(
+        { data: previewPayload },
+        { onSuccess: () => setPreviewedInputKey(inputKey) },
+      );
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [
+    inputs,
+    laborOverride,
+    sellingPriceOverride,
+    settingsLoaded,
+    catalogRefresh,
+  ]);
 
   useEffect(() => {
-    const refresh = () => { setPreviewedInputKey(""); setCatalogRefresh(n => n + 1) }
-    window.addEventListener("focus", refresh)
-    return () => window.removeEventListener("focus", refresh)
-  }, [])
+    const refresh = () => {
+      setPreviewedInputKey("");
+      setCatalogRefresh((n) => n + 1);
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
 
   const setNumber = (key: keyof AdditionInputs, value: string) => {
-    setInputs((current) => ({ ...current, [key]: nonNegativeNumber(value) }))
-  }
+    setInputs((current) => ({ ...current, [key]: nonNegativeNumber(value) }));
+  };
 
   const setOptionalNumber = (key: keyof AdditionInputs, value: string) => {
-    setInputs((current) => ({ ...current, [key]: value.trim() === "" ? undefined : nonNegativeNumber(value) }))
-  }
+    setInputs((current) => ({
+      ...current,
+      [key]: value.trim() === "" ? undefined : nonNegativeNumber(value),
+    }));
+  };
 
-  const hasSubpanel = inputs.subpanelOption !== undefined && inputs.subpanelOption !== "No Subpanel"
+  const hasSubpanel =
+    inputs.subpanelOption !== undefined &&
+    inputs.subpanelOption !== "No Subpanel";
   const setSubpanelIncluded = (included: boolean) => {
     setInputs((current) => ({
       ...current,
       subpanelOption: included
-        ? current.subpanelOption === "60A Subpanel" || current.subpanelOption === "100A Subpanel"
+        ? current.subpanelOption === "60A Subpanel" ||
+          current.subpanelOption === "100A Subpanel"
           ? current.subpanelOption
           : "60A Subpanel"
         : "No Subpanel",
-      feederDistance: included ? current.feederDistance ?? 50 : current.feederDistance,
-    }))
-  }
+      feederDistance: included
+        ? (current.feederDistance ?? 50)
+        : current.feederDistance,
+    }));
+  };
 
   const applyAllowances = () => {
-    setInputs((current) => ({ ...current, ...allowances }))
-  }
+    setInputs((current) => ({ ...current, ...allowances }));
+  };
 
-  const circuitEntries = inputs.circuitEntries ?? legacyCircuitEntries(inputs)
+  const circuitEntries = inputs.circuitEntries ?? legacyCircuitEntries(inputs);
   const updateCircuitEntries = (entries: AdditionCircuitEntry[]) => {
-    setInputs((current) => synchronizeCircuitInputs({ ...current, circuitEntries: entries }))
-  }
-  const updateCircuitEntry = (index: number, patch: Partial<AdditionCircuitEntry>) => {
-    const entries = circuitEntries.map((entry, entryIndex) => entryIndex === index ? { ...entry, ...patch } : entry)
-    updateCircuitEntries(entries)
-  }
-  const setCircuitAmperage = (index: number, amperage: AdditionCircuitEntry["amperage"]) => {
-    const current = circuitEntries[index]
+    setInputs((current) =>
+      synchronizeCircuitInputs({ ...current, circuitEntries: entries }),
+    );
+  };
+  const updateCircuitEntry = (
+    index: number,
+    patch: Partial<AdditionCircuitEntry>,
+  ) => {
+    const entries = circuitEntries.map((entry, entryIndex) =>
+      entryIndex === index
+        ? {
+            ...entry,
+            ...(entry.roomCircuitRole && !("roomCircuitReviewed" in patch)
+              ? { roomCircuitReviewed: false }
+              : {}),
+            ...patch,
+          }
+        : entry,
+    );
+    updateCircuitEntries(entries);
+  };
+  const setCircuitAmperage = (
+    index: number,
+    amperage: AdditionCircuitEntry["amperage"],
+  ) => {
+    const current = circuitEntries[index];
     updateCircuitEntry(index, {
       amperage,
       cableType: cableForAmperage(current.cableType, amperage),
       poleCount: amperage >= 30 ? 2 : current.poleCount,
-    })
-  }
+    });
+  };
 
   const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault()
-    if (!settingsLoaded || !previewIsCurrent) return
-    createQuote.mutate({
-      data: {
-        customerId,
-        sourceQuoteId: revision.sourceQuoteId,
-        customerName,
-        customerEmail: customerEmail || null,
-        projectName,
-        module: "ADDITION",
-        jobInputs: inputs,
-        proposalDescription,
-        laborOverride: optionalAmount(laborOverride),
-        sellingPriceOverride: optionalAmount(sellingPriceOverride),
-        takeoffId,
+    event.preventDefault();
+    if (!settingsLoaded || !previewIsCurrent) return;
+    createQuote.mutate(
+      {
+        data: {
+          customerId,
+          sourceQuoteId: revision.sourceQuoteId,
+          customerName,
+          customerEmail: customerEmail || null,
+          projectName,
+          module: "ADDITION",
+          jobInputs: inputs,
+          proposalDescription,
+          laborOverride: optionalAmount(laborOverride),
+          sellingPriceOverride: optionalAmount(sellingPriceOverride),
+          takeoffId,
+        },
       },
-    }, { onSuccess: (quote) => setLocation(`/quotes/${quote.id}`) })
-  }
+      { onSuccess: (quote) => setLocation(`/quotes/${quote.id}`) },
+    );
+  };
 
-  const pricing = previewQuote.data?.pricing
-  const assembly = previewQuote.data?.assembly
-  const quantities: Array<{ key: keyof AdditionInputs; label: string; description: string }> = [
-    { key: "receptacles", label: "Standard receptacles", description: "General-use outlet locations" },
-    { key: "switches", label: "Switches", description: "Single-location lighting controls" },
-    { key: "dimmers", label: "Dimmers", description: "Dimmable lighting controls" },
-    { key: "recessedLights", label: "Recessed lights", description: "Ceiling lighting locations" },
-    { key: "ceilingFans", label: "Ceiling fans", description: "Ceiling-fan installation; confirm support and wiring scope" },
-  ]
+  const pricing = previewQuote.data?.pricing;
+  const assembly = previewQuote.data?.assembly;
+  const quantities: Array<{
+    key: keyof AdditionInputs;
+    label: string;
+    description: string;
+  }> = [
+    {
+      key: "receptacles",
+      label: "Standard receptacles",
+      description: "General-use outlet locations",
+    },
+    {
+      key: "switches",
+      label: "Switches",
+      description: "Single-location lighting controls",
+    },
+    {
+      key: "dimmers",
+      label: "Dimmers",
+      description: "Dimmable lighting controls",
+    },
+    {
+      key: "recessedLights",
+      label: "Recessed lights",
+      description: "Ceiling lighting locations",
+    },
+    {
+      key: "ceilingFans",
+      label: "Ceiling fans",
+      description: "Ceiling-fan installation; confirm support and wiring scope",
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-24">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">New Addition Quote</h1>
-        <p className="mt-1 text-muted-foreground">Residential Addition Electrical Builder</p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          New Addition Quote
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          Residential Addition Electrical Builder
+        </p>
       </div>
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="space-y-6 xl:col-span-2">
             <Card className="border-t-4 border-t-secondary">
-              <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Project Details</CardTitle>
+              </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <CustomerPicker idPrefix="addition" customerId={customerId} customerName={customerName} customerEmail={customerEmail} onCustomerIdChange={setCustomerId} onCustomerNameChange={setCustomerName} onCustomerEmailChange={setCustomerEmail} />
-                <div className="space-y-2"><Label htmlFor="addition-customer">Customer Name *</Label><Input id="addition-customer" required value={customerName} onChange={(event) => { setCustomerId(undefined); setCustomerName(event.target.value) }} /></div>
-                <div className="space-y-2"><Label htmlFor="addition-email">Customer Email</Label><Input id="addition-email" type="email" value={customerEmail} onChange={(event) => { setCustomerId(undefined); setCustomerEmail(event.target.value) }} /></div>
-                <div className="space-y-2 md:col-span-2"><Label htmlFor="addition-project">Project Name *</Label><Input id="addition-project" required value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Rear family-room addition" /></div>
-                <div className="space-y-2 md:col-span-2"><Label htmlFor="addition-proposal">Customer-facing Proposal Description *</Label><Textarea id="addition-proposal" required value={proposalDescription} onChange={(event) => setProposalDescription(event.target.value)} /></div>
+                <CustomerPicker
+                  idPrefix="addition"
+                  customerId={customerId}
+                  customerName={customerName}
+                  customerEmail={customerEmail}
+                  onCustomerIdChange={setCustomerId}
+                  onCustomerNameChange={setCustomerName}
+                  onCustomerEmailChange={setCustomerEmail}
+                />
+                <div className="space-y-2">
+                  <Label htmlFor="addition-customer">Customer Name *</Label>
+                  <Input
+                    id="addition-customer"
+                    required
+                    value={customerName}
+                    onChange={(event) => {
+                      setCustomerId(undefined);
+                      setCustomerName(event.target.value);
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="addition-email">Customer Email</Label>
+                  <Input
+                    id="addition-email"
+                    type="email"
+                    value={customerEmail}
+                    onChange={(event) => {
+                      setCustomerId(undefined);
+                      setCustomerEmail(event.target.value);
+                    }}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="addition-project">Project Name *</Label>
+                  <Input
+                    id="addition-project"
+                    required
+                    value={projectName}
+                    onChange={(event) => setProjectName(event.target.value)}
+                    placeholder="Rear family-room addition"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="addition-proposal">
+                    Customer-facing Proposal Description *
+                  </Label>
+                  <Textarea
+                    id="addition-proposal"
+                    required
+                    value={proposalDescription}
+                    onChange={(event) =>
+                      setProposalDescription(event.target.value)
+                    }
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -291,73 +468,362 @@ export function NewAdditionQuote() {
               module="ADDITION"
               baseInputs={inputs as unknown as Record<string, unknown>}
               onTakeoffApplied={(reviewedInputs, reviewedTakeoffId) => {
-                setInputs((current) => ({
-                  ...current,
-                  ...reviewedInputs,
-                } as AdditionInputs))
-                setTakeoffId(reviewedTakeoffId)
+                setInputs(
+                  (current) =>
+                    ({
+                      ...current,
+                      ...reviewedInputs,
+                    }) as AdditionInputs,
+                );
+                setTakeoffId(reviewedTakeoffId);
               }}
             />
 
             <Card className="border-t-4 border-t-primary shadow-md">
               <CardHeader className="border-b border-primary/10 bg-primary/5">
-                <div className="flex items-center gap-2"><HousePlus className="text-primary" size={20} /><CardTitle>Parametric Builder: Addition</CardTitle></div>
-                <CardDescription>Size establishes editable starting allowances; it is not a fixed price per square foot.</CardDescription>
+                <div className="flex items-center gap-2">
+                  <HousePlus className="text-primary" size={20} />
+                  <CardTitle>Parametric Builder: Addition</CardTitle>
+                </div>
+                <CardDescription>
+                  Size establishes editable starting allowances; it is not a
+                  fixed price per square foot.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8 pt-6">
-                <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Addition size and allowances</h3>
+                <BuilderSection
+                  title="Addition Size & Allowances"
+                  summary={`${squareFeet} square feet · Editable quantities, not a fixed square-foot price`}
+                  open
+                >
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="space-y-2"><Label htmlFor="addition-length">Length (FT)</Label><Input id="addition-length" type="number" min="0" value={inputs.length} onChange={(event) => setNumber("length", event.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="addition-width">Width (FT)</Label><Input id="addition-width" type="number" min="0" value={inputs.width} onChange={(event) => setNumber("width", event.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="addition-square-foot-override">Square-foot override (optional)</Label><Input id="addition-square-foot-override" type="number" min="0" value={inputs.squareFootageOverride ?? ""} onChange={(event) => setOptionalNumber("squareFootageOverride", event.target.value)} placeholder={`${calculatedSquareFeet} calculated`} /></div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-length">Length (FT)</Label>
+                      <Input
+                        id="addition-length"
+                        type="number"
+                        min="0"
+                        value={inputs.length}
+                        onChange={(event) =>
+                          setNumber("length", event.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-width">Width (FT)</Label>
+                      <Input
+                        id="addition-width"
+                        type="number"
+                        min="0"
+                        value={inputs.width}
+                        onChange={(event) =>
+                          setNumber("width", event.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-square-foot-override">
+                        Square-foot override (optional)
+                      </Label>
+                      <Input
+                        id="addition-square-foot-override"
+                        type="number"
+                        min="0"
+                        value={inputs.squareFootageOverride ?? ""}
+                        onChange={(event) =>
+                          setOptionalNumber(
+                            "squareFootageOverride",
+                            event.target.value,
+                          )
+                        }
+                        placeholder={`${calculatedSquareFeet} calculated`}
+                      />
+                    </div>
                   </div>
                   <div className="mt-4 flex flex-col justify-between gap-3 rounded-md border bg-muted/20 p-4 sm:flex-row sm:items-center">
-                    <div><p className="font-semibold">{squareFeet.toLocaleString()} square feet used for allowances</p><p className="text-xs text-muted-foreground">{inputs.squareFootageOverride === undefined ? `${calculatedSquareFeet.toLocaleString()} square feet calculated from length × width.` : "Direct square-foot override is active; clear it to use the dimensions."} Suggested allowances update devices, route, and crew hours; the circuit mix stays contractor-defined.</p></div>
-                    <Button type="button" variant="outline" onClick={applyAllowances}>Apply suggested allowances</Button>
+                    <div>
+                      <p className="font-semibold">
+                        {squareFeet.toLocaleString()} square feet used for
+                        allowances
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {inputs.squareFootageOverride === undefined
+                          ? `${calculatedSquareFeet.toLocaleString()} square feet calculated from length × width.`
+                          : "Direct square-foot override is active; clear it to use the dimensions."}{" "}
+                        Suggested allowances update devices, route, and crew
+                        hours; the circuit mix stays contractor-defined.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={applyAllowances}
+                    >
+                      Apply suggested allowances
+                    </Button>
                   </div>
-                </section>
+                </BuilderSection>
 
-                <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Devices, lighting, and fans</h3>
+                <BuilderSection
+                  title="Devices, Lighting & Fans"
+                  summary={`${inputs.receptacles} receptacles · ${inputs.recessedLights} recessed · ${inputs.ceilingFans} fans`}
+                  open
+                >
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {quantities.map((field) => <div key={field.key} className="rounded-lg border bg-muted/15 p-4"><div className="flex items-start justify-between gap-4"><div><Label htmlFor={`addition-${field.key}`}>{field.label}</Label><p className="mt-1 text-xs text-muted-foreground">{field.description}</p></div><Input id={`addition-${field.key}`} className="w-24 text-right font-mono" type="number" min="0" value={inputs[field.key] as number} onChange={(event) => setNumber(field.key, event.target.value)} /></div></div>)}
+                    {quantities.map((field) => (
+                      <div
+                        key={field.key}
+                        className="rounded-lg border bg-muted/15 p-4"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <Label htmlFor={`addition-${field.key}`}>
+                              {field.label}
+                            </Label>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {field.description}
+                            </p>
+                          </div>
+                          <Input
+                            id={`addition-${field.key}`}
+                            className="w-24 text-right font-mono"
+                            type="number"
+                            min="0"
+                            value={inputs[field.key] as number}
+                            onChange={(event) =>
+                              setNumber(field.key, event.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <label className="flex items-start gap-3 text-sm font-medium"><Checkbox checked={inputs.customerSuppliedFans} onCheckedChange={(checked) => setInputs((current) => ({ ...current, customerSuppliedFans: checked === true }))} /><span>Customer supplies ceiling fans <span className="block pt-1 text-xs font-normal text-muted-foreground">Fan purchase cost is excluded; installation labor remains. Confirm fan-rated support and wiring/control materials separately. This is not an exhaust-fan scope.</span></span></label>
-                    {!inputs.customerSuppliedFans && <div className="mt-4 max-w-sm space-y-2"><Label htmlFor="addition-fan-cost">Contractor-supplied fan unit-cost override ($)</Label><Input id="addition-fan-cost" type="number" min="0" step="0.01" value={inputs.ceilingFanMaterialCostOverride ?? ""} onChange={(event) => setOptionalNumber("ceilingFanMaterialCostOverride", event.target.value)} placeholder="Use verified Price Book value" /></div>}
+                    <label className="flex items-start gap-3 text-sm font-medium">
+                      <Checkbox
+                        checked={inputs.customerSuppliedFans}
+                        onCheckedChange={(checked) =>
+                          setInputs((current) => ({
+                            ...current,
+                            customerSuppliedFans: checked === true,
+                          }))
+                        }
+                      />
+                      <span>
+                        Customer supplies ceiling fans{" "}
+                        <span className="block pt-1 text-xs font-normal text-muted-foreground">
+                          Fan purchase cost is excluded; installation labor
+                          remains. Confirm fan-rated support and wiring/control
+                          materials separately. This is not an exhaust-fan
+                          scope.
+                        </span>
+                      </span>
+                    </label>
+                    {!inputs.customerSuppliedFans && (
+                      <div className="mt-4 max-w-sm space-y-2">
+                        <Label htmlFor="addition-fan-cost">
+                          Contractor-supplied fan unit-cost override ($)
+                        </Label>
+                        <Input
+                          id="addition-fan-cost"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={inputs.ceilingFanMaterialCostOverride ?? ""}
+                          onChange={(event) =>
+                            setOptionalNumber(
+                              "ceilingFanMaterialCostOverride",
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Use verified Price Book value"
+                        />
+                      </div>
+                    )}
                   </div>
-                  {inputs.ceilingFans > 0 && <AdditionCeilingFanFields value={inputs.ceilingFanInstallation} quantity={inputs.ceilingFans}
-                    onChange={ceilingFanInstallation => setInputs(current => ({...current, ceilingFanInstallation}))}/>}
-                </section>
+                  {inputs.ceilingFans > 0 && (
+                    <AdditionCeilingFanFields
+                      value={inputs.ceilingFanInstallation}
+                      quantity={inputs.ceilingFans}
+                      onChange={(ceilingFanInstallation) =>
+                        setInputs((current) => ({
+                          ...current,
+                          ceilingFanInstallation,
+                        }))
+                      }
+                    />
+                  )}
+                </BuilderSection>
 
-                <AdditionExhaustFanFields value={inputs.bathroomExhaust}
-                  onChange={bathroomExhaust => setInputs(current => ({ ...current, bathroomExhaust }))} />
+                <AdditionRoomFields
+                  inputs={inputs}
+                  onChange={(value) =>
+                    setInputs(synchronizeCircuitInputs(value))
+                  }
+                />
 
-                <section>
-                  <h3 className="mb-4 border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Circuits, route, and labor</h3>
+                <BuilderSection
+                  title="Circuits & Wiring"
+                  summary={`${circuitEntries.reduce((sum, c) => sum + c.quantity, 0)} circuits · Default home run ${inputs.homeRunLength} FT · ${inputs.panelManufacturer}`}
+                  open
+                >
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div className="space-y-2"><Label htmlFor="addition-route">Common wiring route (FT)</Label><Input id="addition-route" type="number" min="0" value={inputs.routeLength} onChange={(event) => setNumber("routeLength", event.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="addition-home-run">Home-run cable (FT per circuit)</Label><Input id="addition-home-run" type="number" min="0" value={inputs.homeRunLength} onChange={(event) => setNumber("homeRunLength", event.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="addition-panel">Panel manufacturer</Label><select id="addition-panel" value={inputs.panelManufacturer} onChange={(event) => setInputs((current) => ({ ...current, panelManufacturer: event.target.value as AdditionInputs["panelManufacturer"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="Siemens">Siemens / ITE</option><option value="Eaton">Eaton BR</option><option value="Square D">Square D Homeline</option></select></div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-route">
+                        In-Room Branch Wiring Allowance (FT)
+                      </Label>
+                      <Input
+                        id="addition-route"
+                        type="number"
+                        min="0"
+                        value={inputs.routeLength}
+                        onChange={(event) =>
+                          setNumber("routeLength", event.target.value)
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Estimated wiring between devices, switches and fixtures
+                        within the addition, including room packages. Circuit
+                        home runs to the panel and explicitly entered fan
+                        switch-leg wiring are calculated separately. Do not
+                        repeat their footage here. This allowance is assigned to
+                        the first active schedule row's cable, once.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-home-run">
+                        Default Home-Run Length (FT per circuit)
+                      </Label>
+                      <Input
+                        id="addition-home-run"
+                        type="number"
+                        min="0"
+                        value={inputs.homeRunLength}
+                        onChange={(event) =>
+                          setNumber("homeRunLength", event.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-panel">Panel manufacturer</Label>
+                      <select
+                        id="addition-panel"
+                        value={inputs.panelManufacturer}
+                        onChange={(event) =>
+                          setInputs((current) => ({
+                            ...current,
+                            panelManufacturer: event.target
+                              .value as AdditionInputs["panelManufacturer"],
+                          }))
+                        }
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="Siemens">Siemens / ITE</option>
+                        <option value="Eaton">Eaton BR</option>
+                        <option value="Square D">Square D Homeline</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h4 className="font-semibold">Branch-circuit schedule</h4>
-                        <p className="mt-1 text-xs text-muted-foreground">Add each breaker and cable combination separately. Unsupported catalog combinations stay unresolved in the estimate.</p>
+                        <h4 className="font-semibold">
+                          Branch-circuit schedule
+                        </h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Add each breaker and cable combination separately.
+                          Unsupported catalog combinations stay unresolved in
+                          the estimate.
+                        </p>
                       </div>
-                      <Button type="button" variant="outline" className="shrink-0" onClick={() => updateCircuitEntries([...circuitEntries, { ...defaultCircuitEntry }])}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="shrink-0"
+                        onClick={() =>
+                          updateCircuitEntries([
+                            ...circuitEntries,
+                            { ...defaultCircuitEntry },
+                          ])
+                        }
+                      >
                         Add circuit
                       </Button>
                     </div>
                     <div className="space-y-4">
                       {circuitEntries.map((entry, index) => (
-                        <fieldset key={index} className="rounded-lg border bg-background p-4">
-                          <legend className="px-1 text-sm font-semibold">Circuit {index + 1}</legend>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                        <fieldset
+                          key={index}
+                          className="rounded-lg border bg-background p-4"
+                        >
+                          <legend className="px-1 text-sm font-semibold">
+                            Circuit {index + 1}
+                          </legend>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
-                              <Label htmlFor={`addition-circuit-${index}-label`}>Room or equipment label <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                              <Label
+                                htmlFor={`addition-circuit-${index}-length`}
+                              >
+                                Home run (FT per circuit)
+                              </Label>
+                              <Input
+                                id={`addition-circuit-${index}-length`}
+                                type="number"
+                                min="0"
+                                value={entry.homeRunLength ?? ""}
+                                placeholder={`Default: ${inputs.homeRunLength}`}
+                                onChange={(e) =>
+                                  updateCircuitEntry(index, {
+                                    homeRunLength:
+                                      e.target.value === ""
+                                        ? undefined
+                                        : nonNegativeNumber(e.target.value),
+                                  })
+                                }
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {entry.homeRunLength ?? inputs.homeRunLength} FT
+                                × {entry.quantity} ={" "}
+                                {(entry.homeRunLength ?? inputs.homeRunLength) *
+                                  entry.quantity}{" "}
+                                FT home-run cable.
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`addition-circuit-${index}-room`}>
+                                Room circuit assignment
+                              </Label>
+                              <select
+                                id={`addition-circuit-${index}-room`}
+                                className="min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
+                                value={entry.roomCircuitRole ?? ""}
+                                onChange={(e) =>
+                                  updateCircuitEntry(index, {
+                                    roomCircuitRole: (e.target.value ||
+                                      undefined) as AdditionCircuitEntry["roomCircuitRole"],
+                                  })
+                                }
+                              >
+                                <option value="">
+                                  General / manually configured
+                                </option>
+                                {requiredRoomCircuits(
+                                  inputs.bathroomRoom,
+                                  inputs.laundryRoom,
+                                ).map((role) => (
+                                  <option key={role}>{role}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor={`addition-circuit-${index}-label`}
+                              >
+                                Room or equipment label{" "}
+                                <span className="font-normal text-muted-foreground">
+                                  (optional)
+                                </span>
+                              </Label>
                               <Input
                                 id={`addition-circuit-${index}-label`}
                                 aria-label={`Circuit ${index + 1} room or equipment label`}
@@ -365,132 +831,724 @@ export function NewAdditionQuote() {
                                 maxLength={80}
                                 placeholder="e.g. Dryer or Bedroom"
                                 onChange={(event) => {
-                                  const label = event.target.value
-                                  updateCircuitEntry(index, { label: label.trim() ? label : undefined })
+                                  const label = event.target.value;
+                                  updateCircuitEntry(index, {
+                                    label: label.trim() ? label : undefined,
+                                  });
                                 }}
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`addition-circuit-${index}-amperage`}>Amperage</Label>
-                              <select id={`addition-circuit-${index}-amperage`} aria-label={`Circuit ${index + 1} amperage`} value={entry.amperage} onChange={(event) => setCircuitAmperage(index, Number(event.target.value) as AdditionCircuitEntry["amperage"])} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value={15}>15A</option><option value={20}>20A</option><option value={30}>30A</option><option value={40}>40A</option><option value={50}>50A</option><option value={60}>60A</option>
+                              <Label
+                                htmlFor={`addition-circuit-${index}-amperage`}
+                              >
+                                Amperage
+                              </Label>
+                              <select
+                                id={`addition-circuit-${index}-amperage`}
+                                aria-label={`Circuit ${index + 1} amperage`}
+                                value={entry.amperage}
+                                onChange={(event) =>
+                                  setCircuitAmperage(
+                                    index,
+                                    Number(
+                                      event.target.value,
+                                    ) as AdditionCircuitEntry["amperage"],
+                                  )
+                                }
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                              >
+                                <option value={15}>15A</option>
+                                <option value={20}>20A</option>
+                                <option value={30}>30A</option>
+                                <option value={40}>40A</option>
+                                <option value={50}>50A</option>
+                                <option value={60}>60A</option>
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`addition-circuit-${index}-poles`}>Poles</Label>
-                              <select id={`addition-circuit-${index}-poles`} aria-label={`Circuit ${index + 1} pole count`} value={entry.poleCount} onChange={(event) => updateCircuitEntry(index, { poleCount: Number(event.target.value) as AdditionCircuitEntry["poleCount"] })} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value={1}>1-pole</option><option value={2}>2-pole</option>
+                              <Label
+                                htmlFor={`addition-circuit-${index}-poles`}
+                              >
+                                Poles
+                              </Label>
+                              <select
+                                id={`addition-circuit-${index}-poles`}
+                                aria-label={`Circuit ${index + 1} pole count`}
+                                value={entry.poleCount}
+                                onChange={(event) =>
+                                  updateCircuitEntry(index, {
+                                    poleCount: Number(
+                                      event.target.value,
+                                    ) as AdditionCircuitEntry["poleCount"],
+                                  })
+                                }
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                              >
+                                <option value={1}>1-pole</option>
+                                <option value={2}>2-pole</option>
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`addition-circuit-${index}-protection`}>Protection</Label>
-                              <select id={`addition-circuit-${index}-protection`} aria-label={`Circuit ${index + 1} protection`} value={entry.protectionType} onChange={(event) => updateCircuitEntry(index, { protectionType: event.target.value as AdditionCircuitEntry["protectionType"] })} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value="Standard">Standard</option><option value="AFCI">AFCI</option><option value="GFCI">GFCI</option><option value="Dual Function">Dual Function</option>
+                              <Label
+                                htmlFor={`addition-circuit-${index}-protection`}
+                              >
+                                Protection
+                              </Label>
+                              <select
+                                id={`addition-circuit-${index}-protection`}
+                                aria-label={`Circuit ${index + 1} protection`}
+                                value={entry.protectionType}
+                                onChange={(event) =>
+                                  updateCircuitEntry(index, {
+                                    protectionType: event.target
+                                      .value as AdditionCircuitEntry["protectionType"],
+                                  })
+                                }
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                              >
+                                <option value="Standard">Standard</option>
+                                <option value="AFCI">AFCI</option>
+                                <option value="GFCI">GFCI</option>
+                                <option value="Dual Function">
+                                  Dual Function
+                                </option>
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`addition-circuit-${index}-cable`}>Cable</Label>
-                              <select id={`addition-circuit-${index}-cable`} aria-label={`Circuit ${index + 1} cable`} value={entry.cableType} onChange={(event) => updateCircuitEntry(index, { cableType: event.target.value as AdditionCircuitEntry["cableType"] })} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                                <option value="14/2 NM-B">14/2 NM-B</option><option value="12/2 NM-B">12/2 NM-B</option><option value="14/3 NM-B">14/3 NM-B</option><option value="10/2 NM-B">10/2 NM-B</option><option value="10/3 NM-B">10/3 NM-B</option><option value="8/2 NM-B">8/2 NM-B</option><option value="8/3 NM-B">8/3 NM-B</option><option value="6/3 NM-B">6/3 NM-B</option>
+                              <Label
+                                htmlFor={`addition-circuit-${index}-cable`}
+                              >
+                                Cable
+                              </Label>
+                              <select
+                                id={`addition-circuit-${index}-cable`}
+                                aria-label={`Circuit ${index + 1} cable`}
+                                value={entry.cableType}
+                                onChange={(event) =>
+                                  updateCircuitEntry(index, {
+                                    cableType: event.target
+                                      .value as AdditionCircuitEntry["cableType"],
+                                  })
+                                }
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                              >
+                                <option value="14/2 NM-B">14/2 NM-B</option>
+                                <option value="12/2 NM-B">12/2 NM-B</option>
+                                <option value="14/3 NM-B">14/3 NM-B</option>
+                                <option value="10/2 NM-B">10/2 NM-B</option>
+                                <option value="10/3 NM-B">10/3 NM-B</option>
+                                <option value="8/2 NM-B">8/2 NM-B</option>
+                                <option value="8/3 NM-B">8/3 NM-B</option>
+                                <option value="6/3 NM-B">6/3 NM-B</option>
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`addition-circuit-${index}-quantity`}>Quantity</Label>
+                              <Label
+                                htmlFor={`addition-circuit-${index}-quantity`}
+                              >
+                                Quantity
+                              </Label>
                               <div className="flex gap-2">
-                                <Input id={`addition-circuit-${index}-quantity`} aria-label={`Circuit ${index + 1} quantity`} type="number" min="1" step="1" value={entry.quantity} onChange={(event) => updateCircuitEntry(index, { quantity: Math.max(1, Math.floor(Number(event.target.value) || 1)) })} />
-                                <Button type="button" variant="outline" size="icon" aria-label={`Remove circuit ${index + 1}`} disabled={circuitEntries.length === 1} onClick={() => updateCircuitEntries(circuitEntries.filter((_, entryIndex) => entryIndex !== index))}>×</Button>
+                                <Input
+                                  id={`addition-circuit-${index}-quantity`}
+                                  aria-label={`Circuit ${index + 1} quantity`}
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={entry.quantity}
+                                  onChange={(event) =>
+                                    updateCircuitEntry(index, {
+                                      quantity: Math.max(
+                                        1,
+                                        Math.floor(
+                                          Number(event.target.value) || 1,
+                                        ),
+                                      ),
+                                    })
+                                  }
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label={`Remove circuit ${index + 1}`}
+                                  disabled={circuitEntries.length === 1}
+                                  onClick={() =>
+                                    updateCircuitEntries(
+                                      circuitEntries.filter(
+                                        (_, entryIndex) => entryIndex !== index,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  ×
+                                </Button>
                               </div>
                             </div>
                           </div>
+                          {entry.roomCircuitRole && (
+                            <label className="mt-4 flex items-start gap-3 text-sm">
+                              <input
+                                id={`addition-circuit-${index}-reviewed`}
+                                type="checkbox"
+                                className="mt-1 h-5 w-5 shrink-0"
+                                checked={entry.roomCircuitReviewed === true}
+                                onChange={(e) =>
+                                  updateCircuitEntry(index, {
+                                    roomCircuitReviewed: e.target.checked,
+                                  })
+                                }
+                              />
+                              I reviewed this room's actual load, circuit
+                              assignment, protection, cable and route; this work
+                              is not duplicated in another schedule row.
+                              Suggestions are not a code-compliance
+                              certification.
+                            </label>
+                          )}
                         </fieldset>
                       ))}
                     </div>
                   </div>
-                  <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                </BuilderSection>
+                <BuilderSection
+                  title="Subpanel"
+                  summary={
+                    hasSubpanel
+                      ? `${inputs.subpanelOption} · ${inputs.feederMaterial ?? "Select material"} · ${inputs.feederDistance ?? 0} FT · ${inputs.subpanelLaborHours ?? "Enter"} person-hours`
+                      : "None"
+                  }
+                  open
+                >
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="addition-add-subpanel">Add Subpanel?</Label>
+                        <Label htmlFor="addition-add-subpanel">
+                          Add Subpanel?
+                        </Label>
                         <select
                           id="addition-add-subpanel"
                           value={hasSubpanel ? "yes" : "no"}
-                          onChange={(event) => setSubpanelIncluded(event.target.value === "yes")}
+                          onChange={(event) =>
+                            setSubpanelIncluded(event.target.value === "yes")
+                          }
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                         >
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
                         </select>
                         <p className="text-xs text-muted-foreground">
-                          Add a dedicated subpanel when the addition needs separate panel space. Missing verified catalog prices remain unresolved.
+                          Add a dedicated subpanel when the addition needs
+                          separate panel space. Missing verified catalog prices
+                          remain unresolved.
                         </p>
                       </div>
-                    {hasSubpanel && (
+                      {hasSubpanel && (
                         <>
                           <div className="space-y-2">
-                            <Label htmlFor="addition-subpanel-labor">Subpanel Labor Hours (person-hours)</Label>
-                            <Input id="addition-subpanel-labor" type="number" min="0" max="10000" step="0.25"
-                              placeholder="Required total person-hours" value={inputs.subpanelLaborHours ?? ""}
-                              onChange={event => setOptionalNumber("subpanelLaborHours",event.target.value)}/>
-                            <p className="text-xs text-muted-foreground">Complete subpanel installation: mounting, SER routing, feeder breaker, terminations, neutral/ground and ground-bar work, fittings, labeling and testing. 2 electricians × 6 hours = 12 person-hours. Added once; exclude this work from crew hours and labor adjustments below. Blank or zero stays Needs Review.</p>
+                            <Label htmlFor="addition-feeder-material">
+                              Feeder Conductor Material
+                            </Label>
+                            <select
+                              id="addition-feeder-material"
+                              className="min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
+                              value={inputs.feederMaterial ?? ""}
+                              onChange={(e) =>
+                                setInputs((current) => ({
+                                  ...current,
+                                  feederMaterial: e.target
+                                    .value as AdditionInputs["feederMaterial"],
+                                }))
+                              }
+                            >
+                              <option value="" disabled>
+                                Select required material
+                              </option>
+                              <option>Aluminum</option>
+                              <option>Copper</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              SER cable. Requests a qualified company product
+                              for this size/material combination; no conductor
+                              size is inferred.
+                            </p>
+                            <a
+                              className="text-xs underline"
+                              href={`/price-book?material=${encodeURIComponent(`Addition ${inputs.subpanelOption === "100A Subpanel" ? 100 : 60}A ${inputs.feederMaterial ?? "Aluminum"} SER feeder`)}&builder=Addition`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Qualify feeder in Price Book
+                            </a>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="addition-subpanel-size">Subpanel size</Label>
+                            <Label htmlFor="addition-subpanel-labor">
+                              Subpanel Labor Hours (person-hours)
+                            </Label>
+                            <Input
+                              id="addition-subpanel-labor"
+                              type="number"
+                              min="0"
+                              max="10000"
+                              step="0.25"
+                              placeholder="Required total person-hours"
+                              value={inputs.subpanelLaborHours ?? ""}
+                              onChange={(event) =>
+                                setOptionalNumber(
+                                  "subpanelLaborHours",
+                                  event.target.value,
+                                )
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Complete subpanel installation: mounting, SER
+                              routing, feeder breaker, terminations,
+                              neutral/ground and ground-bar work, fittings,
+                              labeling and testing. 2 electricians × 6 hours =
+                              12 person-hours. Added once; exclude this work
+                              from crew hours and labor adjustments below. Blank
+                              or zero stays Needs Review.
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="addition-subpanel-size">
+                              Subpanel size
+                            </Label>
                             <select
                               id="addition-subpanel-size"
                               value={inputs.subpanelOption}
-                              onChange={(event) => setInputs((current) => ({
-                                ...current,
-                                subpanelOption: event.target.value as AdditionInputs["subpanelOption"],
-                              }))}
+                              onChange={(event) =>
+                                setInputs((current) => ({
+                                  ...current,
+                                  subpanelOption: event.target
+                                    .value as AdditionInputs["subpanelOption"],
+                                }))
+                              }
                               className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                             >
                               <option value="60A Subpanel">60A</option>
                               <option value="100A Subpanel">100A</option>
                             </select>
                             <p className="text-xs text-muted-foreground">
-                              Choose the feeder ampacity for the addition subpanel.
+                              Choose the feeder ampacity for the addition
+                              subpanel.
                             </p>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="addition-feeder-distance">Feeder distance (FT)</Label>
+                            <Label htmlFor="addition-feeder-distance">
+                              Feeder distance (FT)
+                            </Label>
                             <Input
                               id="addition-feeder-distance"
                               type="number"
                               min="0"
                               step="1"
                               value={inputs.feederDistance ?? 0}
-                              onChange={(event) => setNumber("feederDistance", event.target.value)}
+                              onChange={(event) =>
+                                setNumber("feederDistance", event.target.value)
+                              }
                             />
                             <p className="text-xs text-muted-foreground">
-                              Current feeder request is an estimating selection, not a conductor-sizing or installation-completeness certification. Confirm the complete feeder and equipment configuration before use.
+                              Current feeder request is an estimating selection,
+                              not a conductor-sizing or
+                              installation-completeness certification. Confirm
+                              the complete feeder and equipment configuration
+                              before use.
                             </p>
                           </div>
                         </>
                       )}
                     </div>
                   </div>
+                </BuilderSection>
+                <BuilderSection
+                  title="Labor & Notes"
+                  summary={
+                    pricing && previewIsCurrent
+                      ? `Final labor ${pricing.finalLaborHours?.toFixed(2)} person-hours`
+                      : "Updating labor"
+                  }
+                  open
+                >
                   <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div className="space-y-2"><Label htmlFor="addition-labor-rate">Labor sell rate</Label><select id="addition-labor-rate" value={inputs.laborRateType ?? "residential"} onChange={(event) => setInputs((current) => ({ ...current, laborRateType: event.target.value as AdditionInputs["laborRateType"] }))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="residential">Residential</option><option value="commercial">Commercial</option></select></div>
-                    <div className="space-y-2"><Label htmlFor="addition-crew-size">Crew size</Label><Input id="addition-crew-size" type="number" min="1" value={inputs.crewSize} onChange={(event) => setNumber("crewSize", event.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="addition-crew-hours">Crew hours</Label><Input id="addition-crew-hours" type="number" min="0" step="0.25" value={inputs.crewHours} onChange={(event) => setNumber("crewHours", event.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="addition-labor-adjustment">Labor adjustment (hours)</Label><Input id="addition-labor-adjustment" type="number" step="0.25" value={inputs.laborAdjustmentHours ?? 0} onChange={(event) => setInputs((current) => ({ ...current, laborAdjustmentHours: Number(event.target.value) || 0 }))} /></div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-labor-rate">
+                        Labor sell rate
+                      </Label>
+                      <select
+                        id="addition-labor-rate"
+                        value={inputs.laborRateType ?? "residential"}
+                        onChange={(event) =>
+                          setInputs((current) => ({
+                            ...current,
+                            laborRateType: event.target
+                              .value as AdditionInputs["laborRateType"],
+                          }))
+                        }
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="residential">Residential</option>
+                        <option value="commercial">Commercial</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-crew-size">Crew size</Label>
+                      <Input
+                        id="addition-crew-size"
+                        type="number"
+                        min="1"
+                        value={inputs.crewSize}
+                        onChange={(event) =>
+                          setNumber("crewSize", event.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-crew-hours">
+                        Hours per Crew Member
+                      </Label>
+                      <Input
+                        id="addition-crew-hours"
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        value={inputs.crewHours}
+                        onChange={(event) =>
+                          setNumber("crewHours", event.target.value)
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {Math.max(1, inputs.crewSize)} × {inputs.crewHours} ={" "}
+                        {Math.max(1, inputs.crewSize) * inputs.crewHours} base
+                        crew person-hours. These are additional project hours;
+                        do not repeat device/circuit task labor, room package
+                        labor or subpanel labor here.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-labor-adjustment">
+                        Labor adjustment (hours)
+                      </Label>
+                      <Input
+                        id="addition-labor-adjustment"
+                        type="number"
+                        step="0.25"
+                        value={inputs.laborAdjustmentHours ?? 0}
+                        onChange={(event) =>
+                          setInputs((current) => ({
+                            ...current,
+                            laborAdjustmentHours:
+                              Number(event.target.value) || 0,
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
-                </section>
-                <div className="space-y-2"><Label htmlFor="addition-notes">Estimator Notes (Internal)</Label><Textarea id="addition-notes" value={inputs.notes} onChange={(event) => setInputs((current) => ({ ...current, notes: event.target.value }))} /></div>
+                  {pricing && previewIsCurrent && (
+                    <div
+                      aria-label="Addition labor summary"
+                      className="space-y-2 rounded border p-4 text-sm"
+                    >
+                      <h3 className="font-semibold">
+                        Labor Summary (person-hours)
+                      </h3>
+                      <p>
+                        Calculated task labor, including rooms, fans and
+                        scheduled circuits:{" "}
+                        {(
+                          (pricing.calculatedLaborHours ?? 0) -
+                          Math.max(1, inputs.crewSize) * inputs.crewHours -
+                          (hasSubpanel ? (inputs.subpanelLaborHours ?? 0) : 0)
+                        ).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Room device labor included above:{" "}
+                        {(
+                          bathroomRoomLabor(inputs.bathroomRoom) +
+                          laundryRoomLabor(inputs.laundryRoom)
+                        ).toFixed(2)}{" "}
+                        hrs. Not added a second time.
+                      </p>
+                      <p>
+                        Base crew person-hours:{" "}
+                        {(
+                          Math.max(1, inputs.crewSize) * inputs.crewHours
+                        ).toFixed(2)}
+                      </p>
+                      <p>
+                        Subpanel person-hours:{" "}
+                        {(hasSubpanel
+                          ? (inputs.subpanelLaborHours ?? 0)
+                          : 0
+                        ).toFixed(2)}
+                      </p>
+                      <p>
+                        Manual adjustment:{" "}
+                        {(inputs.laborAdjustmentHours ?? 0).toFixed(2)}
+                      </p>
+                      <p className="border-t pt-2 font-semibold">
+                        Final labor: {pricing.finalLaborHours?.toFixed(2)} hrs
+                        (minimum zero)
+                      </p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="addition-notes">
+                      Estimator Notes (Internal)
+                    </Label>
+                    <Textarea
+                      id="addition-notes"
+                      value={inputs.notes}
+                      onChange={(event) =>
+                        setInputs((current) => ({
+                          ...current,
+                          notes: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </BuilderSection>
               </CardContent>
             </Card>
           </div>
 
-           <div><div className="sticky top-6"><Card className="border-primary bg-secondary text-secondary-foreground shadow-lg"><CardHeader className="border-b border-secondary-border"><div className="flex items-center gap-2"><Calculator className="text-primary" size={20} /><CardTitle className="text-secondary-foreground">Calculation Preview</CardTitle></div><CardDescription className="text-secondary-foreground/70">Uses the same server estimator as saved quote creation.</CardDescription></CardHeader><CardContent className="space-y-5 pt-6">
-                  <QuoteBuilderRecovery settings={settingsQuery} revision={revision} draft={draftRecovery} />
-            <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm"><Info className="mt-0.5 shrink-0 text-primary" size={16} /><p className="text-secondary-foreground/80">The square-foot figure creates starting allowances only. Final pricing is based on the selected scope, materials, labor, markup, and margin.</p></div>
-            {pricing && previewIsCurrent ? <><>{pricing.pricingWarnings.length > 0 && <div className="rounded-md border border-amber-400/40 bg-amber-400/10 p-3"><div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-300"><TriangleAlert size={16} /> Estimate needs confirmation</div><ul className="list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">{pricing.pricingWarnings.map((warning, index) => <li key={pricingWarningKey(warning, index)}>{pricingWarningMessage(warning)}</li>)}</ul></div>}</><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="mb-2 font-semibold">Circuit schedule</p><div className="space-y-1 text-xs">{circuitEntries.map((entry, index) => <div key={index} className="flex justify-between gap-3"><span>{entry.label ? <><span className="font-semibold">{entry.label}</span>{" · "}</> : null}{entry.quantity} × {entry.amperage}A {entry.poleCount}-pole {entry.protectionType}</span><span className="font-mono text-right">{entry.cableType}</span></div>)}</div></div><div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm"><p className="font-semibold">Subpanel scope</p><p className="mt-1 text-xs text-secondary-foreground/75">{inputs.subpanelOption ?? "No Subpanel"}{(inputs.subpanelOption ?? "No Subpanel") !== "No Subpanel" ? ` · ${inputs.feederDistance ?? 0} ft feeder` : ""}</p></div><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Material Cost</span><span className="font-mono">${pricing.materialCost.toFixed(2)}</span></div><div className="flex justify-between"><span>Loaded Internal Labor Cost</span><span className="font-mono">${pricing.laborCost.toFixed(2)}</span></div>{pricing.laborSellAmount !== undefined && <div className="flex justify-between"><span>Customer Labor ({pricing.laborRateType} @ ${pricing.laborSellRate?.toFixed(2)}/hr)</span><span className="font-mono">${pricing.laborSellAmount.toFixed(2)}</span></div>}<div className="flex justify-between"><span>Gross Profit</span><span className="font-mono">${pricing.grossProfit.toFixed(2)}</span></div><div className="flex justify-between"><span>Gross Margin</span><span className="font-mono">{(pricing.grossMargin * 100).toFixed(1)}%</span></div><div className="flex justify-between border-t border-secondary-border pt-2 font-bold"><span>Final Selling Price</span><span className="font-mono text-primary">${pricing.finalSellingPrice.toFixed(2)}</span></div></div>{assembly && assembly.length > 0 && <div className="border-t border-secondary-border pt-4"><h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-secondary-foreground/60">Priced Assembly</h4><div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-xs">{assembly.map((line, index) => <div key={`${line.id}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3"><span className="text-secondary-foreground/80">{contractorMaterialName(line.description)} × {line.quantity} {line.unit} @ ${line.unitCost.toFixed(3)}</span><span className="font-mono">${line.extendedCost.toFixed(3)}</span></div>)}</div></div>}</> : <div className="py-6 text-center text-sm text-secondary-foreground/70">Updating authoritative estimate...</div>}
-            <div className="space-y-3 border-t border-secondary-border pt-4"><div className="space-y-2"><Label htmlFor="addition-labor-override">Internal Labor Cost Override ($)</Label><Input id="addition-labor-override" min="0" step="0.01" type="number" value={laborOverride} onChange={(event) => setLaborOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.laborCost.toFixed(2)}` : "Optional"} /></div><div className="space-y-2"><Label htmlFor="addition-price-override">Selling Price Override ($)</Label><Input id="addition-price-override" min="0" step="0.01" type="number" value={sellingPriceOverride} onChange={(event) => setSellingPriceOverride(event.target.value)} placeholder={pricing ? `Calculated: ${pricing.calculatedSellingPrice.toFixed(2)}` : "Optional"} /></div></div>
-            {previewIsCurrent && <MaterialReviewActions assembly={assembly ?? []} builder="Addition" />}
-            {previewQuote.isError && <p className="text-sm text-destructive">The estimate preview could not be calculated.</p>}
-            <Button className="w-full text-lg font-bold" size="lg" type="submit" disabled={!settingsLoaded || createQuote.isPending || !previewIsCurrent || previewQuote.isError}>{createQuote.isPending ? "Submitting..." : (!settingsLoaded || !previewIsCurrent) ? "Calculating..." : "Generate Addition Quote"}</Button>
-          </CardContent></Card></div></div>
+          <div>
+            <div className="sticky top-6">
+              <Card className="border-primary bg-secondary text-secondary-foreground shadow-lg">
+                <CardHeader className="border-b border-secondary-border">
+                  <div className="flex items-center gap-2">
+                    <Calculator className="text-primary" size={20} />
+                    <CardTitle className="text-secondary-foreground">
+                      Calculation Preview
+                    </CardTitle>
+                  </div>
+                  <CardDescription className="text-secondary-foreground/70">
+                    Uses the same server estimator as saved quote creation.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5 pt-6">
+                  <QuoteBuilderRecovery
+                    settings={settingsQuery}
+                    revision={revision}
+                    draft={draftRecovery}
+                  />
+                  <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/10 p-3 text-sm">
+                    <Info className="mt-0.5 shrink-0 text-primary" size={16} />
+                    <p className="text-secondary-foreground/80">
+                      The square-foot figure creates starting allowances only.
+                      Final pricing is based on the selected scope, materials,
+                      labor, markup, and margin.
+                    </p>
+                  </div>
+                  {pricing && previewIsCurrent ? (
+                    <>
+                      <p className="font-semibold" role="status">Status: {pricingNeedsReview(pricing,assembly) ? "Needs Review" : "Ready for quote review"}</p>
+                      <>
+                        {pricing.pricingWarnings.length > 0 && (
+                          <details open className="rounded-md border border-amber-400/40 bg-amber-400/10 p-3">
+                            <summary className="mb-2 cursor-pointer text-sm font-semibold text-amber-300">
+                              <TriangleAlert size={16} /> Estimate needs
+                              confirmation ({pricing.pricingWarnings.length})
+                            </summary>
+                            <ul className="max-h-64 overflow-y-auto list-disc space-y-1 pl-5 text-xs text-secondary-foreground/80">
+                              {pricing.pricingWarnings.map((warning, index) => (
+                                <li key={pricingWarningKey(warning, index)}>
+                                  {pricingWarningMessage(warning)}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </>
+                      <div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm">
+                        <p className="mb-2 font-semibold">Circuit schedule</p>
+                        <div className="space-y-1 text-xs">
+                          {circuitEntries.map((entry, index) => (
+                            <div
+                              key={index}
+                              className="flex justify-between gap-3"
+                            >
+                              <span>
+                                {entry.label ? (
+                                  <>
+                                    <span className="font-semibold">
+                                      {entry.label}
+                                    </span>
+                                    {" · "}
+                                  </>
+                                ) : null}
+                                {entry.quantity} × {entry.amperage}A{" "}
+                                {entry.poleCount}-pole {entry.protectionType}
+                              </span>
+                              <span className="font-mono text-right">
+                                {entry.cableType}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-secondary-border bg-secondary-foreground/5 p-3 text-sm">
+                        <p className="font-semibold">Subpanel scope</p>
+                        <p className="mt-1 text-xs text-secondary-foreground/75">
+                          {inputs.subpanelOption ?? "No Subpanel"}
+                          {(inputs.subpanelOption ?? "No Subpanel") !==
+                          "No Subpanel"
+                            ? ` · ${inputs.feederDistance ?? 0} ft feeder`
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Material Cost</span>
+                          <span className="font-mono">
+                            ${pricing.materialCost.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Loaded Internal Labor Cost</span>
+                          <span className="font-mono">
+                            ${pricing.laborCost.toFixed(2)}
+                          </span>
+                        </div>
+                        {pricing.laborSellAmount !== undefined && (
+                          <div className="flex justify-between">
+                            <span>
+                              Customer Labor ({pricing.laborRateType} @ $
+                              {pricing.laborSellRate?.toFixed(2)}/hr)
+                            </span>
+                            <span className="font-mono">
+                              ${pricing.laborSellAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Gross Profit</span>
+                          <span className="font-mono">
+                            ${pricing.grossProfit.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Gross Margin</span>
+                          <span className="font-mono">
+                            {(pricing.grossMargin * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t border-secondary-border pt-2 font-bold">
+                          <span>Final Selling Price</span>
+                          <span className="font-mono text-primary">
+                            ${pricing.finalSellingPrice.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      {assembly && assembly.length > 0 && (
+                        <div className="border-t border-secondary-border pt-4">
+                          <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-secondary-foreground/60">
+                            Priced Assembly
+                          </h4>
+                          <div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-xs">
+                            {assembly.map((line, index) => (
+                              <div
+                                key={`${line.id}-${index}`}
+                                className="grid grid-cols-[minmax(0,1fr)_auto] gap-3"
+                              >
+                                <div className="text-secondary-foreground/80">
+                                  {contractorMaterialName(line.description)} ×{" "}
+                                  {line.quantity} {line.unit} @ $
+                                  {line.unitCost.toFixed(3)}
+                                  <MaterialResolution line={line}/>
+                                </div>
+                                <span className="font-mono">
+                                  ${line.extendedCost.toFixed(3)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-6 text-center text-sm text-secondary-foreground/70">
+                      Updating authoritative estimate...
+                    </div>
+                  )}
+                  <details open={!!laborOverride||!!sellingPriceOverride} className="space-y-3 border-t border-secondary-border pt-4">
+                    <summary className="cursor-pointer text-sm font-semibold">Advanced estimator overrides</summary>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-labor-override">
+                        Internal Labor Cost Override ($)
+                      </Label>
+                      <Input
+                        id="addition-labor-override"
+                        min="0"
+                        step="0.01"
+                        type="number"
+                        value={laborOverride}
+                        onChange={(event) =>
+                          setLaborOverride(event.target.value)
+                        }
+                        placeholder={
+                          pricing
+                            ? `Calculated: ${pricing.laborCost.toFixed(2)}`
+                            : "Optional"
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addition-price-override">
+                        Selling Price Override ($)
+                      </Label>
+                      <Input
+                        id="addition-price-override"
+                        min="0"
+                        step="0.01"
+                        type="number"
+                        value={sellingPriceOverride}
+                        onChange={(event) =>
+                          setSellingPriceOverride(event.target.value)
+                        }
+                        placeholder={
+                          pricing
+                            ? `Calculated: ${pricing.calculatedSellingPrice.toFixed(2)}`
+                            : "Optional"
+                        }
+                      />
+                    </div>
+                  </details>
+                  {previewIsCurrent && (
+                    <MaterialReviewActions
+                      assembly={assembly ?? []}
+                      builder="Addition"
+                    />
+                  )}
+                  {previewQuote.isError && (
+                    <p className="text-sm text-destructive">
+                      The estimate preview could not be calculated.
+                    </p>
+                  )}
+                  <Button
+                    className="w-full text-lg font-bold"
+                    size="lg"
+                    type="submit"
+                    disabled={
+                      !settingsLoaded ||
+                      createQuote.isPending ||
+                      !previewIsCurrent ||
+                      previewQuote.isError
+                    }
+                  >
+                    {createQuote.isPending
+                      ? "Submitting..."
+                      : !settingsLoaded || !previewIsCurrent
+                        ? "Calculating..."
+                        : "Generate Addition Quote"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </form>
     </div>
-  )
+  );
 }
