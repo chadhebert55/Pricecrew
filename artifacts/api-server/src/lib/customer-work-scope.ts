@@ -578,7 +578,7 @@ export function customerWorkScope(
   // Unknown work stays visible to the estimator instead of silently disappearing.
   const known: Record<string, RegExp> = {
     ADDITION:
-      /^addition-(?:receptacles|switches|dimmers|recessed-lights|ceiling-fans|fan-(?:support|controls|boxes|plates|wiring)|exhaust-(?:fans|controls|boxes|plates|wiring)|cable|breakers|circuit-\d+-(?:cable|breaker)|subpanel-(?:feeder|feeder-breaker|load-center))$/,
+      /^addition-(?:receptacles|switches|dimmers|recessed-lights|ceiling-fans|fan-(?:support|controls|boxes|plates|wiring)|exhaust-(?:fans|controls|boxes|plates|wiring)|bathroom-(?:gfci|downstream|vanity|recessed|shower|switches|boxes|decora-plates|duplex-plates|fixture-boxes)|laundry-(?:receptacles|switches|lights|recessed|boxes|decora-plates|duplex-plates|fixture-boxes)|cable|breakers|circuit-\d+-(?:cable|breaker)|subpanel-(?:feeder|feeder-breaker|load-center))$/,
     NEW_HOUSE:
       /^new-house-(?:outlets|switches|dimmers|recessed-lights|smoke-co|fans|bathroom-gfci|exterior-receptacles|exterior-lighting|garage-receptacles|branch-cable|branch-breakers|equipment-cable|equipment-breakers|service-panel-allowance)$/,
     KITCHEN:

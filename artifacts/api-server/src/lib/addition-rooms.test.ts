@@ -258,3 +258,24 @@ test("legacy proposal wording remains unchanged while version 3 describes select
  assert.ok(current.some(l=>l.description.includes("countdown timer")));
  assert.deepEqual(r,before);
 });
+test("room proposal covers its exact device/support identities but still flags unknown saved work", () => {
+  const inputs: AdditionInputRecord = {
+    ...base,
+    bathroomRoom: { ...defaultBathroomRoom, additionalReceptacles: 1, recessedLights: 1, showerLights: 1 },
+    laundryRoom: { ...defaultLaundryRoom, generalReceptacles: 1, recessedLights: 1 },
+  };
+  const r = calculateAdditionEstimate(inputs, settings, []);
+  const before = structuredClone(r);
+  const scope = customerWorkScope("ADDITION", r.assembly, { inputs });
+  assert.deepEqual(scope.reviewIssues, []);
+  assert.ok(scope.scope.some(line => line.id === "bathroom-room"));
+  assert.ok(scope.scope.some(line => line.id === "laundry-room"));
+  const unknown = customerWorkScope("ADDITION", [
+    ...r.assembly,
+    { ...r.assembly[0], id: "addition-bathroom-unknown-equipment" },
+  ], { inputs });
+  assert.equal(unknown.reviewIssues.length, 1);
+  assert.match(unknown.reviewIssues[0], /addition-bathroom-unknown-equipment/);
+  assert.ok(r.pricing.pricingWarnings.length > 0, "material readiness must remain unresolved");
+  assert.deepEqual(r, before, "proposal generation must not mutate estimate");
+});

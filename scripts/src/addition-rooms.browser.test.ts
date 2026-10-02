@@ -215,6 +215,7 @@ test("Addition rooms: unified circuits, explicit feeder, responsive draft/revise
     const saved = await (await save).json();
     expect(saved.pricing).toEqual(preview.pricing);
     expect(saved.assembly).toEqual(preview.assembly);
+    expect(saved.customerScopeReview).toEqual([]);
     const p = saved.pricing,
       round = (n: number) => Math.round(n * 100) / 100;
     expect(p.materialCost).toBe(
