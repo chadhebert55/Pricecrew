@@ -2292,6 +2292,16 @@ components:
         - cableType
         - quantity
       properties:
+        homeRunLength:
+          type: number
+          minimum: 0
+          description: Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.
+        roomCircuitRole:
+          type: string
+          enum: [bathroom-receptacles, bathroom-lighting, laundry-washer, laundry-dryer]
+        roomCircuitReviewed:
+          type: boolean
+          description: Estimator reviewed the suggested circuit configuration and assignment.
         label:
           type: string
           maxLength: 80
@@ -2337,7 +2347,14 @@ components:
       properties:
         additionScopeVersion:
           type: number
-          enum: [2]
+          enum: [2, 3]
+        bathroomRoom:
+          $ref: "#/components/schemas/AdditionBathroomRoom"
+        laundryRoom:
+          $ref: "#/components/schemas/AdditionLaundryRoom"
+        feederMaterial:
+          type: string
+          enum: [Copper, Aluminum]
         subpanelLaborHours:
           type: number
           minimum: 0
@@ -2463,6 +2480,9 @@ components:
       description: Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
       required: [quantity, customerSupplied, control, cableType]
       properties:
+        equipmentType:
+          type: string
+          enum: [Exhaust fan, Fan/light, Fan/light/heat]
         stackedWiringVerified:
           type: boolean
         verifiedControlQuantity:
@@ -2488,6 +2508,31 @@ components:
           type: number
           minimum: 0
           description: Quote-local fan equipment cost only. Ignored when customerSupplied is true.
+    AdditionBathroomRoom:
+      type: object
+      required: [enabled, gfciReceptacles, additionalReceptacles, vanityLights, recessedLights, showerLights, switches, customerSuppliedFixtures, customerSuppliedRecessedLights]
+      properties:
+        enabled: {type: boolean}
+        gfciReceptacles: {type: number, minimum: 0, multipleOf: 1}
+        additionalReceptacles: {type: number, minimum: 0, multipleOf: 1}
+        vanityLights: {type: number, minimum: 0, multipleOf: 1}
+        recessedLights: {type: number, minimum: 0, multipleOf: 1}
+        showerLights: {type: number, minimum: 0, multipleOf: 1}
+        switches: {type: number, minimum: 0, multipleOf: 1}
+        customerSuppliedFixtures: {type: boolean}
+        customerSuppliedRecessedLights: {type: boolean}
+    AdditionLaundryRoom:
+      type: object
+      required: [enabled, washerCircuits, dryerType, generalReceptacles, lightingLocations, switches, recessedLights, customerSuppliedFixtures]
+      properties:
+        enabled: {type: boolean}
+        washerCircuits: {type: number, minimum: 0, multipleOf: 1}
+        dryerType: {type: string, enum: [None, Gas, Electric]}
+        generalReceptacles: {type: number, minimum: 0, multipleOf: 1}
+        lightingLocations: {type: number, minimum: 0, multipleOf: 1}
+        switches: {type: number, minimum: 0, multipleOf: 1}
+        recessedLights: {type: number, minimum: 0, multipleOf: 1}
+        customerSuppliedFixtures: {type: boolean}
     RemodelCircuit:
       type: object
       required: [key, quantity, amperage, poleCount, protectionType, cableType]
@@ -3671,7 +3716,7 @@ components:
           properties:
             kind:
               type: string
-              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate]
+              enum: [NEMA 14-50R, NEMA 6-50R, Stacked single-pole/single-pole, Matching white wall plate, Qualified Addition SER feeder]
             manufacturer:
               type: string
               minLength: 1

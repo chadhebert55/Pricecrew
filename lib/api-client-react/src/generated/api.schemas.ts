@@ -838,6 +838,67 @@ export type AdditionInputsAdditionScopeVersion = typeof AdditionInputsAdditionSc
 
 export const AdditionInputsAdditionScopeVersion = {
   NUMBER_2: 2,
+  NUMBER_3: 3,
+} as const;
+
+export interface AdditionBathroomRoom {
+  enabled: boolean;
+  /** @minimum 0 */
+  gfciReceptacles: number;
+  /** @minimum 0 */
+  additionalReceptacles: number;
+  /** @minimum 0 */
+  vanityLights: number;
+  /** @minimum 0 */
+  recessedLights: number;
+  /** @minimum 0 */
+  showerLights: number;
+  /** @minimum 0 */
+  switches: number;
+  customerSuppliedFixtures: boolean;
+  customerSuppliedRecessedLights: boolean;
+}
+
+export type AdditionLaundryRoomDryerType = typeof AdditionLaundryRoomDryerType[keyof typeof AdditionLaundryRoomDryerType];
+
+
+export const AdditionLaundryRoomDryerType = {
+  None: 'None',
+  Gas: 'Gas',
+  Electric: 'Electric',
+} as const;
+
+export interface AdditionLaundryRoom {
+  enabled: boolean;
+  /** @minimum 0 */
+  washerCircuits: number;
+  dryerType: AdditionLaundryRoomDryerType;
+  /** @minimum 0 */
+  generalReceptacles: number;
+  /** @minimum 0 */
+  lightingLocations: number;
+  /** @minimum 0 */
+  switches: number;
+  /** @minimum 0 */
+  recessedLights: number;
+  customerSuppliedFixtures: boolean;
+}
+
+export type AdditionInputsFeederMaterial = typeof AdditionInputsFeederMaterial[keyof typeof AdditionInputsFeederMaterial];
+
+
+export const AdditionInputsFeederMaterial = {
+  Copper: 'Copper',
+  Aluminum: 'Aluminum',
+} as const;
+
+export type AdditionBathroomExhaustEquipmentType = typeof AdditionBathroomExhaustEquipmentType[keyof typeof AdditionBathroomExhaustEquipmentType];
+
+
+export const AdditionBathroomExhaustEquipmentType = {
+  Exhaust_fan: 'Exhaust fan',
+  'Fan/light': 'Fan/light',
+  'Fan/light/heat': 'Fan/light/heat',
 } as const;
 
 export type AdditionBathroomExhaustControl = typeof AdditionBathroomExhaustControl[keyof typeof AdditionBathroomExhaustControl];
@@ -864,6 +925,7 @@ export const AdditionBathroomExhaustCableType = {
  * Optional bathroom exhaust-only scope. Absent or zero quantity preserves legacy Addition behavior. Wiring is total additional in-room footage, excluding the circuit schedule.
  */
 export interface AdditionBathroomExhaust {
+  equipmentType?: AdditionBathroomExhaustEquipmentType;
   stackedWiringVerified?: boolean;
   /** @minimum 0 */
   verifiedControlQuantity?: number;
@@ -962,6 +1024,16 @@ export const AdditionInputsCableType = {
   '6/3_NM-B': '6/3 NM-B',
 } as const;
 
+export type AdditionCircuitEntryRoomCircuitRole = typeof AdditionCircuitEntryRoomCircuitRole[keyof typeof AdditionCircuitEntryRoomCircuitRole];
+
+
+export const AdditionCircuitEntryRoomCircuitRole = {
+  'bathroom-receptacles': 'bathroom-receptacles',
+  'bathroom-lighting': 'bathroom-lighting',
+  'laundry-washer': 'laundry-washer',
+  'laundry-dryer': 'laundry-dryer',
+} as const;
+
 export type AdditionCircuitEntryAmperage = typeof AdditionCircuitEntryAmperage[keyof typeof AdditionCircuitEntryAmperage];
 
 
@@ -1011,6 +1083,14 @@ export const AdditionCircuitEntryCableType = {
  */
 export interface AdditionCircuitEntry {
   /**
+     * Per-circuit home-run feet; absent uses Addition default. Quantity multiplies this length once.
+     * @minimum 0
+     */
+  homeRunLength?: number;
+  roomCircuitRole?: AdditionCircuitEntryRoomCircuitRole;
+  /** Estimator reviewed the suggested circuit configuration and assignment. */
+  roomCircuitReviewed?: boolean;
+  /**
      * Optional customer-friendly room or equipment label. Descriptive only and does not affect pricing.
      * @maxLength 80
      */
@@ -1052,6 +1132,9 @@ export type AdditionInputsCeilingFanInstallation = {
 
 export interface AdditionInputs {
   additionScopeVersion?: AdditionInputsAdditionScopeVersion;
+  bathroomRoom?: AdditionBathroomRoom;
+  laundryRoom?: AdditionLaundryRoom;
+  feederMaterial?: AdditionInputsFeederMaterial;
   /**
      * Quote-local total person-hours for the complete subpanel installation, added once, never multiplied by crew size. Ignored when no subpanel.
      * @minimum 0
@@ -2714,6 +2797,7 @@ export const MaterialPreferenceVerifiedComponentKind = {
   'NEMA_6-50R': 'NEMA 6-50R',
   'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
   Matching_white_wall_plate: 'Matching white wall plate',
+  Qualified_Addition_SER_feeder: 'Qualified Addition SER feeder',
 } as const;
 
 export type MaterialPreferenceVerifiedComponentPlateOpening = typeof MaterialPreferenceVerifiedComponentPlateOpening[keyof typeof MaterialPreferenceVerifiedComponentPlateOpening];

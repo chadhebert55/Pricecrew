@@ -16,8 +16,8 @@ export function AdditionExhaustFanFields({ value, onChange }: {
       ? {stackedWiringVerified:false}:{}), [key]: value })
   const selectClass = "flex min-h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
   return <section aria-labelledby="addition-bathroom-heading" className="space-y-4">
-    <h3 id="addition-bathroom-heading" className="border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Bathroom exhaust fans</h3>
-    <p className="text-sm text-muted-foreground">For an addition with a bathroom, add exhaust-only fans here. Configure bathroom receptacles, lighting and required circuits in the existing sections; they are not inferred from the fan count.</p>
+    <h3 id="addition-bathroom-heading" className="border-b pb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">Bathroom ventilation</h3>
+    <p className="text-sm text-muted-foreground">Enter ventilation equipment once in this room package. Circuits belong in the main branch-circuit schedule, not a separate bathroom estimate.</p>
     <div className="max-w-sm space-y-2">
       <Label htmlFor="addition-exhaust-quantity">Bathroom exhaust fan quantity</Label>
       <Input id="addition-exhaust-quantity" type="number" min="0" step="1" value={scope.quantity}
@@ -25,6 +25,13 @@ export function AdditionExhaustFanFields({ value, onChange }: {
     </div>
     {scope.quantity > 0 && <div className="space-y-4 rounded-lg border bg-muted/15 p-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="addition-exhaust-type">Fan type</Label>
+          <select id="addition-exhaust-type" className={selectClass} value={scope.equipmentType??"Exhaust fan"}
+            onChange={e=>set("equipmentType",e.target.value as AdditionBathroomExhaust["equipmentType"])}>
+            <option>Exhaust fan</option><option>Fan/light</option><option>Fan/light/heat</option>
+          </select>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="addition-exhaust-supply">Exhaust fan supplied by</Label>
           <select id="addition-exhaust-supply" className={selectClass} value={scope.customerSupplied ? "customer" : "contractor"}
@@ -66,7 +73,7 @@ export function AdditionExhaustFanFields({ value, onChange }: {
         <a className="underline" href="/price-book?material=Addition%20stacked%20single-pole%2Fsingle-pole%20control&builder=Addition" target="_blank" rel="noreferrer">Qualify stacked control and matching plate in Price Book</a>
       </div>}
       <p className="text-xs text-muted-foreground">Wiring is total additional in-room / switch-leg footage, not per fan. Do not repeat footage already in the common route or circuit home runs. Each fan adds its own control, control box and plate; exclude those from the general switch count.</p>
-      <p className="text-xs text-muted-foreground">Uses the Bathroom exhaust-fan assembly and installation labor. Confirm circuit assignment, cable suitability, mounting and termination requirements. No fan/light/heat combination or ductwork is inferred.</p>
+      <p className="text-xs text-muted-foreground">Uses shared Bathroom equipment and incremental installation labor, without separate project setup. Fan/light and fan/light/heat need their complete control/wiring configuration qualified and remain Needs Review until then. Ductwork is excluded.</p>
       {scope.customerSupplied
         ? <p className="text-sm">Customer-supplied exhaust fan: $0 equipment purchase. Wiring, control, box, plate and installation labor remain included.</p>
         : <details className="rounded border p-3">

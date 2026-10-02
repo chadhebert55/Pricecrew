@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import {configureExhaustOnlyRoom} from "./addition-room-test-helpers";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -39,12 +40,13 @@ test("Addition bathroom exhaust: supplied precedence, measured wiring, responsiv
     const errors:string[]=[];
     page.on("pageerror",e=>errors.push(e.message));
     await page.goto(`/quotes/new/addition?draftScope=${userId}`);
-    await expect(page.locator("#addition-exhaust-quantity")).toHaveValue("0");
+    await expect(page.locator("#addition-exhaust-quantity")).toHaveCount(0);
     await expect(page.locator("#addition-exhaust-wire")).toHaveCount(0);
     await page.locator("#addition-customer").fill("QA Exhaust Customer");
     await page.locator("#addition-project").fill("QA Bathroom Addition");
     for(const id of ["receptacles","switches","dimmers","recessedLights","ceilingFans"])
       await page.locator(`#addition-${id}`).fill("0");
+    await configureExhaustOnlyRoom(page);
     await page.locator("#addition-exhaust-quantity").fill("2");
     // New estimates require an explicit control selection; preserve this fixture's
     // established single-pole scope and its unchanged 17-hour assertion.

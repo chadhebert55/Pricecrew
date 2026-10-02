@@ -132,6 +132,7 @@ export function customerWorkScope(
     if (scope.length) add("testing", "Testing and final trim");
   };
   if (module === "ADDITION") {
+    const currentAddition = inputs.additionScopeVersion === 3;
     count(
       "receptacles",
       "Install general-use receptacles",
@@ -146,15 +147,32 @@ export function customerWorkScope(
       "fixture",
     );
     count("fans", "Install ceiling fans", /^addition-ceiling-fans$/);
+    const exhaustSelection = inputs.bathroomExhaust as {control?:string;equipmentType?:string}|undefined;
+    const exhaustLabel = currentAddition && exhaustSelection?.equipmentType==="Fan/light" ? "Install bathroom fan/light units"
+      : currentAddition && exhaustSelection?.equipmentType==="Fan/light/heat" ? "Install bathroom fan/light/heat units" : "Install bathroom exhaust fans";
     count(
       "exhaust",
-      (inputs.bathroomExhaust as {control?:string})?.control === "Stacked single-pole/single-pole"
-        ? "Install bathroom exhaust fans with independent light/fan controls"
-        : "Install bathroom exhaust fans",
+      exhaustSelection?.control === "Stacked single-pole/single-pole" ? `${exhaustLabel} with independent light/fan controls`
+        : currentAddition && exhaustSelection?.control === "Timer switch" ? `${exhaustLabel} with countdown timer controls`
+        : currentAddition && exhaustSelection?.control === "Humidity-sensing control" ? `${exhaustLabel} with humidity-sensing controls` : exhaustLabel,
       /^addition-exhaust-fans$/,
     );
     circuits(/^addition-(?:circuit-\d+-breaker|breakers)$/);
-    included("subpanel", "Subpanel installation", /^addition-subpanel-/);
+    included("subpanel", currentAddition ? `${typeof inputs.subpanelOption==="string"?inputs.subpanelOption.replace(" Subpanel",""):""} subpanel installation`.trim() : "Subpanel installation", /^addition-subpanel-/);
+    if(currentAddition&&present(/^addition-subpanel-feeder$/)&&["Copper","Aluminum"].includes(String(inputs.feederMaterial)))
+      included("feeder",`Install ${String(inputs.feederMaterial).toLowerCase()} SER feeder`,/^addition-subpanel-feeder$/);
+    included("bathroom-room","Bathroom electrical installation",/^addition-bathroom-/);
+    included("laundry-room","Laundry electrical installation",/^addition-laundry-/);
+    for(const [id,label,pattern] of [
+      ["bathroom-gfci","Install bathroom GFCI receptacles",/^addition-bathroom-gfci$/],
+      ["bathroom-downstream","Install bathroom downstream receptacles",/^addition-bathroom-downstream$/],
+      ["bathroom-vanity","Install vanity fixtures",/^addition-bathroom-vanity$/],
+      ["bathroom-recessed","Install bathroom recessed lighting",/^addition-bathroom-recessed$/],
+      ["bathroom-shower","Install wet-location lighting",/^addition-bathroom-shower$/],
+      ["laundry-lights","Install laundry lighting",/^addition-laundry-lights$/],
+      ["laundry-recessed","Install laundry recessed lighting",/^addition-laundry-recessed$/],
+      ["laundry-receptacles","Install laundry receptacles",/^addition-laundry-receptacles$/],
+    ] as const) count(id,label,pattern);
     const fan = inputs.ceilingFanInstallation as
       | {
           mode?: string;

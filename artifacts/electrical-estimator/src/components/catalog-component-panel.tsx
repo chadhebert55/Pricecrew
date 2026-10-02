@@ -17,8 +17,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {additionFeederRequests} from "@workspace/api-zod/addition-rooms";
 
-const requests = [...evCatalogComponents, STACKED_CONTROL, STACKED_PLATE];
+const requests = [...evCatalogComponents, STACKED_CONTROL, STACKED_PLATE, ...additionFeederRequests];
 const same = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
 export function CatalogComponentPanel({
@@ -87,7 +88,10 @@ export function CatalogComponentPanel({
             | "NEMA 14-50R"
             | "NEMA 6-50R"
             | "Stacked single-pole/single-pole"
-            | "Matching white wall plate",
+            | "Matching white wall plate"
+            | "Qualified Addition SER feeder",
+          // The qualification is bound to the explicit size/material request,
+          // not inferred from a conductor description or an amperage.
           manufacturer: item.manufacturer!,
           manufacturerPartNumber: item.manufacturerPartNumber!,
           source,
@@ -291,7 +295,8 @@ export function CatalogComponentPanel({
             (!source.trim() ||
               !item.manufacturer?.trim() ||
               !item.manufacturerPartNumber?.trim() ||
-              !["ea", "each"].includes(item.unit)))
+              !(additionFeederRequests.includes(request as typeof additionFeederRequests[number])
+                ? ["ft","foot","feet"] : ["ea","each"]).includes(item.unit)))
         }
       >
         Save component mapping

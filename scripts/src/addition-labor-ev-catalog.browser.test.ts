@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import {configureExhaustOnlyRoom} from "./addition-room-test-helpers";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
@@ -311,6 +312,7 @@ for (const scenario of ["subpanel", "stacked", "ev"] as const)
         await screenshot(page, "addition-subpanel-labor");
         if(process.env.SCOPE_OUTPUT) await page.locator("#addition-add-subpanel").locator("xpath=../../..").screenshot({path:`${process.env.SCOPE_OUTPUT}/addition-subpanel-labor-field.png`});
         } else {
+          await configureExhaustOnlyRoom(page);
           await page.locator("#addition-exhaust-quantity").fill("1");
           await page
             .locator("#addition-exhaust-supply")

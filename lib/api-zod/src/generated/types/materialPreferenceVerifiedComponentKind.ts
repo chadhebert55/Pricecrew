@@ -14,4 +14,5 @@ export const MaterialPreferenceVerifiedComponentKind = {
   'NEMA_6-50R': 'NEMA 6-50R',
   'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
   Matching_white_wall_plate: 'Matching white wall plate',
+  Qualified_Addition_SER_feeder: 'Qualified Addition SER feeder',
 } as const;
