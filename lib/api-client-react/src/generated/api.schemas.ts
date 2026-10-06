@@ -868,11 +868,20 @@ export const AdditionLaundryRoomDryerType = {
   Electric: 'Electric',
 } as const;
 
+export type AdditionLaundryRoomDryerConnectionMethod = typeof AdditionLaundryRoomDryerConnectionMethod[keyof typeof AdditionLaundryRoomDryerConnectionMethod];
+
+
+export const AdditionLaundryRoomDryerConnectionMethod = {
+  Receptacle: 'Receptacle',
+  Hardwired: 'Hardwired',
+} as const;
+
 export interface AdditionLaundryRoom {
   enabled: boolean;
   /** @minimum 0 */
   washerCircuits: number;
   dryerType: AdditionLaundryRoomDryerType;
+  dryerConnectionMethod?: AdditionLaundryRoomDryerConnectionMethod;
   /** @minimum 0 */
   generalReceptacles: number;
   /** @minimum 0 */
@@ -2798,6 +2807,8 @@ export const MaterialPreferenceVerifiedComponentKind = {
   'Stacked_single-pole/single-pole': 'Stacked single-pole/single-pole',
   Matching_white_wall_plate: 'Matching white wall plate',
   Qualified_Addition_SER_feeder: 'Qualified Addition SER feeder',
+  Qualified_Addition_load_center: 'Qualified Addition load center',
+  Qualified_Addition_feeder_breaker: 'Qualified Addition feeder breaker',
 } as const;
 
 export type MaterialPreferenceVerifiedComponentPlateOpening = typeof MaterialPreferenceVerifiedComponentPlateOpening[keyof typeof MaterialPreferenceVerifiedComponentPlateOpening];
@@ -2808,6 +2819,24 @@ export const MaterialPreferenceVerifiedComponentPlateOpening = {
   duplex: 'duplex',
   toggle: 'toggle',
 } as const;
+
+export type MaterialPreferenceVerifiedComponentCompatibleControl = {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  manufacturer: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  manufacturerPartNumber: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  source: string;
+};
 
 export type MaterialPreferenceVerifiedComponent = {
   kind: MaterialPreferenceVerifiedComponentKind;
@@ -2827,6 +2856,7 @@ export type MaterialPreferenceVerifiedComponent = {
      */
   source: string;
   plateOpening?: MaterialPreferenceVerifiedComponentPlateOpening;
+  compatibleControl?: MaterialPreferenceVerifiedComponentCompatibleControl;
 };
 
 export type MaterialPreferenceKind = typeof MaterialPreferenceKind[keyof typeof MaterialPreferenceKind];

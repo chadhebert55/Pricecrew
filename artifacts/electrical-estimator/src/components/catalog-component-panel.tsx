@@ -9,6 +9,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import {
   componentProof,
+  compatibleStackedPlate,
   evCatalogComponents,
   qualifiedComponentKinds,
   STACKED_CONTROL,
@@ -17,9 +18,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {additionFeederRequests} from "@workspace/api-zod/addition-rooms";
+import {additionFeederRequests, additionSubpanelComponentRequests} from "@workspace/api-zod/addition-rooms";
 
-const requests = [...evCatalogComponents, STACKED_CONTROL, STACKED_PLATE, ...additionFeederRequests];
+const requests = [...evCatalogComponents, STACKED_CONTROL, STACKED_PLATE, ...additionFeederRequests, ...additionSubpanelComponentRequests];
 const same = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
 export function CatalogComponentPanel({
@@ -41,6 +42,8 @@ export function CatalogComponentPanel({
     "decorator",
   );
   const [confirmed, setConfirmed] = useState(false);
+  const [controlId, setControlId] = useState("");
+  const [pairSource, setPairSource] = useState("");
   const [message, setMessage] = useState("");
   const cache = useQueryClient();
   const update = useUpdatePriceBookItem({
@@ -50,12 +53,15 @@ export function CatalogComponentPanel({
     },
   });
   const item = items.find((p) => p.id === Number(selected));
+  const controlItem = items.find((p) => p.id === Number(controlId) && componentProof(p, STACKED_CONTROL));
   const kind = qualifiedComponentKinds[request];
   const reset = () => {
     setConfirmed(false);
     setSource("");
     setSelected("");
     setMessage("");
+    setControlId("");
+    setPairSource("");
   };
   const mapping = (key: string) =>
     items.filter(
@@ -70,6 +76,11 @@ export function CatalogComponentPanel({
     const p = matches[0];
     if (qualifiedComponentKinds[key] && !componentProof(p, key))
       return "Needs Review: product qualification";
+    if (key === STACKED_PLATE) {
+      const controls = mapping(STACKED_CONTROL);
+      if (controls.length !== 1 || !compatibleStackedPlate(controls[0], p))
+        return "Needs Review: exact control/plate compatibility";
+    }
     if (p.isUnresolved || p.unitCost <= 0) return "Missing Price";
     if (p.supplierCost != null && p.normalizedUnitCost == null)
       return "Needs Review: supplier units";
@@ -89,7 +100,11 @@ export function CatalogComponentPanel({
             | "NEMA 6-50R"
             | "Stacked single-pole/single-pole"
             | "Matching white wall plate"
-            | "Qualified Addition SER feeder",
+            | "Qualified Addition SER feeder"
+            | "Qualified Addition load center"
+            | "Qualified Addition feeder breaker",
+          // Additional exact requests qualify a load center or feeder breaker
+          // for the named existing panel family; they do not qualify the full BOM.
           // The qualification is bound to the explicit size/material request,
           // not inferred from a conductor description or an amperage.
           manufacturer: item.manufacturer!,
@@ -98,6 +113,11 @@ export function CatalogComponentPanel({
           ...([STACKED_CONTROL, STACKED_PLATE].includes(request)
             ? { plateOpening: opening }
             : {}),
+          ...(request === STACKED_PLATE && controlItem ? {compatibleControl: {
+            manufacturer: controlItem.manufacturer!,
+            manufacturerPartNumber: controlItem.manufacturerPartNumber!,
+            source: pairSource,
+          }} : {}),
         }
       : undefined;
     update.mutate(
@@ -211,6 +231,8 @@ export function CatalogComponentPanel({
             value={selected}
             onChange={(e) => {
               setSelected(e.target.value);
+              setControlId("");
+              setPairSource("");
               setConfirmed(false);
               setMessage("");
             }}
@@ -263,9 +285,27 @@ export function CatalogComponentPanel({
                 <option value="toggle">Toggle</option>
               </select>
               <p className="text-xs">
-                The stacked switch and matching white plate must have the same
-                verified opening. Qualify each component separately; no product
-                is inferred.
+                The opening must match, but an opening alone does not establish
+                compatibility. Plate evidence must name the exact selected control.
+              </p>
+            </div>
+          )}
+          {request === STACKED_PLATE && (
+            <div className="space-y-2">
+              <Label htmlFor="component-compatible-control">Exact control approved for this plate</Label>
+              <select id="component-compatible-control" className={selectClass} value={controlId}
+                onChange={(e) => {setControlId(e.target.value); setPairSource(""); setConfirmed(false);}}>
+                <option value="">Select qualified control</option>
+                {items.filter(p => componentProof(p, STACKED_CONTROL)).map(p =>
+                  <option key={p.id} value={p.id}>{p.manufacturer} {p.manufacturerPartNumber}</option>)}
+              </select>
+              <Label htmlFor="component-pair-source">Authoritative control/plate pairing evidence</Label>
+              <Input id="component-pair-source" value={pairSource}
+                onChange={(e) => {setPairSource(e.target.value); setConfirmed(false);}}
+                placeholder="Manufacturer reference approving these exact products together" />
+              <p className="text-xs text-muted-foreground">
+                RCD11W and TP26-W are not prequalified together. Product existence,
+                color and a decorator opening are not pairing evidence.
               </p>
             </div>
           )}
@@ -291,6 +331,7 @@ export function CatalogComponentPanel({
           !item ||
           !confirmed ||
           update.isPending ||
+          (request === STACKED_PLATE && (!controlItem || !pairSource.trim())) ||
           (!!kind &&
             (!source.trim() ||
               !item.manufacturer?.trim() ||

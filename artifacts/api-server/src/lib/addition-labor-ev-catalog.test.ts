@@ -83,6 +83,10 @@ const qualified = (
           source:
             "Synthetic fixture specification, not a real product qualification",
           ...(plateOpening ? { plateOpening } : {}),
+          ...(requestKey === STACKED_PLATE ? {compatibleControl: {
+            manufacturer: "QA", manufacturerPartNumber: "QA-1",
+            source: "Synthetic pair approval for QA-1 only, not a real product",
+          }} : {}),
         },
       },
     ],
