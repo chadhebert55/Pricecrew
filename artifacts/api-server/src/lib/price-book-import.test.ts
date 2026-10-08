@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PriceBookImportValueRecord } from "@workspace/db";
-import { parsePriceBookImport } from "./price-book-import";
+import { exactImportMatches, parsePriceBookImport } from "./price-book-import";
 
 function existing(
   fields: Partial<PriceBookImportValueRecord> & {
@@ -29,6 +29,61 @@ function existing(
     isContractorOwned: fields.isContractorOwned ?? false,
   };
 }
+
+test("flags inherited duplicate catalog identifiers before proposing an update", () => {
+  const catalog = [
+    existing({ id: 1, supplierSku: "SER-A", upc: "UPC-A", manufacturerPartNumber: "TRUNCATED SER" }),
+    existing({ id: 2, supplierSku: "SER-B", upc: "UPC-B", manufacturerPartNumber: "TRUNCATED SER" }),
+  ];
+  const result = parsePriceBookImport(
+    "Category,Description,UOM,Price,SKU,UPC\nConductor,SER cable,ft,1.25,SER-A,UPC-A",
+    catalog,
+  );
+  assert.equal(result.rows[0]?.action, "unresolved");
+  assert.equal(result.rows[0]?.matchedItemId, 1);
+  assert.match(result.rows[0]?.reason ?? "", /retained from the existing catalog/i);
+  assert.equal(result.report.updated, 0);
+  assert.equal(result.report.unresolved, 1);
+});
+
+test("preserves valid inherited identifiers and produces an apply-compatible proposal", () => {
+  const catalog = [
+    existing({ id: 1, supplierSku: "SER-A", upc: "UPC-A", manufacturerPartNumber: "SER-A-FULL" }),
+    existing({ id: 2, supplierSku: "SER-B", upc: "UPC-B", manufacturerPartNumber: "SER-B-FULL" }),
+  ];
+  const result = parsePriceBookImport(
+    "Category,Description,UOM,Price,SKU,UPC\nConductor,SER cable,ft,1.25,SER-A,UPC-A",
+    catalog,
+  );
+  const row = result.rows[0]!;
+  assert.equal(row.action, "update");
+  assert.equal(row.incoming.manufacturerPartNumber, "SER-A-FULL");
+  assert.deepEqual(exactImportMatches(row.incoming, catalog).map(item => item.id), [1]);
+});
+
+test("keeps contractor ownership protection ahead of inherited identifier diagnostics", () => {
+  const result = parsePriceBookImport(
+    "Category,Description,UOM,Price,SKU,UPC\nConductor,SER cable,ft,1.25,SER-A,UPC-A",
+    [
+      existing({ id: 1, supplierSku: "SER-A", upc: "UPC-A", manufacturerPartNumber: "SHARED", isContractorOwned: true }),
+      existing({ id: 2, supplierSku: "SER-B", upc: "UPC-B", manufacturerPartNumber: "SHARED" }),
+    ],
+  );
+  assert.equal(result.rows[0]?.action, "skip");
+  assert.match(result.rows[0]?.reason ?? "", /contractor-owned/i);
+});
+
+test("an already-current row remains a no-op despite an inherited duplicate identifier", () => {
+  const result = parsePriceBookImport(
+    "Category,Description,UOM,Price,SKU,UPC\nConductor,SER cable,ft,0.5,SER-A,UPC-A",
+    [
+      existing({ id: 1, supplierSku: "SER-A", upc: "UPC-A", manufacturerPartNumber: "SHARED" }),
+      existing({ id: 2, supplierSku: "SER-B", upc: "UPC-B", manufacturerPartNumber: "SHARED" }),
+    ],
+  );
+  assert.equal(result.rows[0]?.action, "skip");
+  assert.match(result.rows[0]?.reason ?? "", /already current/i);
+});
 
 test("proposes an exact SKU update and safely normalizes per-thousand wire pricing", () => {
   const result = parsePriceBookImport(
